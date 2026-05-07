@@ -26,7 +26,15 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
   const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  const avatarUrl = user?.avatar
+  const API_URL = 'http://localhost:3000'
+
+  const getFotoUrl = (fotoUrl) => {
+    if (!fotoUrl) return null
+    if (fotoUrl.startsWith('http')) return fotoUrl
+    return `${API_URL}${fotoUrl}`
+  }
+  
+  const avatarUrl = getFotoUrl(user?.foto_url)
   const displayName = user?.apelido || user?.nome || 'Usuário'
   const initials = (displayName?.charAt(0) || 'U').toUpperCase()
 
