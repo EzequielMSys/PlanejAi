@@ -2,7 +2,7 @@
 -- Servidor:                     127.0.0.1
 -- Versão do servidor:           10.4.32-MariaDB - mariadb.org binary distribution
 -- OS do Servidor:               Win64
--- HeidiSQL Versão:              12.14.0.7165
+-- HeidiSQL Versão:              12.10.0.7000
 -- --------------------------------------------------------
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -16,10 +16,12 @@
 
 
 -- Copiando estrutura do banco de dados para tcc
+DROP DATABASE IF EXISTS `tcc`;
 CREATE DATABASE IF NOT EXISTS `tcc` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */;
 USE `tcc`;
 
 -- Copiando estrutura para tabela tcc.atividades
+DROP TABLE IF EXISTS `atividades`;
 CREATE TABLE IF NOT EXISTS `atividades` (
   `id_atividade` int(11) NOT NULL AUTO_INCREMENT,
   `id_conteudo` int(11) DEFAULT NULL,
@@ -35,6 +37,7 @@ CREATE TABLE IF NOT EXISTS `atividades` (
 DELETE FROM `atividades`;
 
 -- Copiando estrutura para tabela tcc.conteudos
+DROP TABLE IF EXISTS `conteudos`;
 CREATE TABLE IF NOT EXISTS `conteudos` (
   `id_conteudo` int(11) NOT NULL AUTO_INCREMENT,
   `area` enum('Ciências','Exatas','Terra','Biológicas','Engenharias','Saúde','Agrárias','Sociais Aplicadas','Humanas','Linguística','Letras','Artes') DEFAULT NULL,
@@ -49,7 +52,25 @@ CREATE TABLE IF NOT EXISTS `conteudos` (
 -- Copiando dados para a tabela tcc.conteudos: ~0 rows (aproximadamente)
 DELETE FROM `conteudos`;
 
+-- Copiando estrutura para tabela tcc.cronogramas
+DROP TABLE IF EXISTS `cronogramas`;
+CREATE TABLE IF NOT EXISTS `cronogramas` (
+  `id_cronograma` int(11) NOT NULL AUTO_INCREMENT,
+  `id_perfil` int(11) DEFAULT NULL,
+  `data_inicio` date DEFAULT NULL,
+  `data_fim` date DEFAULT NULL,
+  `status` enum('ATIVO','CONCLUIDO','CANCELADO') DEFAULT NULL,
+  `criado_em` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_cronograma`),
+  KEY `cronograma perfil1` (`id_perfil`),
+  CONSTRAINT `cronograma perfil1` FOREIGN KEY (`id_perfil`) REFERENCES `perfil_estudo` (`id_perfil`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Copiando dados para a tabela tcc.cronogramas: ~0 rows (aproximadamente)
+DELETE FROM `cronogramas`;
+
 -- Copiando estrutura para tabela tcc.cronograma_conteudos
+DROP TABLE IF EXISTS `cronograma_conteudos`;
 CREATE TABLE IF NOT EXISTS `cronograma_conteudos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `id_dia` int(11) DEFAULT NULL,
@@ -66,6 +87,7 @@ CREATE TABLE IF NOT EXISTS `cronograma_conteudos` (
 DELETE FROM `cronograma_conteudos`;
 
 -- Copiando estrutura para tabela tcc.cronograma_dias
+DROP TABLE IF EXISTS `cronograma_dias`;
 CREATE TABLE IF NOT EXISTS `cronograma_dias` (
   `id_dia` int(11) NOT NULL AUTO_INCREMENT,
   `id_cronograma` int(11) DEFAULT NULL,
@@ -79,23 +101,8 @@ CREATE TABLE IF NOT EXISTS `cronograma_dias` (
 -- Copiando dados para a tabela tcc.cronograma_dias: ~0 rows (aproximadamente)
 DELETE FROM `cronograma_dias`;
 
--- Copiando estrutura para tabela tcc.cronogramas
-CREATE TABLE IF NOT EXISTS `cronogramas` (
-  `id_cronograma` int(11) NOT NULL AUTO_INCREMENT,
-  `id_perfil` int(11) DEFAULT NULL,
-  `data_inicio` date DEFAULT NULL,
-  `data_fim` date DEFAULT NULL,
-  `status` enum('ATIVO','CONCLUIDO','CANCELADO') DEFAULT NULL,
-  `criado_em` datetime DEFAULT current_timestamp(),
-  PRIMARY KEY (`id_cronograma`),
-  KEY `cronograma perfil1` (`id_perfil`),
-  CONSTRAINT `cronograma perfil1` FOREIGN KEY (`id_perfil`) REFERENCES `perfil_estudo` (`id_perfil`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Copiando dados para a tabela tcc.cronogramas: ~0 rows (aproximadamente)
-DELETE FROM `cronogramas`;
-
 -- Copiando estrutura para tabela tcc.disponibilidade_semana
+DROP TABLE IF EXISTS `disponibilidade_semana`;
 CREATE TABLE IF NOT EXISTS `disponibilidade_semana` (
   `id_disponibilidade` int(11) NOT NULL AUTO_INCREMENT,
   `id_perfil` int(11) NOT NULL DEFAULT 0,
@@ -111,6 +118,7 @@ CREATE TABLE IF NOT EXISTS `disponibilidade_semana` (
 DELETE FROM `disponibilidade_semana`;
 
 -- Copiando estrutura para tabela tcc.perfil_estudo
+DROP TABLE IF EXISTS `perfil_estudo`;
 CREATE TABLE IF NOT EXISTS `perfil_estudo` (
   `id_perfil` int(11) NOT NULL AUTO_INCREMENT,
   `id_usuario` int(11) NOT NULL,
@@ -129,6 +137,7 @@ CREATE TABLE IF NOT EXISTS `perfil_estudo` (
 DELETE FROM `perfil_estudo`;
 
 -- Copiando estrutura para tabela tcc.redacoes
+DROP TABLE IF EXISTS `redacoes`;
 CREATE TABLE IF NOT EXISTS `redacoes` (
   `id_redacao` int(11) NOT NULL AUTO_INCREMENT,
   `id_usuario` int(11) DEFAULT NULL,
@@ -146,6 +155,7 @@ CREATE TABLE IF NOT EXISTS `redacoes` (
 DELETE FROM `redacoes`;
 
 -- Copiando estrutura para tabela tcc.respostas_usuario
+DROP TABLE IF EXISTS `respostas_usuario`;
 CREATE TABLE IF NOT EXISTS `respostas_usuario` (
   `id_resposta` int(11) NOT NULL AUTO_INCREMENT,
   `id_usuario` int(11) DEFAULT NULL,
@@ -164,6 +174,7 @@ CREATE TABLE IF NOT EXISTS `respostas_usuario` (
 DELETE FROM `respostas_usuario`;
 
 -- Copiando estrutura para tabela tcc.usuarios
+DROP TABLE IF EXISTS `usuarios`;
 CREATE TABLE IF NOT EXISTS `usuarios` (
   `id_usuario` int(11) NOT NULL AUTO_INCREMENT,
   `nome` varchar(100) NOT NULL,
@@ -186,12 +197,15 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   UNIQUE KEY `email_2` (`email`),
   KEY `idx_usuarios_tipo` (`tipo`),
   KEY `idx_usuarios_ativo` (`ativo`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela tcc.usuarios: ~1 rows (aproximadamente)
+-- Copiando dados para a tabela tcc.usuarios: ~4 rows (aproximadamente)
 DELETE FROM `usuarios`;
 INSERT INTO `usuarios` (`id_usuario`, `nome`, `email`, `senha`, `data_nascimento`, `data_cadastro`, `ativo`, `tipo`, `senha_temporaria`, `token_recuperacao`, `token_expiracao`, `ultimo_login`, `atualizado_em`, `apelido`, `foto_url`, `email_verificado`) VALUES
-	(9, 'Fernandinha', 'fernandaabc@gmail.com', '$2b$10$szsg0a69uvHsOxmJx1amxOcH.JbnwaaKunNV9mZbVex.E1TAFsHjC', NULL, '2026-05-05 16:24:28', 1, 'aluno', 0, NULL, NULL, '2026-05-05 16:24:31', '2026-05-05 16:24:31', NULL, NULL, 0);
+	(9, 'Fernandinha', 'fernandaabc@gmail.com', '$2b$10$szsg0a69uvHsOxmJx1amxOcH.JbnwaaKunNV9mZbVex.E1TAFsHjC', NULL, '2026-05-05 16:24:28', 1, 'aluno', 0, NULL, NULL, '2026-05-05 16:24:31', '2026-05-05 16:24:31', NULL, NULL, 0),
+	(10, 'Teste', 'testedeemail@gmail.com', '$2b$10$sHLL4uRePzXlwVBwz.eC3eYb29Esj4u8w3lZWFj0y/DhicZRCM37W', NULL, '2026-05-07 11:06:26', 1, 'aluno', 0, NULL, NULL, '2026-05-07 13:06:57', '2026-05-07 13:06:57', NULL, NULL, 0),
+	(11, 'Felipe ', 'emaildofelipe@gmail.com', '$2b$10$OuRHV6XuQ.3bfbz95rx0Z.PM.seCxLLbQTZIuCSaPZLqtUkQXv4/e', NULL, '2026-05-07 13:07:32', 1, 'aluno', 0, NULL, NULL, '2026-05-07 13:13:13', '2026-05-07 13:13:13', NULL, NULL, 0),
+	(12, 'Zamberlan', 'emaildozamberlan@gmail.com', '$2b$10$6KHGQf8G.Ni.xPGRp7rzfOCGBzj1zCroNrGcnVNJ1PjnPoxHTaZFW', NULL, '2026-05-07 13:11:11', 1, 'aluno', 0, NULL, NULL, NULL, '2026-05-07 13:11:11', NULL, NULL, 0);
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
