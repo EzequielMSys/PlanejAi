@@ -1,14 +1,15 @@
-const express = require('express');
+const express = require('express')
 
-const router = express.Router();
+const router = express.Router()
 
-const usuarioController = require('../controllers/usuarioController');
+const usuarioController = require('../controllers/usuarioController')
+const { uploadPerfil } = require('../middlewares/uploadMiddleware')
 
 const {
   authMiddleware,
   isAdminOrDono,
   isDono
-} = require('../middlewares/authMiddleware');
+} = require('../middlewares/authMiddleware')
 
 /**
  * Perfil do usuário logado
@@ -17,17 +18,17 @@ router.get(
   '/me',
   authMiddleware,
   usuarioController.obterPerfilLogado
-);
+)
 
 /**
- * Buscar usuário por ID
+ * Upload da foto do perfil do usuário logado
  */
-router.get(
-  '/:id',
+router.patch(
+  '/me/foto',
   authMiddleware,
-  isAdminOrDono,
-  usuarioController.obterPorId
-);
+  uploadPerfil.single('foto'),
+  usuarioController.uploadFotoPerfil
+)
 
 /**
  * Listar usuários
@@ -37,24 +38,26 @@ router.get(
   authMiddleware,
   isAdminOrDono,
   usuarioController.listar
-);
+)
+
+/**
+ * Buscar usuário por ID
+ */
+router.get(
+  '/:id',
+  authMiddleware,
+  isAdminOrDono,
+  usuarioController.obterPorId
+)
 
 /**
  * Atualizar usuário
- * Usuário comum:
- * - apenas própria conta
- *
- * Admin:
- * - pode editar usuários
- *
- * Dono:
- * - controle total
  */
 router.put(
   '/:id',
   authMiddleware,
   usuarioController.atualizar
-);
+)
 
 /**
  * Alterar tipo de usuário
@@ -65,7 +68,7 @@ router.patch(
   authMiddleware,
   isDono,
   usuarioController.alterarTipo
-);
+)
 
 /**
  * Ativar/desativar usuário
@@ -76,7 +79,7 @@ router.patch(
   authMiddleware,
   isDono,
   usuarioController.alterarStatus
-);
+)
 
 /**
  * Resetar senha
@@ -87,6 +90,6 @@ router.patch(
   authMiddleware,
   isAdminOrDono,
   usuarioController.resetarSenha
-);
+)
 
-module.exports = router;
+module.exports = router

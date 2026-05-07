@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import usuarioService from '../services/usuarioService'
 import authService from '../services/authService'
 import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
+
+const API_URL = 'http://localhost:3000'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -43,18 +45,25 @@ function validarSenha(senha) {
   return null
 }
 
+function getFotoUrl(fotoUrl) {
+  if (!fotoUrl) return null
+  if (fotoUrl.startsWith('http')) return fotoUrl
+  return `${API_URL}${fotoUrl}`
+}
+
 export default function Perfil() {
   const { user, updateUser } = useAuth()
+  const fileRef = useRef(null)
 
   const [tab, setTab] = useState('info')
   const [saving, setSaving] = useState(false)
+  const [uploadingFoto, setUploadingFoto] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState(user?.foto_url || null)
 
   const [form, setForm] = useState({
     nome: '',
     apelido: '',
-    email: '',
-    foto_url: ''
+    email: ''
   })
 
   const [senhaForm, setSenhaForm] = useState({
@@ -70,13 +79,45 @@ export default function Perfil() {
       setForm({
         nome: user.nome || '',
         apelido: user.apelido || '',
-        email: user.email || '',
-        foto_url: user.foto_url || ''
+        email: user.email || ''
       })
 
       setAvatarPreview(user.foto_url || null)
     }
   }, [user])
+
+  const handleUploadFoto = async (e) => {
+    const file = e.target.files?.[0]
+
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Selecione uma imagem válida.')
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 2MB.')
+      return
+    }
+
+    setUploadingFoto(true)
+
+    try {
+      const response = await usuarioService.uploadFotoPerfil(file)
+      const usuarioAtualizado = response.usuario
+
+      updateUser(usuarioAtualizado)
+      setAvatarPreview(usuarioAtualizado.foto_url || null)
+
+      toast.success('Foto atualizada com sucesso!')
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erro ao enviar foto.')
+    } finally {
+      setUploadingFoto(false)
+      e.target.value = ''
+    }
+  }
 
   const handleSaveInfo = async (e) => {
     e.preventDefault()
@@ -88,8 +129,7 @@ export default function Perfil() {
       const payload = {
         nome: form.nome,
         email: form.email,
-        apelido: form.apelido,
-        foto_url: form.foto_url
+        apelido: form.apelido
       }
 
       const response = await usuarioService.atualizar(usuarioId, payload)
@@ -100,7 +140,6 @@ export default function Perfil() {
       }
 
       updateUser(usuarioAtualizado)
-      setAvatarPreview(usuarioAtualizado.foto_url || null)
 
       toast.success('Perfil atualizado com sucesso!')
     } catch (error) {
@@ -152,7 +191,7 @@ export default function Perfil() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="w-full flex items-center justify-center py-20">
         <p className="text-textSecondary">Carregando perfil...</p>
       </div>
     )
@@ -176,14 +215,14 @@ export default function Perfil() {
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <div className="text-center mb-8">
             <div className="relative inline-block">
               <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary to-indigo-500 flex items-center justify-center shadow-2xl ring-4 ring-white/10 overflow-hidden">
                 {avatarPreview ? (
                   <img
-                    src={avatarPreview}
+                    src={getFotoUrl(avatarPreview)}
                     alt="Foto de perfil"
                     className="w-full h-full object-cover"
                     onError={() => setAvatarPreview(null)}
@@ -195,12 +234,23 @@ export default function Perfil() {
                 )}
               </div>
 
-              <div
-                className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-lg"
-                title="Foto por URL"
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploadingFoto}
+                className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all shadow-lg disabled:opacity-50"
+                title="Alterar foto"
               >
-                <IconCamera />
-              </div>
+                {uploadingFoto ? <IconSpinner /> : <IconCamera />}
+              </button>
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleUploadFoto}
+              />
             </div>
 
             <h1 className="text-3xl font-black text-textPrimary mt-4">
@@ -210,10 +260,15 @@ export default function Perfil() {
             <p className="text-textSecondary mt-1">
               {tipoLabel} • Membro desde {dataCadastro}
             </p>
+
+            <p className="text-xs text-textSecondary mt-2">
+              Clique no ícone da câmera para enviar uma foto.
+            </p>
           </div>
 
-          <div className="flex gap-2 mb-6 bg-white/5 p-1.5 rounded-2xl border border-white/10 w-fit mx-auto">
+          <div className="flex flex-wrap gap-2 mb-6 bg-white/5 p-1.5 rounded-2xl border border-white/10 w-fit mx-auto">
             <button
+              type="button"
               onClick={() => setTab('info')}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 tab === 'info'
@@ -225,6 +280,7 @@ export default function Perfil() {
             </button>
 
             <button
+              type="button"
               onClick={() => setTab('seguranca')}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 tab === 'seguranca'
@@ -237,7 +293,12 @@ export default function Perfil() {
           </div>
 
           {tab === 'info' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="glass-card p-8">
+            <motion.div
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              className="glass-card p-6 sm:p-8"
+            >
               <form onSubmit={handleSaveInfo} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
@@ -286,25 +347,6 @@ export default function Perfil() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-textSecondary mb-2">
-                    Foto de perfil URL
-                  </label>
-                  <input
-                    type="url"
-                    value={form.foto_url}
-                    onChange={(e) => {
-                      setForm((f) => ({ ...f, foto_url: e.target.value }))
-                      setAvatarPreview(e.target.value)
-                    }}
-                    className="input-field"
-                    placeholder="https://exemplo.com/foto.png"
-                  />
-                  <p className="text-xs text-textSecondary mt-1.5">
-                    Por enquanto, use o link de uma imagem. Depois faremos upload real.
-                  </p>
-                </div>
-
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-textSecondary mb-2">
@@ -349,7 +391,12 @@ export default function Perfil() {
           )}
 
           {tab === 'seguranca' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="glass-card p-8">
+            <motion.div
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              className="glass-card p-6 sm:p-8"
+            >
               <h2 className="text-xl font-bold text-textPrimary mb-6 flex items-center gap-2">
                 <IconLock /> Alterar senha
               </h2>
