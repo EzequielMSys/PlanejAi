@@ -33,8 +33,7 @@ CREATE TABLE IF NOT EXISTS `atividades` (
   CONSTRAINT `id ativ de conteudos1` FOREIGN KEY (`id_conteudo`) REFERENCES `conteudos` (`id_conteudo`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela tcc.atividades: ~0 rows (aproximadamente)
-DELETE FROM `atividades`;
+-- Exportação de dados foi desmarcado.
 
 -- Copiando estrutura para tabela tcc.conteudos
 DROP TABLE IF EXISTS `conteudos`;
@@ -49,8 +48,7 @@ CREATE TABLE IF NOT EXISTS `conteudos` (
   PRIMARY KEY (`id_conteudo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela tcc.conteudos: ~0 rows (aproximadamente)
-DELETE FROM `conteudos`;
+-- Exportação de dados foi desmarcado.
 
 -- Copiando estrutura para tabela tcc.cronogramas
 DROP TABLE IF EXISTS `cronogramas`;
@@ -66,8 +64,7 @@ CREATE TABLE IF NOT EXISTS `cronogramas` (
   CONSTRAINT `cronograma perfil1` FOREIGN KEY (`id_perfil`) REFERENCES `perfil_estudo` (`id_perfil`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela tcc.cronogramas: ~0 rows (aproximadamente)
-DELETE FROM `cronogramas`;
+-- Exportação de dados foi desmarcado.
 
 -- Copiando estrutura para tabela tcc.cronograma_conteudos
 DROP TABLE IF EXISTS `cronograma_conteudos`;
@@ -83,8 +80,7 @@ CREATE TABLE IF NOT EXISTS `cronograma_conteudos` (
   CONSTRAINT `id de dias1` FOREIGN KEY (`id_dia`) REFERENCES `cronograma_dias` (`id_dia`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela tcc.cronograma_conteudos: ~0 rows (aproximadamente)
-DELETE FROM `cronograma_conteudos`;
+-- Exportação de dados foi desmarcado.
 
 -- Copiando estrutura para tabela tcc.cronograma_dias
 DROP TABLE IF EXISTS `cronograma_dias`;
@@ -98,8 +94,7 @@ CREATE TABLE IF NOT EXISTS `cronograma_dias` (
   CONSTRAINT `id cronogamas1` FOREIGN KEY (`id_cronograma`) REFERENCES `cronogramas` (`id_cronograma`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela tcc.cronograma_dias: ~0 rows (aproximadamente)
-DELETE FROM `cronograma_dias`;
+-- Exportação de dados foi desmarcado.
 
 -- Copiando estrutura para tabela tcc.disponibilidade_semana
 DROP TABLE IF EXISTS `disponibilidade_semana`;
@@ -109,13 +104,13 @@ CREATE TABLE IF NOT EXISTS `disponibilidade_semana` (
   `dia_semana` enum('SEG','TER','QUA','QUI','SEX','SAB','DOM') DEFAULT NULL,
   `hora_inicio` time DEFAULT NULL,
   `hora_fim` time DEFAULT NULL,
+  `ocupado` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id_disponibilidade`),
   KEY `id perfil1` (`id_perfil`),
   CONSTRAINT `id perfil1` FOREIGN KEY (`id_perfil`) REFERENCES `perfil_estudo` (`id_perfil`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela tcc.disponibilidade_semana: ~0 rows (aproximadamente)
-DELETE FROM `disponibilidade_semana`;
+-- Exportação de dados foi desmarcado.
 
 -- Copiando estrutura para tabela tcc.perfil_estudo
 DROP TABLE IF EXISTS `perfil_estudo`;
@@ -131,10 +126,9 @@ CREATE TABLE IF NOT EXISTS `perfil_estudo` (
   PRIMARY KEY (`id_perfil`),
   KEY `usuários` (`id_usuario`),
   CONSTRAINT `usuários` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela tcc.perfil_estudo: ~0 rows (aproximadamente)
-DELETE FROM `perfil_estudo`;
+-- Exportação de dados foi desmarcado.
 
 -- Copiando estrutura para tabela tcc.redacoes
 DROP TABLE IF EXISTS `redacoes`;
@@ -151,8 +145,7 @@ CREATE TABLE IF NOT EXISTS `redacoes` (
   CONSTRAINT `id redacoes usario1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela tcc.redacoes: ~0 rows (aproximadamente)
-DELETE FROM `redacoes`;
+-- Exportação de dados foi desmarcado.
 
 -- Copiando estrutura para tabela tcc.respostas_usuario
 DROP TABLE IF EXISTS `respostas_usuario`;
@@ -170,8 +163,7 @@ CREATE TABLE IF NOT EXISTS `respostas_usuario` (
   CONSTRAINT `id respostas usuario1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela tcc.respostas_usuario: ~0 rows (aproximadamente)
-DELETE FROM `respostas_usuario`;
+-- Exportação de dados foi desmarcado.
 
 -- Copiando estrutura para tabela tcc.usuarios
 DROP TABLE IF EXISTS `usuarios`;
@@ -197,15 +189,9 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   UNIQUE KEY `email_2` (`email`),
   KEY `idx_usuarios_tipo` (`tipo`),
   KEY `idx_usuarios_ativo` (`ativo`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela tcc.usuarios: ~4 rows (aproximadamente)
-DELETE FROM `usuarios`;
-INSERT INTO `usuarios` (`id_usuario`, `nome`, `email`, `senha`, `data_nascimento`, `data_cadastro`, `ativo`, `tipo`, `senha_temporaria`, `token_recuperacao`, `token_expiracao`, `ultimo_login`, `atualizado_em`, `apelido`, `foto_url`, `email_verificado`) VALUES
-	(9, 'Fernandinha', 'fernandaabc@gmail.com', '$2b$10$szsg0a69uvHsOxmJx1amxOcH.JbnwaaKunNV9mZbVex.E1TAFsHjC', NULL, '2026-05-05 16:24:28', 1, 'aluno', 0, NULL, NULL, '2026-05-05 16:24:31', '2026-05-05 16:24:31', NULL, NULL, 0),
-	(10, 'Teste', 'testedeemail@gmail.com', '$2b$10$sHLL4uRePzXlwVBwz.eC3eYb29Esj4u8w3lZWFj0y/DhicZRCM37W', NULL, '2026-05-07 11:06:26', 1, 'aluno', 0, NULL, NULL, '2026-05-07 13:06:57', '2026-05-07 13:06:57', NULL, NULL, 0),
-	(11, 'Felipe ', 'emaildofelipe@gmail.com', '$2b$10$OuRHV6XuQ.3bfbz95rx0Z.PM.seCxLLbQTZIuCSaPZLqtUkQXv4/e', NULL, '2026-05-07 13:07:32', 1, 'aluno', 0, NULL, NULL, '2026-05-07 13:13:13', '2026-05-07 13:13:13', NULL, NULL, 0),
-	(12, 'Zamberlan', 'emaildozamberlan@gmail.com', '$2b$10$6KHGQf8G.Ni.xPGRp7rzfOCGBzj1zCroNrGcnVNJ1PjnPoxHTaZFW', NULL, '2026-05-07 13:11:11', 1, 'aluno', 0, NULL, NULL, NULL, '2026-05-07 13:11:11', NULL, NULL, 0);
+-- Exportação de dados foi desmarcado.
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
