@@ -1,6 +1,9 @@
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+
 import ProtectedRoute from './routes/ProtectedRoute'
+import Layout from './layouts/Layout'
+
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -12,7 +15,6 @@ import Perfil from './pages/Perfil'
 import AlterarSenha from './pages/AlterarSenha'
 import EsqueciSenha from './pages/EsqueciSenha'
 import UsuariosAdmin from './pages/UsuariosAdmin'
-import Layout from './layouts/Layout'
 
 function App() {
   return (
@@ -22,10 +24,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/esqueci-senha" element={<EsqueciSenha />} />
-        
-        {/* Protected Routes with Layout */}
-        <Route element={<Layout />}>
-          <Route element={<ProtectedRoute />}>
+
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
             <Route path="/primeiro-acesso" element={<PrimeiroAcesso />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/inicio" element={<Dashboard />} />
@@ -34,9 +35,10 @@ function App() {
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/alterar-senha" element={<AlterarSenha />} />
           </Route>
+        </Route>
 
-          {/* Admin Only */}
-          <Route element={<ProtectedRoute adminOnly />}>
+        <Route element={<ProtectedRoute adminOnly />}>
+          <Route element={<Layout />}>
             <Route path="/usuarios" element={<UsuariosAdmin />} />
           </Route>
         </Route>

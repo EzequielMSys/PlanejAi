@@ -12,23 +12,28 @@ function Layout() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-bgDark to-slate-900">
       {isAuthenticated && (
         <>
-          <Navbar onMenuClick={() => setSidebarOpen(v => !v)} sidebarOpen={sidebarOpen} />
-          <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <Navbar
+            onMenuClick={() => setSidebarOpen((v) => !v)}
+            sidebarOpen={sidebarOpen}
+          />
+          <Sidebar
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
         </>
       )}
 
       <main
-        className={`min-h-screen transition-all duration-300 ${
-          isAuthenticated
-            ? 'pt-16 lg:pl-64'
-            : ''
+        className={`transition-all duration-300 ${
+          isAuthenticated ? 'pt-16 lg:pl-64' : ''
         }`}
       >
-        <Outlet />
+        <div className="min-h-[calc(100vh-4rem)] w-full">
+          <Outlet />
+        </div>
       </main>
     </div>
   )
 }
 
 export default Layout
-
