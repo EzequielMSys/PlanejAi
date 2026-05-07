@@ -1,116 +1,182 @@
 const authService = require('../services/authService');
 
-/**
- * @swagger
- * /api/auth/register:
- *   post:
- *     summary: Registrar novo usuário
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - nome
- *               - email
- *             properties:
- *               nome:
- *                 type: string
- *               email:
- *                 type: string
- *               tipo:
- *                 type: string
- *                 enum: [aluno, admin]
- *     responses:
- *       201:
- *         description: Usuário criado com senha temporária
- */
 async function registrar(req, res) {
   try {
-    const { nome, email, tipo, senha } = req.body;
+    const { nome, email, senha } = req.body;
+
     if (!nome || !email) {
-      return res.status(400).json({ error: 'Nome e email são obrigatórios.' });
+      return res.status(400).json({
+        error: 'Nome e email são obrigatórios.'
+      });
     }
 
-    const resultado = await authService.registrar({ nome, email, tipo, senha });
+    const resultado = await authService.registrar({ nome, email, senha });
 
     return res.status(201).json({
-      message: 'Usuário criado com sucesso. Use a senha temporária para o primeiro acesso.',
-      senha_temporaria: resultado.senha_temporaria,
-      usuario: {
-        id: resultado.id,
-        nome: resultado.nome,
-        email: resultado.email,
-        tipo: resultado.tipo
-      }
+      message: 'Usuário criado com sucesso.',
+      usuario: resultado.usuario,
+      senha_temporaria: resultado.senha_temporaria
     });
   } catch (error) {
-    console.error('Erro ao registrar usuário:', error);
-    if (error.message === 'Email já cadastrado') {
+    if (error.message.includes('Email já cadastrado')) {
       return res.status(409).json({ error: error.message });
     }
-    return res.status(500).json({ error: 'Erro interno ao registrar usuário.' });
+
+    if (error.message.includes('Senha deve')) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    console.error('[REGISTER ERROR]', error);
+    return res.status(500).json({
+      error: 'Erro interno ao registrar usuário.'
+    });
   }
 }
 
-/**
- * @swagger
- * /api/auth/login:
- *   post:
- *     summary: Login de usuário
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - senha
- *             properties:
- *               email:
- *                 type: string
- *               senha:
- *                 type: string
- *     responses:
- *       200:
- *         description: Login sucesso
- */
 async function login(req, res) {
   try {
     const { email, senha } = req.body;
+
     if (!email || !senha) {
-      return res.status(400).json({ error: 'Email e senha são obrigatórios.' });
+      return res.status(400).json({
+        error: 'Email e senha são obrigatórios.'
+      });
     }
 
     const resultado = await authService.login(email, senha);
 
-    return res.json({
+    return res.status(200).json({
       token: resultado.token,
       usuario: resultado.usuario,
       primeiro_acesso: resultado.primeiro_acesso
     });
   } catch (error) {
-    console.error('Erro ao autenticar usuário:', error);
-    if (error.status === 403 || error.message === 'Usuário desativado') {
-      return res.status(403).json({ error: error.message || 'Usuário desativado' });
+    if (error.message.includes('Credenciais inválidas')) {
+      console.warn('[LOGIN FAIL] Credenciais inválidas.');
+      return res.status(401).json({
+        error: 'Credenciais inválidas.'
+      });
     }
-    if (error.message === 'Usuário não encontrado' || error.message === 'Senha incorreta') {
-      return res.status(401).json({ error: 'Credenciais inválidas' });
+
+    if (error.status === 403 || error.message.includes('Usuário desativado')) {
+      return res.status(403).json({
+        error: 'Usuário desativado.'
+      });
     }
-    return res.status(500).json({ error: 'Erro interno ao autenticar.' });
+
+    console.error('[LOGIN ERROR]', error);
+    return res.status(500).json({
+      error: 'Erro interno ao autenticar.'
+    });
+  }
+}
+
+async function esqueciSenha(req, res) {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        error: 'Email é obrigatório.'
+      });
+    }
+
+    const resultado = await authService.esqueciSenha(email);
+
+    return res.status(200).json({
+      message: 'Senha temporária gerada com sucesso.',
+      senha_temporaria: resultado.senha_temporaria
+    });
+  } catch (error) {
+    if (error.message.includes('Email não encontrado')) {
+      return res.status(404).json({
+        error: error.message
+      });
+    }
+
+    console.error('[RECOVERY ERROR]', error);
+    return res.status(500).json({
+      error: 'Erro interno ao recuperar senha.'
+    });
+  }
+}
+
+async function trocarSenhaPrimeiroAcesso(req, res) {
+  try {
+    const usuarioId = req.usuario.id_usuario || req.usuario.id;
+    const { senhaAtual, novaSenha } = req.body;
+
+    if (!senhaAtual || !novaSenha) {
+      return res.status(400).json({
+        error: 'Senha atual e nova senha são obrigatórias.'
+      });
+    }
+
+    const resultado = await authService.trocarSenhaPrimeiroAcesso(
+      usuarioId,
+      senhaAtual,
+      novaSenha
+    );
+
+    return res.status(200).json(resultado);
+  } catch (error) {
+    if (
+      error.message.includes('Senha atual incorreta') ||
+      error.message.includes('Senha deve') ||
+      error.message.includes('Usuário não encontrado')
+    ) {
+      return res.status(400).json({
+        error: error.message
+      });
+    }
+
+    console.error('[FIRST ACCESS PASSWORD ERROR]', error);
+    return res.status(500).json({
+      error: 'Erro interno ao alterar senha.'
+    });
+  }
+}
+
+async function alterarSenha(req, res) {
+  try {
+    const usuarioId = req.usuario.id_usuario || req.usuario.id;
+    const { senhaAtual, novaSenha } = req.body;
+
+    if (!senhaAtual || !novaSenha) {
+      return res.status(400).json({
+        error: 'Senha atual e nova senha são obrigatórias.'
+      });
+    }
+
+    const resultado = await authService.alterarSenha(
+      usuarioId,
+      senhaAtual,
+      novaSenha
+    );
+
+    return res.status(200).json(resultado);
+  } catch (error) {
+    if (
+      error.message.includes('Senha atual incorreta') ||
+      error.message.includes('Senha deve') ||
+      error.message.includes('Usuário não encontrado')
+    ) {
+      return res.status(400).json({
+        error: error.message
+      });
+    }
+
+    console.error('[PASSWORD CHANGE ERROR]', error);
+    return res.status(500).json({
+      error: 'Erro interno ao alterar senha.'
+    });
   }
 }
 
 module.exports = {
   registrar,
   login,
-  esqueciSenha: require('./novaAuthController').esqueciSenha,
-  trocarSenhaPrimeiroAcesso: require('./novaAuthController').trocarSenhaPrimeiroAcesso,
-  alterarSenha: require('./novaAuthController').alterarSenha
+  esqueciSenha,
+  trocarSenhaPrimeiroAcesso,
+  alterarSenha
 };
-
-

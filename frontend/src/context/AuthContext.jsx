@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import authService from '../services/authService'
 
 const AuthContext = createContext()
@@ -24,14 +24,31 @@ const authReducer = (state, action) => {
         perfilCompleto: action.payload.perfil_completo,
         loading: false
       }
+
     case 'UPDATE_USER':
-      return { ...state, user: action.payload }
+      return {
+        ...state,
+        user: action.payload
+      }
+
     case 'UPDATE_PERFIL_COMPLETO':
-      return { ...state, perfilCompleto: action.payload }
+      return {
+        ...state,
+        perfilCompleto: action.payload
+      }
+
     case 'LOGOUT':
-      return initialState
+      return {
+        ...initialState,
+        loading: false
+      }
+
     case 'LOADING':
-      return { ...state, loading: action.payload }
+      return {
+        ...state,
+        loading: action.payload
+      }
+
     default:
       return state
   }
@@ -40,7 +57,6 @@ const authReducer = (state, action) => {
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
   const navigate = useNavigate()
-  const location = useLocation()
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -49,35 +65,84 @@ export const AuthProvider = ({ children }) => {
     const perfilCompleto = localStorage.getItem('perfil_completo') === 'true'
 
     if (token && user) {
-      const parsedUser = JSON.parse(user)
-      const apelido = localStorage.getItem('apelido')
-      if (apelido) parsedUser.apelido = apelido
+      try {
+        const parsedUser = JSON.parse(user)
 
-      dispatch({
-        type: 'LOGIN_SUCCESS',
-        payload: {
-          token,
-          user: parsedUser,
-          primeiro_acesso: primeiroAcesso,
-          perfil_completo: perfilCompleto
+        dispatch({
+          type: 'LOGIN_SUCCESS',
+          payload: {
+            token,
+            user: parsedUser,
+            primeiro_acesso: primeiroAcesso,
+            perfil_completo: perfilCompleto
+          }
+        })
+      } catch (error) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        localStorage.removeItem('primeiro_acesso')
+        localStorage.removeItem('perfil_completo')
+      }
+    }
+
+    dispatch({
+      type: 'LOADING',
+      payload: false
+    })
+  }, [])
+
+  const checkPerfilCompleto = async (usuarioId, token) => {
+    try {
+      const response = await fetch('/api/perfil', {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
       })
+
+      if (!response.ok) {
+        return false
+      }
+
+      const { perfil, disponibilidade } = await response.json()
+
+      return Boolean(
+        perfil &&
+          perfil.areas_foco &&
+          disponibilidade &&
+          disponibilidade.length > 0
+      )
+    } catch (error) {
+      console.error('Erro ao verificar perfil:', error)
+      return false
     }
-    dispatch({ type: 'LOADING', payload: false })
-  }, [])
+  }
 
   const login = async (email, senha) => {
     try {
-      dispatch({ type: 'LOADING', payload: true })
+      dispatch({
+        type: 'LOADING',
+        payload: true
+      })
+
       const response = await authService.login(email, senha)
 
-      // Check if perfil is complete
-      const perfilCompleto = await checkPerfilCompleto(response.usuario.id)
+      const usuarioId = response.usuario.id_usuario || response.usuario.id
+
+      const perfilCompleto = await checkPerfilCompleto(
+        usuarioId,
+        response.token
+      )
 
       localStorage.setItem('token', response.token)
       localStorage.setItem('user', JSON.stringify(response.usuario))
-      localStorage.setItem('primeiro_acesso', response.primeiro_acesso ? 'true' : 'false')
-      localStorage.setItem('perfil_completo', perfilCompleto ? 'true' : 'false')
+      localStorage.setItem(
+        'primeiro_acesso',
+        response.primeiro_acesso ? 'true' : 'false'
+      )
+      localStorage.setItem(
+        'perfil_completo',
+        perfilCompleto ? 'true' : 'false'
+      )
 
       dispatch({
         type: 'LOGIN_SUCCESS',
@@ -91,7 +156,6 @@ export const AuthProvider = ({ children }) => {
 
       toast.success('Login realizado com sucesso!')
 
-      // Handle redirect based on user state
       if (response.primeiro_acesso) {
         navigate('/primeiro-acesso')
       } else if (!perfilCompleto) {
@@ -105,7 +169,10 @@ export const AuthProvider = ({ children }) => {
       toast.error(error.response?.data?.error || error.message)
       throw error
     } finally {
-      dispatch({ type: 'LOADING', payload: false })
+      dispatch({
+        type: 'LOADING',
+        payload: false
+      })
     }
   }
 
@@ -114,50 +181,40 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user')
     localStorage.removeItem('primeiro_acesso')
     localStorage.removeItem('perfil_completo')
-    localStorage.removeItem('apelido')
-    dispatch({ type: 'LOGOUT' })
-    toast.success('Ate logo!')
-    navigate('/')
-  }
 
-  const checkPerfilCompleto = async (usuarioId) => {
-    try {
-      // Check if perfil exists and has required fields
-      const response = await fetch('/api/perfil', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      if (response.ok) {
-        const { perfil, disponibilidade } = await response.json()
-        return perfil && perfil.areas_foco && disponibilidade && disponibilidade.length > 0
-      }
-      return false
-    } catch (error) {
-      console.error('Erro ao verificar perfil:', error)
-      return false
-    }
+    dispatch({
+      type: 'LOGOUT'
+    })
+
+    toast.success('Até logo!')
+    navigate('/')
   }
 
   const updatePerfilCompleto = (completo) => {
     localStorage.setItem('perfil_completo', completo ? 'true' : 'false')
-    dispatch({ type: 'UPDATE_PERFIL_COMPLETO', payload: completo })
+
+    dispatch({
+      type: 'UPDATE_PERFIL_COMPLETO',
+      payload: completo
+    })
   }
 
   const updateUser = (data) => {
-    const updatedUser = { ...state.user, ...data }
-    if (data.apelido !== undefined) {
-      if (data.apelido) {
-        localStorage.setItem('apelido', data.apelido)
-      } else {
-        localStorage.removeItem('apelido')
-      }
+    const updatedUser = {
+      ...state.user,
+      ...data
     }
+
     localStorage.setItem('user', JSON.stringify(updatedUser))
-    dispatch({ type: 'UPDATE_USER', payload: updatedUser })
+
+    dispatch({
+      type: 'UPDATE_USER',
+      payload: updatedUser
+    })
   }
 
-  const podeAcessarAdmin = state.user?.tipo === 'admin' || state.user?.tipo === 'dono'
+  const podeAcessarAdmin =
+    state.user?.tipo === 'admin' || state.user?.tipo === 'dono'
 
   const value = {
     ...state,
@@ -168,8 +225,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!state.token,
     isAdmin: podeAcessarAdmin,
     isDono: state.user?.tipo === 'dono',
-    isPrimeiroAcesso: state.primeiroAcesso,
-    perfilCompleto: state.perfilCompleto
+    isPrimeiroAcesso: state.primeiroAcesso
   }
 
   return (
@@ -181,8 +237,10 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
+
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider')
+    throw new Error('useAuth deve ser usado dentro de AuthProvider')
   }
+
   return context
 }
