@@ -191,8 +191,11 @@ export default function Perfil() {
 
   if (!user) {
     return (
-      <div className="w-full flex items-center justify-center py-20">
-        <p className="text-textSecondary">Carregando perfil...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F7FB]">
+        <div className="bg-white rounded-[3rem] shadow-2xl border border-[#9394CF]/20 p-10 text-center">
+          <div className="animate-spin rounded-full h-14 w-14 border-b-4 border-[#4B4C9D] mx-auto mb-4"></div>
+          <p className="text-black/65 font-bold">Carregando perfil...</p>
+        </div>
       </div>
     )
   }
@@ -214,66 +217,75 @@ export default function Perfil() {
     : 'Não informado'
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#F7F7FB] text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-72 h-72 bg-[#9394CF]/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#4B4C9D]/10 rounded-full blur-3xl" />
+
+      <div className="max-w-4xl mx-auto relative z-10">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <div className="text-center mb-8">
-            <div className="relative inline-block">
-              <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary to-indigo-500 flex items-center justify-center shadow-2xl ring-4 ring-white/10 overflow-hidden">
-                {avatarPreview ? (
-                  <img
-                    src={getFotoUrl(avatarPreview)}
-                    alt="Foto de perfil"
-                    className="w-full h-full object-cover"
-                    onError={() => setAvatarPreview(null)}
-                  />
-                ) : (
-                  <span className="text-5xl font-black text-white">
-                    {initials}
-                  </span>
-                )}
+          <div className="bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+            <div className="absolute inset-0 bg-black/20" />
+            <div className="absolute top-8 left-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
+            <div className="absolute bottom-8 right-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
+
+            <div className="relative z-10 text-center">
+              <div className="relative inline-block">
+                <div className="w-28 h-28 rounded-full bg-white/85 flex items-center justify-center shadow-2xl ring-4 ring-white/40 overflow-hidden mx-auto">
+                  {avatarPreview ? (
+                    <img
+                      src={getFotoUrl(avatarPreview)}
+                      alt="Foto de perfil"
+                      className="w-full h-full object-cover"
+                      onError={() => setAvatarPreview(null)}
+                    />
+                  ) : (
+                    <span className="text-5xl font-black text-[#4B4C9D]">
+                      {initials}
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploadingFoto}
+                  className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-[#4B4C9D] transition-all shadow-xl disabled:opacity-50"
+                  title="Alterar foto"
+                >
+                  {uploadingFoto ? <IconSpinner /> : <IconCamera />}
+                </button>
+
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleUploadFoto}
+                />
               </div>
 
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                disabled={uploadingFoto}
-                className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all shadow-lg disabled:opacity-50"
-                title="Alterar foto"
-              >
-                {uploadingFoto ? <IconSpinner /> : <IconCamera />}
-              </button>
+              <h1 className="text-3xl md:text-4xl font-black text-white mt-5 tracking-tight">
+                {displayName}
+              </h1>
 
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleUploadFoto}
-              />
+              <p className="text-white/85 mt-1 font-semibold">
+                {tipoLabel} • Membro desde {dataCadastro}
+              </p>
+
+              <p className="text-xs text-white/75 mt-2">
+                Clique no ícone da câmera para enviar uma foto.
+              </p>
             </div>
-
-            <h1 className="text-3xl font-black text-textPrimary mt-4">
-              {displayName}
-            </h1>
-
-            <p className="text-textSecondary mt-1">
-              {tipoLabel} • Membro desde {dataCadastro}
-            </p>
-
-            <p className="text-xs text-textSecondary mt-2">
-              Clique no ícone da câmera para enviar uma foto.
-            </p>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-6 bg-white/5 p-1.5 rounded-2xl border border-white/10 w-fit mx-auto">
+          <div className="flex flex-wrap gap-2 mb-6 bg-white p-1.5 rounded-full border border-[#9394CF]/20 w-fit mx-auto shadow-xl">
             <button
               type="button"
               onClick={() => setTab('info')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                 tab === 'info'
-                  ? 'bg-gradient-to-r from-primary to-indigo-500 text-white shadow-lg'
-                  : 'text-textSecondary hover:text-textPrimary hover:bg-white/5'
+                  ? 'bg-[#4B4C9D] text-white shadow-lg'
+                  : 'text-black/60 hover:text-black hover:bg-[#9394CF]/15'
               }`}
             >
               <IconUser /> Informações
@@ -282,10 +294,10 @@ export default function Perfil() {
             <button
               type="button"
               onClick={() => setTab('seguranca')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                 tab === 'seguranca'
-                  ? 'bg-gradient-to-r from-primary to-indigo-500 text-white shadow-lg'
-                  : 'text-textSecondary hover:text-textPrimary hover:bg-white/5'
+                  ? 'bg-[#4B4C9D] text-white shadow-lg'
+                  : 'text-black/60 hover:text-black hover:bg-[#9394CF]/15'
               }`}
             >
               <IconLock /> Segurança
@@ -297,12 +309,12 @@ export default function Perfil() {
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              className="glass-card p-6 sm:p-8"
+              className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20"
             >
               <form onSubmit={handleSaveInfo} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-textSecondary mb-2">
+                    <label className="block text-sm font-bold text-black mb-2">
                       Nome completo
                     </label>
                     <input
@@ -311,13 +323,13 @@ export default function Perfil() {
                       onChange={(e) =>
                         setForm((f) => ({ ...f, nome: e.target.value }))
                       }
-                      className="input-field"
+                      className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-textSecondary mb-2">
+                    <label className="block text-sm font-bold text-black mb-2">
                       Apelido
                     </label>
                     <input
@@ -326,14 +338,14 @@ export default function Perfil() {
                       onChange={(e) =>
                         setForm((f) => ({ ...f, apelido: e.target.value }))
                       }
-                      className="input-field"
+                      className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
                       placeholder="Como quer ser chamado?"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-textSecondary mb-2">
+                  <label className="block text-sm font-bold text-black mb-2">
                     Email
                   </label>
                   <input
@@ -342,33 +354,33 @@ export default function Perfil() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, email: e.target.value }))
                     }
-                    className="input-field"
+                    className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
                     required
                   />
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-textSecondary mb-2">
+                    <label className="block text-sm font-bold text-black mb-2">
                       Tipo
                     </label>
                     <input
                       type="text"
                       value={tipoLabel}
                       disabled
-                      className="input-field opacity-60 cursor-not-allowed"
+                      className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black/50 cursor-not-allowed"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-textSecondary mb-2">
+                    <label className="block text-sm font-bold text-black mb-2">
                       Data de cadastro
                     </label>
                     <input
                       type="text"
                       value={dataCadastro}
                       disabled
-                      className="input-field opacity-60 cursor-not-allowed"
+                      className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black/50 cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -376,7 +388,7 @@ export default function Perfil() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="btn-primary flex items-center gap-2 disabled:opacity-50"
+                  className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-bold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? (
                     <>
@@ -395,15 +407,15 @@ export default function Perfil() {
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              className="glass-card p-6 sm:p-8"
+              className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20"
             >
-              <h2 className="text-xl font-bold text-textPrimary mb-6 flex items-center gap-2">
+              <h2 className="text-xl font-black text-black mb-6 flex items-center gap-2">
                 <IconLock /> Alterar senha
               </h2>
 
               <form onSubmit={handleSaveSenha} className="space-y-5 max-w-lg">
                 <div>
-                  <label className="block text-sm font-semibold text-textSecondary mb-2">
+                  <label className="block text-sm font-bold text-black mb-2">
                     Senha atual
                   </label>
                   <input
@@ -412,13 +424,13 @@ export default function Perfil() {
                     onChange={(e) =>
                       setSenhaForm((f) => ({ ...f, senhaAtual: e.target.value }))
                     }
-                    className="input-field"
+                    className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-textSecondary mb-2">
+                  <label className="block text-sm font-bold text-black mb-2">
                     Nova senha
                   </label>
                   <input
@@ -427,16 +439,16 @@ export default function Perfil() {
                     onChange={(e) =>
                       setSenhaForm((f) => ({ ...f, novaSenha: e.target.value }))
                     }
-                    className="input-field"
+                    className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
                     required
                   />
-                  <p className="text-xs text-textSecondary mt-1.5">
+                  <p className="text-xs text-black/50 mt-1.5">
                     Mínimo 8 caracteres, 1 maiúscula e 1 número
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-textSecondary mb-2">
+                  <label className="block text-sm font-bold text-black mb-2">
                     Confirmar nova senha
                   </label>
                   <input
@@ -445,13 +457,13 @@ export default function Perfil() {
                     onChange={(e) =>
                       setSenhaForm((f) => ({ ...f, confirmarSenha: e.target.value }))
                     }
-                    className="input-field"
+                    className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
                     required
                   />
                 </div>
 
                 {senhaErro && (
-                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                  <div className="p-4 rounded-[1.5rem] bg-red-100 border border-red-300 text-red-700 text-sm font-semibold">
                     {senhaErro}
                   </div>
                 )}
@@ -459,7 +471,7 @@ export default function Perfil() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="btn-primary flex items-center gap-2 disabled:opacity-50"
+                  className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-bold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? (
                     <>

@@ -9,15 +9,16 @@ function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-bgDark to-slate-900">
+    <div className="min-h-screen bg-[#F7F7FB] text-black">
       {isAuthenticated && (
         <>
           <Navbar
             onMenuClick={() => setSidebarOpen((v) => !v)}
             sidebarOpen={sidebarOpen}
           />
+
           <Sidebar
-            open={sidebarOpen}
+            isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
           />
         </>

@@ -40,17 +40,25 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
-      <div className="max-w-md w-full rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl p-8 animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] relative overflow-hidden">
+      <div className="absolute inset-0 bg-black/20" />
+
+      <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
+      <div className="absolute bottom-20 right-16 w-48 h-48 bg-black/10 rounded-full blur-2xl" />
+      <div className="absolute top-40 right-1/4 w-20 h-20 border border-white/30 rounded-full" />
+
+      <div className="relative z-10 max-w-md w-full rounded-[3rem] bg-white/85 backdrop-blur-md border border-white/60 shadow-2xl p-8 animate-fade-in">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="mx-auto h-16 w-16 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
-            <span className="text-2xl font-bold text-white">P</span>
+          <div className="mx-auto h-16 w-16 bg-[#9394CF] rounded-full flex items-center justify-center shadow-xl mb-4">
+            <span className="text-2xl font-black text-black">P</span>
           </div>
-          <h2 className="text-3xl font-bold text-white tracking-tight">
+
+          <h2 className="text-3xl font-black text-black tracking-tight">
             Bem-vindo de volta
           </h2>
-          <p className="mt-2 text-sm text-gray-300">
+
+          <p className="mt-2 text-sm text-black/65">
             Digite suas credenciais para acessar
           </p>
         </div>
@@ -58,9 +66,10 @@ const Login = () => {
         <form className="space-y-5" onSubmit={handleSubmit}>
           {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-1.5">
+            <label htmlFor="email" className="block text-sm font-bold text-black mb-1.5">
               Email
             </label>
+
             <input
               id="email"
               type="email"
@@ -69,16 +78,16 @@ const Login = () => {
               placeholder="seu@email.com"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full rounded-lg px-4 py-3 bg-white/80 border border-gray-300 text-gray-900 placeholder-gray-400
-                         focus:ring-2 focus:ring-purple-400 focus:outline-none focus:border-purple-400 transition-all duration-200"
+              className="w-full rounded-full px-5 py-3 bg-white border border-[#9394CF]/40 text-black placeholder-gray-400 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
             />
           </div>
 
           {/* Senha */}
           <div>
-            <label htmlFor="senha" className="block text-sm font-medium text-gray-200 mb-1.5">
+            <label htmlFor="senha" className="block text-sm font-bold text-black mb-1.5">
               Senha
             </label>
+
             <div className="relative">
               <input
                 id="senha"
@@ -87,14 +96,14 @@ const Login = () => {
                 placeholder="••••••••"
                 value={formData.senha}
                 onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-                className="w-full rounded-lg px-4 py-3 pr-11 bg-white/80 border border-gray-300 text-gray-900 placeholder-gray-400
-                           focus:ring-2 focus:ring-purple-400 focus:outline-none focus:border-purple-400 transition-all duration-200"
+                className="w-full rounded-full px-5 py-3 pr-12 bg-white border border-[#9394CF]/40 text-black placeholder-gray-400 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
               />
+
               <button
                 type="button"
                 tabIndex={-1}
                 onClick={() => setShowPassword(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4B4C9D] hover:text-black transition-colors"
               >
                 <EyeIcon open={showPassword} />
               </button>
@@ -105,7 +114,7 @@ const Login = () => {
           <div className="flex items-center justify-end">
             <Link
               to="/esqueci-senha"
-              className="text-sm text-purple-300 hover:text-purple-200 font-medium transition-colors"
+              className="text-sm text-[#4B4C9D] hover:text-black font-bold transition-colors"
             >
               Esqueci minha senha
             </Link>
@@ -115,9 +124,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading || !formData.email || !formData.senha}
-            className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-3 rounded-lg font-semibold
-                       hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg
-                       disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-full bg-[#4B4C9D] text-white py-3 rounded-full font-bold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -135,9 +142,9 @@ const Login = () => {
 
         {/* Footer */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-300">
+          <p className="text-sm text-black/65">
             Não tem conta?{' '}
-            <Link to="/register" className="font-semibold text-purple-300 hover:text-purple-200 transition-colors">
+            <Link to="/register" className="font-black text-[#4B4C9D] hover:text-black transition-colors">
               Criar conta
             </Link>
           </p>
@@ -148,4 +155,3 @@ const Login = () => {
 }
 
 export default Login
-

@@ -84,10 +84,10 @@ const Register = () => {
 
     setLoading(true)
     try {
-await authService.register({
+      await authService.register({
         nome: formData.nome,
         email: formData.email,
-        tipo: 'aluno', // Forçar sempre aluno - registro público não permite admin
+        tipo: 'aluno',
         senha: formData.senha
       })
       toast.success('Conta criada com sucesso!')
@@ -101,33 +101,39 @@ await authService.register({
   }
 
   const inputClass = (field) =>
-    `w-full rounded-lg px-4 py-3 bg-white/80 border text-gray-900 placeholder-gray-400
-     focus:ring-2 focus:ring-purple-400 focus:outline-none focus:border-purple-400
-     transition-all duration-200
-     ${errors[field] ? 'border-red-400 focus:ring-red-300' : 'border-gray-300'}`
+    `w-full rounded-full px-5 py-3 bg-white border text-black placeholder-gray-400
+     focus:ring-2 focus:ring-[#9394CF] focus:outline-none
+     transition-all duration-300
+     ${errors[field] ? 'border-red-400 focus:ring-red-300' : 'border-[#9394CF]/40'}`
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
-      <div className="max-w-md w-full rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl p-8 animate-fade-in">
-        {/* Header */}
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] relative overflow-hidden">
+      <div className="absolute inset-0 bg-black/20" />
+
+      <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
+      <div className="absolute bottom-20 right-16 w-48 h-48 bg-black/10 rounded-full blur-2xl" />
+      <div className="absolute top-40 right-1/4 w-20 h-20 border border-white/30 rounded-full" />
+
+      <div className="relative z-10 max-w-md w-full rounded-[3rem] bg-white/85 backdrop-blur-md border border-white/60 shadow-2xl p-8 animate-fade-in">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-4">
-            <div className="w-14 h-14 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-2xl font-bold text-white">P</span>
+            <div className="w-16 h-16 bg-[#9394CF] rounded-full flex items-center justify-center shadow-xl">
+              <span className="text-2xl font-black text-black">P</span>
             </div>
           </Link>
-          <h2 className="text-3xl font-bold text-white tracking-tight">
+
+          <h2 className="text-3xl font-black text-black tracking-tight">
             Criar Conta
           </h2>
-          <p className="mt-2 text-sm text-gray-300">
+
+          <p className="mt-2 text-sm text-black/65">
             Preencha seus dados para começar
           </p>
         </div>
 
         <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-          {/* Nome */}
           <div>
-            <label htmlFor="nome" className="block text-sm font-medium text-gray-200 mb-1.5">
+            <label htmlFor="nome" className="block text-sm font-bold text-black mb-1.5">
               Nome Completo
             </label>
             <input
@@ -139,12 +145,11 @@ await authService.register({
               onChange={(e) => handleChange('nome', e.target.value)}
               className={inputClass('nome')}
             />
-            {errors.nome && <p className="mt-1 text-xs text-red-400">{errors.nome}</p>}
+            {errors.nome && <p className="mt-1 text-xs text-red-500">{errors.nome}</p>}
           </div>
 
-          {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-1.5">
+            <label htmlFor="email" className="block text-sm font-bold text-black mb-1.5">
               Email
             </label>
             <input
@@ -155,28 +160,26 @@ await authService.register({
               onChange={(e) => handleChange('email', e.target.value)}
               className={inputClass('email')}
             />
-            {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
+            {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
           </div>
 
-          {/* Tipo */}
           <div>
-            <label htmlFor="tipo" className="block text-sm font-medium text-gray-200 mb-1.5">
+            <label htmlFor="tipo" className="block text-sm font-bold text-black mb-1.5">
               Tipo de Conta
             </label>
             <select
               id="tipo"
               value={formData.tipo}
               onChange={(e) => handleChange('tipo', e.target.value)}
-              className="w-full rounded-lg px-4 py-3 bg-white/80 border border-gray-300 text-gray-900 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-200"
+              className="w-full rounded-full px-5 py-3 bg-white border border-[#9394CF]/40 text-black focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
             >
               <option value="aluno">Aluno</option>
               <option value="admin">Administrador</option>
             </select>
           </div>
 
-          {/* Senha */}
           <div>
-            <label htmlFor="senha" className="block text-sm font-medium text-gray-200 mb-1.5">
+            <label htmlFor="senha" className="block text-sm font-bold text-black mb-1.5">
               Senha
             </label>
             <div className="relative">
@@ -186,29 +189,28 @@ await authService.register({
                 placeholder="••••••••"
                 value={formData.senha}
                 onChange={(e) => handleChange('senha', e.target.value)}
-                className={`${inputClass('senha')} pr-11`}
+                className={`${inputClass('senha')} pr-12`}
               />
               <button
                 type="button"
                 tabIndex={-1}
                 onClick={() => setShowPassword(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4B4C9D] hover:text-black transition-colors"
               >
                 <EyeIcon open={showPassword} />
               </button>
             </div>
             {errors.senha ? (
-              <p className="mt-1 text-xs text-red-400">{errors.senha}</p>
+              <p className="mt-1 text-xs text-red-500">{errors.senha}</p>
             ) : (
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-black/50">
                 Mín. 8 caracteres, 1 maiúscula e 1 número
               </p>
             )}
           </div>
 
-          {/* Confirmar Senha */}
           <div>
-            <label htmlFor="confirmarSenha" className="block text-sm font-medium text-gray-200 mb-1.5">
+            <label htmlFor="confirmarSenha" className="block text-sm font-bold text-black mb-1.5">
               Confirmar Senha
             </label>
             <div className="relative">
@@ -218,27 +220,24 @@ await authService.register({
                 placeholder="••••••••"
                 value={formData.confirmarSenha}
                 onChange={(e) => handleChange('confirmarSenha', e.target.value)}
-                className={`${inputClass('confirmarSenha')} pr-11`}
+                className={`${inputClass('confirmarSenha')} pr-12`}
               />
               <button
                 type="button"
                 tabIndex={-1}
                 onClick={() => setShowConfirm(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4B4C9D] hover:text-black transition-colors"
               >
                 <EyeIcon open={showConfirm} />
               </button>
             </div>
-            {errors.confirmarSenha && <p className="mt-1 text-xs text-red-400">{errors.confirmarSenha}</p>}
+            {errors.confirmarSenha && <p className="mt-1 text-xs text-red-500">{errors.confirmarSenha}</p>}
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-3 rounded-lg font-semibold
-                       hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg
-                       disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-full bg-[#4B4C9D] text-white py-3 rounded-full font-bold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -254,11 +253,10 @@ await authService.register({
           </button>
         </form>
 
-        {/* Footer */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-300">
+          <p className="text-sm text-black/65">
             Já tem conta?{' '}
-            <Link to="/login" className="font-semibold text-purple-300 hover:text-purple-200 transition-colors">
+            <Link to="/login" className="font-black text-[#4B4C9D] hover:text-black transition-colors">
               Entrar
             </Link>
           </p>
@@ -269,4 +267,3 @@ await authService.register({
 }
 
 export default Register
-

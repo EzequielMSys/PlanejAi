@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -45,7 +44,6 @@ export default function Sidebar({ isOpen, onClose }) {
 
   return (
     <>
-      {/* Mobile overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -53,12 +51,11 @@ export default function Sidebar({ isOpen, onClose }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
       <motion.aside
         initial={false}
         animate={{
@@ -69,30 +66,32 @@ export default function Sidebar({ isOpen, onClose }) {
         className={`
           fixed lg:static lg:translate-x-0 lg:opacity-100
           top-0 left-0 h-full w-64 z-50
-          bg-white/10 backdrop-blur-xl border-r border-white/20
-          flex flex-col
+          bg-white/95 backdrop-blur-xl border-r border-[#9394CF]/20
+          shadow-2xl flex flex-col
         `}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
+        <div className="flex items-center justify-between p-6 border-b border-[#9394CF]/20">
           <div
             className="flex items-center space-x-2 cursor-pointer"
             onClick={() => navigate('/inicio')}
           >
-            <div className="w-9 h-9 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">P</span>
+            <div className="w-9 h-9 bg-[#9394CF] rounded-full flex items-center justify-center shadow-lg">
+              <span className="text-black font-black text-lg">P</span>
             </div>
-            <span className="text-xl font-bold text-white">PlanejAI</span>
+
+            <span className="text-xl font-black text-[#4B4C9D]">
+              PlanejAI
+            </span>
           </div>
+
           <button
             onClick={onClose}
-            className="lg:hidden text-gray-300 hover:text-white transition-colors"
+            className="lg:hidden text-[#4B4C9D] hover:text-black transition-colors"
           >
             <CloseIcon className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
           {navItems.map((item) => (
             <NavLink
@@ -100,26 +99,23 @@ export default function Sidebar({ isOpen, onClose }) {
               to={item.path}
               onClick={() => onClose()}
               className={({ isActive }) =>
-                `flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 group ${
+                `flex items-center space-x-3 px-4 py-3.5 rounded-full transition-all duration-200 group font-bold ${
                   isActive
-                    ? 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-300 border border-purple-500/30'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    ? 'bg-[#4B4C9D] text-white shadow-xl'
+                    : 'text-black/65 hover:bg-[#9394CF]/20 hover:text-black'
                 }`
               }
             >
-              <item.icon className={`w-5 h-5 ${
-                item.path === '/inicio' ? '' : 'group-hover:scale-110 transition-transform'
-              }`} />
-              <span className="font-medium">{item.label}</span>
+              <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <span>{item.label}</span>
             </NavLink>
           ))}
         </nav>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-white/10">
-          <div className="bg-white/5 rounded-xl p-4">
-            <p className="text-xs text-gray-400 mb-1">Versão</p>
-            <p className="text-sm font-semibold text-white">1.0.0</p>
+        <div className="p-4 border-t border-[#9394CF]/20">
+          <div className="bg-[#F7F7FB] rounded-[2rem] p-4 border border-[#9394CF]/20">
+            <p className="text-xs text-black/50 mb-1 font-bold">Versão</p>
+            <p className="text-sm font-black text-[#4B4C9D]">1.0.0</p>
           </div>
         </div>
       </motion.aside>
