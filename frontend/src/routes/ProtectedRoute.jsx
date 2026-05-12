@@ -48,7 +48,7 @@ const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false }) => {
     return <Navigate to="/dashboard" replace />
   }
 
-  if (adminOnly && !isAdmin) {
+  if (adminOnly && !isAdmin && !isDono) {
     return <Navigate to="/dashboard" replace />
   }
 

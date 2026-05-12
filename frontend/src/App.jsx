@@ -15,6 +15,7 @@ import Perfil from './pages/Perfil'
 import AlterarSenha from './pages/AlterarSenha'
 import EsqueciSenha from './pages/EsqueciSenha'
 import UsuariosAdmin from './pages/UsuariosAdmin'
+import PainelDono from './pages/PainelDono'
 
 function App() {
   return (
@@ -40,6 +41,13 @@ function App() {
         <Route element={<ProtectedRoute adminOnly />}>
           <Route element={<Layout />}>
             <Route path="/usuarios" element={<UsuariosAdmin />} />
+          </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute donoOnly />}>
+          <Route element={<Layout />}>
+            <Route path="/dono" element={<PainelDono />} />
+            <Route path="/dono/usuarios" element={<UsuariosAdmin />} />
           </Route>
         </Route>
       </Routes>

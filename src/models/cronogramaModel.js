@@ -1,97 +1,154 @@
-const pool = require('../config/db');
+const pool = require('../config/db')
 
-/**
- * Cria novo cronograma para um perfil
- */
 async function criarCronograma(idPerfil, { data_inicio, data_fim, status = 'ativo' }) {
   const [result] = await pool.execute(
     `INSERT INTO cronogramas (id_perfil, data_inicio, data_fim, status)
      VALUES (?, ?, ?, ?)`,
     [idPerfil, data_inicio, data_fim, status]
-  );
-  return { id_cronograma: result.insertId, id_perfil: idPerfil, data_inicio, data_fim, status };
+  )
+
+  return {
+    id_cronograma: result.insertId,
+    id_perfil: idPerfil,
+    data_inicio,
+    data_fim,
+    status
+  }
 }
 
-/**
- * Lista cronogramas por perfil
- */
 async function listarCronogramasPorPerfil(idPerfil) {
   const [rows] = await pool.execute(
-    'SELECT * FROM cronogramas WHERE id_perfil = ? ORDER BY criado_em DESC',
+    `SELECT *
+     FROM cronogramas
+     WHERE id_perfil = ?
+     ORDER BY
+       CASE WHEN status = 'ativo' THEN 0 ELSE 1 END,
+       criado_em DESC`,
     [idPerfil]
-  );
-  return rows;
+  )
+
+  return rows
 }
 
-/**
- * Obtém cronograma por ID
- */
 async function obterCronogramaPorId(idCronograma) {
   const [rows] = await pool.execute(
-    'SELECT * FROM cronogramas WHERE id_cronograma = ?',
+    `SELECT *
+     FROM cronogramas
+     WHERE id_cronograma = ?`,
     [idCronograma]
-  );
-  return rows[0];
+  )
+
+  return rows[0] || null
 }
 
-/**
- * Atualiza status do cronograma
- */
+async function obterCronogramaAtivoPorPerfil(idPerfil) {
+  const [rows] = await pool.execute(
+    `SELECT *
+     FROM cronogramas
+     WHERE id_perfil = ?
+       AND status = 'ativo'
+     ORDER BY criado_em DESC
+     LIMIT 1`,
+    [idPerfil]
+  )
+
+  return rows[0] || null
+}
+
+async function desativarCronogramasAtivos(idPerfil) {
+  await pool.execute(
+    `UPDATE cronogramas
+     SET status = 'arquivado'
+     WHERE id_perfil = ?
+       AND status = 'ativo'`,
+    [idPerfil]
+  )
+}
+
 async function atualizarStatusCronograma(idCronograma, status) {
   await pool.execute(
-    'UPDATE cronogramas SET status = ?, atualizado_em = CURRENT_TIMESTAMP WHERE id_cronograma = ?',
+    `UPDATE cronogramas
+     SET status = ?
+     WHERE id_cronograma = ?`,
     [status, idCronograma]
-  );
-  return { id_cronograma: idCronograma, status };
+  )
+
+  return {
+    id_cronograma: idCronograma,
+    status
+  }
 }
 
-/**
- * Deleta cronograma
- */
 async function deletarCronograma(idCronograma) {
   await pool.execute(
-    'DELETE FROM cronogramas WHERE id_cronograma = ?',
+    `DELETE FROM cronogramas
+     WHERE id_cronograma = ?`,
     [idCronograma]
-  );
+  )
 }
 
-/**
- * Legacy function: obtém cronograma completo com dias e conteúdos
- * Mantido para backward compatibility com código existente
- */
 async function obterCronogramaCompleto(idCronograma) {
-  const [cronogramas] = await pool.execute(
-    'SELECT * FROM cronogramas WHERE id_cronograma = ?',
-    [idCronograma]
-  );
-  if (cronogramas.length === 0) return null;
+  const cronograma = await obterCronogramaPorId(idCronograma)
 
-  const cronograma = cronogramas[0];
+  if (!cronograma) {
+    return null
+  }
+
   const [dias] = await pool.execute(
-    'SELECT * FROM cronograma_dias WHERE id_cronograma = ? ORDER BY data_estudo ASC',
-    [cronograma.id_cronograma]
-  );
+    `SELECT *
+     FROM cronograma_dias
+     WHERE id_cronograma = ?
+     ORDER BY data_estudo ASC`,
+    [idCronograma]
+  )
 
   for (const dia of dias) {
     const [conteudos] = await pool.execute(
-      `SELECT cc.id, cc.concluido, c.*
+      `SELECT
+        cc.id,
+        cc.id_dia,
+        cc.id_conteudo,
+        cc.concluido,
+        c.area,
+        c.disciplina,
+        c.titulo,
+        c.tipo,
+        c.link,
+        c.nivel
        FROM cronograma_conteudos cc
-       LEFT JOIN conteudos c ON c.id_conteudo = cc.id_conteudo
-       WHERE cc.id_dia = ?`,
+       LEFT JOIN conteudos c
+         ON c.id_conteudo = cc.id_conteudo
+       WHERE cc.id_dia = ?
+       ORDER BY cc.id ASC`,
       [dia.id_dia]
-    );
-    dia.conteudos = conteudos;
+    )
+
+    dia.conteudos = conteudos
   }
 
-  cronograma.dias = dias;
-  return cronograma;
+  cronograma.dias = dias
+
+  return cronograma
+}
+
+async function obterCronogramaAtivoCompletoPorPerfil(idPerfil) {
+  const cronograma = await obterCronogramaAtivoPorPerfil(idPerfil)
+
+  if (!cronograma) {
+    return null
+  }
+
+  return obterCronogramaCompleto(cronograma.id_cronograma)
 }
 
 module.exports = {
   criarCronograma,
   listarCronogramasPorPerfil,
   obterCronogramaPorId,
+  obterCronogramaAtivoPorPerfil,
+  obterCronogramaAtivoCompletoPorPerfil,
+  desativarCronogramasAtivos,
   atualizarStatusCronograma,
   deletarCronograma,
   obterCronogramaCompleto
-};
+}

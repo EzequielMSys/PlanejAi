@@ -9,9 +9,11 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+
   return config
 })
 
@@ -23,36 +25,37 @@ export const authService = {
 
   async register(data) {
     const response = await api.post('/register', data)
-    toast.success(response.data.message)
+    toast.success(response.data.message || 'Cadastro realizado com sucesso!')
     return response.data
   },
 
   async esqueciSenha(email) {
     const response = await api.post('/esqueci-senha', { email })
-    toast.success(response.data.message)
+    toast.success(response.data.message || 'Solicitação enviada!')
     return response.data
   },
 
   async trocarSenhaPrimeiroAcesso(senhaAtual, novaSenha, confirmarSenha) {
     const response = await api.post('/trocar-senha-primeiro-acesso', {
-      senha_atual: senhaAtual,
-      nova_senha: novaSenha,
-      confirmar_senha: confirmarSenha
+      senhaAtual,
+      novaSenha,
+      confirmarSenha
     })
-    toast.success(response.data.message)
+
+    toast.success(response.data.message || 'Senha alterada com sucesso!')
     return response.data
   },
 
   async alterarSenha(senhaAtual, novaSenha, confirmarSenha) {
     const response = await api.post('/alterar-senha', {
-      senha_atual: senhaAtual,
-      nova_senha: novaSenha,
-      confirmar_senha: confirmarSenha
+      senhaAtual,
+      novaSenha,
+      confirmarSenha
     })
-    toast.success(response.data.message)
+
+    toast.success(response.data.message || 'Senha alterada com sucesso!')
     return response.data
   }
 }
 
 export default authService
-

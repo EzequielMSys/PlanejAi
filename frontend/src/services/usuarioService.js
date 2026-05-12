@@ -1,10 +1,8 @@
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
 
-const API_BASE = '/api/usuarios'
-
 const api = axios.create({
-  baseURL: API_BASE
+  baseURL: '/api/usuarios'
 })
 
 api.interceptors.request.use((config) => {
@@ -17,57 +15,116 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+function extrairMensagem(error, fallback = 'Erro na operação.') {
+  return (
+    error.response?.data?.error ||
+    error.response?.data?.message ||
+    error.message ||
+    fallback
+  )
+}
+
 const usuarioService = {
   async listar() {
     const response = await api.get('/')
-    return response.data
+
+    return Array.isArray(response.data)
+      ? response.data
+      : response.data.usuarios || []
   },
 
   async me() {
     const response = await api.get('/me')
-    return response.data
+    return response.data.usuario || response.data
+  },
+
+  async obterPorId(id) {
+    const response = await api.get(`/${id}`)
+    return response.data.usuario || response.data
   },
 
   async atualizar(id, data) {
-    const response = await api.put(`/${id}`, data)
-    toast.success('Perfil atualizado!')
-    return response.data
+    try {
+      const response = await api.put(`/${id}`, data)
+
+      toast.success(
+        response.data.message || 'Perfil atualizado com sucesso!'
+      )
+
+      return response.data
+    } catch (error) {
+      toast.error(extrairMensagem(error, 'Erro ao atualizar usuário.'))
+      throw error
+    }
   },
 
   async uploadFotoPerfil(file) {
-    const formData = new FormData()
+    try {
+      const formData = new FormData()
+      formData.append('foto', file)
 
-    formData.append('foto', file)
+      const response = await api.patch('/me/foto', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
 
-    const response = await api.patch('/me/foto', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
+      toast.success(
+        response.data.message || 'Foto atualizada com sucesso!'
+      )
 
-    toast.success('Foto atualizada!')
-    return response.data
+      return response.data
+    } catch (error) {
+      toast.error(extrairMensagem(error, 'Erro ao enviar foto.'))
+      throw error
+    }
   },
 
   async alterarTipo(id, tipo) {
-    const response = await api.patch(`/${id}/tipo`, { tipo })
+    try {
+      const response = await api.patch(`/${id}/tipo`, { tipo })
 
-    toast.success(response.data.message)
-    return response.data
+      toast.success(
+        response.data.message || 'Tipo alterado com sucesso!'
+      )
+
+      return response.data
+    } catch (error) {
+      toast.error(extrairMensagem(error, 'Erro ao alterar tipo.'))
+      throw error
+    }
   },
 
   async alterarStatus(id, ativo) {
-    const response = await api.patch(`/${id}/status`, { ativo })
+    try {
+      const response = await api.patch(`/${id}/status`, {
+        ativo: Boolean(ativo)
+      })
 
-    toast.success(response.data.message)
-    return response.data
+      toast.success(
+        response.data.message || 'Status alterado com sucesso!'
+      )
+
+      return response.data
+    } catch (error) {
+      toast.error(extrairMensagem(error, 'Erro ao alterar status.'))
+      throw error
+    }
   },
 
   async resetarSenha(id) {
-    const response = await api.patch(`/${id}/resetar-senha`)
+    try {
+      const response = await api.patch(`/${id}/resetar-senha`)
 
-    toast.success(response.data.message)
-    return response.data
+      toast.success(
+        response.data.message || 'Senha redefinida com sucesso!'
+      )
+
+      return response.data
+    } catch (error) {
+      toast.error(extrairMensagem(error, 'Erro ao resetar senha.'))
+      throw error
+    }
   }
 }
 

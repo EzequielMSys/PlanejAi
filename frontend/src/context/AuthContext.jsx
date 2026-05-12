@@ -56,13 +56,17 @@ const authReducer = (state, action) => {
 
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
+
   const navigate = useNavigate()
 
   useEffect(() => {
     const token = localStorage.getItem('token')
     const user = localStorage.getItem('user')
-    const primeiroAcesso = localStorage.getItem('primeiro_acesso') === 'true'
-    const perfilCompleto = localStorage.getItem('perfil_completo') === 'true'
+    const primeiroAcesso =
+      localStorage.getItem('primeiro_acesso') === 'true'
+
+    const perfilCompleto =
+      localStorage.getItem('perfil_completo') === 'true'
 
     if (token && user) {
       try {
@@ -78,6 +82,8 @@ export const AuthProvider = ({ children }) => {
           }
         })
       } catch (error) {
+        console.error('Erro ao restaurar sessão:', error)
+
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         localStorage.removeItem('primeiro_acesso')
@@ -126,7 +132,8 @@ export const AuthProvider = ({ children }) => {
 
       const response = await authService.login(email, senha)
 
-      const usuarioId = response.usuario.id_usuario || response.usuario.id
+      const usuarioId =
+        response.usuario.id_usuario || response.usuario.id
 
       const perfilCompleto = await checkPerfilCompleto(
         usuarioId,
@@ -134,11 +141,17 @@ export const AuthProvider = ({ children }) => {
       )
 
       localStorage.setItem('token', response.token)
-      localStorage.setItem('user', JSON.stringify(response.usuario))
+
+      localStorage.setItem(
+        'user',
+        JSON.stringify(response.usuario)
+      )
+
       localStorage.setItem(
         'primeiro_acesso',
         response.primeiro_acesso ? 'true' : 'false'
       )
+
       localStorage.setItem(
         'perfil_completo',
         perfilCompleto ? 'true' : 'false'
@@ -166,7 +179,12 @@ export const AuthProvider = ({ children }) => {
 
       return response
     } catch (error) {
-      toast.error(error.response?.data?.error || error.message)
+      toast.error(
+        error.response?.data?.error ||
+          error.message ||
+          'Erro ao fazer login'
+      )
+
       throw error
     } finally {
       dispatch({
@@ -191,7 +209,10 @@ export const AuthProvider = ({ children }) => {
   }
 
   const updatePerfilCompleto = (completo) => {
-    localStorage.setItem('perfil_completo', completo ? 'true' : 'false')
+    localStorage.setItem(
+      'perfil_completo',
+      completo ? 'true' : 'false'
+    )
 
     dispatch({
       type: 'UPDATE_PERFIL_COMPLETO',
@@ -205,7 +226,10 @@ export const AuthProvider = ({ children }) => {
       ...data
     }
 
-    localStorage.setItem('user', JSON.stringify(updatedUser))
+    localStorage.setItem(
+      'user',
+      JSON.stringify(updatedUser)
+    )
 
     dispatch({
       type: 'UPDATE_USER',
@@ -213,18 +237,27 @@ export const AuthProvider = ({ children }) => {
     })
   }
 
-  const podeAcessarAdmin =
-    state.user?.tipo === 'admin' || state.user?.tipo === 'dono'
+  const isAdmin =
+    state.user?.tipo === 'admin' ||
+    state.user?.tipo === 'dono'
+
+  const isDono =
+    state.user?.tipo === 'dono'
 
   const value = {
     ...state,
+
     login,
     logout,
+
     updateUser,
     updatePerfilCompleto,
+
     isAuthenticated: !!state.token,
-    isAdmin: podeAcessarAdmin,
-    isDono: state.user?.tipo === 'dono',
+
+    isAdmin,
+    isDono,
+
     isPrimeiroAcesso: state.primeiroAcesso
   }
 
@@ -239,7 +272,9 @@ export const useAuth = () => {
   const context = useContext(AuthContext)
 
   if (!context) {
-    throw new Error('useAuth deve ser usado dentro de AuthProvider')
+    throw new Error(
+      'useAuth deve ser usado dentro de AuthProvider'
+    )
   }
 
   return context

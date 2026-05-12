@@ -1,69 +1,140 @@
-const pool = require('../config/db');
+const pool = require('../config/db')
 
-/**
- * Cria um dia de estudo em um cronograma
- */
 async function criarDia(idCronograma, { data_estudo, tempo_previsto = null }) {
   const [result] = await pool.execute(
-    `INSERT INTO cronograma_dias (id_cronograma, data_estudo, tempo_previsto)
+    `INSERT INTO cronograma_dias
+      (id_cronograma, data_estudo, tempo_previsto)
      VALUES (?, ?, ?)`,
     [idCronograma, data_estudo, tempo_previsto]
-  );
+  )
+
   return {
     id_dia: result.insertId,
     id_cronograma: idCronograma,
     data_estudo,
     tempo_previsto
-  };
+  }
 }
 
-/**
- * Lista dias de um cronograma
- */
 async function listarDiasPorCronograma(idCronograma) {
   const [rows] = await pool.execute(
-    'SELECT * FROM cronograma_dias WHERE id_cronograma = ? ORDER BY data_estudo ASC',
+    `SELECT *
+     FROM cronograma_dias
+     WHERE id_cronograma = ?
+     ORDER BY data_estudo ASC`,
     [idCronograma]
-  );
-  return rows;
+  )
+
+  return rows
 }
 
-/**
- * Obtém um dia específico
- */
-async function obterDiaId(idDia) {
+async function obterDiaPorId(idDia) {
   const [rows] = await pool.execute(
-    'SELECT * FROM cronograma_dias WHERE id_dia = ?',
+    `SELECT *
+     FROM cronograma_dias
+     WHERE id_dia = ?`,
     [idDia]
-  );
-  return rows[0];
+  )
+
+  return rows[0] || null
 }
 
-/**
- * Atualiza tempo previsto de um dia
- */
 async function atualizarTempoPrevisto(idDia, tempoMinutos) {
   await pool.execute(
-    'UPDATE cronograma_dias SET tempo_previsto = ? WHERE id_dia = ?',
+    `UPDATE cronograma_dias
+     SET tempo_previsto = ?
+     WHERE id_dia = ?`,
     [tempoMinutos, idDia]
-  );
-  return { id_dia: idDia, tempo_previsto: tempoMinutos };
+  )
+
+  return {
+    id_dia: idDia,
+    tempo_previsto: tempoMinutos
+  }
 }
 
-/**
- * Deleta um dia
- */
+async function marcarDiaConcluido(idDia) {
+  await pool.execute(
+    `UPDATE cronograma_dias
+     SET concluido = 1
+     WHERE id_dia = ?`,
+    [idDia]
+  )
+
+  return {
+    id_dia: idDia,
+    concluido: true
+  }
+}
+
+async function marcarDiaPendente(idDia) {
+  await pool.execute(
+    `UPDATE cronograma_dias
+     SET concluido = 0
+     WHERE id_dia = ?`,
+    [idDia]
+  )
+
+  return {
+    id_dia: idDia,
+    concluido: false
+  }
+}
+
+async function contarDiasConcluidos(idCronograma) {
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS total
+     FROM cronograma_dias
+     WHERE id_cronograma = ?
+       AND concluido = 1`,
+    [idCronograma]
+  )
+
+  return rows[0]?.total || 0
+}
+
+async function contarDias(idCronograma) {
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS total
+     FROM cronograma_dias
+     WHERE id_cronograma = ?`,
+    [idCronograma]
+  )
+
+  return rows[0]?.total || 0
+}
+
+async function obterProximoDiaPendente(idCronograma) {
+  const [rows] = await pool.execute(
+    `SELECT *
+     FROM cronograma_dias
+     WHERE id_cronograma = ?
+       AND (concluido = 0 OR concluido IS NULL)
+     ORDER BY data_estudo ASC
+     LIMIT 1`,
+    [idCronograma]
+  )
+
+  return rows[0] || null
+}
+
 async function deletarDia(idDia) {
   await pool.execute(
-    'DELETE FROM cronograma_dias WHERE id_dia = ?',
+    `DELETE FROM cronograma_dias
+     WHERE id_dia = ?`,
     [idDia]
-  );
+  )
 }
 
 module.exports = {
   criarDia,
   listarDiasPorCronograma,
-  obterDiaId,
+  obterDiaPorId,
   atualizarTempoPrevisto,
+  marcarDiaConcluido,
+  marcarDiaPendente,
+  contarDiasConcluidos,
+  contarDias,
+  obterProximoDiaPendente,
   deletarDia
-};
+}

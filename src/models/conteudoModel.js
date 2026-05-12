@@ -67,19 +67,28 @@ async function listarPorNivel(nivel) {
 /**
  * Busca conteúdos por disciplina e nível (para gerador de cronograma)
  */
-async function buscarRelevantes(disciplina, nivel = null) {
-  let query = 'SELECT * FROM conteudos WHERE disciplina LIKE ?';
-  const params = [`%${disciplina}%`];
+async function buscarRelevantes(termo, nivel = null) {
+  let query = `
+    SELECT * FROM conteudos
+    WHERE (
+      disciplina LIKE ?
+      OR area LIKE ?
+      OR titulo LIKE ?
+    )
+  `
+
+  const termoBusca = `%${termo}%`
+  const params = [termoBusca, termoBusca, termoBusca]
 
   if (nivel) {
-    query += ' AND nivel = ?';
-    params.push(nivel);
+    query += ' AND nivel = ?'
+    params.push(nivel)
   }
 
-  query += ' ORDER BY id_conteudo ASC';
+  query += ' ORDER BY id_conteudo ASC'
 
-  const [rows] = await pool.execute(query, params);
-  return rows;
+  const [rows] = await pool.execute(query, params)
+  return rows
 }
 
 /**

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import perfilService from '../services/perfilService'
 import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 
@@ -9,9 +10,20 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
 }
 
-const Onboarding = () => {
-  const { user, updatePerfilCompleto } = useAuth()
+const diasPadrao = [
+  { dia_semana: 'SEG', label: 'Segunda-feira', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
+  { dia_semana: 'TER', label: 'Terça-feira', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
+  { dia_semana: 'QUA', label: 'Quarta-feira', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
+  { dia_semana: 'QUI', label: 'Quinta-feira', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
+  { dia_semana: 'SEX', label: 'Sexta-feira', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
+  { dia_semana: 'SAB', label: 'Sábado', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
+  { dia_semana: 'DOM', label: 'Domingo', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 1 }
+]
+
+export default function Onboarding() {
+  const { updatePerfilCompleto } = useAuth()
   const navigate = useNavigate()
+
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
 
@@ -23,41 +35,28 @@ const Onboarding = () => {
     prazo_estimado: 30
   })
 
-  const [disponibilidade, setDisponibilidade] = useState([
-    { dia_semana: 'segunda', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
-    { dia_semana: 'terca', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
-    { dia_semana: 'quarta', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
-    { dia_semana: 'quinta', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
-    { dia_semana: 'sexta', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
-    { dia_semana: 'sabado', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
-    { dia_semana: 'domingo', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 1 }
-  ])
+  const [disponibilidade, setDisponibilidade] = useState(diasPadrao)
+
+  const inputClass =
+    'w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300'
+
+  const labelClass = 'block text-sm font-bold text-black mb-2'
 
   const handlePerfilSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco) {
-      toast.error('Preencha todos os campos obrigatórios')
+
+    if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) {
+      toast.error('Preencha todos os campos obrigatórios.')
       return
     }
 
     setLoading(true)
-    try {
-      const response = await fetch('/api/perfil', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(formData)
-      })
 
-      if (response.ok) {
-        setStep(2)
-      } else {
-        throw new Error('Erro ao salvar perfil')
-      }
+    try {
+      await perfilService.salvarPerfil(formData)
+      setStep(2)
     } catch (error) {
-      toast.error('Erro ao salvar perfil')
+      toast.error(error.response?.data?.message || 'Erro ao salvar perfil.')
     } finally {
       setLoading(false)
     }
@@ -66,41 +65,41 @@ const Onboarding = () => {
   const handleDisponibilidadeSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    try {
-      const response = await fetch('/api/perfil/disponibilidade', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ dias: disponibilidade })
-      })
 
-      if (response.ok) {
-        updatePerfilCompleto(true)
-        toast.success('Perfil configurado com sucesso!')
-        navigate('/dashboard')
-      } else {
-        throw new Error('Erro ao salvar disponibilidade')
-      }
+    try {
+      const diasParaSalvar = disponibilidade.map(({ label, ...dia }) => dia)
+
+      await perfilService.salvarDisponibilidade(diasParaSalvar)
+
+      updatePerfilCompleto(true)
+      toast.success('Perfil configurado com sucesso!')
+      navigate('/dashboard')
     } catch (error) {
-      toast.error('Erro ao salvar disponibilidade')
+      toast.error(error.response?.data?.message || 'Erro ao salvar disponibilidade.')
     } finally {
       setLoading(false)
     }
   }
 
   const toggleDia = (index) => {
-    const newDisponibilidade = [...disponibilidade]
-    newDisponibilidade[index].ocupado = newDisponibilidade[index].ocupado ? 0 : 1
-    setDisponibilidade(newDisponibilidade)
+    setDisponibilidade((dias) =>
+      dias.map((dia, i) =>
+        i === index
+          ? { ...dia, ocupado: dia.ocupado ? 0 : 1 }
+          : dia
+      )
+    )
   }
 
-  const inputClass =
-    'w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300'
-
-  const labelClass =
-    'block text-sm font-bold text-black mb-2'
+  const atualizarHorario = (index, campo, valor) => {
+    setDisponibilidade((dias) =>
+      dias.map((dia, i) =>
+        i === index
+          ? { ...dia, [campo]: valor }
+          : dia
+      )
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-black py-12 px-4 relative overflow-hidden">
@@ -111,9 +110,6 @@ const Onboarding = () => {
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <div className="text-center mb-8 bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 shadow-2xl relative overflow-hidden">
             <div className="absolute inset-0 bg-black/20" />
-            <div className="absolute top-8 left-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
-            <div className="absolute bottom-8 right-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
-
             <div className="relative z-10">
               <div className="w-20 h-20 bg-white/85 rounded-full mx-auto mb-6 flex items-center justify-center shadow-2xl">
                 <svg className="w-10 h-10 text-[#4B4C9D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,7 +126,7 @@ const Onboarding = () => {
               </h1>
 
               <p className="text-white/85">
-                Vamos personalizar seu plano de estudos para obter os melhores resultados!
+                Vamos personalizar seu plano de estudos.
               </p>
             </div>
           </div>
@@ -141,7 +137,7 @@ const Onboarding = () => {
           </div>
 
           {step === 1 && (
-            <form onSubmit={handlePerfilSubmit} className="space-y-6">
+            <form onSubmit={handlePerfilSubmit}>
               <div className="bg-white rounded-[3rem] p-8 shadow-2xl border border-[#9394CF]/20">
                 <h2 className="text-xl font-black text-black mb-6">
                   Informações Básicas
@@ -149,9 +145,7 @@ const Onboarding = () => {
 
                 <div className="space-y-4">
                   <div>
-                    <label className={labelClass}>
-                      Ano Escolar *
-                    </label>
+                    <label className={labelClass}>Ano Escolar *</label>
                     <select
                       required
                       className={inputClass}
@@ -159,18 +153,15 @@ const Onboarding = () => {
                       onChange={(e) => setFormData({ ...formData, ano_escolar: e.target.value })}
                     >
                       <option value="">Selecione...</option>
-                      <option value="1º ano">1º ano</option>
-                      <option value="2º ano">2º ano</option>
-                      <option value="3º ano">3º ano</option>
-                      <option value="Ensino Superior">Ensino Superior</option>
-                      <option value="Pós-graduação">Pós-graduação</option>
+                      <option value="9º">9º ano</option>
+                      <option value="1º EM">1º ano EM</option>
+                      <option value="2º EM">2º ano EM</option>
+                      <option value="3º EM">3º ano EM</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className={labelClass}>
-                      Objetivo de Estudo *
-                    </label>
+                    <label className={labelClass}>Objetivo de Estudo *</label>
                     <select
                       required
                       className={inputClass}
@@ -179,17 +170,14 @@ const Onboarding = () => {
                     >
                       <option value="">Selecione...</option>
                       <option value="ENEM">ENEM</option>
-                      <option value="Vestibular">Vestibular</option>
-                      <option value="Concurso Público">Concurso Público</option>
-                      <option value="Aperfeiçoamento">Aperfeiçoamento</option>
-                      <option value="Outro">Outro</option>
+                      <option value="VESTIBULAR">Vestibular</option>
+                      <option value="OBMEP">OBMEP</option>
+                      <option value="CURSO">Curso</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className={labelClass}>
-                      Áreas de Foco * (separadas por vírgula)
-                    </label>
+                    <label className={labelClass}>Áreas de Foco *</label>
                     <input
                       type="text"
                       required
@@ -201,31 +189,39 @@ const Onboarding = () => {
                   </div>
 
                   <div>
-                    <label className={labelClass}>
-                      Tempo Diário de Estudo (minutos)
-                    </label>
+                    <label className={labelClass}>Tempo Diário de Estudo</label>
                     <input
                       type="number"
                       min="30"
                       max="480"
                       className={inputClass}
                       value={formData.tempo_diario_min}
-                      onChange={(e) => setFormData({ ...formData, tempo_diario_min: parseInt(e.target.value) })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          tempo_diario_min: Number(e.target.value)
+                        })
+                      }
                     />
                   </div>
 
                   <div>
-                    <label className={labelClass}>
-                      Prazo Estimado (dias)
-                    </label>
-                    <input
-                      type="number"
-                      min="7"
-                      max="365"
+                    <label className={labelClass}>Duração do Cronograma</label>
+                    <select
                       className={inputClass}
                       value={formData.prazo_estimado}
-                      onChange={(e) => setFormData({ ...formData, prazo_estimado: parseInt(e.target.value) })}
-                    />
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          prazo_estimado: Number(e.target.value)
+                        })
+                      }
+                    >
+                      <option value={30}>Mensal</option>
+                      <option value={90}>Trimestral</option>
+                      <option value={180}>Semestral</option>
+                      <option value={365}>Anual</option>
+                    </select>
                   </div>
                 </div>
 
@@ -241,14 +237,14 @@ const Onboarding = () => {
           )}
 
           {step === 2 && (
-            <form onSubmit={handleDisponibilidadeSubmit} className="space-y-6">
+            <form onSubmit={handleDisponibilidadeSubmit}>
               <div className="bg-white rounded-[3rem] p-8 shadow-2xl border border-[#9394CF]/20">
                 <h2 className="text-xl font-black text-black mb-3">
                   Disponibilidade Semanal
                 </h2>
 
                 <p className="text-black/60 mb-6">
-                  Marque os dias que você pode dedicar aos estudos e ajuste os horários.
+                  Marque os dias em que você pode estudar.
                 </p>
 
                 <div className="space-y-3">
@@ -257,7 +253,7 @@ const Onboarding = () => {
                       key={dia.dia_semana}
                       className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-[#F7F7FB] rounded-[2rem] border border-[#9394CF]/20"
                     >
-                      <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-4">
                         <input
                           type="checkbox"
                           checked={!dia.ocupado}
@@ -265,21 +261,19 @@ const Onboarding = () => {
                           className="w-5 h-5 accent-[#4B4C9D]"
                         />
 
-                        <span className="text-black font-bold capitalize">
-                          {dia.dia_semana}
+                        <span className="text-black font-bold">
+                          {dia.label}
                         </span>
-                      </div>
+                      </label>
 
                       {!dia.ocupado && (
                         <div className="flex items-center gap-2 text-sm text-black/60">
                           <input
                             type="time"
                             value={dia.hora_inicio}
-                            onChange={(e) => {
-                              const newDisp = [...disponibilidade]
-                              newDisp[index].hora_inicio = e.target.value
-                              setDisponibilidade(newDisp)
-                            }}
+                            onChange={(e) =>
+                              atualizarHorario(index, 'hora_inicio', e.target.value)
+                            }
                             className="bg-white border border-[#9394CF]/40 rounded-full px-3 py-2 text-xs text-black focus:ring-2 focus:ring-[#9394CF] focus:outline-none"
                           />
 
@@ -288,11 +282,9 @@ const Onboarding = () => {
                           <input
                             type="time"
                             value={dia.hora_fim}
-                            onChange={(e) => {
-                              const newDisp = [...disponibilidade]
-                              newDisp[index].hora_fim = e.target.value
-                              setDisponibilidade(newDisp)
-                            }}
+                            onChange={(e) =>
+                              atualizarHorario(index, 'hora_fim', e.target.value)
+                            }
                             className="bg-white border border-[#9394CF]/40 rounded-full px-3 py-2 text-xs text-black focus:ring-2 focus:ring-[#9394CF] focus:outline-none"
                           />
                         </div>
@@ -326,5 +318,3 @@ const Onboarding = () => {
     </div>
   )
 }
-
-export default Onboarding

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import usuarioService from '../services/usuarioService'
 import authService from '../services/authService'
+import perfilService from '../services/perfilService'
+import cronogramaService from '../services/cronogramaService'
 import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 
@@ -21,6 +23,12 @@ const IconUser = () => (
 const IconLock = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+  </svg>
+)
+
+const IconBook = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253" />
   </svg>
 )
 
@@ -51,6 +59,16 @@ function getFotoUrl(fotoUrl) {
   return `${API_URL}${fotoUrl}`
 }
 
+const diasPadrao = [
+  { dia_semana: 'SEG', label: 'Segunda-feira', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
+  { dia_semana: 'TER', label: 'Terça-feira', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
+  { dia_semana: 'QUA', label: 'Quarta-feira', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
+  { dia_semana: 'QUI', label: 'Quinta-feira', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
+  { dia_semana: 'SEX', label: 'Sexta-feira', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
+  { dia_semana: 'SAB', label: 'Sábado', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 0 },
+  { dia_semana: 'DOM', label: 'Domingo', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 1 }
+]
+
 export default function Perfil() {
   const { user, updateUser } = useAuth()
   const fileRef = useRef(null)
@@ -74,6 +92,19 @@ export default function Perfil() {
 
   const [senhaErro, setSenhaErro] = useState('')
 
+  const [loadingEstudos, setLoadingEstudos] = useState(false)
+  const [regenerando, setRegenerando] = useState(false)
+
+  const [estudoForm, setEstudoForm] = useState({
+    ano_escolar: '',
+    objetivo: '',
+    areas_foco: '',
+    tempo_diario_min: 60,
+    prazo_estimado: 30
+  })
+
+  const [disponibilidade, setDisponibilidade] = useState(diasPadrao)
+
   useEffect(() => {
     if (user) {
       setForm({
@@ -86,9 +117,49 @@ export default function Perfil() {
     }
   }, [user])
 
+  useEffect(() => {
+    async function carregarPerfilEstudo() {
+      try {
+        const data = await perfilService.obterPerfilCompleto()
+
+        if (data.perfil) {
+          setEstudoForm({
+            ano_escolar: data.perfil.ano_escolar || '',
+            objetivo: data.perfil.objetivo || '',
+            areas_foco: data.perfil.areas_foco || '',
+            tempo_diario_min: data.perfil.tempo_diario_min || 60,
+            prazo_estimado: data.perfil.prazo_estimado || 30
+          })
+        }
+
+        if (data.disponibilidade?.length > 0) {
+          setDisponibilidade(
+            diasPadrao.map((dia) => {
+              const encontrado = data.disponibilidade.find(
+                (d) => d.dia_semana === dia.dia_semana
+              )
+
+              return encontrado
+                ? {
+                    ...dia,
+                    hora_inicio: encontrado.hora_inicio?.slice(0, 5) || '08:00',
+                    hora_fim: encontrado.hora_fim?.slice(0, 5) || '18:00',
+                    ocupado: Number(encontrado.ocupado)
+                  }
+                : dia
+            })
+          )
+        }
+      } catch (error) {
+        console.error('Erro ao carregar perfil de estudo:', error)
+      }
+    }
+
+    carregarPerfilEstudo()
+  }, [])
+
   const handleUploadFoto = async (e) => {
     const file = e.target.files?.[0]
-
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
@@ -109,8 +180,6 @@ export default function Perfil() {
 
       updateUser(usuarioAtualizado)
       setAvatarPreview(usuarioAtualizado.foto_url || null)
-
-      toast.success('Foto atualizada com sucesso!')
     } catch (error) {
       toast.error(error.response?.data?.error || 'Erro ao enviar foto.')
     } finally {
@@ -140,8 +209,6 @@ export default function Perfil() {
       }
 
       updateUser(usuarioAtualizado)
-
-      toast.success('Perfil atualizado com sucesso!')
     } catch (error) {
       toast.error(error.response?.data?.error || 'Erro ao atualizar perfil')
     } finally {
@@ -170,10 +237,9 @@ export default function Perfil() {
     try {
       await authService.alterarSenha(
         senhaForm.senhaAtual,
-        senhaForm.novaSenha
+        senhaForm.novaSenha,
+        senhaForm.confirmarSenha
       )
-
-      toast.success('Senha alterada com sucesso!')
 
       setSenhaForm({
         senhaAtual: '',
@@ -186,6 +252,47 @@ export default function Perfil() {
       toast.error(msg)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const toggleDiaEstudo = (index) => {
+    setDisponibilidade((dias) =>
+      dias.map((dia, i) =>
+        i === index
+          ? { ...dia, ocupado: dia.ocupado ? 0 : 1 }
+          : dia
+      )
+    )
+  }
+
+  const handleSaveEstudos = async (e) => {
+    e.preventDefault()
+    setLoadingEstudos(true)
+
+    try {
+      await perfilService.atualizarPerfil(estudoForm)
+
+      const diasParaSalvar = disponibilidade.map(({ label, ...dia }) => dia)
+
+      await perfilService.salvarDisponibilidade(diasParaSalvar)
+
+      toast.success('Perfil de estudo atualizado!')
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Erro ao salvar perfil de estudo')
+    } finally {
+      setLoadingEstudos(false)
+    }
+  }
+
+  const handleRegenerarCronograma = async () => {
+    setRegenerando(true)
+
+    try {
+      await cronogramaService.gerarCronograma()
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erro ao regenerar cronograma')
+    } finally {
+      setRegenerando(false)
     }
   }
 
@@ -225,8 +332,6 @@ export default function Perfil() {
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <div className="bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
             <div className="absolute inset-0 bg-black/20" />
-            <div className="absolute top-8 left-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
-            <div className="absolute bottom-8 right-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
 
             <div className="relative z-10 text-center">
               <div className="relative inline-block">
@@ -250,7 +355,6 @@ export default function Perfil() {
                   onClick={() => fileRef.current?.click()}
                   disabled={uploadingFoto}
                   className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-[#4B4C9D] transition-all shadow-xl disabled:opacity-50"
-                  title="Alterar foto"
                 >
                   {uploadingFoto ? <IconSpinner /> : <IconCamera />}
                 </button>
@@ -270,10 +374,6 @@ export default function Perfil() {
 
               <p className="text-white/85 mt-1 font-semibold">
                 {tipoLabel} • Membro desde {dataCadastro}
-              </p>
-
-              <p className="text-xs text-white/75 mt-2">
-                Clique no ícone da câmera para enviar uma foto.
               </p>
             </div>
           </div>
@@ -302,165 +402,47 @@ export default function Perfil() {
             >
               <IconLock /> Segurança
             </button>
+
+            <button
+              type="button"
+              onClick={() => setTab('estudos')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
+                tab === 'estudos'
+                  ? 'bg-[#4B4C9D] text-white shadow-lg'
+                  : 'text-black/60 hover:text-black hover:bg-[#9394CF]/15'
+              }`}
+            >
+              <IconBook /> Estudos
+            </button>
           </div>
 
           {tab === 'info' && (
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              animate="visible"
-              className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20"
-            >
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
               <form onSubmit={handleSaveInfo} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-bold text-black mb-2">
-                      Nome completo
-                    </label>
-                    <input
-                      type="text"
-                      value={form.nome}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, nome: e.target.value }))
-                      }
-                      className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-black mb-2">
-                      Apelido
-                    </label>
-                    <input
-                      type="text"
-                      value={form.apelido}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, apelido: e.target.value }))
-                      }
-                      className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
-                      placeholder="Como quer ser chamado?"
-                    />
-                  </div>
+                  <input className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome completo" required />
+                  <input className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Apelido" />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-black mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, email: e.target.value }))
-                    }
-                    className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
-                    required
-                  />
-                </div>
+                <input className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" required />
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-bold text-black mb-2">
-                      Tipo
-                    </label>
-                    <input
-                      type="text"
-                      value={tipoLabel}
-                      disabled
-                      className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black/50 cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-black mb-2">
-                      Data de cadastro
-                    </label>
-                    <input
-                      type="text"
-                      value={dataCadastro}
-                      disabled
-                      className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black/50 cursor-not-allowed"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-bold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? (
-                    <>
-                      <IconSpinner /> Salvando...
-                    </>
-                  ) : (
-                    'Salvar alterações'
-                  )}
+                <button disabled={saving} className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                  {saving ? 'Salvando...' : 'Salvar alterações'}
                 </button>
               </form>
             </motion.div>
           )}
 
           {tab === 'seguranca' && (
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              animate="visible"
-              className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20"
-            >
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
               <h2 className="text-xl font-black text-black mb-6 flex items-center gap-2">
                 <IconLock /> Alterar senha
               </h2>
 
               <form onSubmit={handleSaveSenha} className="space-y-5 max-w-lg">
-                <div>
-                  <label className="block text-sm font-bold text-black mb-2">
-                    Senha atual
-                  </label>
-                  <input
-                    type="password"
-                    value={senhaForm.senhaAtual}
-                    onChange={(e) =>
-                      setSenhaForm((f) => ({ ...f, senhaAtual: e.target.value }))
-                    }
-                    className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-black mb-2">
-                    Nova senha
-                  </label>
-                  <input
-                    type="password"
-                    value={senhaForm.novaSenha}
-                    onChange={(e) =>
-                      setSenhaForm((f) => ({ ...f, novaSenha: e.target.value }))
-                    }
-                    className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
-                    required
-                  />
-                  <p className="text-xs text-black/50 mt-1.5">
-                    Mínimo 8 caracteres, 1 maiúscula e 1 número
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-black mb-2">
-                    Confirmar nova senha
-                  </label>
-                  <input
-                    type="password"
-                    value={senhaForm.confirmarSenha}
-                    onChange={(e) =>
-                      setSenhaForm((f) => ({ ...f, confirmarSenha: e.target.value }))
-                    }
-                    className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
-                    required
-                  />
-                </div>
+                <input type="password" value={senhaForm.senhaAtual} onChange={(e) => setSenhaForm((f) => ({ ...f, senhaAtual: e.target.value }))} placeholder="Senha atual" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" required />
+                <input type="password" value={senhaForm.novaSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, novaSenha: e.target.value }))} placeholder="Nova senha" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" required />
+                <input type="password" value={senhaForm.confirmarSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, confirmarSenha: e.target.value }))} placeholder="Confirmar nova senha" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" required />
 
                 {senhaErro && (
                   <div className="p-4 rounded-[1.5rem] bg-red-100 border border-red-300 text-red-700 text-sm font-semibold">
@@ -468,19 +450,93 @@ export default function Perfil() {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-bold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? (
-                    <>
-                      <IconSpinner /> Salvando...
-                    </>
-                  ) : (
-                    'Alterar senha'
-                  )}
+                <button disabled={saving} className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                  {saving ? 'Salvando...' : 'Alterar senha'}
                 </button>
+              </form>
+            </motion.div>
+          )}
+
+          {tab === 'estudos' && (
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
+              <h2 className="text-xl font-black text-black mb-2 flex items-center gap-2">
+                <IconBook /> Perfil de estudo
+              </h2>
+
+              <p className="text-black/60 mb-6">
+                Atualize suas preferências para melhorar a geração do cronograma.
+              </p>
+
+              <form onSubmit={handleSaveEstudos} className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <select value={estudoForm.ano_escolar} onChange={(e) => setEstudoForm((f) => ({ ...f, ano_escolar: e.target.value }))} className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" required>
+                    <option value="">Ano escolar</option>
+                    <option value="9º">9º ano</option>
+                    <option value="1º EM">1º ano EM</option>
+                    <option value="2º EM">2º ano EM</option>
+                    <option value="3º EM">3º ano EM</option>
+                  </select>
+
+                  <select value={estudoForm.objetivo} onChange={(e) => setEstudoForm((f) => ({ ...f, objetivo: e.target.value }))} className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" required>
+                    <option value="">Objetivo</option>
+                    <option value="ENEM">ENEM</option>
+                    <option value="VESTIBULAR">Vestibular</option>
+                    <option value="OBMEP">OBMEP</option>
+                    <option value="CURSO">Curso</option>
+                  </select>
+                </div>
+
+                <input value={estudoForm.areas_foco} onChange={(e) => setEstudoForm((f) => ({ ...f, areas_foco: e.target.value }))} placeholder="Áreas de foco: Matemática, Português, Biologia" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" required />
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <input type="number" min="30" max="480" value={estudoForm.tempo_diario_min} onChange={(e) => setEstudoForm((f) => ({ ...f, tempo_diario_min: Number(e.target.value) }))} className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" />
+
+                  <select value={estudoForm.prazo_estimado} onChange={(e) => setEstudoForm((f) => ({ ...f, prazo_estimado: Number(e.target.value) }))} className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40">
+                    <option value={30}>Mensal</option>
+                    <option value={90}>Trimestral</option>
+                    <option value={180}>Semestral</option>
+                    <option value={365}>Anual</option>
+                  </select>
+                </div>
+
+                <div className="space-y-3 pt-4 border-t border-[#9394CF]/20">
+                  {disponibilidade.map((dia, index) => (
+                    <div key={dia.dia_semana} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-[#F7F7FB] rounded-[2rem] border border-[#9394CF]/20">
+                      <label className="flex items-center gap-4 font-bold">
+                        <input type="checkbox" checked={!dia.ocupado} onChange={() => toggleDiaEstudo(index)} className="w-5 h-5 accent-[#4B4C9D]" />
+                        {dia.label}
+                      </label>
+
+                      {!dia.ocupado && (
+                        <div className="flex items-center gap-2">
+                          <input type="time" value={dia.hora_inicio} onChange={(e) => {
+                            const novosDias = [...disponibilidade]
+                            novosDias[index].hora_inicio = e.target.value
+                            setDisponibilidade(novosDias)
+                          }} className="bg-white border border-[#9394CF]/40 rounded-full px-3 py-2 text-xs" />
+
+                          <span>às</span>
+
+                          <input type="time" value={dia.hora_fim} onChange={(e) => {
+                            const novosDias = [...disponibilidade]
+                            novosDias[index].hora_fim = e.target.value
+                            setDisponibilidade(novosDias)
+                          }} className="bg-white border border-[#9394CF]/40 rounded-full px-3 py-2 text-xs" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button type="submit" disabled={loadingEstudos} className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                    {loadingEstudos ? 'Salvando...' : 'Salvar perfil de estudo'}
+                  </button>
+
+                  <button type="button" onClick={handleRegenerarCronograma} disabled={regenerando} className="bg-black text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                    {regenerando ? 'Gerando...' : 'Regenerar cronograma'}
+                  </button>
+                </div>
               </form>
             </motion.div>
           )}
