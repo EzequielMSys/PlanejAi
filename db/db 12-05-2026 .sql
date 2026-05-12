@@ -2,7 +2,7 @@
 -- Servidor:                     127.0.0.1
 -- Versão do servidor:           10.4.32-MariaDB - mariadb.org binary distribution
 -- OS do Servidor:               Win64
--- HeidiSQL Versão:              12.10.0.7000
+-- HeidiSQL Versão:              12.14.0.7165
 -- --------------------------------------------------------
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -50,22 +50,6 @@ CREATE TABLE IF NOT EXISTS `conteudos` (
 
 -- Exportação de dados foi desmarcado.
 
--- Copiando estrutura para tabela tcc.cronogramas
-DROP TABLE IF EXISTS `cronogramas`;
-CREATE TABLE IF NOT EXISTS `cronogramas` (
-  `id_cronograma` int(11) NOT NULL AUTO_INCREMENT,
-  `id_perfil` int(11) DEFAULT NULL,
-  `data_inicio` date DEFAULT NULL,
-  `data_fim` date DEFAULT NULL,
-  `status` enum('ATIVO','CONCLUIDO','CANCELADO') DEFAULT NULL,
-  `criado_em` datetime DEFAULT current_timestamp(),
-  PRIMARY KEY (`id_cronograma`),
-  KEY `cronograma perfil1` (`id_perfil`),
-  CONSTRAINT `cronograma perfil1` FOREIGN KEY (`id_perfil`) REFERENCES `perfil_estudo` (`id_perfil`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Exportação de dados foi desmarcado.
-
 -- Copiando estrutura para tabela tcc.cronograma_conteudos
 DROP TABLE IF EXISTS `cronograma_conteudos`;
 CREATE TABLE IF NOT EXISTS `cronograma_conteudos` (
@@ -96,6 +80,22 @@ CREATE TABLE IF NOT EXISTS `cronograma_dias` (
 
 -- Exportação de dados foi desmarcado.
 
+-- Copiando estrutura para tabela tcc.cronogramas
+DROP TABLE IF EXISTS `cronogramas`;
+CREATE TABLE IF NOT EXISTS `cronogramas` (
+  `id_cronograma` int(11) NOT NULL AUTO_INCREMENT,
+  `id_perfil` int(11) DEFAULT NULL,
+  `data_inicio` date DEFAULT NULL,
+  `data_fim` date DEFAULT NULL,
+  `status` enum('ATIVO','CONCLUIDO','CANCELADO') DEFAULT NULL,
+  `criado_em` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_cronograma`),
+  KEY `cronograma perfil1` (`id_perfil`),
+  CONSTRAINT `cronograma perfil1` FOREIGN KEY (`id_perfil`) REFERENCES `perfil_estudo` (`id_perfil`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Exportação de dados foi desmarcado.
+
 -- Copiando estrutura para tabela tcc.disponibilidade_semana
 DROP TABLE IF EXISTS `disponibilidade_semana`;
 CREATE TABLE IF NOT EXISTS `disponibilidade_semana` (
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS `disponibilidade_semana` (
   PRIMARY KEY (`id_disponibilidade`),
   KEY `id perfil1` (`id_perfil`),
   CONSTRAINT `id perfil1` FOREIGN KEY (`id_perfil`) REFERENCES `perfil_estudo` (`id_perfil`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Exportação de dados foi desmarcado.
 
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS `perfil_estudo` (
   PRIMARY KEY (`id_perfil`),
   KEY `usuários` (`id_usuario`),
   CONSTRAINT `usuários` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Exportação de dados foi desmarcado.
 
@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   UNIQUE KEY `email_2` (`email`),
   KEY `idx_usuarios_tipo` (`tipo`),
   KEY `idx_usuarios_ativo` (`ativo`)
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Exportação de dados foi desmarcado.
 
