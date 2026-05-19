@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+const pool = require('../config/db')
 
 async function criarUsuario({
   nome,
@@ -13,7 +13,7 @@ async function criarUsuario({
       (nome, email, senha, tipo, senha_temporaria, ativo) 
      VALUES (?, ?, ?, ?, ?, ?)`,
     [nome, email, senhaHash, tipo, senha_temporaria, ativo]
-  );
+  )
 
   return {
     id: result.insertId,
@@ -23,7 +23,7 @@ async function criarUsuario({
     tipo,
     senha_temporaria,
     ativo
-  };
+  }
 }
 
 async function buscarPorEmail(email) {
@@ -44,9 +44,9 @@ async function buscarPorEmail(email) {
     FROM usuarios
     WHERE email = ?`,
     [email]
-  );
+  )
 
-  return rows[0];
+  return rows[0] || null
 }
 
 async function buscarPorEmailSimples(email) {
@@ -64,9 +64,9 @@ async function buscarPorEmailSimples(email) {
     FROM usuarios
     WHERE email = ?`,
     [email]
-  );
+  )
 
-  return rows[0];
+  return rows[0] || null
 }
 
 async function buscarPorIdCompleto(id) {
@@ -88,9 +88,9 @@ async function buscarPorIdCompleto(id) {
     FROM usuarios
     WHERE id_usuario = ?`,
     [id]
-  );
+  )
 
-  return rows[0];
+  return rows[0] || null
 }
 
 async function buscarPorId(id) {
@@ -111,9 +111,9 @@ async function buscarPorId(id) {
     FROM usuarios
     WHERE id_usuario = ?`,
     [id]
-  );
+  )
 
-  return rows[0];
+  return rows[0] || null
 }
 
 async function listarUsuarios() {
@@ -133,38 +133,38 @@ async function listarUsuarios() {
       foto_url
     FROM usuarios
     ORDER BY nome`
-  );
+  )
 
-  return rows;
+  return rows
 }
 
 async function atualizarUsuario(id, dados) {
-  const camposPermitidos = ['nome', 'email', 'tipo', 'apelido', 'foto_url'];
-  const campos = [];
-  const valores = [];
+  const camposPermitidos = ['nome', 'email', 'tipo', 'apelido', 'foto_url']
+  const campos = []
+  const valores = []
 
   for (const campo of camposPermitidos) {
     if (dados[campo] !== undefined) {
-      campos.push(`${campo} = ?`);
-      valores.push(dados[campo] === '' ? null : dados[campo]);
+      campos.push(`${campo} = ?`)
+      valores.push(dados[campo] === '' ? null : dados[campo])
     }
   }
 
   if (campos.length === 0) {
-    return buscarPorId(id);
+    return buscarPorId(id)
   }
 
-  campos.push('atualizado_em = CURRENT_TIMESTAMP');
-  valores.push(id);
+  campos.push('atualizado_em = CURRENT_TIMESTAMP')
+  valores.push(id)
 
   await pool.execute(
     `UPDATE usuarios 
      SET ${campos.join(', ')}
      WHERE id_usuario = ?`,
     valores
-  );
+  )
 
-  return buscarPorId(id);
+  return buscarPorId(id)
 }
 
 async function ativarDesativarUsuario(id, ativo) {
@@ -173,9 +173,9 @@ async function ativarDesativarUsuario(id, ativo) {
      SET ativo = ?, atualizado_em = CURRENT_TIMESTAMP 
      WHERE id_usuario = ?`,
     [ativo, id]
-  );
+  )
 
-  return buscarPorId(id);
+  return buscarPorId(id)
 }
 
 async function atualizarUltimoLogin(id) {
@@ -184,7 +184,7 @@ async function atualizarUltimoLogin(id) {
      SET ultimo_login = CURRENT_TIMESTAMP 
      WHERE id_usuario = ?`,
     [id]
-  );
+  )
 }
 
 async function resetarSenhaTemporaria(id, senhaHash) {
@@ -197,7 +197,24 @@ async function resetarSenhaTemporaria(id, senhaHash) {
          atualizado_em = CURRENT_TIMESTAMP 
      WHERE id_usuario = ?`,
     [senhaHash, id]
-  );
+  )
+
+  return buscarPorId(id)
+}
+
+async function definirSenhaUsuario(id, senhaHash) {
+  await pool.execute(
+    `UPDATE usuarios 
+     SET senha = ?, 
+         senha_temporaria = 0, 
+         token_recuperacao = NULL, 
+         token_expiracao = NULL, 
+         atualizado_em = CURRENT_TIMESTAMP 
+     WHERE id_usuario = ?`,
+    [senhaHash, id]
+  )
+
+  return buscarPorId(id)
 }
 
 async function trocarSenha(id, senhaHash) {
@@ -208,7 +225,9 @@ async function trocarSenha(id, senhaHash) {
          atualizado_em = CURRENT_TIMESTAMP 
      WHERE id_usuario = ?`,
     [senhaHash, id]
-  );
+  )
+
+  return buscarPorId(id)
 }
 
 async function alterarSenha(id, senhaHash) {
@@ -218,7 +237,9 @@ async function alterarSenha(id, senhaHash) {
          atualizado_em = CURRENT_TIMESTAMP 
      WHERE id_usuario = ?`,
     [senhaHash, id]
-  );
+  )
+
+  return buscarPorId(id)
 }
 
 module.exports = {
@@ -232,6 +253,7 @@ module.exports = {
   ativarDesativarUsuario,
   atualizarUltimoLogin,
   resetarSenhaTemporaria,
+  definirSenhaUsuario,
   trocarSenha,
   alterarSenha
-};
+}

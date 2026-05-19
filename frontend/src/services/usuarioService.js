@@ -61,13 +61,18 @@ const usuarioService = {
   async uploadFotoPerfil(file) {
     try {
       const formData = new FormData()
+
       formData.append('foto', file)
 
-      const response = await api.patch('/me/foto', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      const response = await api.patch(
+        '/me/foto',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
         }
-      })
+      )
 
       toast.success(
         response.data.message || 'Foto atualizada com sucesso!'
@@ -82,7 +87,10 @@ const usuarioService = {
 
   async alterarTipo(id, tipo) {
     try {
-      const response = await api.patch(`/${id}/tipo`, { tipo })
+      const response = await api.patch(
+        `/${id}/tipo`,
+        { tipo }
+      )
 
       toast.success(
         response.data.message || 'Tipo alterado com sucesso!'
@@ -97,9 +105,12 @@ const usuarioService = {
 
   async alterarStatus(id, ativo) {
     try {
-      const response = await api.patch(`/${id}/status`, {
-        ativo: Boolean(ativo)
-      })
+      const response = await api.patch(
+        `/${id}/status`,
+        {
+          ativo: Boolean(ativo)
+        }
+      )
 
       toast.success(
         response.data.message || 'Status alterado com sucesso!'
@@ -114,7 +125,9 @@ const usuarioService = {
 
   async resetarSenha(id) {
     try {
-      const response = await api.patch(`/${id}/resetar-senha`)
+      const response = await api.patch(
+        `/${id}/resetar-senha`
+      )
 
       toast.success(
         response.data.message || 'Senha redefinida com sucesso!'
@@ -123,6 +136,27 @@ const usuarioService = {
       return response.data
     } catch (error) {
       toast.error(extrairMensagem(error, 'Erro ao resetar senha.'))
+      throw error
+    }
+  },
+
+  async definirSenha(id, novaSenha, confirmarSenha) {
+    try {
+      const response = await api.patch(
+        `/${id}/definir-senha`,
+        {
+          novaSenha,
+          confirmarSenha
+        }
+      )
+
+      toast.success(
+        response.data.message || 'Senha alterada com sucesso!'
+      )
+
+      return response.data
+    } catch (error) {
+      toast.error(extrairMensagem(error, 'Erro ao definir senha.'))
       throw error
     }
   }

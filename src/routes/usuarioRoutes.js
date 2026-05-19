@@ -3,13 +3,16 @@ const express = require('express')
 const router = express.Router()
 
 const usuarioController = require('../controllers/usuarioController')
-const { uploadPerfil } = require('../middlewares/uploadMiddleware')
 
 const {
   authMiddleware,
   isAdminOrDono,
   isDono
 } = require('../middlewares/authMiddleware')
+
+const {
+  uploadPerfil
+} = require('../middlewares/uploadMiddleware')
 
 /**
  * Perfil do usuário logado
@@ -21,7 +24,7 @@ router.get(
 )
 
 /**
- * Upload da foto do perfil do usuário logado
+ * Upload foto perfil
  */
 router.patch(
   '/me/foto',
@@ -60,7 +63,7 @@ router.put(
 )
 
 /**
- * Alterar tipo de usuário
+ * Alterar tipo
  * Apenas dono
  */
 router.patch(
@@ -71,7 +74,7 @@ router.patch(
 )
 
 /**
- * Ativar/desativar usuário
+ * Ativar/desativar
  * Apenas dono
  */
 router.patch(
@@ -82,7 +85,7 @@ router.patch(
 )
 
 /**
- * Resetar senha
+ * Resetar senha temporária
  * Admin e dono
  */
 router.patch(
@@ -90,6 +93,17 @@ router.patch(
   authMiddleware,
   isAdminOrDono,
   usuarioController.resetarSenha
+)
+
+/**
+ * Definir senha diretamente
+ * Apenas dono
+ */
+router.patch(
+  '/:id/definir-senha',
+  authMiddleware,
+  isDono,
+  usuarioController.definirSenha
 )
 
 module.exports = router

@@ -35,6 +35,11 @@ export default function UsuariosAdmin() {
   const [tipoFiltro, setTipoFiltro] = useState('')
   const [acaoLoading, setAcaoLoading] = useState(null)
 
+  const [modalSenha, setModalSenha] = useState(null)
+  const [novaSenha, setNovaSenha] = useState('')
+  const [confirmarSenha, setConfirmarSenha] = useState('')
+  const [salvandoSenha, setSalvandoSenha] = useState(false)
+
   async function carregarUsuarios() {
     setLoading(true)
 
@@ -153,6 +158,67 @@ export default function UsuariosAdmin() {
     }
   }
 
+  async function definirSenha() {
+    if (!modalSenha) return
+
+    if (!novaSenha || !confirmarSenha) {
+      toast.error('Preencha todos os campos.')
+      return
+    }
+
+    if (novaSenha.length < 8) {
+      toast.error('A senha deve ter no mínimo 8 caracteres.')
+      return
+    }
+
+    if (novaSenha !== confirmarSenha) {
+      toast.error('As senhas não coincidem.')
+      return
+    }
+
+    try {
+      setSalvandoSenha(true)
+
+      await usuarioService.definirSenha(
+        getId(modalSenha),
+        novaSenha,
+        confirmarSenha
+      )
+
+      setModalSenha(null)
+      setNovaSenha('')
+      setConfirmarSenha('')
+
+      await carregarUsuarios()
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erro ao definir senha.')
+    } finally {
+      setSalvandoSenha(false)
+    }
+  }
+
+  function abrirModalSenha(usuario) {
+    if (!isDono) {
+      toast.error('Apenas o dono pode definir senhas.')
+      return
+    }
+
+    if (!podeMexer(usuario)) {
+      toast.error('Você não pode definir senha para este usuário.')
+      return
+    }
+
+    setModalSenha(usuario)
+    setNovaSenha('')
+    setConfirmarSenha('')
+  }
+
+  function fecharModalSenha() {
+    setModalSenha(null)
+    setNovaSenha('')
+    setConfirmarSenha('')
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F7F7FB] flex items-center justify-center">
@@ -232,7 +298,7 @@ export default function UsuariosAdmin() {
 
         <section className="bg-white rounded-[2.5rem] shadow-2xl border border-[#9394CF]/20 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px]">
+            <table className="w-full min-w-[1000px]">
               <thead className="bg-[#9394CF]/20">
                 <tr>
                   <Th>Usuário</Th>
@@ -301,7 +367,7 @@ export default function UsuariosAdmin() {
                       </td>
 
                       <td className="p-5">
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <button
                             type="button"
                             disabled={!isDono || !podeAlterar || acaoLoading === `status-${id}`}
@@ -318,6 +384,15 @@ export default function UsuariosAdmin() {
                             className="px-4 py-2 rounded-full bg-[#4B4C9D] text-white text-sm font-bold disabled:opacity-40 hover:bg-black transition"
                           >
                             Resetar senha
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={!isDono || !podeAlterar}
+                            onClick={() => abrirModalSenha(usuario)}
+                            className="px-4 py-2 rounded-full bg-black text-white text-sm font-bold disabled:opacity-40 hover:bg-[#4B4C9D] transition"
+                          >
+                            Definir senha
                           </button>
                         </div>
                       </td>
@@ -341,6 +416,71 @@ export default function UsuariosAdmin() {
           )}
         </section>
       </div>
+
+      {modalSenha && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl border border-[#9394CF]/20 p-8">
+            <div className="mb-6">
+              <p className="text-xs uppercase tracking-[0.3em] text-[#4B4C9D] font-black mb-2">
+                PlanejAI
+              </p>
+
+              <h2 className="text-3xl font-black text-black mb-2">
+                Definir senha
+              </h2>
+
+              <p className="text-black/60">
+                Defina uma nova senha para:
+              </p>
+
+              <p className="font-black text-[#4B4C9D] mt-2">
+                {modalSenha.nome || modalSenha.email}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <input
+                type="password"
+                placeholder="Nova senha"
+                value={novaSenha}
+                onChange={(e) => setNovaSenha(e.target.value)}
+                className="w-full rounded-2xl px-5 py-4 bg-[#F7F7FB] border border-[#9394CF]/30 outline-none focus:ring-2 focus:ring-[#9394CF]"
+              />
+
+              <input
+                type="password"
+                placeholder="Confirmar senha"
+                value={confirmarSenha}
+                onChange={(e) => setConfirmarSenha(e.target.value)}
+                className="w-full rounded-2xl px-5 py-4 bg-[#F7F7FB] border border-[#9394CF]/30 outline-none focus:ring-2 focus:ring-[#9394CF]"
+              />
+            </div>
+
+            <p className="text-xs text-black/50 mt-3">
+              A senha será salva criptografada no banco. A senha anterior não pode ser visualizada.
+            </p>
+
+            <div className="flex gap-3 mt-8">
+              <button
+                type="button"
+                onClick={fecharModalSenha}
+                className="flex-1 py-3 rounded-full bg-[#F7F7FB] border border-[#9394CF]/30 font-bold hover:bg-[#9394CF]/10 transition"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                disabled={salvandoSenha}
+                onClick={definirSenha}
+                className="flex-1 py-3 rounded-full bg-[#4B4C9D] text-white font-black hover:bg-black transition disabled:opacity-60"
+              >
+                {salvandoSenha ? 'Salvando...' : 'Salvar senha'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

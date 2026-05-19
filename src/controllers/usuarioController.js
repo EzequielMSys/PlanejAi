@@ -18,7 +18,8 @@ function tratarErroUsuario(error, res) {
     error.message.includes('Email') ||
     error.message.includes('Tipo') ||
     error.message.includes('obrigatório') ||
-    error.message.includes('inválido')
+    error.message.includes('inválido') ||
+    error.message.includes('mínimo')
   ) {
     return res.status(400).json({ error: error.message })
   }
@@ -202,6 +203,38 @@ async function resetarSenha(req, res) {
   }
 }
 
+async function definirSenha(req, res) {
+  try {
+    const usuarioId = req.params.id
+    const { novaSenha, confirmarSenha } = req.body
+    const usuarioLogado = req.usuario
+
+    if (!novaSenha) {
+      return res.status(400).json({
+        error: 'Campo novaSenha é obrigatório.'
+      })
+    }
+
+    if (novaSenha !== confirmarSenha) {
+      return res.status(400).json({
+        error: 'As senhas não coincidem.'
+      })
+    }
+
+    const resultado = await usuarioService.definirSenha(
+      usuarioId,
+      novaSenha,
+      usuarioLogado
+    )
+
+    return res.status(200).json({
+      message: resultado.message || 'Senha definida com sucesso.'
+    })
+  } catch (error) {
+    return tratarErroUsuario(error, res)
+  }
+}
+
 module.exports = {
   listar,
   obterPerfilLogado,
@@ -210,5 +243,6 @@ module.exports = {
   uploadFotoPerfil,
   alterarTipo,
   alterarStatus,
-  resetarSenha
+  resetarSenha,
+  definirSenha
 }
