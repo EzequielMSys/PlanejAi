@@ -122,6 +122,87 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Contact */}
+      <section className="py-24 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="uppercase tracking-[0.35em] text-sm font-black text-[#4B4C9D] mb-4">
+            contato
+          </p>
+
+          <h2 className="text-4xl md:text-5xl font-black text-black mb-6">
+            Fale com a equipe PlanejAI
+          </h2>
+
+          <p className="text-lg text-black/65 max-w-2xl mx-auto mb-10 leading-relaxed">
+            Tem dúvidas sobre o projeto, sugestões ou quer saber mais sobre a plataforma? Entre em contato conosco.
+          </p>
+
+          <a
+            href="mailto:planejai.contato@gmail.com"
+            className="inline-block bg-[#4B4C9D] text-white text-lg font-bold py-4 px-12 rounded-full shadow-xl hover:bg-black transform hover:-translate-y-1 transition-all duration-300"
+          >
+            Enviar email
+          </a>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-[#4B4C9D] text-white px-4 sm:px-6 lg:px-8 py-10">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-8">
+          
+          <div>
+            <h2 className="text-3xl font-black mb-3">
+              PlanejAI
+            </h2>
+
+            <p className="text-white/80 leading-relaxed">
+              Plataforma inteligente para organizar estudos, criar cronogramas personalizados e acompanhar a evolução dos alunos.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-black mb-3">
+              Navegação
+            </h3>
+
+            <div className="flex flex-col gap-2 text-white/80 text-sm">
+              <Link to="/" className="hover:text-white transition">Início</Link>
+              <Link to="/login" className="hover:text-white transition">Login</Link>
+              <Link to="/register" className="hover:text-white transition">Cadastro</Link>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-black mb-3">
+              Projeto
+            </h3>
+
+            <div className="flex flex-col gap-2 text-white/80 text-sm">
+              <p>TCC</p>
+              <p>Desenvolvimento de Sistemas</p>
+              <p>2026</p>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-black mb-3">
+              Contato
+            </h3>
+
+            <div className="flex flex-col gap-2 text-white/80 text-sm">
+              <p>Email: planejai.contato@gmail.com</p>
+              <p>Instagram: @planejai</p>
+              <p>Equipe PlanejAI: Fernanda e Ezequiel :p</p>
+            </div>
+          </div>
+
+        </div>
+
+        <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-white/20 text-center text-sm text-white/70">
+          © 2026 PlanejAI. Todos os direitos reservados.
+        </div>
+      </footer>
+
     </div>
   )
 }

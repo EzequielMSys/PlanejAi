@@ -26,7 +26,7 @@ function Layout() {
 
       <main
         className={`transition-all duration-300 ${
-          isAuthenticated ? 'pt-16 lg:pl-64' : ''
+          isAuthenticated ? 'pt-0' : ''
         }`}
       >
         <div className="min-h-[calc(100vh-4rem)] w-full">

@@ -101,37 +101,37 @@ export default function Dashboard() {
   const nome = user?.apelido || user?.nome || 'estudante'
 
   return (
-    <div className="min-h-screen bg-[#F7F7FB] text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
+    <div className="min-h-screen bg-[#F7F7FB] text-black px-4 sm:px-6 lg:px-8 pt-0 pb-10 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-72 h-72 bg-[#9394CF]/20 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#4B4C9D]/10 rounded-full blur-3xl" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <section className="bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+          <section className="bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[2rem] p-5 sm:p-6 shadow-xl mb-4 relative overflow-hidden">
             <div className="absolute inset-0 bg-black/20" />
             <div className="absolute top-8 left-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
             <div className="absolute bottom-8 right-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
 
-            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <p className="uppercase tracking-[0.35em] text-xs font-black text-white/80 mb-3">
+                <p className="uppercase tracking-[0.35em] text-xs font-black text-white/80 mb-2">
                   PlanejAI
                 </p>
 
-                <h1 className="text-4xl md:text-5xl font-black text-white mb-3 tracking-tight">
+                <h1 className="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight">
                   Olá, {nome}
                 </h1>
 
-                <p className="text-lg text-white/85 max-w-2xl">
+                <p className="text-sm text-white/85 max-w-2xl">
                   Acompanhe seu progresso, próximos estudos e evolução no cronograma.
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   type="button"
                   onClick={() => navigate('/cronograma')}
-                  className="bg-white text-[#4B4C9D] px-7 py-3 rounded-full font-black shadow-xl hover:bg-black hover:text-white transition"
+                  className="bg-white text-[#4B4C9D] px-5 py-2 rounded-full font-bold shadow-lg hover:bg-black hover:text-white transition"
                 >
                   Ver cronograma
                 </button>
@@ -140,7 +140,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => navigate('/dono')}
-                    className="bg-black text-white px-7 py-3 rounded-full font-black shadow-xl hover:bg-white hover:text-[#4B4C9D] transition"
+                    className="bg-black text-white px-5 py-2 rounded-full font-bold shadow-lg hover:bg-white hover:text-[#4B4C9D] transition"
                   >
                     Painel Dono
                   </button>
@@ -150,7 +150,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => navigate('/usuarios')}
-                    className="bg-black text-white px-7 py-3 rounded-full font-black shadow-xl hover:bg-white hover:text-[#4B4C9D] transition"
+                    className="bg-black text-white px-5 py-2 rounded-full font-bold shadow-lg hover:bg-white hover:text-[#4B4C9D] transition"
                   >
                     Painel Admin
                   </button>

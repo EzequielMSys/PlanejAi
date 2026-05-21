@@ -96,7 +96,7 @@ export default function Sidebar({ isOpen, onClose }) {
         }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         className="
-          fixed lg:static lg:translate-x-0 lg:opacity-100
+          fixed lg:fixed lg:translate-x-0 lg:opacity-100
           top-0 left-0 h-full w-64 z-50
           bg-white/95 backdrop-blur-xl border-r border-[#9394CF]/20
           shadow-2xl flex flex-col

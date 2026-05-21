@@ -50,7 +50,7 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
   }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/90 backdrop-blur-xl border-b border-[#9394CF]/20 shadow-lg">
+    <nav className="sticky top-0 left-0 right-0 z-50 h-16 bg-white/90 backdrop-blur-xl border-b border-[#9394CF]/20 shadow-lg">
       <div className="h-full flex items-center justify-between px-4 lg:px-6">
         <div className="flex items-center gap-3">
           <button
