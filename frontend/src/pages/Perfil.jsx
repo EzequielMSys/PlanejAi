@@ -4,6 +4,7 @@ import usuarioService from '../services/usuarioService'
 import authService from '../services/authService'
 import perfilService from '../services/perfilService'
 import cronogramaService from '../services/cronogramaService'
+import ChecklistMaterias from '../components/ChecklistMaterias'
 import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 
@@ -512,7 +513,12 @@ const handleSaveEstudos = async (e) => {
                   </select>
                 </div>
 
-                <input value={estudoForm.areas_foco} onChange={(e) => setEstudoForm((f) => ({ ...f, areas_foco: e.target.value }))} placeholder="Áreas de foco: Matemática, Português, Biologia" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" required />
+<ChecklistMaterias
+                  value={estudoForm.areas_foco}
+                  onChange={(novaAreas) =>
+                    setEstudoForm((f) => ({ ...f, areas_foco: novaAreas }))
+                  }
+                />
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <input type="number" min="30" max="480" value={estudoForm.tempo_diario_min} onChange={(e) => setEstudoForm((f) => ({ ...f, tempo_diario_min: Number(e.target.value) }))} className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" />

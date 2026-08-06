@@ -48,6 +48,50 @@ const redacaoService = {
     } catch (error) {
       tratarErro(error, 'Erro ao listar redações.')
     }
+  },
+
+  async listarTodasRedacoes() {
+    try {
+      const response = await api.get('/todas')
+      return Array.isArray(response.data) ? response.data : []
+    } catch (error) {
+      tratarErro(error, 'Erro ao listar todas as redações.')
+    }
+  },
+
+async obterRedacao(idRedacao) {
+    try {
+      const response = await api.get(`/${idRedacao}`)
+      return response.data
+    } catch (error) {
+      tratarErro(error, 'Erro ao obter redação.')
+    }
+  },
+
+  async sugerirTema(palavraChave = '') {
+    try {
+      const response = await api.post('/sugerir-tema', { palavraChave })
+      return response.data
+    } catch (error) {
+      tratarErro(error, 'Erro ao sugerir tema.')
+    }
+  },
+
+  async avaliarRedacao(idRedacao, { notaManual, feedbackManual }) {
+    try {
+      const response = await api.patch(`/${idRedacao}/avaliar`, {
+        notaManual,
+        feedbackManual
+      })
+
+      toast.success(
+        response.data.message || 'Redação avaliada com sucesso!'
+      )
+
+      return response.data.redacao
+    } catch (error) {
+      tratarErro(error, 'Erro ao avaliar redação.')
+    }
   }
 }
 

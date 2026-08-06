@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
+import confetti from 'canvas-confetti'
 import cronogramaService from '../services/cronogramaService'
 
 const fadeUp = {
@@ -25,6 +26,7 @@ export default function Cronograma() {
   const [concluindo, setConcluindo] = useState(null)
   const [concluindoConteudo, setConcluindoConteudo] = useState(null)
   const [diasExpandidos, setDiasExpandidos] = useState({})
+  const celebradoRef = useRef(false)
 
   async function carregarCronogramas() {
     try {
@@ -61,9 +63,70 @@ export default function Cronograma() {
     return acc + Number(dia.tempo_previsto || 0)
   }, 0)
 
-  const proximoDia = dias.find((dia) => {
+const proximoDia = dias.find((dia) => {
     return Number(dia.concluido) !== 1 && dia.status !== 'concluído'
   })
+
+  // Dispara confetes quando o cronograma atinge 100% de conclusão
+  useEffect(() => {
+    if (
+      progresso === 100 &&
+      totalDias > 0 &&
+      !celebradoRef.current
+    ) {
+      celebradoRef.current = true
+
+      const cores = ['#4B4C9D', '#9394CF', '#FFD700', '#FF6B6B', '#4ECB71', '#FFA500']
+
+      // Explosão inicial no centro
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: cores,
+        zIndex: 9999
+      })
+
+      // Confetes laterais
+      setTimeout(() => {
+        confetti({
+          particleCount: 80,
+          angle: 60,
+          spread: 70,
+          origin: { x: 0 },
+          colors: cores,
+          zIndex: 9999
+        })
+      }, 250)
+
+      setTimeout(() => {
+        confetti({
+          particleCount: 80,
+          angle: 120,
+          spread: 70,
+          origin: { x: 1 },
+          colors: cores,
+          zIndex: 9999
+        })
+      }, 400)
+
+      // Terceira onda
+      setTimeout(() => {
+        confetti({
+          particleCount: 120,
+          spread: 120,
+          origin: { y: 0.4 },
+          colors: cores,
+          zIndex: 9999
+        })
+      }, 800)
+
+      toast.success(
+        '🎉 Parabéns! Você concluiu 100% do cronograma!',
+        { duration: 5000 }
+      )
+    }
+  }, [progresso, totalDias])
 
   async function gerarNovoCronograma() {
     setGerando(true)

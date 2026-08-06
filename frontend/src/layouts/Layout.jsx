@@ -8,8 +8,8 @@ function Layout() {
   const { isAuthenticated } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  return (
-    <div className="min-h-screen bg-[#F7F7FB] text-black">
+return (
+    <div className="min-h-screen bg-[#F7F7FB] dark:bg-[#0F0E20] text-black dark:text-white">
       {isAuthenticated && (
         <>
           <Navbar

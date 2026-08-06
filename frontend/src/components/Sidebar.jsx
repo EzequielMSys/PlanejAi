@@ -107,7 +107,7 @@ const navItems = [
         className="
           fixed lg:fixed lg:translate-x-0 lg:opacity-100
           top-0 left-0 h-full w-64 z-50
-          bg-white/95 backdrop-blur-xl border-r border-[#9394CF]/20
+          bg-white/95 dark:bg-[#1E1D3A]/95 backdrop-blur-xl border-r border-[#9394CF]/20
           shadow-2xl flex flex-col
         "
       >
@@ -135,8 +135,8 @@ const navItems = [
           </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          <p className="px-4 pt-2 pb-1 text-[11px] uppercase tracking-[0.25em] text-black/40 font-black">
+<nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          <p className="px-4 pt-2 pb-1 text-[11px] uppercase tracking-[0.25em] text-black/40 dark:text-white/40 font-black">
             Principal
           </p>
 
@@ -146,7 +146,7 @@ const navItems = [
 
           {adminItems.length > 0 && (
             <>
-              <p className="px-4 pt-6 pb-1 text-[11px] uppercase tracking-[0.25em] text-black/40 font-black">
+              <p className="px-4 pt-6 pb-1 text-[11px] uppercase tracking-[0.25em] text-black/40 dark:text-white/40 font-black">
                 Gestão
               </p>
 
@@ -157,21 +157,21 @@ const navItems = [
           )}
         </nav>
 
-        <div className="p-4 border-t border-[#9394CF]/20">
-          <div className="bg-[#F7F7FB] rounded-[2rem] p-4 border border-[#9394CF]/20">
-            <p className="text-xs text-black/50 mb-1 font-bold">
+<div className="p-4 border-t border-[#9394CF]/20">
+          <div className="bg-[#F7F7FB] dark:bg-white/5 rounded-[2rem] p-4 border border-[#9394CF]/20">
+            <p className="text-xs text-black/50 dark:text-white/50 mb-1 font-bold">
               Conta
             </p>
 
-            <p className="text-sm font-black text-[#4B4C9D] truncate">
+            <p className="text-sm font-black text-[#4B4C9D] dark:text-[#A9AAE8] truncate">
               {user?.tipo || 'aluno'}
             </p>
 
-            <p className="text-xs text-black/50 mt-3 mb-1 font-bold">
+            <p className="text-xs text-black/50 dark:text-white/50 mt-3 mb-1 font-bold">
               Versão
             </p>
 
-            <p className="text-sm font-black text-[#4B4C9D]">
+            <p className="text-sm font-black text-[#4B4C9D] dark:text-[#A9AAE8]">
               1.0.0
             </p>
           </div>
@@ -190,7 +190,7 @@ function SidebarLink({ item, onClose }) {
         `flex items-center space-x-3 px-4 py-3.5 rounded-full transition-all duration-200 group font-bold ${
           isActive
             ? 'bg-[#4B4C9D] text-white shadow-xl'
-            : 'text-black/65 hover:bg-[#9394CF]/20 hover:text-black'
+            : 'text-black/65 dark:text-white/65 hover:bg-[#9394CF]/20 hover:text-black dark:hover:text-white'
         }`
       }
     >

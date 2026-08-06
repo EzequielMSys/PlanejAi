@@ -3,35 +3,125 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-primary: 75 76 157;
+    --color-bg: 247 247 251;
+    --color-surface: 255 255 255;
+    --color-border: 147 148 207;
+    --color-text: 20 20 35;
+    --color-muted: 90 90 120;
+  }
+
+  .dark {
+    --color-primary: 147 148 207;
+    --color-bg: 15 14 32;
+    --color-surface: 30 29 58;
+    --color-border: 120 115 190;
+    --color-text: 248 250 252;
+    --color-muted: 165 165 200;
+  }
+
   html {
     scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: rgb(var(--color-bg));
+    color: rgb(var(--color-text));
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-primary) / 0.35);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--color-primary) / 0.6);
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-gradient-to-r from-primary to-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-primary/90 hover:to-blue-600/90 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl;
+    @apply bg-gradient-to-r from-brandLight to-brandDark text-white px-8 py-3 rounded-xl font-semibold hover:from-brandLight/90 hover:to-brandDark/90 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl;
   }
-  
+
   .btn-secondary {
     @apply bg-white/20 backdrop-blur-sm text-white px-8 py-3 rounded-xl font-semibold hover:bg-white/30 border border-white/30 hover:border-white/50 transition-all duration-200;
   }
-  
+
   .card {
-    @apply bg-bgCard/80 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-white/10 transition-all duration-300;
+    @apply bg-surface/80 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-cardBorder/20 transition-all duration-300;
   }
-  
+
   .glass-card {
     @apply bg-white/10 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/20 transition-all duration-300;
   }
-  
+
   .glass-card:hover {
     transform: scale(1.01);
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
   }
-  
+
   .input-field {
-    @apply w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-textPrimary placeholder:text-textSecondary focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all duration-200;
+    @apply w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-textBase placeholder:text-textMuted focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all duration-200;
+  }
+
+  /* Animated gradient background blobs */
+  .bg-animated-grid {
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(147, 148, 207, 0.25), transparent 40%),
+      radial-gradient(circle at 80% 30%, rgba(119, 120, 189, 0.2), transparent 40%),
+      radial-gradient(circle at 40% 80%, rgba(75, 76, 157, 0.2), transparent 40%);
+  }
+
+  /* Animated gradient text */
+  .text-gradient-animated {
+    background: linear-gradient(90deg, #9394CF, #4B4C9D, #7778BD, #A9AAE8, #9394CF);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: gradientX 5s ease infinite;
+  }
+
+  /* Gradient shine overlay for buttons/cards */
+  .shine-overlay {
+    position: relative;
+    overflow: hidden;
+  }
+  .shine-overlay::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+    transform: translateX(-150%) skewX(-20deg);
+    animation: shine 3.5s ease-in-out infinite;
+  }
+
+  /* Hero card hover glow */
+  .card-glow:hover {
+    box-shadow: 0 25px 80px rgba(75, 76, 157, 0.35);
+    border-color: rgba(147, 148, 207, 0.6);
+  }
+
+  /* Particle field for hero */
+  .particle-field {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
   }
 }
 

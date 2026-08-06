@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import perfilService from '../services/perfilService'
+import ChecklistMaterias from '../components/ChecklistMaterias'
 import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 
@@ -190,15 +191,13 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
                     </select>
                   </div>
 
-                  <div>
+<div>
                     <label className={labelClass}>Áreas de Foco *</label>
-                    <input
-                      type="text"
-                      required
-                      className={inputClass}
-                      placeholder="Ex: Matemática, Português, Biologia"
+                    <ChecklistMaterias
                       value={formData.areas_foco}
-                      onChange={(e) => setFormData({ ...formData, areas_foco: e.target.value })}
+                      onChange={(novaAreas) =>
+                        setFormData({ ...formData, areas_foco: novaAreas })
+                      }
                     />
                   </div>
 

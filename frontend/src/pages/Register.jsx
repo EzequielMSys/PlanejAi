@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import authService from '../services/authService'
+import ThemeToggle from '../components/ThemeToggle'
 
 const EyeIcon = ({ open }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -102,40 +104,51 @@ if (!formData.nome.trim()) {
     }
   }
 
-  const inputClass = (field) =>
-    `w-full rounded-full px-5 py-3 bg-white border text-black placeholder-gray-400
+const inputClass = (field) =>
+    `w-full rounded-full px-5 py-3 bg-white dark:bg-white/10 border text-black dark:text-white placeholder-gray-400 dark:placeholder-white/40
      focus:ring-2 focus:ring-[#9394CF] focus:outline-none
-     transition-all duration-300
-     ${errors[field] ? 'border-red-400 focus:ring-red-300' : 'border-[#9394CF]/40'}`
+     transition-all duration-300 hover:border-[#4B4C9D]/60
+     ${errors[field] ? 'border-red-400 focus:ring-red-300' : 'border-[#9394CF]/40 dark:border-white/20'}`
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] relative overflow-hidden">
-      <div className="absolute inset-0 bg-black/20" />
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] relative overflow-hidden bg-animated-grid">
+      <div className="absolute inset-0 bg-black/20 dark:bg-black/40" />
 
-      <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
-      <div className="absolute bottom-20 right-16 w-48 h-48 bg-black/10 rounded-full blur-2xl" />
-      <div className="absolute top-40 right-1/4 w-20 h-20 border border-white/30 rounded-full" />
+      {/* Floating animated blobs */}
+      <div className="absolute top-20 left-10 w-40 h-40 bg-white/10 rounded-full blur-xl animate-float" />
+      <div className="absolute bottom-20 right-16 w-56 h-56 bg-black/10 rounded-full blur-2xl animate-float-slow" />
+      <div className="absolute top-40 right-1/4 w-24 h-24 border border-white/30 rounded-full animate-pulse-glow" />
 
-      <div className="relative z-10 max-w-md w-full rounded-[3rem] bg-white/85 backdrop-blur-md border border-white/60 shadow-2xl p-8 animate-fade-in">
+      {/* Theme toggle */}
+      <div className="absolute top-5 right-5 z-50">
+        <ThemeToggle />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="relative z-10 max-w-md w-full rounded-[3rem] bg-white/85 dark:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/20 shadow-2xl p-8"
+      >
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-4">
-            <div className="w-16 h-16 bg-[#9394CF] rounded-full flex items-center justify-center shadow-xl">
+            <div className="w-16 h-16 bg-[#9394CF] rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-transform">
               <span className="text-2xl font-black text-black">P</span>
             </div>
           </Link>
 
-          <h2 className="text-3xl font-black text-black tracking-tight">
+          <h2 className="text-3xl font-black text-black dark:text-white tracking-tight">
             Criar Conta
           </h2>
 
-          <p className="mt-2 text-sm text-black/65">
+          <p className="mt-2 text-sm text-black/65 dark:text-white/70">
             Preencha seus dados para começar
           </p>
         </div>
 
         <form className="space-y-5" onSubmit={handleSubmit} noValidate>
           <div>
-            <label htmlFor="nome" className="block text-sm font-bold text-black mb-1.5">
+            <label htmlFor="nome" className="block text-sm font-bold text-black dark:text-white mb-1.5">
               Nome Completo
             </label>
             <input
@@ -151,7 +164,7 @@ if (!formData.nome.trim()) {
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-bold text-black mb-1.5">
+            <label htmlFor="email" className="block text-sm font-bold text-black dark:text-white mb-1.5">
               Email
             </label>
             <input
@@ -163,10 +176,10 @@ if (!formData.nome.trim()) {
               className={inputClass('email')}
             />
             {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
-</div>
+          </div>
 
           <div>
-            <label htmlFor="senha" className="block text-sm font-bold text-black mb-1.5">
+            <label htmlFor="senha" className="block text-sm font-bold text-black dark:text-white mb-1.5">
               Senha
             </label>
             <div className="relative">
@@ -182,7 +195,7 @@ if (!formData.nome.trim()) {
                 type="button"
                 tabIndex={-1}
                 onClick={() => setShowPassword(v => !v)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4B4C9D] hover:text-black transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4B4C9D] dark:text-[#A9AAE8] hover:text-black dark:hover:text-white transition-colors"
               >
                 <EyeIcon open={showPassword} />
               </button>
@@ -190,14 +203,14 @@ if (!formData.nome.trim()) {
             {errors.senha ? (
               <p className="mt-1 text-xs text-red-500">{errors.senha}</p>
             ) : (
-              <p className="mt-1 text-xs text-black/50">
+              <p className="mt-1 text-xs text-black/50 dark:text-white/50">
                 Mín. 8 caracteres, 1 maiúscula e 1 número
               </p>
             )}
           </div>
 
           <div>
-            <label htmlFor="confirmarSenha" className="block text-sm font-bold text-black mb-1.5">
+            <label htmlFor="confirmarSenha" className="block text-sm font-bold text-black dark:text-white mb-1.5">
               Confirmar Senha
             </label>
             <div className="relative">
@@ -213,7 +226,7 @@ if (!formData.nome.trim()) {
                 type="button"
                 tabIndex={-1}
                 onClick={() => setShowConfirm(v => !v)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4B4C9D] hover:text-black transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4B4C9D] dark:text-[#A9AAE8] hover:text-black dark:hover:text-white transition-colors"
               >
                 <EyeIcon open={showConfirm} />
               </button>
@@ -224,7 +237,7 @@ if (!formData.nome.trim()) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#4B4C9D] text-white py-3 rounded-full font-bold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-full bg-[#4B4C9D] dark:bg-[#A9AAE8] text-white dark:text-black py-3 rounded-full font-bold hover:bg-black dark:hover:bg-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl hover:shadow-2xl disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -241,14 +254,14 @@ if (!formData.nome.trim()) {
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-sm text-black/65">
+          <p className="text-sm text-black/65 dark:text-white/70">
             Já tem conta?{' '}
-            <Link to="/login" className="font-black text-[#4B4C9D] hover:text-black transition-colors">
+            <Link to="/login" className="font-black text-[#4B4C9D] dark:text-[#A9AAE8] hover:text-black dark:hover:text-white transition-colors">
               Entrar
             </Link>
           </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
