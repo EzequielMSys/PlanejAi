@@ -38,6 +38,18 @@ class UsuarioService {
       throw new Error('Permissão negada para editar outro usuário.')
     }
 
+if (dados.nome !== undefined && dados.nome !== null && dados.nome !== '') {
+      if (!/^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ ][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(dados.nome.trim())) {
+        throw new Error('O nome deve conter apenas letras.')
+      }
+    }
+
+    if (dados.email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(dados.email)) {
+        throw new Error('Email inválido.')
+      }
+    }
+
     const dadosAtualizacao = {
       nome: dados.nome,
       email: dados.email,

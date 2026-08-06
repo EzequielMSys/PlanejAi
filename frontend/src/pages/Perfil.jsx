@@ -188,8 +188,19 @@ export default function Perfil() {
     }
   }
 
-  const handleSaveInfo = async (e) => {
+const handleSaveInfo = async (e) => {
     e.preventDefault()
+
+    if (form.nome.trim() && !/^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ ][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(form.nome.trim())) {
+      toast.error('O nome deve conter apenas letras.')
+      return
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email)) {
+      toast.error('Email inválido.')
+      return
+    }
+
     setSaving(true)
 
     try {
@@ -265,8 +276,23 @@ export default function Perfil() {
     )
   }
 
-  const handleSaveEstudos = async (e) => {
+const handleSaveEstudos = async (e) => {
     e.preventDefault()
+
+    const areas = estudoForm.areas_foco
+      .split(',')
+      .map((a) => a.trim())
+      .filter(Boolean)
+
+    const somenteLetras = areas.every((a) =>
+      /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ ][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(a)
+    )
+
+    if (!somenteLetras) {
+      toast.error('As áreas de foco devem conter apenas letras.')
+      return
+    }
+
     setLoadingEstudos(true)
 
     try {

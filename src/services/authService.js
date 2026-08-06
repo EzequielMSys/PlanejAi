@@ -12,8 +12,16 @@ class AuthService {
   async registrar(dados) {
     const { nome, email, senha } = dados;
 
-    if (!nome || !email) {
+if (!nome || !email) {
       throw new Error('Nome e email são obrigatórios.');
+    }
+
+    if (!/^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ ][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(nome.trim())) {
+      throw new Error('O nome deve conter apenas letras.');
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      throw new Error('Email inválido.');
     }
 
     const usuarioExistente = await usuarioModel.buscarPorEmail(email);

@@ -23,6 +23,55 @@ const ChevronDownIcon = ({ className }) => (
   </svg>
 )
 
+const DashboardIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+  </svg>
+)
+
+const CalendarIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+)
+
+const PenIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  </svg>
+)
+
+const UserIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+)
+
+const UsersIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m8-4a4 4 0 100-8 4 4 0 000 8zM9 10a4 4 0 100-8 4 4 0 000 8z" />
+  </svg>
+)
+
+const CrownIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 16l-2-9 5 4 4-7 4 7 5-4-2 9H5zm0 0h14v3H5v-3z" />
+  </svg>
+)
+
+const SettingsIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+)
+
+const LogoutIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+  </svg>
+)
+
 function getFotoUrl(fotoUrl) {
   if (!fotoUrl) return null
   if (fotoUrl.startsWith('http')) return fotoUrl
@@ -33,18 +82,35 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
   const { user, logout, isAdmin, isDono } = useAuth()
   const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [navMenuOpen, setNavMenuOpen] = useState(false)
 
   const avatarUrl = getFotoUrl(user?.foto_url)
   const displayName = user?.apelido || user?.nome || 'Usuário'
   const initials = (displayName?.charAt(0) || 'U').toUpperCase()
 
+  const menuItems = [
+    { path: '/inicio', label: 'Dashboard', icon: DashboardIcon },
+    { path: '/cronograma', label: 'Cronograma', icon: CalendarIcon },
+    { path: '/redacoes', label: 'Redações', icon: PenIcon },
+    { path: '/perfil', label: 'Perfil', icon: UserIcon },
+    { path: '/perfil', label: 'Configurações', icon: SettingsIcon },
+    ...(isAdmin
+      ? [{ path: '/usuarios', label: 'Painel Admin', icon: UsersIcon }]
+      : []),
+    ...(isDono
+      ? [{ path: '/dono/usuarios', label: 'Painel Dono', icon: CrownIcon }]
+      : [])
+  ]
+
   const handleNavigate = (path) => {
     setDropdownOpen(false)
+    setNavMenuOpen(false)
     navigate(path)
   }
 
   const handleLogout = () => {
     setDropdownOpen(false)
+    setNavMenuOpen(false)
     logout()
     navigate('/')
   }
@@ -65,15 +131,72 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
             )}
           </button>
 
-          <Link to="/inicio" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-full bg-[#9394CF] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-              <span className="text-black font-black text-lg">P</span>
-            </div>
+          <div className="relative">
+            <button
+              onClick={() => {
+                setNavMenuOpen((v) => !v)
+                setDropdownOpen(false)
+              }}
+              className="flex items-center gap-2.5 group"
+              aria-label="Menu de navegação"
+            >
+              <div className="w-9 h-9 rounded-full bg-[#9394CF] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                <span className="text-black font-black text-lg">P</span>
+              </div>
 
-            <span className="text-xl font-black text-[#4B4C9D] hidden sm:block">
-              PlanejAI
-            </span>
-          </Link>
+              <span className="text-xl font-black text-[#4B4C9D] hidden sm:block">
+                PlanejAI
+              </span>
+
+              <ChevronDownIcon
+                className={`w-4 h-4 text-[#4B4C9D] transition-transform hidden sm:block ${
+                  navMenuOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            <AnimatePresence>
+              {navMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setNavMenuOpen(false)}
+                  />
+
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute left-0 mt-2 w-64 bg-white/95 backdrop-blur-xl border border-[#9394CF]/20 rounded-[2rem] shadow-2xl z-50 overflow-hidden"
+                  >
+                    <div className="px-4 py-3 border-b border-[#9394CF]/20">
+                      <p className="text-xs uppercase tracking-[0.25em] text-black/40 font-black">
+                        PlanejAI
+                      </p>
+
+                      <p className="text-sm font-black text-[#4B4C9D]">
+                        Navegação
+                      </p>
+                    </div>
+
+                    <div className="p-2 space-y-1">
+                      {menuItems.map((item) => (
+                        <button
+                          key={item.label}
+                          onClick={() => handleNavigate(item.path)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-full text-sm text-black hover:bg-[#9394CF]/20 transition-colors text-left font-bold"
+                        >
+                          <item.icon className="w-5 h-5 text-[#4B4C9D]" />
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         <div className="relative">
@@ -156,6 +279,13 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
                         Painel Dono
                       </button>
                     )}
+
+                    <button
+                      onClick={() => handleNavigate('/alterar-senha')}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-full text-sm text-black hover:bg-[#9394CF]/20 transition-colors text-left font-bold"
+                    >
+                      Alterar Senha
+                    </button>
 
                     <button
                       onClick={handleLogout}

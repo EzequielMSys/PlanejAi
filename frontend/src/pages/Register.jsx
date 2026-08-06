@@ -35,13 +35,15 @@ const Register = () => {
   const validate = () => {
     const newErrors = {}
 
-    if (!formData.nome.trim()) {
+if (!formData.nome.trim()) {
       newErrors.nome = 'Nome é obrigatório'
+    } else if (!/^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ ][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(formData.nome.trim())) {
+      newErrors.nome = 'O nome deve conter apenas letras'
     }
 
     if (!formData.email.trim()) {
       newErrors.email = 'Email é obrigatório'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(formData.email)) {
       newErrors.email = 'Email inválido'
     }
 

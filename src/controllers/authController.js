@@ -18,11 +18,18 @@ async function registrar(req, res) {
       senha_temporaria: resultado.senha_temporaria
     });
   } catch (error) {
-    if (error.message.includes('Email já cadastrado')) {
+if (error.message.includes('Email já cadastrado')) {
       return res.status(409).json({ error: error.message });
     }
 
     if (error.message.includes('Senha deve')) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    if (
+      error.message.includes('nome deve') ||
+      error.message.includes('Email inválido')
+    ) {
       return res.status(400).json({ error: error.message });
     }
 

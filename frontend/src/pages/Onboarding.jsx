@@ -45,8 +45,22 @@ export default function Onboarding() {
   const handlePerfilSubmit = async (e) => {
     e.preventDefault()
 
-    if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) {
+if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) {
       toast.error('Preencha todos os campos obrigatórios.')
+      return
+    }
+
+    const areas = formData.areas_foco
+      .split(',')
+      .map((a) => a.trim())
+      .filter(Boolean)
+
+    const somenteLetras = areas.every((a) =>
+      /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ ][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(a)
+    )
+
+    if (!somenteLetras) {
+      toast.error('As áreas de foco devem conter apenas letras.')
       return
     }
 

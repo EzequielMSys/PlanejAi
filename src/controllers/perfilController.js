@@ -1,10 +1,26 @@
 const perfilModel = require('../models/perfilEstudoModel')
 const dispModel = require('../models/disponibilidadeSemanaModel')
 
+function validarAreasFoco(areasFoco) {
+  if (!areasFoco || typeof areasFoco !== 'string') return false
+
+  const itens = areasFoco.split(',').map((a) => a.trim()).filter(Boolean)
+
+  if (itens.length === 0) return false
+
+  return itens.every((item) => /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ ][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(item))
+}
+
 async function salvarPerfil(req, res) {
   try {
     const usuarioId = req.usuario.id
     const perfil = req.body
+
+    if (!validarAreasFoco(perfil.areas_foco)) {
+      return res.status(400).json({
+        message: 'As áreas de foco devem conter apenas letras.'
+      })
+    }
 
     const perfilSalvo =
       await perfilModel.criarOuAtualizarPerfil(usuarioId, perfil)
@@ -26,6 +42,12 @@ async function atualizarPerfil(req, res) {
   try {
     const usuarioId = req.usuario.id
     const perfil = req.body
+
+    if (!validarAreasFoco(perfil.areas_foco)) {
+      return res.status(400).json({
+        message: 'As áreas de foco devem conter apenas letras.'
+      })
+    }
 
     const perfilAtualizado =
       await perfilModel.criarOuAtualizarPerfil(usuarioId, perfil)
