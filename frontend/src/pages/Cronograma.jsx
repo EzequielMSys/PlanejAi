@@ -23,6 +23,8 @@ export default function Cronograma() {
   const [loading, setLoading] = useState(true)
   const [gerando, setGerando] = useState(false)
   const [concluindo, setConcluindo] = useState(null)
+  const [concluindoConteudo, setConcluindoConteudo] = useState(null)
+  const [diasExpandidos, setDiasExpandidos] = useState({})
 
   async function carregarCronogramas() {
     try {
@@ -76,7 +78,7 @@ export default function Cronograma() {
     }
   }
 
-  async function concluirDia(idDia) {
+async function concluirDia(idDia) {
     if (!idDia) return
 
     setConcluindo(idDia)
@@ -89,6 +91,35 @@ export default function Cronograma() {
     } finally {
       setConcluindo(null)
     }
+  }
+
+  async function alternarConteudo(conteudoCronograma, concluido) {
+    const idConteudo = conteudoCronograma?.id
+
+    if (!idConteudo) return
+
+    setConcluindoConteudo(idConteudo)
+
+    try {
+      if (concluido) {
+        await cronogramaService.reabrirConteudo(idConteudo)
+      } else {
+        await cronogramaService.concluirConteudo(idConteudo)
+      }
+
+      await carregarCronogramas()
+    } catch (error) {
+      toast.error('Erro ao atualizar conteúdo.')
+    } finally {
+      setConcluindoConteudo(null)
+    }
+  }
+
+  function alternarExpansaoDia(idDia) {
+    setDiasExpandidos((prev) => ({
+      ...prev,
+      [idDia]: !prev[idDia]
+    }))
   }
 
   if (loading) {
@@ -210,54 +241,148 @@ export default function Cronograma() {
                 </div>
               </section>
 
-              <section className="grid gap-4">
+<section className="grid gap-4">
                 {dias.map((dia, index) => {
                   const idDia = dia.id_dia || dia.id
                   const concluido =
                     Number(dia.concluido) === 1 ||
                     dia.status === 'concluído'
 
+                  const conteudos = dia.conteudos || []
+                  const expandido = Boolean(diasExpandidos[idDia])
+
+                  const conteudosConcluidos = conteudos.filter(
+                    (c) => Number(c.concluido) === 1
+                  ).length
+
                   return (
                     <div
                       key={idDia || index}
-                      className="bg-white rounded-[2rem] p-5 shadow-xl border border-[#9394CF]/20 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                      className="bg-white rounded-[2rem] p-5 shadow-xl border border-[#9394CF]/20"
                     >
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-1">
-                          Dia {index + 1}
-                        </p>
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-1">
+                            Dia {index + 1}
+                          </p>
 
-                        <h3 className="text-xl font-black text-black capitalize">
-                          {formatarData(dia.data_estudo)}
-                        </h3>
+                          <h3 className="text-xl font-black text-black capitalize">
+                            {formatarData(dia.data_estudo)}
+                          </h3>
 
-                        <p className="text-black/60 text-sm">
-                          Tempo previsto: {dia.tempo_previsto || 0} minutos
-                        </p>
-                      </div>
+                          <p className="text-black/60 text-sm">
+                            Tempo previsto: {dia.tempo_previsto || 0} minutos
+                            {conteudos.length > 0 &&
+                              ` • ${conteudosConcluidos}/${conteudos.length} conteúdos`}
+                          </p>
+                        </div>
 
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`px-4 py-2 rounded-full text-sm font-bold border ${
-                            concluido
-                              ? 'bg-green-100 text-green-700 border-green-300'
-                              : 'bg-yellow-100 text-yellow-700 border-yellow-300'
-                          }`}
-                        >
-                          {concluido ? 'Concluído' : 'Pendente'}
-                        </span>
-
-                        {!concluido && (
-                          <button
-                            type="button"
-                            onClick={() => concluirDia(idDia)}
-                            disabled={concluindo === idDia}
-                            className="bg-[#4B4C9D] text-white px-5 py-2.5 rounded-full font-bold hover:bg-black transition disabled:opacity-60"
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`px-4 py-2 rounded-full text-sm font-bold border ${
+                              concluido
+                                ? 'bg-green-100 text-green-700 border-green-300'
+                                : 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                            }`}
                           >
-                            {concluindo === idDia ? 'Salvando...' : 'Concluir'}
-                          </button>
-                        )}
+                            {concluido ? 'Concluído' : 'Pendente'}
+                          </span>
+
+                          {!concluido && (
+                            <button
+                              type="button"
+                              onClick={() => concluirDia(idDia)}
+                              disabled={concluindo === idDia}
+                              className="bg-[#4B4C9D] text-white px-5 py-2.5 rounded-full font-bold hover:bg-black transition disabled:opacity-60"
+                            >
+                              {concluindo === idDia ? 'Salvando...' : 'Concluir'}
+                            </button>
+                          )}
+
+                          {conteudos.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => alternarExpansaoDia(idDia)}
+                              className="bg-[#F7F7FB] border border-[#9394CF]/40 text-black px-4 py-2.5 rounded-full font-bold hover:bg-[#9394CF]/20 transition"
+                            >
+                              {expandido ? 'Ocultar' : 'Ver conteúdos'}
+                            </button>
+                          )}
+                        </div>
                       </div>
+
+                      {expandido && conteudos.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-[#9394CF]/20 space-y-2">
+                          <p className="text-xs uppercase tracking-[0.25em] font-black text-black/40 mb-2">
+                            Materiais / Conteúdos do dia
+                          </p>
+
+                          {conteudos.map((conteudo) => {
+                            const idConteudo = conteudo.id
+                            const conteudoConcluido =
+                              Number(conteudo.concluido) === 1
+
+                            return (
+                              <div
+                                key={idConteudo}
+                                className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-[1.5rem] border ${
+                                  conteudoConcluido
+                                    ? 'bg-green-50 border-green-200'
+                                    : 'bg-[#F7F7FB] border-[#9394CF]/20'
+                                }`}
+                              >
+                                <div className="flex-1">
+                                  <p
+                                    className={`font-bold ${
+                                      conteudoConcluido
+                                        ? 'text-green-700 line-through'
+                                        : 'text-black'
+                                    }`}
+                                  >
+                                    {conteudo.titulo || 'Conteúdo sem título'}
+                                  </p>
+
+                                  <p className="text-sm text-black/60">
+                                    {conteudo.disciplina || conteudo.area || 'Geral'}
+                                    {conteudo.nivel && ` • ${conteudo.nivel}`}
+                                    {conteudo.tipo && ` • ${conteudo.tipo}`}
+                                  </p>
+                                </div>
+
+                                {conteudo.link && (
+                                  <a
+                                    href={conteudo.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[#4B4C9D] text-sm font-bold hover:underline"
+                                  >
+                                    Acessar material
+                                  </a>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    alternarConteudo(conteudo, conteudoConcluido)
+                                  }
+                                  disabled={concluindoConteudo === idConteudo}
+                                  className={`px-4 py-2 rounded-full text-sm font-bold transition disabled:opacity-60 ${
+                                    conteudoConcluido
+                                      ? 'bg-white border border-[#4B4C9D] text-[#4B4C9D] hover:bg-[#4B4C9D] hover:text-white'
+                                      : 'bg-[#4B4C9D] text-white hover:bg-black'
+                                  }`}
+                                >
+                                  {concluindoConteudo === idConteudo
+                                    ? 'Salvando...'
+                                    : conteudoConcluido
+                                      ? 'Reabrir'
+                                      : 'Concluir'}
+                                </button>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   )
                 })}

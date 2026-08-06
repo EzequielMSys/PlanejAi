@@ -11,6 +11,7 @@ import PrimeiroAcesso from './pages/PrimeiroAcesso'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Cronograma from './pages/Cronograma'
+import Redacoes from './pages/Redacoes'
 import Perfil from './pages/Perfil'
 import AlterarSenha from './pages/AlterarSenha'
 import EsqueciSenha from './pages/EsqueciSenha'
@@ -32,7 +33,8 @@ function App() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/inicio" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/cronograma" element={<Cronograma />} />
+<Route path="/cronograma" element={<Cronograma />} />
+            <Route path="/redacoes" element={<Redacoes />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/alterar-senha" element={<AlterarSenha />} />
           </Route>

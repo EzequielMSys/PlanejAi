@@ -1,10 +1,10 @@
 const pool = require('../config/db')
 
-async function criarCronograma(idPerfil, { data_inicio, data_fim, status = 'ativo' }) {
+async function criarCronograma(idPerfil, { data_inicio, data_fim, status = 'ATIVO' }) {
   const [result] = await pool.execute(
     `INSERT INTO cronogramas (id_perfil, data_inicio, data_fim, status)
      VALUES (?, ?, ?, ?)`,
-    [idPerfil, data_inicio, data_fim, status]
+    [idPerfil, data_inicio, data_fim, status.toUpperCase()]
   )
 
   return {
@@ -22,7 +22,7 @@ async function listarCronogramasPorPerfil(idPerfil) {
      FROM cronogramas
      WHERE id_perfil = ?
      ORDER BY
-       CASE WHEN status = 'ativo' THEN 0 ELSE 1 END,
+       CASE WHEN status = 'ATIVO' THEN 0 ELSE 1 END,
        criado_em DESC`,
     [idPerfil]
   )
@@ -46,7 +46,7 @@ async function obterCronogramaAtivoPorPerfil(idPerfil) {
     `SELECT *
      FROM cronogramas
      WHERE id_perfil = ?
-       AND status = 'ativo'
+       AND status = 'ATIVO'
      ORDER BY criado_em DESC
      LIMIT 1`,
     [idPerfil]
@@ -58,9 +58,9 @@ async function obterCronogramaAtivoPorPerfil(idPerfil) {
 async function desativarCronogramasAtivos(idPerfil) {
   await pool.execute(
     `UPDATE cronogramas
-     SET status = 'arquivado'
+     SET status = 'CANCELADO'
      WHERE id_perfil = ?
-       AND status = 'ativo'`,
+       AND status = 'ATIVO'`,
     [idPerfil]
   )
 }

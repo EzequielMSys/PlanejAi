@@ -1,37 +1,220 @@
 const redacaoModel = require('../models/redacaoModel');
-function gerarFeedbackAutomatico(texto) {
-  const comprimento = texto.length;
-  if (comprimento < 500) {
-    return {
-      nota: 60.0,
-      feedback: 'Redação curta. Desenvolva melhor os argumentos e aumente o número de linhas.'
-    };
-  }
-  if (comprimento < 1500) {
-    return {
-      nota: 80.0,
-      feedback: 'Bom desenvolvimento. Você pode aprimorar a coesão e a proposta de intervenção.'
-    };
-  }
+
+/**
+ * Análise de pontuação e estrutura básica do texto.
+ */
+function analisarTexto(texto) {
+  const paragrafos = texto
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const quantidadeParagrafos = paragrafos.length;
+
+  const frases = texto
+    .split(/[.!?]+/)
+    .map((f) => f.trim())
+    .filter((f) => f.length > 0);
+
+  const palavras = texto
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const totalPalavras = palavras.length;
+
+  const paragrafosLongos = paragrafos.filter(
+    (p) => p.split(/\s+/).filter(Boolean).length > 6
+  ).length;
+
+  const usoPontoFinal = frases.length >= 3;
+
+  const extensaoAdequada = totalPalavras >= 200;
+
   return {
-    nota: 90.0,
-    feedback: 'Excelente extensão e desenvolvimento. Revise aspectos gramaticais finos e conectivos.'
+    paragrafos,
+    quantidadeParagrafos,
+    frases,
+    palavras,
+    totalPalavras,
+    paragrafosLongos,
+    usoPontoFinal,
+    extensaoAdequada
   };
 }
+
+/**
+ * Detecta conectivos de coesão no texto.
+ */
+function detectarConectivos(texto) {
+  const conectivos = [
+    'portanto',
+    'assim',
+    'além disso',
+    'ademais',
+    'contudo',
+    'entretanto',
+    'porém',
+    'no entanto',
+    'dessa forma',
+    'desse modo',
+    'em suma',
+    'por fim',
+    'primeiramente',
+    'por outro lado',
+    'logo',
+    'todavia'
+  ];
+
+  const textoNormalizado = texto.toLowerCase();
+
+  return conectivos.filter((c) => textoNormalizado.includes(c));
+}
+
+/**
+ * Detecta elementos de proposta de intervenção.
+ */
+function detectarPropostaIntervencao(texto) {
+  const expressoes = [
+    'é necessário',
+    'é preciso',
+    'deve',
+    'pode-se',
+    'governo',
+    'estado',
+    'sociedade',
+    'medidas',
+    'ações',
+    'implementar',
+    'criar',
+    'políticas',
+    'cidadania',
+    'educação',
+    'conscientização'
+  ];
+
+  const textoNormalizado = texto.toLowerCase();
+
+  const encontrados = expressoes.filter((e) =>
+    textoNormalizado.includes(e)
+  );
+
+  return encontrados;
+}
+
+/**
+ * Gera nota e feedback baseado em análise estrutural do texto.
+ */
+function gerarFeedbackAutomatico(texto) {
+  const analise = analisarTexto(texto);
+
+  const {
+    totalPalavras,
+    quantidadeParagrafos,
+    usoPontoFinal,
+    extensaoAdequada
+  } = analise;
+
+  const conectivos = detectarConectivos(texto);
+  const intervencao = detectarPropostaIntervencao(texto);
+
+  let nota = 0;
+  const pontos = [];
+
+  // Competência 1: Domínio da escrita formal
+  if (extensaoAdequada) {
+    nota += 20;
+    pontos.push(
+      'Domínio básico da escrita formal: boa extensão e desenvolvimento.'
+    );
+  } else {
+    pontos.push(
+      'A redação está curta. Desenvolva mais para demonstrar domínio da escrita formal.'
+    );
+  }
+
+  // Competência 2: Compreensão do tema
+  if (usoPontoFinal && totalPalavras >= 150) {
+    nota += 20;
+    pontos.push(
+      'Boa estruturação de ideias com o uso de frases completas e coerentes.'
+    );
+  } else {
+    pontos.push(
+      'Revise a organização das frases e a progressão das ideias para melhorar a coesão.'
+    );
+  }
+
+  // Competência 3: Seleção e organização de argumentos
+  if (quantidadeParagrafos >= 3) {
+    nota += 20;
+    pontos.push(
+      'Boa organização em parágrafos, o que ajuda na progressão argumentativa.'
+    );
+  } else {
+    pontos.push(
+      'Divida o texto em mais parágrafos (introdução, desenvolvimento e conclusão) para melhorar a estrutura.'
+    );
+  }
+
+  // Competência 4: Coesão e conectivos
+  if (conectivos.length >= 2) {
+    nota += 20;
+    pontos.push(
+      `Bom uso de conectivos (${conectivos.slice(0, 3).join(', ')}) garantindo coesão textual.`
+    );
+  } else {
+    pontos.push(
+      'Utilize mais conectivos (portanto, além disso, contudo, etc.) para melhorar a coesão entre as ideias.'
+    );
+  }
+
+  // Competência 5: Proposta de intervenção
+  if (intervencao.length >= 2) {
+    nota += 20;
+    pontos.push(
+      'Presença de elementos de proposta de intervenção respeitando os direitos humanos.'
+    );
+  } else {
+    pontos.push(
+      'Inclua uma proposta de intervenção clara, detalhada e com agente, ação e efeito.'
+    );
+  }
+
+  // Garante nota mínima de 40 quando há texto mínimo
+  if (totalPalavras > 0) {
+    nota = Math.max(nota, 40);
+  }
+
+  const feedback = [
+    `Sua redação tem ${totalPalavras} palavras e ${quantidadeParagrafos} parágrafo(s).`,
+    ...pontos,
+    `Nota estimada: ${nota.toFixed(1)}/100.`
+  ].join(' ');
+
+  return {
+    nota,
+    feedback
+  };
+}
+
 async function enviarRedacao(req, res) {
   try {
     const usuarioId = req.usuario.id;
     const { tema, texto } = req.body;
+
     if (!tema || !texto) {
       return res.status(400).json({ message: 'Tema e texto são obrigatórios.' });
     }
+
     const avaliacao = gerarFeedbackAutomatico(texto);
+
     const redacao = await redacaoModel.criarRedacao(usuarioId, {
       tema,
       texto,
-      nota: avaliacao.nota,
-      feedback: avaliacao.feedback
+      notaEstimada: avaliacao.nota,
+      feedbackIa: avaliacao.feedback
     });
+
     return res.status(201).json({
       message: 'Redação enviada com sucesso.',
       redacao
@@ -41,6 +224,7 @@ async function enviarRedacao(req, res) {
     return res.status(500).json({ message: 'Erro interno ao enviar redação.' });
   }
 }
+
 async function listarRedacoes(req, res) {
   try {
     const usuarioId = req.usuario.id;
@@ -51,6 +235,7 @@ async function listarRedacoes(req, res) {
     return res.status(500).json({ message: 'Erro interno ao listar redações.' });
   }
 }
+
 module.exports = {
   enviarRedacao,
   listarRedacoes
