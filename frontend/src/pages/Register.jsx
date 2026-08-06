@@ -161,22 +161,7 @@ const Register = () => {
               className={inputClass('email')}
             />
             {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="tipo" className="block text-sm font-bold text-black mb-1.5">
-              Tipo de Conta
-            </label>
-            <select
-              id="tipo"
-              value={formData.tipo}
-              onChange={(e) => handleChange('tipo', e.target.value)}
-              className="w-full rounded-full px-5 py-3 bg-white border border-[#9394CF]/40 text-black focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
-            >
-              <option value="aluno">Aluno</option>
-              <option value="admin">Administrador</option>
-            </select>
-          </div>
+</div>
 
           <div>
             <label htmlFor="senha" className="block text-sm font-bold text-black mb-1.5">
