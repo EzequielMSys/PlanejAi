@@ -31,7 +31,6 @@
     transition: background-color 0.4s ease, color 0.4s ease;
   }
 
-  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -74,7 +73,6 @@
     @apply w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-textBase placeholder:text-textMuted focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all duration-200;
   }
 
-  /* Animated gradient background blobs */
   .bg-animated-grid {
     background-image:
       radial-gradient(circle at 20% 20%, rgba(147, 148, 207, 0.25), transparent 40%),
@@ -82,7 +80,6 @@
       radial-gradient(circle at 40% 80%, rgba(75, 76, 157, 0.2), transparent 40%);
   }
 
-  /* Animated gradient text */
   .text-gradient-animated {
     background: linear-gradient(90deg, #9394CF, #4B4C9D, #7778BD, #A9AAE8, #9394CF);
     background-size: 300% 300%;
@@ -93,7 +90,6 @@
     animation: gradientX 5s ease infinite;
   }
 
-  /* Gradient shine overlay for buttons/cards */
   .shine-overlay {
     position: relative;
     overflow: hidden;
@@ -110,13 +106,11 @@
     animation: shine 3.5s ease-in-out infinite;
   }
 
-  /* Hero card hover glow */
   .card-glow:hover {
     box-shadow: 0 25px 80px rgba(75, 76, 157, 0.35);
     border-color: rgba(147, 148, 207, 0.6);
   }
 
-  /* Particle field for hero */
   .particle-field {
     position: absolute;
     inset: 0;
@@ -125,3 +119,51 @@
   }
 }
 
+@keyframes gradientX {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes shine {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  60% { transform: translateX(200%) skewX(-20deg); }
+  100% { transform: translateX(200%) skewX(-20deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.08); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+@keyframes spin-slower {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes particle {
+  0% { transform: translateY(0px) translateX(0px); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+}

@@ -9,11 +9,11 @@ function normalizar(atividade) {
   return atividade && { ...atividade, anexos: parseJson(atividade.anexos, []), questoes: parseJson(atividade.questoes, []) };
 }
 
-async function criar({ titulo, descricao, prazo, status, anexos, questoes, criadoPor }) {
+async function criar({ titulo, descricao, prazo, status, anexos, questoes, criadoPor, destinatarios, atribuicao }) {
   const [result] = await pool.execute(
-    `INSERT INTO atividades (titulo, descricao, criado_por, prazo, status, anexos, questoes, pergunta, tipo)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [titulo, descricao || null, criadoPor, prazo || null, status, JSON.stringify(anexos || []), JSON.stringify(questoes || []), titulo, 'DISSERTATIVA']
+    `INSERT INTO atividades (titulo, descricao, criado_por, prazo, status, anexos, questoes, pergunta, tipo, destinatarios, atribuicao)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [titulo, descricao || null, criadoPor, prazo || null, status, JSON.stringify(anexos || []), JSON.stringify(questoes || []), titulo, 'DISSERTATIVA', destinatarios ? JSON.stringify(destinatarios) : null, atribuicao || 'TODOS']
   );
   return buscarPorId(result.insertId);
 }
@@ -40,10 +40,10 @@ async function buscarPorId(idAtividade) {
   return normalizar(rows[0]);
 }
 
-async function atualizar(idAtividade, { titulo, descricao, prazo, status, anexos, questoes }) {
+async function atualizar(idAtividade, { titulo, descricao, prazo, status, anexos, questoes, destinatarios, atribuicao }) {
   await pool.execute(
-    `UPDATE atividades SET titulo = ?, descricao = ?, prazo = ?, status = ?, anexos = ?, questoes = ?, pergunta = ? WHERE id_atividade = ?`,
-    [titulo, descricao || null, prazo || null, status, JSON.stringify(anexos || []), JSON.stringify(questoes || []), titulo, idAtividade]
+    `UPDATE atividades SET titulo = ?, descricao = ?, prazo = ?, status = ?, anexos = ?, questoes = ?, pergunta = ?, destinatarios = ?, atribuicao = ? WHERE id_atividade = ?`,
+    [titulo, descricao || null, prazo || null, status, JSON.stringify(anexos || []), JSON.stringify(questoes || []), titulo, destinatarios ? JSON.stringify(destinatarios) : null, atribuicao || 'TODOS', idAtividade]
   );
   return buscarPorId(idAtividade);
 }

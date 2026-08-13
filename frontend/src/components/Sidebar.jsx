@@ -1,11 +1,20 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
+import Logo from './Logo'
 
 function LayoutIcon({ className }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+    </svg>
+  )
+}
+
+function DashboardIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
     </svg>
   )
 }
@@ -58,6 +67,14 @@ function CloseIcon({ className }) {
   )
 }
 
+function BellIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+    </svg>
+  )
+}
+
 export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate()
   const { isAdmin, isDono, user } = useAuth()
@@ -67,10 +84,15 @@ const navItems = [
     { path: '/cronograma', label: 'Cronograma', icon: CalendarIcon },
     { path: '/redacoes', label: 'Redações', icon: RedacaoIcon },
     { path: '/atividades', label: 'Atividades', icon: RedacaoIcon },
+    ...(user?.tipo === 'aluno' ? [{ path: '/minhas-atividades', label: 'Minhas atividades', icon: RedacaoIcon }] : []),
+    ...(user?.tipo === 'aluno' ? [{ path: '/avisos', label: 'Avisos', icon: BellIcon }] : []),
     { path: '/perfil', label: 'Perfil', icon: UserIcon }
   ]
 
   const adminItems = [
+    ...(isAdmin || isDono || user?.tipo === 'docente'
+      ? [{ path: '/dashboard-gestor', label: 'Painel Gestor', icon: DashboardIcon }]
+      : []),
     ...(isAdmin
       ? [{ path: '/usuarios', label: 'Painel Admin', icon: UsersIcon }]
       : []),
@@ -119,12 +141,15 @@ const navItems = [
         <div className="flex items-center justify-between p-6 border-b border-[#9394CF]/20">
           <button
             type="button"
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-3"
             onClick={handleNavigateHome}
           >
-            <div className="w-9 h-9 bg-[#9394CF] rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-black font-black text-lg">P</span>
-            </div>
+            <motion.div
+              whileHover={{ rotate: 15, scale: 1.1 }}
+              className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+            >
+              <Logo className="w-9 h-9" />
+            </motion.div>
 
             <span className="text-xl font-black text-[#4B4C9D]">
               PlanejAI

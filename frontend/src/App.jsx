@@ -10,6 +10,7 @@ import Register from './pages/Register'
 import PrimeiroAcesso from './pages/PrimeiroAcesso'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
+import DashboardGestor from './pages/DashboardGestor'
 import Cronograma from './pages/Cronograma'
 import Redacoes from './pages/Redacoes'
 import Perfil from './pages/Perfil'
@@ -19,6 +20,8 @@ import UsuariosAdmin from './pages/UsuariosAdmin'
 import PainelDono from './pages/PainelDono'
 import Atividades from './pages/Atividades'
 import Materiais from './pages/Materiais'
+import MinhasAtividades from './pages/MinhasAtividades'
+import AvisosAluno from './pages/AvisosAluno'
 
 function App() {
   return (
@@ -35,11 +38,14 @@ function App() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/inicio" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard-gestor" element={<DashboardGestor />} />
 <Route path="/cronograma" element={<Cronograma />} />
             <Route path="/redacoes" element={<Redacoes />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/atividades" element={<Atividades />} />
             <Route path="/materiais" element={<Materiais />} />
+            <Route path="/minhas-atividades" element={<MinhasAtividades />} />
+            <Route path="/avisos" element={<AvisosAluno />} />
             <Route path="/alterar-senha" element={<AlterarSenha />} />
           </Route>
         </Route>

@@ -23,6 +23,7 @@ function formatarData(data) {
 export default function Dashboard() {
   const { user, isAdmin, isDono } = useAuth()
   const navigate = useNavigate()
+  const isGestor = isAdmin || isDono || user?.tipo === 'docente'
 
   const [cronogramas, setCronogramas] = useState([])
   const [loading, setLoading] = useState(true)
@@ -37,7 +38,10 @@ export default function Dashboard() {
       const data = await cronogramaService.listarCronogramas()
       setCronogramas(Array.isArray(data) ? data : [])
     } catch (error) {
-      toast.error('Erro ao carregar dados do dashboard.')
+      // Se for gestor e der erro no cronograma, não bloquear a página inteira
+      if (!isGestor) {
+        toast.error('Erro ao carregar dados do dashboard.')
+      }
     } finally {
       setLoading(false)
     }
@@ -135,6 +139,16 @@ export default function Dashboard() {
                 >
                   Ver cronograma
                 </button>
+
+                {isGestor && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/dashboard-gestor')}
+                    className="bg-black text-white px-5 py-2 rounded-full font-bold shadow-lg hover:bg-white hover:text-[#4B4C9D] transition"
+                  >
+                    Painel Gestor
+                  </button>
+                )}
 
                 {isDono && (
                   <button

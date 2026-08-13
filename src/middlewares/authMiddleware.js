@@ -15,7 +15,7 @@ async function authMiddleware(req, res, next) {
       return res.status(401).json({ message: 'Formato de token inválido.' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'planejai-dev-local-fallback-change-in-production');
 
     const usuarioId = decoded.id || decoded.id_usuario;
 
@@ -63,6 +63,8 @@ function permitirTipos(...tiposPermitidos) {
 
 const isAdminOrDono = permitirTipos('admin', 'adm', 'dono');
 const isDono = permitirTipos('dono');
+const isDocente = permitirTipos('docente');
+const isAluno = permitirTipos('aluno');
 // "adm" existia no esquema inicial; mantemos compatibilidade com contas antigas.
 const isGestorPedagogico = permitirTipos('dono', 'admin', 'adm', 'docente');
 
@@ -71,5 +73,7 @@ module.exports = {
   permitirTipos,
   isAdminOrDono,
   isDono,
+  isDocente,
+  isAluno,
   isGestorPedagogico
 };

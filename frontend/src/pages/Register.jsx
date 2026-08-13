@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import authService from '../services/authService'
 import ThemeToggle from '../components/ThemeToggle'
+import Logo from '../components/Logo'
 
 const EyeIcon = ({ open }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -131,11 +132,12 @@ const inputClass = (field) =>
         className="relative z-10 max-w-md w-full rounded-[3rem] bg-white/85 dark:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/20 shadow-2xl p-8"
       >
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center justify-center mb-4">
-            <div className="w-16 h-16 bg-[#9394CF] rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-transform">
-              <span className="text-2xl font-black text-black">P</span>
-            </div>
-          </Link>
+          <motion.div
+            whileHover={{ scale: 1.1, rotate: 10 }}
+            className="mx-auto h-16 w-16 rounded-full flex items-center justify-center shadow-xl mb-4"
+          >
+            <Logo className="h-12 w-12" />
+          </motion.div>
 
           <h2 className="text-3xl font-black text-black dark:text-white tracking-tight">
             Criar Conta

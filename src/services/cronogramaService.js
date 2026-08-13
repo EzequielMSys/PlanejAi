@@ -211,6 +211,20 @@ class CronogramaService {
   async atualizarStatus(idCronograma, status) {
     return cronogramaModel.atualizarStatusCronograma(idCronograma, status)
   }
+
+  async atualizarConteudoCronograma(idConteudoCronograma, dados) {
+    const conteudo = await cronogramaConteudoModel.obterConteudoCronogramaPorId(idConteudoCronograma)
+    if (!conteudo) throw new Error('Conteúdo do cronograma não encontrado.')
+
+    if (!conteudo.id_conteudo) return conteudo
+
+    const atualizados = await conteudoModel.atualizarConteudo(conteudo.id_conteudo, dados)
+    return cronogramaConteudoModel.obterConteudoCronogramaPorId(idConteudoCronograma)
+  }
+
+  async obterConteudoCronogramaPorId(idConteudoCronograma) {
+    return cronogramaConteudoModel.obterConteudoCronogramaPorId(idConteudoCronograma)
+  }
 }
 
 module.exports = new CronogramaService()

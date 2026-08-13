@@ -135,10 +135,8 @@ export const AuthProvider = ({ children }) => {
       const usuarioId =
         response.usuario.id_usuario || response.usuario.id
 
-      const perfilCompleto = await checkPerfilCompleto(
-        usuarioId,
-        response.token
-      )
+      const isGestor = ['dono', 'admin', 'adm', 'docente'].includes(response.usuario.tipo)
+      const perfilCompleto = isGestor ? true : await checkPerfilCompleto(usuarioId, response.token)
 
       localStorage.setItem('token', response.token)
 
@@ -247,6 +245,8 @@ export const AuthProvider = ({ children }) => {
   const isDono =
     state.user?.tipo === 'dono'
 
+  const isGestor = isAdmin || isDono || isDocente
+
   const value = {
     ...state,
 
@@ -261,6 +261,7 @@ export const AuthProvider = ({ children }) => {
     isAdmin,
     isDocente,
     isDono,
+    isGestor,
 
     isPrimeiroAcesso: state.primeiroAcesso
   }

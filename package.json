@@ -12,8 +12,9 @@
     "seed:owner": "node src/scripts/seedOwner.js",
     "seed:conteudos": "node src/scripts/seedConteudos.js",
     "migrate:areas_foco": "node src/scripts/applyAreasFocoMigration.js",
-    "migrate:atividades": "node src/scripts/applyPedagogicalActivitiesMigration.js"
-    ,"migrate:materiais": "node src/scripts/applyContentMaterialsMigration.js"
+    "migrate:atividades": "node src/scripts/applyPedagogicalActivitiesMigration.js",
+    "migrate:materiais": "node src/scripts/applyContentMaterialsMigration.js",
+    "migrate:all": "node src/scripts/applyMigrations.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.0",

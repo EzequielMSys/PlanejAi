@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS avisos (
+  id_aviso INT AUTO_INCREMENT PRIMARY KEY,
+  titulo VARCHAR(180) NOT NULL,
+  mensagem TEXT NOT NULL,
+  criado_por INT NULL,
+  destinatarios ENUM('todos','docentes','alunos') NOT NULL DEFAULT 'todos',
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_avisos_criado_por FOREIGN KEY (criado_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

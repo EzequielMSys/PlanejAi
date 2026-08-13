@@ -121,6 +121,26 @@ const cronogramaService = {
     } catch (error) {
       tratarErro(error, 'Erro ao reabrir conteúdo.')
     }
+  },
+
+  async atualizarConteudoCronograma(conteudoCronogramaId, dados) {
+    try {
+      const response = await api.patch(`/conteudos/${conteudoCronogramaId}`, dados)
+      return response.data.conteudo
+    } catch (error) {
+      tratarErro(error, 'Erro ao atualizar conteúdo.')
+    }
+  },
+
+  async uploadMaterial(conteudoCronogramaId, file) {
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const response = await api.post(`/conteudos/${conteudoCronogramaId}/upload`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
+      return response.data
+    } catch (error) {
+      tratarErro(error, 'Erro ao enviar material.')
+    }
   }
 }
 

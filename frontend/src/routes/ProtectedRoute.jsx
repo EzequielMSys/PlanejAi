@@ -6,6 +6,8 @@ const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false }) => {
     isAuthenticated,
     isAdmin,
     isDono,
+    isDocente,
+    isGestor,
     isPrimeiroAcesso,
     perfilCompleto,
     loading
@@ -32,7 +34,7 @@ const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false }) => {
     return <Navigate to="/primeiro-acesso" replace />
   }
 
-  if (!isPrimeiroAcesso && !perfilCompleto && !isOnboardingRoute && !isPrimeiroAcessoRoute) {
+  if (!isPrimeiroAcesso && !perfilCompleto && !isOnboardingRoute && !isPrimeiroAcessoRoute && !isGestor) {
     return <Navigate to="/onboarding" replace />
   }
 

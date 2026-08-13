@@ -5,8 +5,11 @@ const router = express.Router()
 const cronogramaController = require('../controllers/cronogramaController')
 
 const {
-  authMiddleware
+  authMiddleware,
+  isGestorPedagogico
 } = require('../middlewares/authMiddleware')
+
+const { uploadMaterial } = require('../middlewares/uploadMiddleware')
 
 /**
  * Gerar novo cronograma
@@ -69,6 +72,27 @@ router.patch(
   '/conteudos/:conteudoCronogramaId/reabrir',
   authMiddleware,
   cronogramaController.reabrirConteudo
+)
+
+/**
+ * Atualizar conteúdo do cronograma (gestor)
+ */
+router.patch(
+  '/conteudos/:conteudoCronogramaId',
+  authMiddleware,
+  isGestorPedagogico,
+  cronogramaController.atualizarConteudoCronograma
+)
+
+/**
+ * Upload de material para conteúdo do cronograma
+ */
+router.post(
+  '/conteudos/:conteudoCronogramaId/upload',
+  authMiddleware,
+  isGestorPedagogico,
+  uploadMaterial.single('file'),
+  cronogramaController.uploadMaterial
 )
 
 module.exports = router

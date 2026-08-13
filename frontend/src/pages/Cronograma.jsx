@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import confetti from 'canvas-confetti'
 import cronogramaService from '../services/cronogramaService'
+import { useAuth } from '../context/AuthContext'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -20,12 +21,16 @@ function formatarData(data) {
 }
 
 export default function Cronograma() {
+  const { isGestor } = useAuth()
   const [cronogramas, setCronogramas] = useState([])
   const [loading, setLoading] = useState(true)
   const [gerando, setGerando] = useState(false)
   const [concluindo, setConcluindo] = useState(null)
   const [concluindoConteudo, setConcluindoConteudo] = useState(null)
   const [diasExpandidos, setDiasExpandidos] = useState({})
+  const [editando, setEditando] = useState(null)
+  const [editLink, setEditLink] = useState('')
+  const [enviandoMaterial, setEnviandoMaterial] = useState(null)
   const celebradoRef = useRef(false)
 
   async function carregarCronogramas() {
@@ -183,6 +188,38 @@ async function concluirDia(idDia) {
       ...prev,
       [idDia]: !prev[idDia]
     }))
+  }
+
+  const iniciarEdicao = (conteudo) => {
+    setEditando(conteudo.id)
+    setEditLink(conteudo.link || '')
+  }
+
+  const salvarEdicao = async (idConteudo) => {
+    try {
+      await cronogramaService.atualizarConteudoCronograma(idConteudo, { link: editLink })
+      toast.success('Link atualizado.')
+      setEditando(null)
+      await carregarCronogramas()
+    } catch {
+      toast.error('Erro ao atualizar link.')
+    }
+  }
+
+  const handleUploadMaterial = async (e, idConteudo) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setEnviandoMaterial(idConteudo)
+    try {
+      const data = await cronogramaService.uploadMaterial(idConteudo, file)
+      toast.success('Material enviado.')
+      await carregarCronogramas()
+    } catch {
+      toast.error('Erro ao enviar material.')
+    } finally {
+      setEnviandoMaterial(null)
+      e.target.value = ''
+    }
   }
 
   if (loading) {
@@ -421,6 +458,51 @@ async function concluirDia(idDia) {
                                   >
                                     Acessar material
                                   </a>
+                                )}
+
+                                {isGestor && editando === idConteudo ? (
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <input
+                                      value={editLink}
+                                      onChange={(e) => setEditLink(e.target.value)}
+                                      placeholder="https://..."
+                                      className="rounded-full border border-[#9394CF]/40 bg-white px-3 py-1 text-xs text-black dark:bg-[#1E1D3A] dark:text-white"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => salvarEdicao(idConteudo)}
+                                      className="rounded-full bg-[#4B4C9D] text-white px-3 py-1 text-xs font-bold"
+                                    >
+                                      Salvar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditando(null)}
+                                      className="rounded-full border border-[#9394CF] px-3 py-1 text-xs font-bold text-[#4B4C9D]"
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                ) : isGestor ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => iniciarEdicao(conteudo)}
+                                    className="text-xs font-bold text-[#4B4C9D] hover:underline"
+                                  >
+                                    Editar link
+                                  </button>
+                                ) : null}
+
+                                {isGestor && (
+                                  <label className="text-xs font-bold text-[#4B4C9D] cursor-pointer">
+                                    {enviandoMaterial === idConteudo ? 'Enviando...' : 'Anexar material'}
+                                    <input
+                                      type="file"
+                                      accept="image/*,video/*,.pdf"
+                                      className="hidden"
+                                      onChange={(e) => handleUploadMaterial(e, idConteudo)}
+                                    />
+                                  </label>
                                 )}
 
                                 <MateriaisComplementares materiais={conteudo.materiais} />

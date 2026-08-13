@@ -10,26 +10,42 @@ const cronogramaRoutes = require('./routes/cronogramaRoutes');
 const atividadeRoutes = require('./routes/atividadeRoutes');
 const redacaoRoutes = require('./routes/redacaoRoutes');
 const conteudoRoutes = require('./routes/conteudoRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const avisoRoutes = require('./routes/avisoRoutes');
 
 const app = express();
+
+const garantirTabelas = require('./scripts/garantirTabelas');
+garantirTabelas().catch((error) => {
+  console.error('[MIGRATION] Falha ao garantir tabelas:', error.message);
+});
+
+const uploadErrorHandler = require('./middlewares/uploadErrorHandler');
+app.use(uploadErrorHandler);
 
 const allowedOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-app.use(cors({
+const corsOptions = {
   origin(origin, callback) {
-    // Requests without Origin include local tools and same-origin server calls.
-    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.length === 0) {
+      return callback(new Error('CORS_ORIGIN não configurado. Defina as origens permitidas no .env.'));
+    }
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     return callback(new Error('Origem não permitida pelo CORS.'));
   }
-}));
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 
-// Servir imagens/uploads corretamente
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 app.use('/api/auth', authRoutes);
@@ -39,6 +55,8 @@ app.use('/api/cronograma', cronogramaRoutes);
 app.use('/api/atividade', atividadeRoutes);
 app.use('/api/redacao', redacaoRoutes);
 app.use('/api/conteudos', conteudoRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/avisos', avisoRoutes);
 
 app.get('/', (req, res) => {
   res.json({

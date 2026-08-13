@@ -8,7 +8,7 @@ import ChecklistMaterias from '../components/ChecklistMaterias'
 import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 
-const API_URL = 'http://localhost:3000'
+const API_URL = ''
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -57,7 +57,7 @@ function validarSenha(senha) {
 function getFotoUrl(fotoUrl) {
   if (!fotoUrl) return null
   if (fotoUrl.startsWith('http')) return fotoUrl
-  return `${API_URL}${fotoUrl}`
+  return fotoUrl
 }
 
 const diasPadrao = [

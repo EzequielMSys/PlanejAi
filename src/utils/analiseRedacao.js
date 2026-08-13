@@ -228,8 +228,9 @@ function detectarIA(texto) {
   }
 
   // Texto muito longo e sem erros ortográficos pode indicar IA
-  const errosEstimados = contarPalavras(texto) > 300 ? 0 : 1;
-  if (totalPalavras > 400 && errosEstimados === 0) {
+  // Nota: esta heurística é uma aproximação e deve ser combinada com outros sinais.
+  const semErrosAparentes = contarPalavras(texto) > 300 ? 0 : 1;
+  if (totalPalavras > 400 && semErrosAparentes === 0) {
     pontuacao += 1;
     evidencias.push('Texto muito extenso sem erros ortográficos aparentes.');
   }

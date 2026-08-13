@@ -90,13 +90,14 @@ if (!nome || !email) {
 
     await usuarioModel.atualizarUltimoLogin(usuarioId);
 
+    const jwtSecret = process.env.JWT_SECRET || 'planejai-dev-local-fallback-change-in-production';
     const token = jwt.sign(
       {
         id: usuarioId,
         id_usuario: usuarioId,
         tipo: usuario.tipo
       },
-      process.env.JWT_SECRET,
+      jwtSecret,
       { expiresIn: process.env.JWT_EXPIRATION || '8h' }
     );
 

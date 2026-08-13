@@ -127,6 +127,34 @@ async function reabrirConteudo(req, res) {
   }
 }
 
+async function atualizarConteudoCronograma(req, res) {
+  try {
+    const { conteudoCronogramaId } = req.params
+    const { link, titulo, descricao, materiais } = req.body
+    const resultado = await cronogramaService.atualizarConteudoCronograma(conteudoCronogramaId, { link, titulo, descricao, materiais })
+    return res.status(200).json({ message: 'Conteúdo atualizado.', conteudo: resultado })
+  } catch (error) {
+    console.error('[CRONOGRAMA]', error)
+    return res.status(400).json({ message: error.message || 'Erro ao atualizar conteúdo.' })
+  }
+}
+
+async function uploadMaterial(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'Nenhum arquivo enviado.' })
+    const url = `/uploads/materiais/${req.file.filename}`
+    const conteudoCronogramaId = req.params.conteudoCronogramaId
+    const atual = await cronogramaService.obterConteudoCronogramaPorId(conteudoCronogramaId)
+    const materiais = Array.isArray(atual?.materiais) ? atual.materiais : []
+    materiais.push({ url, nome: req.file.originalname, tipo: req.file.mimetype })
+    await cronogramaService.atualizarConteudoCronograma(conteudoCronogramaId, { materiais })
+    return res.status(201).json({ url, filename: req.file.filename, materiais })
+  } catch (error) {
+    console.error('[CRONOGRAMA UPLOAD]', error)
+    return res.status(500).json({ message: 'Erro ao enviar material.' })
+  }
+}
+
 module.exports = {
   gerarCronograma,
   listarCronogramas,
@@ -134,5 +162,7 @@ module.exports = {
   concluirDia,
   reabrirDia,
   concluirConteudo,
-  reabrirConteudo
+  reabrirConteudo,
+  atualizarConteudoCronograma,
+  uploadMaterial
 }
