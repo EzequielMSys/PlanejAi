@@ -17,6 +17,8 @@ import AlterarSenha from './pages/AlterarSenha'
 import EsqueciSenha from './pages/EsqueciSenha'
 import UsuariosAdmin from './pages/UsuariosAdmin'
 import PainelDono from './pages/PainelDono'
+import Atividades from './pages/Atividades'
+import Materiais from './pages/Materiais'
 
 function App() {
   return (
@@ -36,6 +38,8 @@ function App() {
 <Route path="/cronograma" element={<Cronograma />} />
             <Route path="/redacoes" element={<Redacoes />} />
             <Route path="/perfil" element={<Perfil />} />
+            <Route path="/atividades" element={<Atividades />} />
+            <Route path="/materiais" element={<Materiais />} />
             <Route path="/alterar-senha" element={<AlterarSenha />} />
           </Route>
         </Route>

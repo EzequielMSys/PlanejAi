@@ -66,6 +66,7 @@ const navItems = [
     { path: '/inicio', label: 'Dashboard', icon: LayoutIcon },
     { path: '/cronograma', label: 'Cronograma', icon: CalendarIcon },
     { path: '/redacoes', label: 'Redações', icon: RedacaoIcon },
+    { path: '/atividades', label: 'Atividades', icon: RedacaoIcon },
     { path: '/perfil', label: 'Perfil', icon: UserIcon }
   ]
 
@@ -77,6 +78,10 @@ const navItems = [
       ? [{ path: '/dono/usuarios', label: 'Painel Dono', icon: CrownIcon }]
       : [])
   ]
+
+  if (['dono', 'admin', 'adm', 'docente'].includes(user?.tipo)) {
+    adminItems.unshift({ path: '/materiais', label: 'Materiais', icon: RedacaoIcon })
+  }
 
   const handleNavigateHome = () => {
     navigate('/inicio')

@@ -239,7 +239,10 @@ export const AuthProvider = ({ children }) => {
 
   const isAdmin =
     state.user?.tipo === 'admin' ||
+    state.user?.tipo === 'adm' ||
     state.user?.tipo === 'dono'
+
+  const isDocente = state.user?.tipo === 'docente'
 
   const isDono =
     state.user?.tipo === 'dono'
@@ -256,6 +259,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!state.token,
 
     isAdmin,
+    isDocente,
     isDono,
 
     isPrimeiroAcesso: state.primeiroAcesso

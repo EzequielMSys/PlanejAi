@@ -423,6 +423,8 @@ async function concluirDia(idDia) {
                                   </a>
                                 )}
 
+                                <MateriaisComplementares materiais={conteudo.materiais} />
+
                                 <button
                                   type="button"
                                   onClick={() =>
@@ -468,6 +470,22 @@ function CardStat({ titulo, valor }) {
       <p className="text-3xl font-black text-[#4B4C9D]">
         {valor}
       </p>
+    </div>
+  )
+}
+
+function MateriaisComplementares({ materiais }) {
+  let lista = []
+  try { lista = Array.isArray(materiais) ? materiais : JSON.parse(materiais || '[]') } catch { lista = [] }
+  if (!lista.length) return null
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {lista.map((material, index) => (
+        <a key={`${material.url}-${index}`} href={material.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-[#9394CF]/40 px-3 py-1 text-xs font-bold text-[#4B4C9D] hover:bg-[#9394CF]/15">
+          {material.tipo === 'VIDEO' ? '▶ ' : material.tipo === 'PDF' ? 'PDF ' : ''}{material.titulo || 'Material'}
+        </a>
+      ))}
     </div>
   )
 }

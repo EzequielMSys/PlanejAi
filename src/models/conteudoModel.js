@@ -105,12 +105,12 @@ async function listarTodos() {
  * Atualiza conteúdo
  */
 async function atualizarConteudo(idConteudo, dados) {
-  const { area, disciplina, titulo, tipo, link, nivel } = dados;
+  const { area, disciplina, titulo, tipo, link, nivel, materiais = [], atualizado_por = null } = dados;
   await pool.execute(
     `UPDATE conteudos 
-     SET area = ?, disciplina = ?, titulo = ?, tipo = ?, link = ?, nivel = ?
+     SET area = ?, disciplina = ?, titulo = ?, tipo = ?, link = ?, nivel = ?, materiais = ?, atualizado_por = ?
      WHERE id_conteudo = ?`,
-    [area, disciplina, titulo, tipo, link || null, nivel, idConteudo]
+    [area, disciplina, titulo, tipo, link || null, nivel, JSON.stringify(materiais), atualizado_por, idConteudo]
   );
   return { id_conteudo: idConteudo, ...dados };
 }

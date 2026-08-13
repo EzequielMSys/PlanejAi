@@ -1,73 +1,52 @@
 const pool = require('../config/db');
 
-/**
- * Cria uma nova atividade
- */
-async function criarAtividade({ idConteudo, pergunta, tipo, respostaCorreta = null }) {
+function parseJson(value, fallback) {
+  if (!value) return fallback;
+  try { return JSON.parse(value); } catch { return fallback; }
+}
+
+function normalizar(atividade) {
+  return atividade && { ...atividade, anexos: parseJson(atividade.anexos, []), questoes: parseJson(atividade.questoes, []) };
+}
+
+async function criar({ titulo, descricao, prazo, status, anexos, questoes, criadoPor }) {
   const [result] = await pool.execute(
-    `INSERT INTO atividades (id_conteudo, pergunta, tipo, resposta_correta)
-     VALUES (?, ?, ?, ?)`,
-    [idConteudo, pergunta, tipo, respostaCorreta]
+    `INSERT INTO atividades (titulo, descricao, criado_por, prazo, status, anexos, questoes, pergunta, tipo)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [titulo, descricao || null, criadoPor, prazo || null, status, JSON.stringify(anexos || []), JSON.stringify(questoes || []), titulo, 'DISSERTATIVA']
   );
-  return {
-    id_atividade: result.insertId,
-    id_conteudo: idConteudo,
-    pergunta,
-    tipo,
-    resposta_correta: respostaCorreta
-  };
+  return buscarPorId(result.insertId);
 }
 
-/**
- * Lista atividades de um conteúdo
- */
-async function listarPorConteudo(idConteudo) {
+async function listarPublicadas() {
   const [rows] = await pool.execute(
-    'SELECT * FROM atividades WHERE id_conteudo = ? ORDER BY id_atividade ASC',
-    [idConteudo]
+    `SELECT a.*, u.nome AS criador_nome, (SELECT COUNT(*) FROM respostas_usuario r WHERE r.id_atividade = a.id_atividade AND r.status IN ('ENTREGUE','CORRIGIDA')) AS entregas
+     FROM atividades a LEFT JOIN usuarios u ON u.id_usuario = a.criado_por WHERE a.status = 'PUBLICADA'
+     ORDER BY a.prazo IS NULL, a.prazo ASC, a.id_atividade DESC`
   );
-  return rows;
+  return rows.map(normalizar);
 }
 
-/**
- * Obtém atividade por ID
- */
+async function listarGestao() {
+  const [rows] = await pool.execute(
+    `SELECT a.*, u.nome AS criador_nome, (SELECT COUNT(*) FROM respostas_usuario r WHERE r.id_atividade = a.id_atividade AND r.status IN ('ENTREGUE','CORRIGIDA')) AS entregas
+     FROM atividades a LEFT JOIN usuarios u ON u.id_usuario = a.criado_por ORDER BY a.atualizado_em DESC`
+  );
+  return rows.map(normalizar);
+}
+
 async function buscarPorId(idAtividade) {
-  const [rows] = await pool.execute(
-    'SELECT * FROM atividades WHERE id_atividade = ?',
-    [idAtividade]
-  );
-  return rows[0];
+  const [rows] = await pool.execute('SELECT a.*, u.nome AS criador_nome FROM atividades a LEFT JOIN usuarios u ON u.id_usuario = a.criado_por WHERE a.id_atividade = ?', [idAtividade]);
+  return normalizar(rows[0]);
 }
 
-/**
- * Atualiza atividade
- */
-async function atualizarAtividade(idAtividade, dados) {
-  const { pergunta, tipo, resposta_correta } = dados;
+async function atualizar(idAtividade, { titulo, descricao, prazo, status, anexos, questoes }) {
   await pool.execute(
-    `UPDATE atividades
-     SET pergunta = ?, tipo = ?, resposta_correta = ?
-     WHERE id_atividade = ?`,
-    [pergunta, tipo, resposta_correta || null, idAtividade]
+    `UPDATE atividades SET titulo = ?, descricao = ?, prazo = ?, status = ?, anexos = ?, questoes = ?, pergunta = ? WHERE id_atividade = ?`,
+    [titulo, descricao || null, prazo || null, status, JSON.stringify(anexos || []), JSON.stringify(questoes || []), titulo, idAtividade]
   );
-  return { id_atividade: idAtividade, ...dados };
+  return buscarPorId(idAtividade);
 }
 
-/**
- * Deleta atividade
- */
-async function deletarAtividade(idAtividade) {
-  await pool.execute(
-    'DELETE FROM atividades WHERE id_atividade = ?',
-    [idAtividade]
-  );
-}
-
-module.exports = {
-  criarAtividade,
-  listarPorConteudo,
-  buscarPorId,
-  atualizarAtividade,
-  deletarAtividade
-};
+async function deletar(idAtividade) { await pool.execute('DELETE FROM atividades WHERE id_atividade = ?', [idAtividade]); }
+module.exports = { criar, listarPublicadas, listarGestao, buscarPorId, atualizar, deletar };

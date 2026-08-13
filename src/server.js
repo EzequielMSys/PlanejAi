@@ -9,10 +9,24 @@ const perfilRoutes = require('./routes/perfilRoutes');
 const cronogramaRoutes = require('./routes/cronogramaRoutes');
 const atividadeRoutes = require('./routes/atividadeRoutes');
 const redacaoRoutes = require('./routes/redacaoRoutes');
+const conteudoRoutes = require('./routes/conteudoRoutes');
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    // Requests without Origin include local tools and same-origin server calls.
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Origem não permitida pelo CORS.'));
+  }
+}));
 app.use(express.json({ limit: '10mb' }));
 
 // Servir imagens/uploads corretamente
@@ -24,6 +38,7 @@ app.use('/api/perfil', perfilRoutes);
 app.use('/api/cronograma', cronogramaRoutes);
 app.use('/api/atividade', atividadeRoutes);
 app.use('/api/redacao', redacaoRoutes);
+app.use('/api/conteudos', conteudoRoutes);
 
 app.get('/', (req, res) => {
   res.json({
@@ -42,7 +57,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-if (process.env.NODE_ENV !== 'production') {
+if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor rodando na porta ${PORT}`);

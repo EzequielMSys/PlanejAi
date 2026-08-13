@@ -28,6 +28,7 @@ async function listarConteudosPorDia(idDia) {
       c.titulo,
       c.tipo,
       c.link,
+      c.materiais,
       c.nivel
      FROM cronograma_conteudos cc
      LEFT JOIN conteudos c
@@ -54,6 +55,7 @@ async function listarConteudosPorCronograma(idCronograma) {
       c.titulo,
       c.tipo,
       c.link,
+      c.materiais,
       c.nivel
      FROM cronograma_conteudos cc
      INNER JOIN cronograma_dias cd
@@ -80,6 +82,7 @@ async function obterConteudoCronogramaPorId(idConteudoCronograma) {
       c.titulo,
       c.tipo,
       c.link,
+      c.materiais,
       c.nivel
      FROM cronograma_conteudos cc
      LEFT JOIN conteudos c

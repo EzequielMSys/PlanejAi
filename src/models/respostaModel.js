@@ -1,97 +1,12 @@
 const pool = require('../config/db');
-
-/**
- * Registra uma resposta do usuário a uma atividade
- */
-async function registrarResposta(idUsuario, idAtividade, resposta, correta = false) {
-  const [result] = await pool.execute(
-    `INSERT INTO respostas_usuario (id_usuario, id_atividade, resposta, correta)
-     VALUES (?, ?, ?, ?)`,
-    [idUsuario, idAtividade, resposta, correta ? 1 : 0]
-  );
-  return {
-    id_resposta: result.insertId,
-    id_usuario: idUsuario,
-    id_atividade: idAtividade,
-    resposta,
-    correta: correta ? 1 : 0
-  };
+function parseResposta(row) { if (!row) return null; try { return { ...row, resposta: JSON.parse(row.resposta) }; } catch { return row; } }
+async function registrarResposta(idUsuario, idAtividade, resposta, { correta = null, status = 'ENTREGUE', nota = null } = {}) {
+  const [result] = await pool.execute(`INSERT INTO respostas_usuario (id_usuario, id_atividade, resposta, correta, status, nota) VALUES (?, ?, ?, ?, ?, ?)`, [idUsuario, idAtividade, JSON.stringify(resposta), correta, status, nota]);
+  return obterPorId(result.insertId);
 }
-
-/**
- * Obtém histórico de respostas de um usuário
- */
-async function obterHistoricoPorUsuario(idUsuario) {
-  const [rows] = await pool.execute(
-    `SELECT r.*, a.pergunta, a.tipo, c.disciplina, c.titulo as conteudo_titulo
-     FROM respostas_usuario r
-     JOIN atividades a ON a.id_atividade = r.id_atividade
-     JOIN conteudos c ON c.id_conteudo = a.id_conteudo
-     WHERE r.id_usuario = ?
-     ORDER BY r.respondido_em DESC`,
-    [idUsuario]
-  );
-  return rows;
-}
-
-/**
- * Obtém histórico de respostas para uma atividade
- */
-async function obterHistoricoPorAtividade(idAtividade) {
-  const [rows] = await pool.execute(
-    `SELECT r.*, u.nome, u.email
-     FROM respostas_usuario r
-     JOIN usuarios u ON u.id_usuario = r.id_usuario
-     WHERE r.id_atividade = ?
-     ORDER BY r.respondido_em DESC`,
-    [idAtividade]
-  );
-  return rows;
-}
-
-/**
- * Conta respostas corretas de um usuário
- */
-async function contagemRespostasCorretas(idUsuario) {
-  const [rows] = await pool.execute(
-    'SELECT COUNT(*) as total FROM respostas_usuario WHERE id_usuario = ? AND correta = 1',
-    [idUsuario]
-  );
-  return rows[0]?.total || 0;
-}
-
-/**
- * Calcula taxa de acerto de um usuário
- */
-async function taxaAcertoUsuario(idUsuario) {
-  const [rows] = await pool.execute(
-    `SELECT 
-       COUNT(*) as total,
-       SUM(CASE WHEN correta = 1 THEN 1 ELSE 0 END) as corretas
-     FROM respostas_usuario
-     WHERE id_usuario = ?`,
-    [idUsuario]
-  );
-  const result = rows[0];
-  if (result.total === 0) return 0;
-  return Math.round((result.corretas / result.total) * 100);
-}
-
-/**
- * Deleta resposta
- */
-async function deletarResposta(idResposta) {
-  await pool.execute(
-    'DELETE FROM respostas_usuario WHERE id_resposta = ?',
-    [idResposta]
-  );
-}
-
-module.exports = {
-  registrarResposta,
-  obterHistoricoPorUsuario,
-  obterHistoricoPorAtividade,
-  contagemRespostasCorretas,
-  taxaAcertoUsuario,
-  deletarResposta
-};
+async function obterPorId(idResposta) { const [rows] = await pool.execute('SELECT * FROM respostas_usuario WHERE id_resposta = ?', [idResposta]); return parseResposta(rows[0]); }
+async function obterPorAtividadeEUsuario(idAtividade, idUsuario) { const [rows] = await pool.execute('SELECT * FROM respostas_usuario WHERE id_atividade = ? AND id_usuario = ? ORDER BY respondido_em DESC LIMIT 1', [idAtividade, idUsuario]); return parseResposta(rows[0]); }
+async function listarPorAtividade(idAtividade) { const [rows] = await pool.execute(`SELECT r.*, u.nome, u.email FROM respostas_usuario r JOIN usuarios u ON u.id_usuario = r.id_usuario WHERE r.id_atividade = ? ORDER BY r.respondido_em DESC`, [idAtividade]); return rows.map(parseResposta); }
+async function corrigir(idResposta, { nota, feedback, corrigidoPor }) { await pool.execute(`UPDATE respostas_usuario SET nota = ?, feedback = ?, status = 'CORRIGIDA', corrigido_por = ?, corrigido_em = CURRENT_TIMESTAMP WHERE id_resposta = ?`, [nota, feedback || null, corrigidoPor, idResposta]); return obterPorId(idResposta); }
+async function obterHistoricoPorUsuario(idUsuario) { const [rows] = await pool.execute(`SELECT r.*, a.titulo, a.pergunta, a.tipo FROM respostas_usuario r JOIN atividades a ON a.id_atividade = r.id_atividade WHERE r.id_usuario = ? ORDER BY r.respondido_em DESC`, [idUsuario]); return rows.map(parseResposta); }
+module.exports = { registrarResposta, obterPorId, obterPorAtividadeEUsuario, listarPorAtividade, corrigir, obterHistoricoPorUsuario };

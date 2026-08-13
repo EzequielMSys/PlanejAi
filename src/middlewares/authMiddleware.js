@@ -61,12 +61,15 @@ function permitirTipos(...tiposPermitidos) {
   };
 }
 
-const isAdminOrDono = permitirTipos('admin', 'dono');
+const isAdminOrDono = permitirTipos('admin', 'adm', 'dono');
 const isDono = permitirTipos('dono');
+// "adm" existia no esquema inicial; mantemos compatibilidade com contas antigas.
+const isGestorPedagogico = permitirTipos('dono', 'admin', 'adm', 'docente');
 
 module.exports = {
   authMiddleware,
   permitirTipos,
   isAdminOrDono,
-  isDono
+  isDono,
+  isGestorPedagogico
 };

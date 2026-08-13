@@ -40,28 +40,33 @@ function TextoComErros({ texto, erros = [] }) {
   const partes = []
   let cursor = 0
 
-  // Ordena erros por posição
-  const errosOrdenados = [...erros].sort((a, b) => a.posicao - b.posicao)
+  // A API envia offsets do texto original. Usá-los evita destacar a ocorrência
+  // errada quando uma palavra se repete ou começa com letra maiúscula.
+  const errosOrdenados = [...erros]
+    .filter((erro) => Number.isInteger(Number(erro.posicao)) && erro.palavra)
+    .sort((a, b) => Number(a.posicao) - Number(b.posicao))
 
   for (const erro of errosOrdenados) {
-    const posRelativa = texto.toLowerCase().indexOf(erro.palavra, cursor)
+    const inicio = Number(erro.posicao)
+    const fim = inicio + String(erro.palavra).length
+    const textoDoErro = texto.slice(inicio, fim)
 
-    if (posRelativa !== -1 && posRelativa >= cursor) {
+    if (inicio >= cursor && textoDoErro.toLocaleLowerCase() === String(erro.palavra).toLocaleLowerCase()) {
       // Texto antes do erro
-      partes.push(texto.slice(cursor, posRelativa))
+      partes.push(texto.slice(cursor, inicio))
 
       // Palavra com erro (grifada)
       partes.push(
         <mark
-          key={`${erro.palavra}-${posRelativa}`}
+          key={`${erro.palavra}-${inicio}`}
           className="bg-red-100 text-red-700 px-0.5 rounded font-semibold border-b-2 border-red-400"
           title={erro.sugestao ? `Sugestão: ${erro.sugestao}` : 'Possível erro'}
         >
-          {texto.slice(posRelativa, posRelativa + erro.palavra.length)}
+          {textoDoErro}
         </mark>
       )
 
-      cursor = posRelativa + erro.palavra.length
+      cursor = fim
     }
   }
 
@@ -94,8 +99,8 @@ function BadgeIA({ nivel }) {
 }
 
 export default function Redacoes() {
-  const { isAdmin, isDono } = useAuth()
-  const isGestor = isAdmin || isDono
+  const { isAdmin, isDono, isDocente } = useAuth()
+  const isGestor = isAdmin || isDono || isDocente
 
   const [redacoes, setRedacoes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -153,7 +158,6 @@ export default function Redacoes() {
 
   useEffect(() => {
     carregarRedacoes()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGestor, aba])
 
   const handleEnviar = async (e) => {

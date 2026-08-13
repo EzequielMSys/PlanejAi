@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const redacaoController = require('../controllers/redacaoController');
-const { authMiddleware, isAdminOrDono } = require('../middlewares/authMiddleware');
+const { authMiddleware, isGestorPedagogico } = require('../middlewares/authMiddleware');
 
 // Enviar redação (qualquer usuário autenticado)
 router.post('/', authMiddleware, redacaoController.enviarRedacao);
@@ -10,7 +10,7 @@ router.post('/', authMiddleware, redacaoController.enviarRedacao);
 router.get('/', authMiddleware, redacaoController.listarRedacoes);
 
 // Listar todas as redações (admin/dono)
-router.get('/todas', authMiddleware, isAdminOrDono, redacaoController.listarTodasRedacoes);
+router.get('/todas', authMiddleware, isGestorPedagogico, redacaoController.listarTodasRedacoes);
 
 // Sugerir tema e repertórios de redação
 router.post('/sugerir-tema', authMiddleware, redacaoController.sugerirTema);
@@ -19,6 +19,6 @@ router.post('/sugerir-tema', authMiddleware, redacaoController.sugerirTema);
 router.get('/:idRedacao', authMiddleware, redacaoController.obterRedacao);
 
 // Avaliar redação (admin/dono)
-router.patch('/:idRedacao/avaliar', authMiddleware, isAdminOrDono, redacaoController.avaliarRedacao);
+router.patch('/:idRedacao/avaliar', authMiddleware, isGestorPedagogico, redacaoController.avaliarRedacao);
 
 module.exports = router;

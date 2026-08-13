@@ -9,7 +9,7 @@
 
 const https = require('https');
 
-const LANGUAGE_TOOL_URL = 'https://api.languagetool.org/v2/check';
+const LANGUAGE_TOOL_URL = process.env.LANGUAGE_TOOL_URL || 'https://api.languagetool.org/v2/check';
 const LANGUAGE = 'pt-BR';
 const MOTHER_TONGUE = 'pt-BR';
 const PREFERRED_VARIANTS = ['pt-BR'];
@@ -62,8 +62,14 @@ function chamarLanguageTool(texto) {
       });
 
       res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          return reject(new Error(`LanguageTool respondeu com status ${res.statusCode}.`));
+        }
         try {
           const json = JSON.parse(dados);
+          if (!json || !Array.isArray(json.matches)) {
+            return reject(new Error('Resposta inválida do LanguageTool.'));
+          }
           resolve(json);
         } catch (error) {
           reject(new Error('Falha ao decodificar resposta do LanguageTool.'));
@@ -100,8 +106,6 @@ function filtrarMatches(matches, texto) {
     .filter((match) => {
       const categoria = match.rule?.category?.id || '';
       const mensagem = match.message || '';
-      const contexto = (match.context?.text || '').toLowerCase();
-
       const categoriaRelevante = CATEGORIAS_RELEVANTES.some((c) =>
         categoria.includes(c)
       );
@@ -136,7 +140,11 @@ function converterMatchesParaErros(matches, texto) {
   for (const match of matches) {
     const offset = match.offset;
     const length = match.length;
+    if (!Number.isInteger(offset) || !Number.isInteger(length) || offset < 0 || length < 1) {
+      continue;
+    }
     const palavra = texto.slice(offset, offset + length);
+    if (!palavra) continue;
 
     const sugestao = match.replacements?.[0]?.value || null;
 

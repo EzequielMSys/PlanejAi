@@ -1,7 +1,11 @@
-const express = require('express');
-const router = express.Router();
+const router = require('express').Router();
 const atividadeController = require('../controllers/atividadeController');
-const { authMiddleware } = require('../middlewares/authMiddleware');
-router.post('/responder', authMiddleware, atividadeController.responderAtividade);
-router.get('/historico', authMiddleware, atividadeController.historicoDesempenho);
+const { authMiddleware, isGestorPedagogico } = require('../middlewares/authMiddleware');
+router.get('/', authMiddleware, atividadeController.listar);
+router.post('/', authMiddleware, isGestorPedagogico, atividadeController.criar);
+router.get('/:idAtividade', authMiddleware, atividadeController.obter);
+router.put('/:idAtividade', authMiddleware, isGestorPedagogico, atividadeController.atualizar);
+router.post('/:idAtividade/respostas', authMiddleware, atividadeController.responderAtividade);
+router.get('/:idAtividade/entregas', authMiddleware, isGestorPedagogico, atividadeController.entregas);
+router.patch('/respostas/:idResposta/corrigir', authMiddleware, isGestorPedagogico, atividadeController.corrigirEntrega);
 module.exports = router;

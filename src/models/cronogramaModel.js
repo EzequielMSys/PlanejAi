@@ -114,6 +114,7 @@ async function obterCronogramaCompleto(idCronograma) {
         c.titulo,
         c.tipo,
         c.link,
+        c.materiais,
         c.nivel
        FROM cronograma_conteudos cc
        LEFT JOIN conteudos c
