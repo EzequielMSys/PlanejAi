@@ -3,8 +3,8 @@ import { useAuth } from '../context/AuthContext'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import ThemeToggle from './ThemeToggle'
-
-const API_URL = 'http://localhost:3000'
+import { resolveBackendAsset } from '../config/api'
+import Logo from './Logo'
 
 const MenuIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -76,7 +76,7 @@ const LogoutIcon = ({ className }) => (
 function getFotoUrl(fotoUrl) {
   if (!fotoUrl) return null
   if (fotoUrl.startsWith('http')) return fotoUrl
-  return `${API_URL}${fotoUrl}`
+  return resolveBackendAsset(fotoUrl)
 }
 
 export default function Navbar({ onMenuClick, sidebarOpen }) {
@@ -117,8 +117,8 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
   }
 
   return (
-    <nav className="sticky top-0 left-0 right-0 z-50 h-16 bg-white/90 dark:bg-[#1E1D3A]/90 backdrop-blur-xl border-b border-[#9394CF]/20 shadow-lg">
-      <div className="h-full flex items-center justify-between px-4 lg:px-6">
+    <nav className="sticky top-0 left-0 right-0 z-50 h-[4.5rem] border-b border-[#E8DFF2] bg-[#FCFAFF]/95 backdrop-blur-2xl dark:border-white/10 dark:bg-[#181220]/95">
+      <div className="flex h-full items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <button
             onClick={onMenuClick}
@@ -138,19 +138,17 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
                 setNavMenuOpen((v) => !v)
                 setDropdownOpen(false)
               }}
-              className="flex items-center gap-2.5 group"
+              className="group flex items-center gap-2.5 rounded-xl px-1.5 py-1 transition hover:bg-[#F2ECF8] dark:hover:bg-white/5"
               aria-label="Menu de navegação"
             >
-              <div className="w-9 h-9 rounded-full bg-[#9394CF] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-                <span className="text-black font-black text-lg">P</span>
-              </div>
+              <Logo className="h-9 w-9" />
 
-              <span className="text-xl font-black text-[#4B4C9D] hidden sm:block">
+              <span className="hidden text-lg font-black tracking-[-0.03em] text-[#2C1A3D] sm:block dark:text-[#FAF7FF]">
                 PlanejAI
               </span>
 
               <ChevronDownIcon
-                className={`w-4 h-4 text-[#4B4C9D] transition-transform hidden sm:block ${
+                className={`hidden h-4 w-4 text-[#8885A1] transition-transform sm:block ${
                   navMenuOpen ? 'rotate-180' : ''
                 }`}
               />
@@ -206,13 +204,13 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
           <div className="relative">
             <button
               onClick={() => setDropdownOpen((v) => !v)}
-              className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-full hover:bg-[#9394CF]/20 transition-all border border-transparent hover:border-[#9394CF]/30"
+              className="flex items-center gap-2.5 rounded-xl border border-[#E7DDF0] bg-white/70 py-1.5 pl-2 pr-3 transition hover:border-[#C4B5FD] hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[#8B5CF6]/50 dark:hover:bg-white/10"
             >
-              <div className="w-8 h-8 rounded-full bg-[#9394CF] flex items-center justify-center shadow-md overflow-hidden">
+              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-[#E2DFFD] shadow-sm">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-black font-black text-sm">
+                  <span className="text-sm font-black text-[#443BA7]">
                     {initials}
                   </span>
                 )}

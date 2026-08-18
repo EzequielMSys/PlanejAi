@@ -22,9 +22,9 @@ export default function ThemeToggle({ className = '' }) {
       onClick={toggleTheme}
       aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
       title={isDark ? 'Modo claro' : 'Modo escuro'}
-      className={`relative inline-flex items-center justify-center w-11 h-11 rounded-full
-        bg-white/70 dark:bg-white/10 backdrop-blur-xl border border-[#4B4C9D]/20
-        text-[#4B4C9D] dark:text-white shadow-lg hover:scale-105
+      className={`relative inline-flex items-center justify-center w-10 h-10 rounded-xl
+        bg-white/70 dark:bg-white/10 backdrop-blur-xl border border-[#E7DDF0] dark:border-white/10
+        text-[#6D28D9] dark:text-[#DDD6FE] hover:scale-105
         hover:bg-[#9394CF]/20 dark:hover:bg-white/20
         transition-all duration-300 ${className}`}
     >

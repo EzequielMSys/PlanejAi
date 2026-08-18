@@ -22,6 +22,7 @@ import Atividades from './pages/Atividades'
 import Materiais from './pages/Materiais'
 import MinhasAtividades from './pages/MinhasAtividades'
 import AvisosAluno from './pages/AvisosAluno'
+import NotFound from './pages/NotFound'
 
 function App() {
   return (
@@ -62,6 +63,8 @@ function App() {
             <Route path="/dono/usuarios" element={<UsuariosAdmin />} />
           </Route>
         </Route>
+
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </AuthProvider>
   )

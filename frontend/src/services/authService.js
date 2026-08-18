@@ -1,7 +1,8 @@
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
+import { apiUrl } from '../config/api'
 
-const API_BASE = '/api/auth'
+const API_BASE = apiUrl('/api/auth')
 
 const api = axios.create({
   baseURL: API_BASE

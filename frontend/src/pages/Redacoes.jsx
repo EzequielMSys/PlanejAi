@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import redacaoService from '../services/redacaoService'
+import '../components/EssayRecords.css'
+import EssayStudio from '../components/EssayStudio'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -84,9 +86,9 @@ function BadgeIA({ nivel }) {
   if (!nivel) return null
 
   const config = {
-    provavel: { label: 'Possível uso de IA', cls: 'bg-red-100 text-red-700 border-red-300' },
-    possivel: { label: 'Possível uso de IA', cls: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
-    'improvável': { label: 'Texto original', cls: 'bg-green-100 text-green-700 border-green-300' }
+    provavel: { label: 'Revisar sinais de autoria', cls: 'bg-red-100 text-red-700 border-red-300' },
+    possivel: { label: 'Revisar sinais de autoria', cls: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
+    'improvável': { label: 'Poucos sinais atípicos', cls: 'bg-green-100 text-green-700 border-green-300' }
   }
 
   const cfg = config[nivel] || config.improvável
@@ -175,6 +177,7 @@ export default function Redacoes() {
 
       setRedacoes((prev) => [novaRedacao, ...prev])
       setForm({ tema: '', texto: '' })
+      localStorage.removeItem('planejai:redacao:rascunho:v2')
       setModoEscrita(false)
       toast.success('Redação enviada. Confira o feedback e a análise de erros!')
     } catch (error) {
@@ -237,7 +240,7 @@ export default function Redacoes() {
 
       <div className="max-w-5xl mx-auto relative z-10">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <section className="bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+          <section className="workspace-hero bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
             <div className="absolute inset-0 bg-black/20" />
             <div className="absolute top-8 left-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
             <div className="absolute bottom-8 right-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
@@ -297,7 +300,16 @@ export default function Redacoes() {
             </div>
           )}
 
-          {modoEscrita ? (
+          {modoEscrita ? (<EssayStudio
+            form={form}
+            setForm={setForm}
+            onSubmit={handleEnviar}
+            onCancel={() => setModoEscrita(false)}
+            enviando={enviando}
+            sugestao={sugestaoTema}
+            sugerindo={sugerindoTema}
+            onSugerir={buscarSugestaoTema}
+          />) : modoEscrita ? (
             <motion.div
               variants={fadeUp}
               initial="hidden"
@@ -401,7 +413,7 @@ export default function Redacoes() {
                     }
                     rows={12}
                     placeholder="Escreva sua redação aqui..."
-                    className="w-full rounded-[1.5rem] px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none resize-y"
+                    className="writing-paper w-full rounded-[1.5rem] px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none resize-y"
                   />
                   <p className="text-xs text-black/50 mt-1">
                     {form.texto.trim().length} caracteres
@@ -420,18 +432,13 @@ export default function Redacoes() {
           ) : (
             <>
               {redacoes.length === 0 ? (
-                <section className="bg-white rounded-[3rem] p-10 sm:p-12 text-center shadow-2xl border border-[#9394CF]/20">
-                  <div className="w-24 h-24 rounded-full bg-[#9394CF] mx-auto flex items-center justify-center text-white shadow-xl mb-6">
-                    <svg className="w-11 h-11" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </div>
-
-                  <h2 className="text-3xl font-black text-black mb-3">
+                <section className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.85fr] lg:items-center">
+                  <div>
+                  <span className="mb-5 inline-flex rounded-full border border-[#DDD0EF] bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-[#6D28D9] dark:border-white/10 dark:bg-white/5 dark:text-[#C4B5FD]">Oficina de texto</span>
+                  <h2 className="max-w-xl text-3xl font-black tracking-[-.04em] text-[#2C1A3D] dark:text-white sm:text-4xl">
                     {aba === 'gestor' ? 'Nenhuma redação para avaliar' : 'Nenhuma redação enviada'}
                   </h2>
-
-                  <p className="text-black/60 max-w-md mx-auto leading-relaxed mb-8">
+                  <p className="mt-4 max-w-lg leading-relaxed text-[#74627F] dark:text-[#B7A9C1]">
                     {aba === 'gestor'
                       ? 'Quando os alunos enviarem redações, elas aparecerão aqui para você avaliar.'
                       : 'Escreva sua primeira redação e receba um feedback automático com nota estimada.'}
@@ -441,14 +448,23 @@ export default function Redacoes() {
                     <button
                       type="button"
                       onClick={() => setModoEscrita(true)}
-                      className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-black hover:bg-black transition"
+                      className="mt-7 rounded-xl bg-[#7C3AED] px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-[#6D28D9]"
                     >
                       Escrever redação
                     </button>
                   )}
+                  </div>
+                  <div className="essay-preview" aria-hidden="true">
+                    <div className="essay-preview-top"><span>PLANEJAI / REDAÇÃO</span><b>01</b></div>
+                    <p className="essay-preview-title">Todo texto começa com uma ideia.</p>
+                    <div className="essay-preview-line w-full" />
+                    <div className="essay-preview-line w-11/12" />
+                    <div className="essay-preview-line w-4/5" />
+                    <div className="mt-7 flex gap-2"><i>tese</i><i>argumento</i><i>revisão</i></div>
+                  </div>
                 </section>
               ) : (
-                <section className="grid gap-4">
+                <section className="essay-records grid gap-4">
                   {redacoes.map((redacao) => {
                     const nota =
                       redacao.nota_manual ??
@@ -479,9 +495,9 @@ export default function Redacoes() {
                     return (
                       <div
                         key={redacao.id_redacao}
-                        className="bg-white rounded-[2rem] p-5 shadow-xl border border-[#9394CF]/20"
+                        className="essay-record bg-white rounded-[2rem] p-5 shadow-xl border border-[#9394CF]/20"
                       >
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="essay-record__header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           <div>
                             <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-1">
                               {formatarData(redacao.enviada_em)}
@@ -513,6 +529,7 @@ export default function Redacoes() {
 
                             <button
                               type="button"
+                              aria-expanded={selecionadaE}
                               onClick={() =>
                                 setSelecionada(
                                   selecionadaE ? null : redacao
@@ -526,8 +543,8 @@ export default function Redacoes() {
                         </div>
 
                         {selecionadaE && (
-                          <div className="mt-4 pt-4 border-t border-[#9394CF]/20 space-y-4">
-                            <div>
+                          <div className="essay-record__details mt-4 pt-4 border-t border-[#9394CF]/20 space-y-4">
+                            <div className="essay-record__manuscript">
                               <p className="text-xs uppercase tracking-[0.25em] font-black text-black/40 mb-2">
                                 Texto
                               </p>
@@ -535,7 +552,7 @@ export default function Redacoes() {
                             </div>
 
                             {erros.length > 0 && (
-                              <div className="p-4 rounded-[1.5rem] bg-red-50 border border-red-200">
+                              <div className="essay-record__panel essay-record__errors p-4 rounded-[1.5rem] bg-red-50 border border-red-200">
                                 <p className="text-xs uppercase tracking-[0.25em] font-black text-red-600 mb-2">
                                   Erros ortográficos ({erros.length})
                                 </p>
@@ -558,7 +575,7 @@ export default function Redacoes() {
                             )}
 
                             {sugestoes.length > 0 && (
-                              <div className="p-4 rounded-[1.5rem] bg-blue-50 border border-blue-200">
+                              <div className="essay-record__panel essay-record__suggestions p-4 rounded-[1.5rem] bg-blue-50 border border-blue-200">
                                 <p className="text-xs uppercase tracking-[0.25em] font-black text-blue-600 mb-2">
                                   Sugestões de melhoria
                                 </p>
@@ -593,7 +610,7 @@ export default function Redacoes() {
                               })()
 
                               return (comps.length > 0 || repertorioSugerido.length > 0) ? (
-                                <div className="p-4 rounded-[1.5rem] bg-[#F7F7FB] border border-[#9394CF]/30">
+                                <div className="essay-record__scoreboard p-4 rounded-[1.5rem] bg-[#F7F7FB] border border-[#9394CF]/30">
                                   <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-3">
                                     Avaliação ENEM (0-1000)
                                   </p>
@@ -603,7 +620,8 @@ export default function Redacoes() {
                                       {comps.map((c) => (
                                         <div
                                           key={c.codigo}
-                                          className="flex items-center justify-between px-3 py-2 rounded-[1rem] bg-white border border-[#9394CF]/20"
+                                          className="essay-record__competency flex items-center justify-between px-3 py-2 rounded-[1rem] bg-white border border-[#9394CF]/20"
+                                          style={{ '--score-ratio': Math.min(1, Math.max(0, Number(c.nota) / 200)) }}
                                         >
                                           <span className="text-xs text-black/70 font-semibold">
                                             Competência {c.codigo}
@@ -621,7 +639,7 @@ export default function Redacoes() {
                                       <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-2">
                                         Repertório sugerido
                                       </p>
-                                      <div className="flex flex-wrap gap-2">
+                                      <div className="essay-record__repertoire flex flex-wrap gap-2">
                                         {repertorioSugerido.map((rep, idx) => (
                                           <span
                                             key={idx}
@@ -639,12 +657,13 @@ export default function Redacoes() {
                             })()}
 
                             {flagIa && (
-                              <div className="p-4 rounded-[1.5rem] bg-purple-50 border border-purple-200">
+                              <div className="essay-record__panel essay-record__authorship p-4 rounded-[1.5rem] bg-purple-50 border border-purple-200">
                                 <p className="text-xs uppercase tracking-[0.25em] font-black text-purple-600 mb-2">
-                                  Detecção de IA
+                                  Sinais de estilo e autoria
                                 </p>
                                 <p className="text-sm text-black/80">
-                                  Este texto apresenta características comuns de conteúdo gerado por IA.
+                                  Alguns padrões merecem revisão, mas não comprovam uso de IA. A avaliação deve considerar o histórico de escrita e o contexto do aluno.
+                                  {iaInfo?.aviso && <span className="mt-2 block text-xs">{iaInfo.aviso}</span>}
                                 </p>
                                 {iaInfo?.evidencias && iaInfo.evidencias.length > 0 && (
                                   <ul className="space-y-1 mt-2">
@@ -660,7 +679,7 @@ export default function Redacoes() {
                             )}
 
                             {feedback && (
-                              <div className="p-4 rounded-[1.5rem] bg-[#F7F7FB] border border-[#9394CF]/20">
+                              <div className="essay-record__feedback p-4 rounded-[1.5rem] bg-[#F7F7FB] border border-[#9394CF]/20">
                                 <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-2">
                                   {temFeedbackManual ? 'Feedback do avaliador' : 'Feedback automático'}
                                 </p>
@@ -675,7 +694,7 @@ export default function Redacoes() {
                               avaliando?.id_redacao === redacao.id_redacao ? (
                                 <form
                                   onSubmit={handleAvaliar}
-                                  className="p-4 rounded-[1.5rem] bg-[#F7F7FB] border border-[#9394CF]/30"
+                                  className="essay-record__assessment p-4 rounded-[1.5rem] bg-[#F7F7FB] border border-[#9394CF]/30"
                                 >
                                   <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-3">
                                     Avaliar redação

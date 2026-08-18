@@ -1,0 +1,368 @@
+/*
+ * PlanejAI / Caderno Editorial
+ * Sistema visual compartilhado. A intenção é aproximar o produto de um
+ * fichário contemporâneo: informação numerada, papel, tinta e movimento curto.
+ */
+
+:root {
+  --brand-ink: 44 26 61;
+  --brand-paper: 253 251 255;
+  --brand-canvas: 247 243 250;
+  --brand-violet: 109 60 211;
+  --brand-violet-deep: 78 39 146;
+  --brand-lilac: 225 211 244;
+  --brand-line: 222 211 232;
+  --brand-coral: 233 111 98;
+  --brand-lime: 184 224 108;
+  --route-accent: 109 60 211;
+  --route-soft: 238 228 250;
+  --editorial-radius: 18px;
+  --editorial-shadow: 0 22px 65px -48px rgba(52, 25, 77, .65);
+}
+
+.dark {
+  --brand-ink: 249 246 252;
+  --brand-paper: 31 23 40;
+  --brand-canvas: 20 15 28;
+  --brand-line: 79 61 94;
+  --route-soft: 61 40 78;
+  --editorial-shadow: 0 28px 70px -50px rgba(0, 0, 0, .92);
+}
+
+body[data-page="cronograma"] { --route-accent: 91 78 200; --route-soft: 231 228 250; }
+body[data-page="redacoes"] { --route-accent: 130 61 173; --route-soft: 241 226 246; }
+body[data-page="atividades"], body[data-page="minhas-atividades"] { --route-accent: 116 72 189; --route-soft: 237 229 247; }
+body[data-page="perfil"] { --route-accent: 88 58 158; --route-soft: 232 226 244; }
+body[data-page="dashboard-gestor"], body[data-page="usuarios"], body[data-page="dono"] { --route-accent: 79 55 141; --route-soft: 230 225 240; }
+
+body[data-page] {
+  background:
+    linear-gradient(90deg, rgba(var(--route-accent), .028) 1px, transparent 1px) 0 0 / 42px 42px,
+    linear-gradient(rgba(var(--route-accent), .028) 1px, transparent 1px) 0 0 / 42px 42px,
+    rgb(var(--brand-canvas));
+}
+
+body[data-page]::before {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(var(--route-accent), .10), transparent 23rem),
+    radial-gradient(circle at 90% 84%, rgba(165, 119, 220, .07), transparent 25rem);
+}
+
+body[data-page] h1,
+body[data-page] h2,
+body[data-page] h3,
+body[data-page] strong,
+body[data-page] b { text-wrap: balance; }
+
+body[data-page] p { text-wrap: pretty; }
+
+/* Navegação: barra de ferramenta, não vitrine de SaaS. */
+.app-shell nav.sticky {
+  height: 4.25rem;
+  border-color: rgb(var(--brand-line) / .72);
+  background: rgb(var(--brand-paper) / .91);
+  box-shadow: 0 8px 32px -28px rgb(var(--brand-ink) / .7);
+}
+
+.app-shell nav.sticky::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--route-accent) / .55), transparent);
+}
+
+.app-shell nav.sticky button { border-radius: .7rem; }
+
+/* Área de trabalho */
+.app-shell main { position: relative; }
+.app-shell main > div > .min-h-screen { color: rgb(var(--brand-ink)); }
+.app-shell main > div > .min-h-screen > [class*="max-w-"] { width: min(100%, 1180px); }
+
+/* Cartões legados recebem a mesma linguagem de papel. */
+.app-shell main [class*="bg-white"][class*="rounded-[3rem]"],
+.app-shell main [class*="bg-white"][class*="rounded-[2.5rem]"],
+.app-shell main [class*="bg-white"][class*="rounded-[2rem]"],
+.app-shell main [class*="dark:bg"][class*="rounded-[2.5rem]"],
+.app-shell main [class*="dark:bg"][class*="rounded-[2rem]"] {
+  border-color: rgb(var(--brand-line) / .82) !important;
+  border-radius: var(--editorial-radius) !important;
+  background-color: rgb(var(--brand-paper)) !important;
+  box-shadow: var(--editorial-shadow) !important;
+}
+
+.app-shell main [class*="shadow-2xl"],
+.app-shell main [class*="shadow-xl"] { box-shadow: var(--editorial-shadow); }
+
+/* Cabeçalhos das páginas como capa de seção numerada. */
+.app-shell main .workspace-hero {
+  min-height: 12rem;
+  display: flex;
+  align-items: end;
+  border: 1px solid rgb(var(--brand-line)) !important;
+  border-radius: var(--editorial-radius) !important;
+  background:
+    linear-gradient(90deg, rgba(var(--route-accent), .055) 1px, transparent 1px) 2.1rem 0 / 2.8rem 100%,
+    linear-gradient(135deg, rgb(var(--brand-paper)), rgb(var(--route-soft) / .72)) !important;
+  box-shadow: var(--editorial-shadow) !important;
+}
+
+.app-shell main .workspace-hero::before {
+  width: .38rem;
+  background: rgb(var(--route-accent));
+}
+
+.app-shell main .workspace-hero::after {
+  content: attr(data-section);
+  position: absolute;
+  right: 1.5rem;
+  top: 1rem;
+  color: rgb(var(--route-accent) / .24);
+  font: 1000 clamp(2.4rem, 6vw, 5.8rem)/1 "Arial Black", sans-serif;
+  letter-spacing: -.08em;
+}
+body[data-page="inicio"] .workspace-hero::after,
+body[data-page="dashboard"] .workspace-hero::after { content: '01'; }
+body[data-page="cronograma"] .workspace-hero::after { content: '02'; }
+body[data-page="redacoes"] .workspace-hero::after { content: '03'; }
+body[data-page="atividades"] .workspace-hero::after { content: '04'; }
+body[data-page="minhas-atividades"] .workspace-hero::after { content: '05'; }
+body[data-page="avisos"] .workspace-hero::after { content: '06'; }
+body[data-page="perfil"] .workspace-hero::after { content: '07'; }
+body[data-page="materiais"] .workspace-hero::after { content: '08'; }
+body[data-page="dashboard-gestor"] .workspace-hero::after { content: 'G1'; }
+body[data-page="usuarios"] .workspace-hero::after { content: 'G2'; }
+body[data-page="dono"], body[data-page="dono-usuarios"] { --route-accent: 79 55 141; }
+body[data-page="dono"] .workspace-hero::after,
+body[data-page="dono-usuarios"] .workspace-hero::after { content: 'G3'; }
+
+.app-shell main .workspace-hero h1 {
+  color: rgb(var(--brand-ink)) !important;
+  font-size: clamp(2rem, 4.2vw, 4.25rem);
+  line-height: .98;
+  letter-spacing: -.065em;
+}
+
+.app-shell main .workspace-hero p { color: rgb(var(--color-muted)) !important; }
+.app-shell main .workspace-hero [class*="uppercase"] { color: rgb(var(--route-accent)) !important; }
+
+/* Perfil é deliberadamente uma capa escura. */
+.app-shell main .profile-hero { min-height: 15rem; }
+.app-shell main .profile-hero h1 { color: #fff !important; }
+.app-shell main .profile-hero p { color: rgba(255,255,255,.72) !important; }
+
+/* Botões: cantos moderados, resposta tátil curta. */
+.app-shell main button,
+.app-shell main a[class*="px-"] {
+  position: relative;
+  border-radius: .72rem !important;
+  transition: transform 150ms ease, border-color 150ms ease, background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.app-shell main button:not(:disabled):hover,
+.app-shell main a[class*="px-"]:hover { transform: translateY(-2px); }
+.app-shell main button:not(:disabled):active,
+.app-shell main a[class*="px-"]:active { transform: translateY(0) scale(.975); }
+
+.app-shell main button[class*="bg-[#4B4C9D]"],
+.app-shell main button[class*="bg-[#6157D9]"],
+.app-shell main button[class*="bg-[#7C3AED]"],
+.app-shell main button[class*="bg-[#6D28D9]"] {
+  border: 1px solid rgb(var(--route-accent));
+  background: rgb(var(--route-accent)) !important;
+  color: #fff !important;
+  box-shadow: 0 10px 25px -18px rgb(var(--route-accent));
+}
+
+.app-shell main button[class*="bg-black"] {
+  border: 1px solid rgb(var(--brand-ink));
+  background: rgb(var(--brand-ink)) !important;
+}
+
+.app-shell main button:disabled { cursor: not-allowed; filter: saturate(.55); }
+
+/* Campos com uma linha de base forte em vez de cápsulas. */
+.app-shell main input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.app-shell main select,
+.app-shell main textarea {
+  border: 1px solid rgb(var(--brand-line)) !important;
+  border-radius: .78rem !important;
+  background-color: rgb(var(--brand-paper)) !important;
+  color: rgb(var(--brand-ink)) !important;
+  box-shadow: inset 0 -1px 0 rgb(var(--route-accent) / .11);
+}
+
+.app-shell main input:focus,
+.app-shell main select:focus,
+.app-shell main textarea:focus {
+  border-color: rgb(var(--route-accent) / .75) !important;
+  box-shadow: 0 0 0 4px rgb(var(--route-accent) / .10) !important;
+}
+
+.app-shell main label { color: rgb(var(--brand-ink)); }
+
+/* Tabs e filtros */
+.app-shell main [class*="w-fit"][class*="rounded-full"][class*="bg-white"],
+.app-shell main [class*="mx-auto"][class*="rounded-full"][class*="bg-white"] {
+  border-radius: .9rem !important;
+  background: rgb(var(--brand-paper)) !important;
+  padding: .3rem !important;
+}
+
+.app-shell main [class*="rounded-full"][class*="px-"] { border-radius: .62rem !important; }
+
+/* Métricas: números grandes, etiquetas discretas e ritmo de fichário. */
+body[data-page="inicio"] .app-shell main section.grid > [class*="bg-white"],
+body[data-page="dashboard-gestor"] .app-shell main [class*="grid"] > [class*="bg-white"],
+body[data-page="dono"] .app-shell main [class*="grid"] > [class*="bg-white"] {
+  position: relative;
+  overflow: hidden;
+}
+
+body[data-page="inicio"] .app-shell main section.grid > [class*="bg-white"]::before,
+body[data-page="dashboard-gestor"] .app-shell main [class*="grid"] > [class*="bg-white"]::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: rgb(var(--route-accent) / .7);
+}
+
+/* Cronograma: cada dia vira uma folha destacável. */
+body[data-page="cronograma"] .app-shell main [class*="space-y-"] > [class*="bg-white"] {
+  border-radius: 1rem !important;
+}
+
+body[data-page="cronograma"] .app-shell main [class*="space-y-"] > [class*="bg-white"]:hover {
+  border-color: rgb(var(--route-accent) / .45) !important;
+  transform: translateX(3px);
+}
+
+/* Atividades e avisos com barras de categoria. */
+body[data-page="atividades"] .app-shell main [class*="bg-white"][class*="border"],
+body[data-page="minhas-atividades"] .app-shell main [class*="bg-white"][class*="border"],
+body[data-page="avisos"] .app-shell main [class*="bg-white"][class*="border"] {
+  position: relative;
+  overflow: hidden;
+}
+
+body[data-page="atividades"] .app-shell main [class*="bg-white"][class*="border"]::after,
+body[data-page="avisos"] .app-shell main [class*="bg-white"][class*="border"]::after {
+  content: '';
+  position: absolute;
+  right: -2.5rem;
+  bottom: -3.5rem;
+  width: 8rem;
+  height: 8rem;
+  border: 1px solid rgb(var(--route-accent) / .11);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Tabelas administrativas com leitura confortável. */
+.app-shell main table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: rgb(var(--brand-ink));
+  font-size: .78rem;
+}
+
+.app-shell main thead { background: rgb(var(--route-soft) / .62); }
+.app-shell main th {
+  border-bottom: 1px solid rgb(var(--brand-line));
+  padding: .8rem 1rem;
+  color: rgb(var(--route-accent));
+  font-size: .58rem;
+  font-weight: 1000;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.app-shell main td { border-bottom: 1px solid rgb(var(--brand-line) / .65); padding: .85rem 1rem; }
+.app-shell main tbody tr { transition: background-color 140ms ease; }
+.app-shell main tbody tr:hover { background: rgb(var(--route-soft) / .38); }
+
+/* Modais */
+.app-shell main [class*="fixed"][class*="inset-0"] [class*="bg-white"] {
+  border: 1px solid rgb(var(--brand-line));
+  border-radius: 1.15rem !important;
+  box-shadow: 0 35px 110px -38px rgba(17, 7, 25, .72) !important;
+}
+
+/* Barras de progresso */
+.app-shell main [class*="h-2"][class*="rounded-full"],
+.app-shell main [class*="h-4"][class*="rounded-full"] {
+  border-radius: .28rem !important;
+  background: rgb(var(--brand-line) / .45) !important;
+}
+.app-shell main [class*="h-full"][class*="rounded-full"] {
+  border-radius: .28rem !important;
+  background: rgb(var(--route-accent)) !important;
+}
+
+/* Estados vazios */
+.empty-workspace,
+.quiet-empty {
+  border-radius: var(--editorial-radius) !important;
+  background:
+    linear-gradient(90deg, transparent 2.1rem, rgb(var(--route-accent) / .08) 2.1rem, rgb(var(--route-accent) / .08) calc(2.1rem + 1px), transparent calc(2.1rem + 1px)),
+    rgb(var(--brand-paper)) !important;
+}
+
+/* Autenticação: pôster editorial, sem bolhas genéricas. */
+body[data-page="login"],
+body[data-page="register"],
+body[data-page="esqueci-senha"],
+body[data-page="alterar-senha"],
+body[data-page="primeiro-acesso"] {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 48px 48px,
+    #171020;
+}
+
+body[data-page="login"] #root > div,
+body[data-page="register"] #root > div,
+body[data-page="esqueci-senha"] #root > div,
+body[data-page="primeiro-acesso"] #root > div { min-height: 100vh; }
+
+body[data-page="login"] [class*="max-w-md"],
+body[data-page="register"] [class*="max-w-md"],
+body[data-page="esqueci-senha"] [class*="max-w-md"],
+body[data-page="primeiro-acesso"] [class*="max-w-md"] {
+  border-radius: 1.2rem !important;
+  box-shadow: 18px 18px 0 rgba(139,92,246,.16), 0 30px 90px -35px #000 !important;
+}
+
+/* Toasts com presença de produto. */
+[data-sonner-toaster], .react-hot-toast { font-family: inherit; }
+
+/* Evita animação excessiva; o movimento deve confirmar ação. */
+@media (prefers-reduced-motion: no-preference) {
+  .app-shell main [class*="bg-white"][class*="border"] { transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease; }
+  .app-shell main [class*="bg-white"][class*="border"]:hover { border-color: rgb(var(--route-accent) / .32); }
+}
+
+@media (max-width: 760px) {
+  .app-shell main .workspace-hero { min-height: 10rem; padding: 1.35rem !important; }
+  .app-shell main .workspace-hero::after { right: 1rem; top: .8rem; font-size: 2.5rem; }
+  .app-shell main [class*="rounded-[3rem]"],
+  .app-shell main [class*="rounded-[2.5rem]"],
+  .app-shell main [class*="rounded-[2rem]"] { border-radius: 1rem !important; }
+  .app-shell main table { min-width: 680px; }
+}
+
+@media (prefers-contrast: more) {
+  .app-shell main [class*="bg-white"][class*="border"] { border-color: rgb(var(--brand-ink) / .42) !important; }
+  .app-shell main p { color: rgb(var(--brand-ink) / .86); }
+}
+
+@media print {
+  .workspace-rail, .command-trigger, .study-audio, .focus-tool { display: none !important; }
+  body[data-page] { background: #fff !important; }
+  .app-shell main [class*="shadow"] { box-shadow: none !important; }
+}

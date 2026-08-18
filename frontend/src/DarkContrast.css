@@ -1,0 +1,173 @@
+/*
+ * Contraste noturno PlanejAI
+ * Esta camada é carregada por último para impedir que acentos de rota claros
+ * substituam os tokens escuros. Mantém profundidade sem sacrificar leitura.
+ */
+.dark {
+  --brand-ink: 252 249 255;
+  --brand-paper: 39 29 50;
+  --brand-canvas: 17 12 24;
+  --brand-line: 103 80 122;
+  --brand-violet: 184 142 255;
+  --brand-violet-deep: 156 111 235;
+  --brand-lilac: 202 177 228;
+  --route-accent: 190 149 255;
+  --route-soft: 67 46 82;
+  --color-primary: 196 161 255;
+  --color-bg: 17 12 24;
+  --color-surface: 39 29 50;
+  --color-border: 103 80 122;
+  --color-text: 252 249 255;
+  --color-muted: 201 188 211;
+}
+
+.dark body[data-page="cronograma"] { --route-accent: 177 170 255; --route-soft: 55 50 92; }
+.dark body[data-page="redacoes"] { --route-accent: 220 166 255; --route-soft: 70 43 82; }
+.dark body[data-page="atividades"],
+.dark body[data-page="minhas-atividades"] { --route-accent: 205 166 255; --route-soft: 66 46 82; }
+.dark body[data-page="avisos"] { --route-accent: 199 161 255; --route-soft: 62 44 78; }
+.dark body[data-page="perfil"] { --route-accent: 201 167 255; --route-soft: 61 45 77; }
+.dark body[data-page="materiais"] { --route-accent: 192 158 255; --route-soft: 58 43 75; }
+.dark body:is([data-page="dashboard-gestor"],[data-page="usuarios"],[data-page="dono"],[data-page="dono-usuarios"]) {
+  --route-accent: 193 160 255;
+  --route-soft: 58 43 74;
+}
+
+.dark body[data-page] {
+  background:
+    linear-gradient(90deg, rgba(var(--route-accent), .045) 1px, transparent 1px) 0 0 / 42px 42px,
+    linear-gradient(rgba(var(--route-accent), .045) 1px, transparent 1px) 0 0 / 42px 42px,
+    rgb(var(--brand-canvas));
+}
+
+.dark .app-shell {
+  background: rgb(var(--brand-canvas));
+  color: rgb(var(--brand-ink));
+}
+
+.dark .app-shell nav.sticky {
+  border-color: rgb(var(--brand-line) / .75) !important;
+  background: rgba(27, 19, 36, .96) !important;
+  color: rgb(var(--brand-ink));
+}
+
+.dark .workspace-rail {
+  border-color: rgb(var(--brand-line) / .62);
+  background: rgba(22, 16, 30, .94);
+  color: rgb(var(--color-muted));
+}
+
+.dark .workspace-rail-index span,
+.dark .workspace-rail time { color: rgb(var(--brand-ink)); }
+.dark .workspace-rail > p { color: rgb(var(--color-muted)); }
+
+.dark .app-sidebar {
+  border-color: rgb(var(--brand-line) / .46) !important;
+  background: linear-gradient(180deg, #21162d 0%, #150f1e 100%) !important;
+  color: #fbf7ff !important;
+}
+
+.dark .app-sidebar .sidebar-link { color: #d8cce0 !important; }
+.dark .app-sidebar .sidebar-link:hover { background: rgba(190, 149, 255, .12) !important; color: #fff !important; }
+.dark .app-sidebar .sidebar-link.is-active { background: #8b5cf6 !important; color: #fff !important; }
+.dark .app-sidebar .sidebar-section { color: #a997b7 !important; opacity: 1; }
+.dark .app-sidebar .sidebar-account { border-color: rgba(210, 180, 235, .18) !important; background: rgba(255,255,255,.055) !important; }
+.dark .app-sidebar .sidebar-account p { color: #c5b7cf !important; }
+.dark .app-sidebar .sidebar-account strong { color: #d4b8ff !important; }
+
+/* Superfícies: diferença perceptível entre fundo, cartão e conteúdo elevado. */
+.dark .app-shell main :where(section, article, div, form, aside)[class*="bg-white"][class*="border"],
+.dark .app-shell main :where(section, article, div, form, aside)[class*="bg-white"][class*="shadow"] {
+  border-color: rgb(var(--brand-line) / .72) !important;
+  background-color: rgb(var(--brand-paper)) !important;
+  color: rgb(var(--brand-ink)) !important;
+}
+
+.dark .app-shell main [class*="bg-[#F7F7FB]"],
+.dark .app-shell main [class*="bg-[#F5F4F1]"],
+.dark .app-shell main [class*="bg-[#F7F6FA]"] {
+  border-color: rgb(var(--brand-line) / .62) !important;
+  background-color: rgb(48 36 61) !important;
+  color: rgb(var(--brand-ink)) !important;
+}
+
+.dark .app-shell main .workspace-hero:not(.profile-hero) {
+  border-color: rgb(var(--brand-line) / .82) !important;
+  background:
+    linear-gradient(90deg, rgba(var(--route-accent), .075) 1px, transparent 1px) 2.1rem 0 / 2.8rem 100%,
+    linear-gradient(135deg, rgb(43 31 55), rgb(var(--route-soft) / .86)) !important;
+}
+
+.dark .app-shell main .workspace-hero h1,
+.dark .app-shell main .workspace-hero:not(.profile-hero) p { color: rgb(var(--brand-ink)) !important; }
+.dark .app-shell main .workspace-hero:not(.profile-hero) p:not([class*="uppercase"]) { color: rgb(var(--color-muted)) !important; }
+.dark .app-shell main .workspace-hero [class*="uppercase"] { color: rgb(var(--route-accent)) !important; }
+
+/* Utilitários legados que não tinham variante dark. */
+.dark .app-shell main [class~="text-black"],
+.dark .app-shell main [class*="text-[#202027]"],
+.dark .app-shell main [class*="text-[#2C1A3D]"],
+.dark .app-shell main [class*="text-[#2F2D35]"],
+.dark .app-shell main [class*="text-[#34323A]"],
+.dark .app-shell main [class*="text-[#484252]"] { color: rgb(var(--brand-ink)) !important; }
+
+.dark .app-shell main [class*="text-black/40"] { color: rgb(var(--brand-ink) / .64) !important; }
+.dark .app-shell main [class*="text-black/50"] { color: rgb(var(--brand-ink) / .72) !important; }
+.dark .app-shell main [class*="text-black/60"],
+.dark .app-shell main [class*="text-black/65"] { color: rgb(var(--brand-ink) / .78) !important; }
+.dark .app-shell main [class*="text-black/70"],
+.dark .app-shell main [class*="text-black/75"] { color: rgb(var(--brand-ink) / .84) !important; }
+.dark .app-shell main [class*="text-black/80"] { color: rgb(var(--brand-ink) / .9) !important; }
+.dark .app-shell main [class*="text-[#4B4C9D]"],
+.dark .app-shell main [class*="text-[#6157D9]"],
+.dark .app-shell main [class*="text-[#6D28D9]"],
+.dark .app-shell main [class*="text-[#7C3AED]"] { color: rgb(var(--route-accent)) !important; }
+.dark .app-shell main [class*="text-[#9394CF]"],
+.dark .app-shell main [class*="text-[#77727F]"],
+.dark .app-shell main [class*="text-[#6F6D78]"],
+.dark .app-shell main [class*="text-[#74627F]"],
+.dark .app-shell main [class*="text-[#817E88]"] { color: rgb(var(--color-muted)) !important; }
+
+.dark .app-shell main input::placeholder,
+.dark .app-shell main textarea::placeholder { color: #aa9bb4 !important; opacity: 1; }
+.dark .app-shell main select option { background: #271d32; color: #fcf9ff; }
+.dark .app-shell main input:disabled,
+.dark .app-shell main select:disabled,
+.dark .app-shell main textarea:disabled { color: #a99db2 !important; opacity: .78; }
+
+.dark .app-shell main table { color: rgb(var(--brand-ink)); }
+.dark .app-shell main thead { background: rgb(var(--route-soft) / .86); }
+.dark .app-shell main th { color: rgb(var(--route-accent)); }
+.dark .app-shell main td { border-color: rgb(var(--brand-line) / .62); }
+.dark .app-shell main tbody tr:hover { background: rgb(var(--route-soft) / .58); }
+
+/* Redação: alertas usam superfícies noturnas, não névoa clara sobre texto claro. */
+.dark .essay-record__errors { border-color: #f08b94 !important; background: rgba(111, 38, 48, .46) !important; }
+.dark .essay-record__suggestions { background: rgba(86, 54, 113, .52) !important; }
+.dark .essay-record__authorship { border-color: #c996ef !important; background: rgba(91, 51, 111, .5) !important; }
+.dark .essay-record__panel [class*="text-red"] { color: #ffb3ba !important; }
+.dark .essay-record__panel [class*="text-blue"] { color: #cbbcff !important; }
+.dark .essay-record__panel [class*="text-purple"] { color: #e0b9ff !important; }
+.dark .essay-record__panel [class*="bg-white"],
+.dark .essay-record__repertoire > span { background: rgb(48 36 61) !important; color: #eee6f5 !important; }
+.dark .essay-record__scoreboard { border-color: rgb(var(--brand-line) / .68) !important; background: rgb(31 23 40) !important; }
+.dark .essay-record__competency { border-color: rgb(var(--brand-line) / .66) !important; }
+.dark .essay-record__feedback p:last-child { color: #eee7f3 !important; }
+
+/* Elementos flutuantes e comandos. */
+.dark .command-trigger { border-color: rgb(var(--brand-line) / .7); background: rgb(var(--brand-paper)); color: #d1c4d9; }
+.dark .command-trigger kbd { border-color: rgb(var(--brand-line) / .7); background: #17111f; color: #f8f2fc; }
+.dark .command-results small,
+.dark .command-caption,
+.dark .command-dialog > footer { color: #c0b1c9; }
+.dark .command-dialog input::placeholder { color: #ad9bb8; }
+
+.dark .empty-workspace,
+.dark .quiet-empty { border-color: rgb(var(--brand-line) / .76) !important; }
+.dark .planner-preview,
+.dark .essay-preview { border-color: rgb(var(--brand-line) / .72) !important; background-color: rgb(45 33 58) !important; color: rgb(var(--brand-ink)); }
+
+@media (prefers-contrast: more) {
+  .dark { --brand-line: 145 119 165; --color-muted: 225 216 232; }
+  .dark .app-shell main [class*="text-black/"] { color: rgb(var(--brand-ink) / .94) !important; }
+}

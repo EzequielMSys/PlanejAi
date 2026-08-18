@@ -1,5 +1,6 @@
 require('dotenv').config();
 const pool = require('../config/db');
+const { getDirectResource } = require('../utils/contentLinkPolicy');
 
 // Conteúdos de exemplo para as principais áreas de foco
 // Agora cobrindo todas as matérias comuns de vestibular
@@ -105,10 +106,12 @@ async function run() {
     }
 
     try {
+      const resource = getDirectResource(c.titulo);
+      const material = resource ? { ...c, ...resource } : c;
       await pool.execute(
         `INSERT INTO conteudos (area, disciplina, titulo, tipo, link, nivel)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [c.area, c.disciplina, c.titulo, c.tipo, c.link, c.nivel]
+        [material.area, material.disciplina, material.titulo, material.tipo, material.link, material.nivel]
       );
       inseridos++;
     } catch (error) {

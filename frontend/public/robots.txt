@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ezequielmsys.github.io/PlanejAi/sitemap.xml

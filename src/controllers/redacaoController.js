@@ -2,6 +2,7 @@ const redacaoModel = require('../models/redacaoModel');
 const { analisarRedacao } = require('../utils/analiseRedacao');
 const { corrigirTexto } = require('../utils/languageToolService');
 const { sugerirTemaPorPalavraChave, sugerirTemaAleatorio, gerarRepertorioParaTema } = require('../utils/repertorioRedacao');
+const { montarKitTema } = require('../utils/estudioRedacao');
 
 /**
  * Análise de pontuação e estrutura básica do texto.
@@ -175,7 +176,7 @@ async function enviarRedacao(req, res) {
     const linguagem = await corrigirTexto(texto);
 
     // Análise avançada: erros, sugestões, detecção de IA e competências ENEM
-    const analise = analisarRedacao(texto, linguagem.erros);
+    const analise = analisarRedacao(texto, linguagem.erros, { tema });
 
     // Se o LanguageTool falhou, usa análise básica de erros
     const errosFinais = linguagem.sucesso ? linguagem.erros : analise.erros;
@@ -213,7 +214,8 @@ async function enviarRedacao(req, res) {
         ...redacao,
         enem: analise.enem,
         repertorioSugerido: repertorio,
-        ia: analise.ia
+        ia: analise.ia,
+        planoRevisao: analise.planoRevisao
       }
     });
   } catch (error) {
@@ -233,21 +235,47 @@ async function sugerirTema(req, res) {
     if (palavraChave) {
       sugestao = sugerirTemaPorPalavraChave(palavraChave);
     } else {
-      sugestao = sugerirTemaAleatorio();
+      sugestao = sugerirTemaPorPalavraChave('');
     }
 
     const repertorio = gerarRepertorioParaTema(sugestao, 6);
+    const kit = montarKitTema(sugestao) || sugestao;
 
     return res.json({
-      tema: sugestao.tema,
-      proposta: sugestao.proposta,
-      repertorio
+      ...kit,
+      repertorio,
+      recomendacoes: kit.recomendacoes || []
     });
   } catch (error) {
     console.error('Erro ao sugerir tema:', error);
     return res.status(500).json({ message: 'Erro interno ao sugerir tema.' });
   }
 }
+async function analisarRascunho(req, res) {
+  try {
+    const { tema = '', texto = '' } = req.body || {};
+    if (texto.trim().length < 80) return res.status(400).json({ message: 'Escreva ao menos 80 caracteres para receber um diagnóstico útil.' });
+    if (texto.length > 30000 || tema.length > 500) return res.status(413).json({ message: 'O rascunho ultrapassa o limite aceito.' });
+    const analise = analisarRedacao(texto, [], { tema });
+    return res.json({
+      notaEstimada: analise.enem.notaFinal,
+      competencias: analise.enem.competencias,
+      estrutura: analise.estrutura,
+      aderencia: analise.enem.aderencia,
+      intervencao: analise.enem.intervencao,
+      sugestoes: analise.sugestoes,
+      sinaisAutoria: analise.ia,
+      planoRevisao: analise.planoRevisao,
+      erros: [],
+      privacidade: 'Esta prévia foi processada localmente pelo servidor do PlanejAI, sem serviço linguístico externo.',
+      aviso: 'Diagnóstico formativo e estimado; a correção oficial depende de avaliadores humanos.'
+    });
+  } catch (error) {
+    console.error('Erro ao analisar rascunho:', error);
+    return res.status(500).json({ message: 'Não foi possível analisar o rascunho agora.' });
+  }
+}
+
 
 async function listarRedacoes(req, res) {
   try {
@@ -334,5 +362,6 @@ module.exports = {
   listarTodasRedacoes,
   avaliarRedacao,
   obterRedacao,
-  sugerirTema
+  sugerirTema,
+  analisarRascunho
 };

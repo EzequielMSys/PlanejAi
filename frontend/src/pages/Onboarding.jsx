@@ -39,9 +39,9 @@ export default function Onboarding() {
   const [disponibilidade, setDisponibilidade] = useState(diasPadrao)
 
   const inputClass =
-    'w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300'
+    'w-full rounded-2xl px-4 py-3.5 bg-[#F8F8FC] border border-[#DADAF0] text-[#18172B] placeholder-black/35 focus:bg-white focus:ring-4 focus:ring-[#6366F1]/10 focus:border-[#6366F1] focus:outline-none transition-all duration-200'
 
-  const labelClass = 'block text-sm font-bold text-black mb-2'
+  const labelClass = 'block text-sm font-bold text-[#25233D] mb-2'
 
   const handlePerfilSubmit = async (e) => {
     e.preventDefault()
@@ -117,46 +117,61 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7FB] text-black py-12 px-4 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-72 h-72 bg-[#9394CF]/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#4B4C9D]/10 rounded-full blur-3xl" />
+    <div className="min-h-screen px-4 py-8 text-[#18172B] sm:px-6 lg:px-10 lg:py-10 relative overflow-hidden">
+      <div className="absolute -top-24 right-[8%] h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
+      <div className="absolute bottom-0 left-[15%] h-96 w-96 rounded-full bg-violet-400/10 blur-3xl" />
 
-      <div className="max-w-2xl mx-auto relative z-10">
+      <div className="max-w-6xl mx-auto relative z-10">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <div className="text-center mb-8 bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 shadow-2xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-black/20" />
-            <div className="relative z-10">
-              <div className="w-20 h-20 bg-white/85 rounded-full mx-auto mb-6 flex items-center justify-center shadow-2xl">
-                <svg className="w-10 h-10 text-[#4B4C9D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mb-7 overflow-hidden rounded-[2rem] border border-white/10 bg-[#1C1A38] p-6 shadow-[0_24px_80px_-30px_rgba(31,27,72,.65)] sm:p-8 lg:p-10 relative">
+            <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[#7C6CF2]/35 blur-2xl" />
+            <div className="absolute bottom-0 right-[24%] h-24 w-48 bg-cyan-300/10 blur-2xl" />
+            <div className="relative z-10 flex items-center gap-5">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/10 shadow-xl backdrop-blur-sm sm:h-16 sm:w-16">
+                <svg className="h-7 w-7 text-[#A7F3D0] sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-
-              <p className="uppercase tracking-[0.35em] text-xs font-black text-white/80 mb-3">
-                PlanejAI
-              </p>
-
-              <h1 className="text-3xl md:text-4xl font-black text-white mb-2 tracking-tight">
-                Configurar Perfil de Estudos
-              </h1>
-
-              <p className="text-white/85">
-                Vamos personalizar seu plano de estudos.
-              </p>
+              <div>
+                <p className="mb-1 text-xs font-extrabold uppercase tracking-[0.24em] text-[#A7F3D0]">Seu plano começa aqui</p>
+                <h1 className="text-2xl font-black tracking-[-0.03em] text-white sm:text-3xl lg:text-4xl">Monte uma rotina que cabe na sua vida.</h1>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/65 sm:text-base">Conte o que você quer conquistar e quando consegue estudar. O PlanejAI organiza o resto.</p>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className={`h-3 rounded-full transition-all ${step === 1 ? 'w-12 bg-[#4B4C9D]' : 'w-3 bg-[#9394CF]/40'}`} />
-            <div className={`h-3 rounded-full transition-all ${step === 2 ? 'w-12 bg-[#4B4C9D]' : 'w-3 bg-[#9394CF]/40'}`} />
-          </div>
+          <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <aside className="rounded-[1.75rem] border border-[#E5E5F2] bg-white/75 p-5 shadow-[0_18px_50px_-35px_rgba(32,28,75,.45)] backdrop-blur-xl lg:sticky lg:top-24">
+              <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.18em] text-[#7778A8]">Configuração</p>
+              {[
+                { number: 1, title: 'Seu foco', text: 'Objetivos e matérias' },
+                { number: 2, title: 'Sua semana', text: 'Dias e horários' }
+              ].map((item) => {
+                const active = step === item.number
+                const done = step > item.number
+                return (
+                  <div key={item.number} className="relative flex gap-3 pb-5 last:pb-0">
+                    {item.number === 1 && <span className="absolute left-[17px] top-9 h-8 w-px bg-[#DDDCEF]" />}
+                    <span className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black transition ${active ? 'bg-[#6157D9] text-white shadow-lg shadow-indigo-300/40' : done ? 'bg-emerald-100 text-emerald-700' : 'bg-[#F0EFF8] text-[#7778A8]'}`}>{done ? '✓' : item.number}</span>
+                    <span><strong className="block text-sm text-[#23213B]">{item.title}</strong><small className="text-xs text-[#85839D]">{item.text}</small></span>
+                  </div>
+                )
+              })}
+              <div className="mt-5 rounded-2xl bg-[#F3F2FA] p-4 text-sm leading-relaxed text-[#686681]">Leva menos de <strong className="text-[#34304F]">2 minutos</strong>. Você poderá mudar tudo depois no perfil.</div>
+            </aside>
+
+            <div>
+              <div className="mb-4 flex items-center justify-between px-1">
+                <span className="text-sm font-bold text-[#77758F]">Etapa {step} de 2</span>
+                <span className="text-sm font-black text-[#6157D9]">{step * 50}%</span>
+              </div>
+              <div className="mb-5 h-2 overflow-hidden rounded-full bg-[#E8E7F3]"><div className="h-full rounded-full bg-gradient-to-r from-[#6157D9] to-[#8B7CF6] transition-all duration-500" style={{ width: `${step * 50}%` }} /></div>
 
           {step === 1 && (
             <form onSubmit={handlePerfilSubmit}>
-              <div className="bg-white rounded-[3rem] p-8 shadow-2xl border border-[#9394CF]/20">
-                <h2 className="text-xl font-black text-black mb-6">
-                  Informações Básicas
-                </h2>
+              <div className="rounded-[2rem] border border-[#E4E3F0] bg-white p-6 shadow-[0_24px_70px_-42px_rgba(35,31,77,.55)] sm:p-8 lg:p-10">
+                <h2 className="text-2xl font-black tracking-tight text-[#201E38]">Qual é a sua meta?</h2>
+                <p className="mb-7 mt-1 text-sm text-[#77758F]">Use essas respostas para personalizarmos o ritmo do cronograma.</p>
 
                 <div className="space-y-4">
                   <div>
@@ -241,7 +256,7 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#4B4C9D] text-white py-3 rounded-full font-bold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl disabled:opacity-60 disabled:cursor-not-allowed mt-6"
+                  className="mt-8 w-full rounded-2xl bg-[#6157D9] px-5 py-4 font-extrabold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-[#4F46C7] hover:shadow-xl active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? 'Salvando...' : 'Próximo: Disponibilidade'}
                 </button>
@@ -251,10 +266,8 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
 
           {step === 2 && (
             <form onSubmit={handleDisponibilidadeSubmit}>
-              <div className="bg-white rounded-[3rem] p-8 shadow-2xl border border-[#9394CF]/20">
-                <h2 className="text-xl font-black text-black mb-3">
-                  Disponibilidade Semanal
-                </h2>
+              <div className="rounded-[2rem] border border-[#E4E3F0] bg-white p-6 shadow-[0_24px_70px_-42px_rgba(35,31,77,.55)] sm:p-8 lg:p-10">
+                <h2 className="text-2xl font-black tracking-tight text-[#201E38]">Como é a sua semana?</h2>
 
                 <p className="text-black/60 mb-6">
                   Marque os dias em que você pode estudar.
@@ -264,7 +277,7 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
                   {disponibilidade.map((dia, index) => (
                     <div
                       key={dia.dia_semana}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-[#F7F7FB] rounded-[2rem] border border-[#9394CF]/20"
+                      className={`flex flex-col gap-4 rounded-2xl border p-4 transition sm:flex-row sm:items-center sm:justify-between ${dia.ocupado ? 'border-[#ECEBF4] bg-[#FAFAFC] opacity-65' : 'border-[#DCD9F5] bg-[#F7F6FE]'}`}
                     >
                       <label className="flex items-center gap-4">
                         <input
@@ -310,7 +323,7 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="flex-1 bg-white text-black border border-[#9394CF]/40 py-3 rounded-full font-bold hover:bg-[#F7F7FB] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-md"
+                    className="flex-1 rounded-2xl border border-[#DDDBEA] bg-white py-3.5 font-bold text-[#34304F] transition hover:bg-[#F8F7FC]"
                   >
                     Voltar
                   </button>
@@ -318,7 +331,7 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-[#4B4C9D] text-white py-3 rounded-full font-bold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="flex-1 rounded-2xl bg-[#6157D9] py-3.5 font-extrabold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-[#4F46C7] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? 'Finalizando...' : 'Concluir Configuração'}
                   </button>
@@ -326,6 +339,8 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
               </div>
             </form>
           )}
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>

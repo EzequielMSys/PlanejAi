@@ -131,7 +131,7 @@ export default function DashboardGestor() {
 
       <div className="max-w-7xl mx-auto relative z-10 space-y-8">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <section className="bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+          <section className="workspace-hero bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative overflow-hidden">
             <div className="absolute inset-0 bg-black/20" />
             <div className="relative z-10">
               <p className="text-xs font-black uppercase tracking-[.3em] text-white/70">Painel pedagógico</p>

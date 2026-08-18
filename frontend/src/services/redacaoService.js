@@ -1,8 +1,9 @@
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
+import { apiUrl } from '../config/api'
 
 const api = axios.create({
-  baseURL: '/api/redacao'
+  baseURL: apiUrl('/api/redacao')
 })
 
 api.interceptors.request.use((config) => {
@@ -74,6 +75,15 @@ async obterRedacao(idRedacao) {
       return response.data
     } catch (error) {
       tratarErro(error, 'Erro ao sugerir tema.')
+    }
+  },
+
+  async analisarRascunho({ tema, texto }) {
+    try {
+      const response = await api.post('/analisar-rascunho', { tema, texto })
+      return response.data
+    } catch (error) {
+      tratarErro(error, 'Erro ao analisar rascunho.')
     }
   },
 

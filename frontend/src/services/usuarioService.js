@@ -1,8 +1,9 @@
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
+import { apiUrl } from '../config/api'
 
 const api = axios.create({
-  baseURL: '/api/usuarios'
+  baseURL: apiUrl('/api/usuarios')
 })
 
 api.interceptors.request.use((config) => {

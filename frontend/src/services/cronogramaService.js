@@ -1,8 +1,9 @@
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
+import { apiUrl } from '../config/api'
 
 const api = axios.create({
-  baseURL: '/api/cronograma'
+  baseURL: apiUrl('/api/cronograma')
 })
 
 api.interceptors.request.use((config) => {

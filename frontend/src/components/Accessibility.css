@@ -1,0 +1,9 @@
+.skip-link { position:fixed; top:.5rem; left:.5rem; z-index:200; transform:translateY(-150%); border-radius:.65rem; background:#fff; padding:.65rem .9rem; color:#5b21b6; font-weight:900; box-shadow:0 8px 30px rgb(0 0 0 / .25); transition:transform 150ms ease; }
+.skip-link:focus { transform:translateY(0); }
+.sr-route { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+[aria-busy="true"] { cursor:progress; }
+button:disabled, input:disabled, select:disabled, textarea:disabled { cursor:not-allowed; }
+img { max-width:100%; }
+@media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto !important; } *, *::before, *::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+@media (prefers-contrast:more) { button, a, input, select, textarea { outline-offset:3px; } .app-shell { --color-border:91 33 182; } }
+@media print { nav, aside, .focus-tool, .connection-alert, button { display:none !important; } body { background:#fff !important; color:#000 !important; } main { padding:0 !important; } }

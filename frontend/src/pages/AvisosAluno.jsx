@@ -54,7 +54,7 @@ export default function AvisosAluno() {
 
       <div className="max-w-5xl mx-auto relative z-10">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <section className="bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+          <section className="workspace-hero bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
             <div className="absolute inset-0 bg-black/20" />
             <div className="relative z-10">
               <p className="uppercase tracking-[0.35em] text-xs font-black text-white/80 mb-3">
@@ -71,7 +71,7 @@ export default function AvisosAluno() {
         </motion.div>
 
         {avisos.length === 0 ? (
-          <section className="bg-white dark:bg-[#1E1D3A] rounded-[3rem] p-10 sm:p-12 text-center shadow-2xl border border-[#9394CF]/20">
+          <section className="quiet-empty bg-white dark:bg-[#1E1D3A] rounded-[3rem] p-10 sm:p-12 text-center shadow-2xl border border-[#9394CF]/20">
             <div className="w-24 h-24 rounded-full bg-[#9394CF] mx-auto flex items-center justify-center text-white shadow-xl mb-6">
               <svg className="w-11 h-11" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -91,7 +91,7 @@ export default function AvisosAluno() {
                 key={aviso.id_aviso || idx}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-[2.5rem] bg-white p-6 shadow-xl dark:bg-[#1E1D3A] border border-[#9394CF]/20"
+                className="content-card rounded-[2.5rem] bg-white p-6 shadow-xl dark:bg-[#1E1D3A] border border-[#9394CF]/20"
               >
                 <div className="flex items-center justify-between mb-4">
                   <span className="rounded-full bg-[#9394CF]/20 px-3 py-1 text-xs font-black">

@@ -1,35 +1,30 @@
+require('dotenv').config();
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
+const { isAlreadyAppliedError, readStatements, sortMigrations } = require('./migrationUtils');
+const getDatabaseOptions = require('../config/databaseOptions');
 
 async function run() {
-  const host = process.env.DB_HOST || 'localhost';
-  const user = process.env.DB_USER || 'root';
-  const password = process.env.DB_PASSWORD || '';
-  const database = process.env.DB_NAME || 'tcc';
-  const port = Number(process.env.DB_PORT || 3306);
+  const connection = await mysql.createConnection(getDatabaseOptions({ multipleStatements: true }));
 
-  const connection = await mysql.createConnection({ host, user, password, database, port, multipleStatements: true });
-
-  const migrationsDir = path.join(__dirname, '..', 'migrations');
-  const files = fs.readdirSync(migrationsDir)
-    .filter((file) => file.endsWith('.sql'))
-    .sort((a, b) => a.localeCompare(b));
+  const migrationsDir = path.join(__dirname, '..', '..', 'migrations');
+  const files = sortMigrations(
+    fs.readdirSync(migrationsDir).filter((file) => file.endsWith('.sql'))
+  );
 
   const results = [];
   for (const file of files) {
     const filePath = path.join(migrationsDir, file);
-    const sql = fs.readFileSync(filePath, 'utf8');
-    const statements = sql.split(';').map((s) => s.trim()).filter(Boolean);
+    const statements = readStatements(filePath);
 
     let fileOk = true;
     for (const statement of statements) {
-      if (!statement || statement.startsWith('--')) continue;
       try {
         await connection.query(statement);
       } catch (error) {
         const msg = String(error.message || '');
-        if (msg.includes('already exists') || msg.includes('ER_TABLE_EXISTS') || msg.includes('ER_DUP_KEYNAME') || msg.includes('ER_COLUMN_EXISTS')) {
+        if (isAlreadyAppliedError(error)) {
           continue;
         }
         fileOk = false;
@@ -39,9 +34,14 @@ async function run() {
     results.push({ file, ok: fileOk });
   }
 
+  const failedFiles = results.filter(({ ok }) => !ok);
+  if (failedFiles.length > 0) {
+    await connection.end();
+    throw new Error(`Falha ao aplicar ${failedFiles.length} arquivo(s) de migração.`);
+  }
+
   console.log('Migrações aplicadas com sucesso.');
   await connection.end();
-  process.exitCode = 0;
 }
 
 run().catch((error) => { console.error('Erro nas migrations:', error.message); process.exitCode = 1; });

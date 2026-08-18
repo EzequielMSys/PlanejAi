@@ -105,28 +105,24 @@ export default function Dashboard() {
   const nome = user?.apelido || user?.nome || 'estudante'
 
   return (
-    <div className="min-h-screen bg-[#F7F7FB] dark:bg-[#0F0E20] text-black dark:text-white px-4 sm:px-6 lg:px-8 pt-0 pb-10 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-72 h-72 bg-[#9394CF]/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#4B4C9D]/10 rounded-full blur-3xl" />
+    <div className="min-h-screen px-4 pb-10 pt-6 text-[#202027] dark:text-white sm:px-6 lg:px-8">
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div className="relative z-10 mx-auto max-w-6xl">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <section className="bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[2rem] p-5 sm:p-6 shadow-xl mb-4 relative overflow-hidden">
-            <div className="absolute inset-0 bg-black/20" />
-            <div className="absolute top-8 left-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
-            <div className="absolute bottom-8 right-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
+          <section className="workspace-hero compact-workspace-hero relative mb-5 overflow-hidden rounded-3xl border border-[#E6E5E9] bg-white p-6 shadow-[0_18px_55px_-45px_rgba(28,25,65,.55)] dark:border-white/10 dark:bg-[#1B1B1F] sm:p-7">
+            <div className="absolute bottom-0 left-0 top-0 w-1.5 bg-[#6157D9]" />
 
             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <p className="uppercase tracking-[0.35em] text-xs font-black text-white/80 mb-2">
-                  PlanejAI
+                <p className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#77727F] dark:text-white/40">
+                  Visão geral
                 </p>
 
-                <h1 className="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight">
+                <h1 className="mb-1 text-2xl font-black tracking-[-0.035em] text-[#202027] dark:text-white md:text-3xl">
                   Olá, {nome}
                 </h1>
 
-                <p className="text-sm text-white/85 max-w-2xl">
+                <p className="max-w-2xl text-sm text-[#6F6D78] dark:text-white/55">
                   Acompanhe seu progresso, próximos estudos e evolução no cronograma.
                 </p>
               </div>
@@ -135,7 +131,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => navigate('/cronograma')}
-                  className="bg-white text-[#4B4C9D] px-5 py-2 rounded-full font-bold shadow-lg hover:bg-black hover:text-white transition"
+                  className="rounded-xl border border-[#DEDBE8] bg-[#F7F6FA] px-5 py-2.5 font-bold text-[#484252] transition hover:border-[#BDB7D3] hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-white"
                 >
                   Ver cronograma
                 </button>
@@ -174,29 +170,48 @@ export default function Dashboard() {
           </section>
 
 {!cronogramaAtual ? (
-            <section className="bg-white dark:bg-[#1E1D3A] rounded-[3rem] p-10 sm:p-12 text-center shadow-2xl border border-[#9394CF]/20">
-              <div className="w-24 h-24 rounded-full bg-[#9394CF] mx-auto flex items-center justify-center text-white shadow-xl mb-6">
-                <svg className="w-11 h-11" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <section className="grid overflow-hidden rounded-3xl border border-[#E5E3E8] bg-white shadow-[0_24px_70px_-50px_rgba(28,25,65,.5)] dark:border-white/10 dark:bg-[#1B1B1F] md:grid-cols-[1.25fr_.75fr]">
+              <div className="flex flex-col items-start justify-center p-8 sm:p-10 lg:p-12">
+              <div className="mb-7 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#ECEAFB] text-[#6157D9] dark:bg-white/10 dark:text-[#B8B2FF]">
+                <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
 
-              <h2 className="text-3xl font-black text-black dark:text-white mb-3">
-                Nenhum cronograma ativo
+              <p className="mb-3 text-[11px] font-black uppercase tracking-[.18em] text-[#77727F] dark:text-white/40">Primeiro passo</p>
+              <h2 className="mb-3 max-w-lg text-3xl font-black tracking-[-0.04em] text-[#202027] dark:text-white sm:text-4xl">
+                Transforme sua rotina em um plano possível.
               </h2>
 
-              <p className="text-black/60 dark:text-white/60 max-w-md mx-auto leading-relaxed mb-8">
-                Gere seu primeiro cronograma personalizado com base no seu perfil de estudos.
+              <p className="mb-8 max-w-lg leading-relaxed text-[#6F6D78] dark:text-white/55">
+                O cronograma usa seu objetivo, matérias e horários disponíveis para distribuir os estudos sem sobrecarregar seus dias.
               </p>
 
               <button
                 type="button"
                 onClick={gerarCronograma}
                 disabled={gerando}
-                className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-black hover:bg-black transition disabled:opacity-60"
+                className="rounded-xl bg-[#6157D9] px-7 py-3.5 font-extrabold text-white shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-[#5147C4] dark:shadow-none disabled:opacity-60"
               >
                 {gerando ? 'Gerando...' : 'Gerar cronograma'}
               </button>
+              </div>
+
+              <aside className="border-t border-[#E8E6EC] bg-[#F5F4F1] p-8 dark:border-white/10 dark:bg-[#232327] md:border-l md:border-t-0 sm:p-10">
+                <p className="text-sm font-black text-[#2F2D35] dark:text-white">O que será considerado</p>
+                <div className="mt-6 space-y-5">
+                  {[
+                    ['01', 'Seu objetivo', 'ENEM, vestibular ou curso'],
+                    ['02', 'Tempo disponível', 'Dias e horários reais'],
+                    ['03', 'Matérias prioritárias', 'Foco no que mais importa']
+                  ].map(([number, title, text]) => (
+                    <div key={number} className="flex gap-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-black text-[#6157D9] shadow-sm dark:bg-white/10 dark:text-[#B8B2FF]">{number}</span>
+                      <span><strong className="block text-sm text-[#34323A] dark:text-white">{title}</strong><small className="text-[#817E88] dark:text-white/45">{text}</small></span>
+                    </div>
+                  ))}
+                </div>
+              </aside>
             </section>
           ) : (
             <>

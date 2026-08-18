@@ -37,8 +37,7 @@ function uploadErrorHandler(err, req, res, next) {
     return res.status(415).json({ message: err.message });
   }
 
-  console.error('[UPLOAD ERROR]', err);
-  return res.status(500).json({ message: 'Erro inesperado no upload. Tente novamente.' });
+  return next(err);
 }
 
 module.exports = uploadErrorHandler;

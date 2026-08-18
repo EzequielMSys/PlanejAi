@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast'
 import confetti from 'canvas-confetti'
 import cronogramaService from '../services/cronogramaService'
 import { useAuth } from '../context/AuthContext'
+import MaterialViewer from '../components/MaterialViewer'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -31,6 +32,7 @@ export default function Cronograma() {
   const [editando, setEditando] = useState(null)
   const [editLink, setEditLink] = useState('')
   const [enviandoMaterial, setEnviandoMaterial] = useState(null)
+  const [materialAberto, setMaterialAberto] = useState(null)
   const celebradoRef = useRef(false)
 
   async function carregarCronogramas() {
@@ -240,7 +242,7 @@ async function concluirDia(idDia) {
 
       <div className="max-w-7xl mx-auto relative z-10">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <section className="bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+          <section className="workspace-hero bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
             <div className="absolute inset-0 bg-black/20" />
             <div className="absolute top-8 left-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
             <div className="absolute bottom-8 right-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
@@ -276,29 +278,42 @@ async function concluirDia(idDia) {
           </section>
 
           {!cronogramaAtual ? (
-            <section className="bg-white rounded-[3rem] p-10 sm:p-12 text-center shadow-2xl border border-[#9394CF]/20">
-              <div className="w-24 h-24 rounded-full bg-[#9394CF] mx-auto flex items-center justify-center text-white shadow-xl mb-6">
-                <svg className="w-11 h-11" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+            <section className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.9fr] lg:items-center">
+              <div>
+                <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#DDD0EF] bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-[#6D28D9] dark:border-white/10 dark:bg-white/5 dark:text-[#C4B5FD]">
+                  Comece por aqui
+                </span>
+                <h2 className="max-w-xl text-3xl font-black tracking-[-.04em] text-[#2C1A3D] dark:text-white sm:text-4xl">
+                  Sua semana ainda está em branco.
+                </h2>
+                <p className="mt-4 max-w-lg leading-relaxed text-[#74627F] dark:text-[#B7A9C1]">
+                  Monte uma rotina possível de cumprir. O PlanejAI distribui matérias, pausas e revisões usando seu perfil e sua disponibilidade.
+                </p>
+                <button
+                  type="button"
+                  onClick={gerarNovoCronograma}
+                  disabled={gerando}
+                  className="mt-7 rounded-xl bg-[#7C3AED] px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-[#6D28D9] disabled:opacity-60"
+                >
+                  {gerando ? 'Montando sua semana...' : 'Montar meu cronograma'}
+                </button>
               </div>
-
-              <h2 className="text-3xl font-black text-black mb-3">
-                Nenhum cronograma encontrado
-              </h2>
-
-              <p className="text-black/60 max-w-md mx-auto leading-relaxed mb-8">
-                Gere seu primeiro cronograma com base no seu perfil de estudo e disponibilidade semanal.
-              </p>
-
-              <button
-                type="button"
-                onClick={gerarNovoCronograma}
-                disabled={gerando}
-                className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-black hover:bg-black transition disabled:opacity-60"
-              >
-                {gerando ? 'Gerando...' : 'Gerar agora'}
-              </button>
+              <div className="planner-preview" aria-hidden="true">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[.18em] text-[#8B5CF6]">Prévia</p>
+                    <p className="mt-1 font-black text-[#2C1A3D] dark:text-white">Sua próxima semana</p>
+                  </div>
+                  <svg className="h-6 w-6 text-[#7C3AED]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                {[['SEG', 'Matemática', '45 min'], ['QUA', 'Redação', '1 tema'], ['SEX', 'Revisão', '30 min']].map(([dia, materia, tempo]) => (
+                  <div key={dia} className="planner-preview-row">
+                    <span>{dia}</span><strong>{materia}</strong><small>{tempo}</small>
+                  </div>
+                ))}
+              </div>
             </section>
           ) : (
             <>
@@ -358,7 +373,7 @@ async function concluirDia(idDia) {
                   return (
                     <div
                       key={idDia || index}
-                      className="bg-white rounded-[2rem] p-5 shadow-xl border border-[#9394CF]/20"
+                      className="group relative overflow-hidden bg-white rounded-[2rem] p-5 shadow-xl border border-[#9394CF]/20 before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 before:bg-[#C4B5FD] hover:before:bg-[#7C3AED]"
                     >
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex-1">
@@ -450,14 +465,17 @@ async function concluirDia(idDia) {
                                 </div>
 
                                 {conteudo.link && (
-                                  <a
-                                    href={conteudo.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                  <button
+                                    type="button"
+                                    onClick={() => setMaterialAberto({ titulo: conteudo.titulo, tipo: conteudo.tipo, url: conteudo.link })}
                                     className="text-[#4B4C9D] text-sm font-bold hover:underline"
                                   >
-                                    Acessar material
-                                  </a>
+                                    {conteudo.tipo === 'VIDEO'
+                                      ? 'Assistir à aula'
+                                      : conteudo.tipo === 'PDF'
+                                        ? 'Abrir PDF'
+                                        : 'Ler material'}
+                                  </button>
                                 )}
 
                                 {isGestor && editando === idConteudo ? (
@@ -505,7 +523,7 @@ async function concluirDia(idDia) {
                                   </label>
                                 )}
 
-                                <MateriaisComplementares materiais={conteudo.materiais} />
+                                <MateriaisComplementares materiais={conteudo.materiais} onOpen={setMaterialAberto} />
 
                                 <button
                                   type="button"
@@ -538,6 +556,9 @@ async function concluirDia(idDia) {
           )}
         </motion.div>
       </div>
+      {materialAberto && (
+        <MaterialViewer material={materialAberto} onClose={() => setMaterialAberto(null)} />
+      )}
     </div>
   )
 }
@@ -556,7 +577,7 @@ function CardStat({ titulo, valor }) {
   )
 }
 
-function MateriaisComplementares({ materiais }) {
+function MateriaisComplementares({ materiais, onOpen }) {
   let lista = []
   try { lista = Array.isArray(materiais) ? materiais : JSON.parse(materiais || '[]') } catch { lista = [] }
   if (!lista.length) return null
@@ -564,9 +585,9 @@ function MateriaisComplementares({ materiais }) {
   return (
     <div className="flex flex-wrap gap-2">
       {lista.map((material, index) => (
-        <a key={`${material.url}-${index}`} href={material.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-[#9394CF]/40 px-3 py-1 text-xs font-bold text-[#4B4C9D] hover:bg-[#9394CF]/15">
+        <button type="button" key={`${material.url}-${index}`} onClick={() => onOpen({ titulo: material.titulo || 'Material complementar', tipo: material.tipo, url: material.url })} className="rounded-full border border-[#9394CF]/40 px-3 py-1 text-xs font-bold text-[#4B4C9D] hover:bg-[#9394CF]/15">
           {material.tipo === 'VIDEO' ? '▶ ' : material.tipo === 'PDF' ? 'PDF ' : ''}{material.titulo || 'Material'}
-        </a>
+        </button>
       ))}
     </div>
   )

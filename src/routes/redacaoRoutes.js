@@ -7,6 +7,7 @@ router.post('/', authMiddleware, redacaoController.enviarRedacao);
 router.get('/', authMiddleware, redacaoController.listarRedacoes);
 router.get('/todas', authMiddleware, isGestorPedagogico, redacaoController.listarTodasRedacoes);
 router.post('/sugerir-tema', authMiddleware, redacaoController.sugerirTema);
+router.post('/analisar-rascunho', authMiddleware, redacaoController.analisarRascunho);
 router.get('/:idRedacao', authMiddleware, redacaoController.obterRedacao);
 router.patch('/:idRedacao/avaliar', authMiddleware, isGestorPedagogico, redacaoController.avaliarRedacao);
 

@@ -521,18 +521,123 @@ function detectarRepertorio(texto) {
   });
 }
 
+function arredondarFaixaEnem(valor) {
+  return Math.max(40, Math.min(200, Math.round(valor / 40) * 40));
+}
+
+function palavrasRelevantes(texto) {
+  const stopwords = new Set(['para', 'como', 'uma', 'que', 'com', 'dos', 'das', 'por', 'nos', 'nas', 'seus', 'suas', 'sobre', 'entre', 'brasil', 'brasileira', 'brasileiro', 'desafios'])
+  return [...new Set(tokenizar(texto).filter((p) => p.length > 3 && !stopwords.has(p)))];
+}
+
+function analisarAderenciaTema(texto, tema) {
+  const chaves = palavrasRelevantes(tema);
+  const vocabulario = new Set(tokenizar(texto));
+  const presentes = chaves.filter((p) => vocabulario.has(p));
+  return {
+    palavrasTema: chaves,
+    encontradas: presentes,
+    taxa: chaves.length ? presentes.length / chaves.length : 0.5
+  };
+}
+
+function analisarIntervencaoDetalhada(texto) {
+  const t = texto.toLowerCase();
+  const testar = (lista) => lista.some((item) => t.includes(item));
+  const elementos = {
+    agente: testar(['governo', 'estado', 'ministério', 'escola', 'sociedade', 'mídia', 'família', 'ong', 'empresas']),
+    acao: testar(['deve ', 'devem ', 'criar', 'promover', 'implementar', 'ampliar', 'garantir', 'fiscalizar', 'investir']),
+    meio: testar(['por meio', 'mediante', 'através', 'com campanhas', 'com a criação', 'a partir de']),
+    finalidade: testar(['a fim de', 'para que', 'com o objetivo', 'visando', 'de modo a']),
+    detalhamento: testar(['isto é', 'ou seja', 'especialmente', 'sobretudo', 'tais como', 'por exemplo'])
+  };
+  return { elementos, total: Object.values(elementos).filter(Boolean).length };
+}
+
+function analisarSinaisAutoria(texto) {
+  const paragrafos = obterParagrafos(texto);
+  const frases = texto.split(/[.!?]+/).map((f) => f.trim()).filter(Boolean);
+  const comprimentos = frases.map((f) => contarPalavras(f));
+  const media = comprimentos.length ? comprimentos.reduce((a, b) => a + b, 0) / comprimentos.length : 0;
+  const desvio = comprimentos.length ? Math.sqrt(comprimentos.reduce((s, n) => s + ((n - media) ** 2), 0) / comprimentos.length) : 0;
+  const indicadores = [];
+  let indice = 0;
+
+  if (frases.length >= 8 && desvio < 3.5) {
+    indice += 2;
+    indicadores.push('As frases têm extensão muito regular; variar o ritmo pode deixar a voz mais natural.');
+  }
+  const genericos = PADROES_IA.filter((p) => texto.toLowerCase().includes(p));
+  if (genericos.length >= 2) {
+    indice += 2;
+    indicadores.push('Há fórmulas genéricas recorrentes; substitua-as por relações específicas com o tema.');
+  }
+  const ttr = calcularTypeTokenRatio(texto);
+  if (contarPalavras(texto) > 180 && ttr < 0.38) {
+    indice += 1;
+    indicadores.push('O vocabulário se repete bastante; revise termos-chave e sinônimos.');
+  }
+  if (paragrafos.length >= 4 && new Set(paragrafos.map((p) => p.split(/\s+/).length)).size === 1) {
+    indice += 1;
+    indicadores.push('Todos os parágrafos têm praticamente o mesmo tamanho.');
+  }
+
+  return {
+    flag_ia: 0,
+    pontuacao: indice,
+    nivel: contarPalavras(texto) < 80 ? 'insuficiente' : indice >= 4 ? 'revisar_com_contexto' : 'poucos_sinais',
+    evidencias: indicadores.slice(0, 5),
+    indicadores: indicadores.slice(0, 5),
+    confiancaLimitada: true,
+    aviso: 'Estes sinais não comprovam uso de IA. Detectores podem errar e nunca devem substituir histórico de versões, conversa com o autor e avaliação humana.'
+  };
+}
+
+function avaliarCompetenciasAprimorado(texto, erros, tema = '') {
+  const estrutura = gerarEstrutura(texto);
+  const aderencia = analisarAderenciaTema(texto, tema);
+  const repertorio = detectarRepertorio(texto);
+  const conectivos = detectarConectivos(texto);
+  const intervencao = analisarIntervencaoDetalhada(texto);
+  const t = texto.toLowerCase();
+  const temTese = ['defende-se', 'é necessário', 'torna-se necessário', 'deve-se', 'evidencia-se', 'é preciso'].some((x) => t.includes(x));
+  const marcadoresArgumento = ['porque', 'visto que', 'uma vez que', 'isso ocorre', 'consequência', 'causa', 'exemplo'].filter((x) => t.includes(x));
+
+  const c1 = arredondarFaixaEnem(200 - Math.min(erros.length * 12, 120) - (estrutura.frases.length < 3 ? 40 : 0));
+  const c2 = arredondarFaixaEnem(80 + Math.min(80, aderencia.taxa * 100) + (repertorio.length ? 40 : 0));
+  const c3 = arredondarFaixaEnem(80 + (estrutura.quantidadeParagrafos >= 4 ? 40 : 0) + (temTese ? 40 : 0) + Math.min(40, marcadoresArgumento.length * 10));
+  const c4 = arredondarFaixaEnem(80 + Math.min(120, conectivos.length * 24));
+  const c5 = arredondarFaixaEnem(40 + intervencao.total * 32);
+
+  const competencias = [
+    { codigo: 1, nome: 'Norma-padrão', nota: c1, maximo: 200, feedback: erros.length ? `Revise os ${erros.length} apontamentos linguísticos e releia períodos longos em voz alta.` : 'O texto não apresentou desvios detectáveis nesta análise automática.' },
+    { codigo: 2, nome: 'Tema e repertório', nota: c2, maximo: 200, feedback: repertorio.length ? `O tema foi relacionado a repertório identificável (${repertorio.slice(0, 2).join(', ')}). Explique sempre a ligação com a tese.` : 'Inclua um repertório verificável e explique por que ele sustenta seu argumento.' },
+    { codigo: 3, nome: 'Projeto de texto', nota: c3, maximo: 200, feedback: temTese ? 'Há sinal de posicionamento. Garanta que cada desenvolvimento prove uma parte dessa tese.' : 'Declare uma tese precisa na introdução e faça cada parágrafo responder a ela.' },
+    { codigo: 4, nome: 'Coesão', nota: c4, maximo: 200, feedback: conectivos.length >= 3 ? `Foram reconhecidos articuladores variados, como ${conectivos.slice(0, 3).join(', ')}.` : 'Conecte causa, contraste e conclusão sem repetir sempre o mesmo articulador.' },
+    { codigo: 5, nome: 'Intervenção', nota: c5, maximo: 200, feedback: `A proposta contém ${intervencao.total}/5 elementos: agente, ação, meio, finalidade e detalhamento.` }
+  ];
+  return { notaFinal: competencias.reduce((s, c) => s + c.nota, 0), competencias, aderencia, intervencao };
+}
+
+function criarPlanoRevisao(analise) {
+  return [...analise.enem.competencias]
+    .sort((a, b) => a.nota - b.nota)
+    .slice(0, 3)
+    .map((c, indice) => ({ prioridade: indice + 1, competencia: c.codigo, titulo: `Revisar ${c.nome}`, acao: c.feedback }));
+}
+
 /**
  * Executa análise completa de uma redação.
  * Retorna erros, sugestões, detecção de IA e estrutura.
  */
-function analisarRedacao(texto, erros = []) {
+function analisarRedacao(texto, erros = [], contexto = {}) {
   const sugestoes = gerarSugestoes(texto);
-  const ia = detectarIA(texto);
+  const ia = analisarSinaisAutoria(texto);
   const estrutura = gerarEstrutura(texto);
-  const enem = avaliarPorCompetenciasENEM(texto, erros);
+  const enem = avaliarCompetenciasAprimorado(texto, erros, contexto.tema || '');
   const repertorio = detectarRepertorio(texto);
 
-  return {
+  const resultado = {
     erros,
     sugestoes,
     ia,
@@ -540,6 +645,8 @@ function analisarRedacao(texto, erros = []) {
     enem,
     repertorio
   };
+  resultado.planoRevisao = criarPlanoRevisao(resultado);
+  return resultado;
 }
 
 module.exports = {
@@ -547,6 +654,9 @@ module.exports = {
   detectarIA,
   gerarSugestoes,
   avaliarPorCompetenciasENEM,
+  avaliarCompetenciasAprimorado,
+  analisarSinaisAutoria,
+  analisarAderenciaTema,
   gerarEstrutura,
   detectarConectivos,
   detectarPropostaIntervencao,

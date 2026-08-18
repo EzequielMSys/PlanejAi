@@ -136,7 +136,7 @@ export default function Atividades() {
   return (
     <div className="min-h-screen bg-[#F7F7FB] px-4 py-10 dark:bg-[#0F0E20] sm:px-8">
       <div className="mx-auto max-w-6xl">
-        <header className="mb-8 rounded-[2.5rem] bg-gradient-to-br from-[#4B4C9D] to-[#9394CF] p-8 text-white shadow-2xl">
+        <header className="workspace-hero mb-8 rounded-[2.5rem] bg-gradient-to-br from-[#4B4C9D] to-[#9394CF] p-8 text-white shadow-2xl">
           <div className="flex flex-wrap items-end justify-between gap-5">
             <div>
               <p className="text-xs font-black uppercase tracking-[.3em] text-white/70">Espaço de aprendizagem</p>

@@ -1,0 +1,44 @@
+/* Correções semânticas de contraste: evitam depender de utilitários legados. */
+html:not(.dark) .app-sidebar {
+  background: linear-gradient(180deg, #fdfbff 0%, #f5effb 100%) !important;
+  color: #2b1938 !important;
+  border-color: #e1d5ee !important;
+  box-shadow: 18px 0 55px -38px rgba(61, 31, 89, .55) !important;
+}
+html:not(.dark) .app-sidebar .sidebar-brand,
+html:not(.dark) .app-sidebar .sidebar-close,
+html:not(.dark) .app-sidebar .sidebar-section { color: #3a2549 !important; }
+html:not(.dark) .app-sidebar .sidebar-section { opacity: .62; }
+html:not(.dark) .app-sidebar .sidebar-link { color: #574662 !important; }
+html:not(.dark) .app-sidebar .sidebar-link:hover { background: #ece3f7 !important; color: #3b1f55 !important; }
+html:not(.dark) .app-sidebar .sidebar-link.is-active { background: #6d4ddd !important; color: #fff !important; }
+html:not(.dark) .app-sidebar .sidebar-account { border-color: #ded1ec !important; background: rgba(255,255,255,.66) !important; }
+html:not(.dark) .app-sidebar .sidebar-account p { color: #62526e !important; }
+html:not(.dark) .app-sidebar .sidebar-account strong { color: #5b35bd !important; }
+
+.dark .app-sidebar { background: linear-gradient(180deg, #1d1528, #15101e) !important; }
+
+html:not(.dark) .app-shell main .workspace-hero[class*="bg-gradient"] {
+  background: linear-gradient(90deg, rgba(124,58,237,.055) 1px, transparent 1px) 2.4rem 0 / 2.75rem 100%, #fdfbff !important;
+}
+
+.app-shell main .profile-hero[class*="bg-gradient"] {
+  border-color: rgba(255,255,255,.14) !important;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(196,181,253,.22), transparent 14rem),
+    linear-gradient(135deg, #4c2a91 0%, #2a1d52 55%, #1f183c 100%) !important;
+}
+.app-shell main .profile-hero [class*="text-white"] { color: #fff !important; }
+.app-shell main .profile-hero [class*="text-white/"] { color: rgba(255,255,255,.78) !important; }
+
+html:not(.dark) .app-shell main input,
+html:not(.dark) .app-shell main textarea,
+html:not(.dark) .app-shell main select { color: #281735; }
+html:not(.dark) .app-shell main input::placeholder,
+html:not(.dark) .app-shell main textarea::placeholder { color: #81718c; opacity: 1; }
+
+@media (prefers-contrast: more) {
+  html:not(.dark) .app-sidebar .sidebar-link { color: #291637 !important; }
+  html:not(.dark) .app-shell main input,
+  html:not(.dark) .app-shell main textarea { border-color: #7b61a8 !important; }
+}

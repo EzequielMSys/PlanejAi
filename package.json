@@ -11,13 +11,17 @@
     "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "seed:owner": "node src/scripts/seedOwner.js",
     "seed:conteudos": "node src/scripts/seedConteudos.js",
+    "repair:conteudos": "node src/scripts/repairContentLinks.js",
+    "test:redacao": "node src/scripts/testEssayAnalysis.js",
+    "check:backend": "node --check src/server.js && node --check src/controllers/authController.js && node --check src/services/authService.js && node --check src/middlewares/authMiddleware.js && node --check src/middlewares/platformMiddleware.js && node --check src/middlewares/uploadMiddleware.js",
+    "check:frontend": "npm run lint --prefix frontend && npm run build --prefix frontend",
     "migrate:areas_foco": "node src/scripts/applyAreasFocoMigration.js",
     "migrate:atividades": "node src/scripts/applyPedagogicalActivitiesMigration.js",
     "migrate:materiais": "node src/scripts/applyContentMaterialsMigration.js",
     "migrate:all": "node src/scripts/applyMigrations.js"
   },
   "dependencies": {
-    "bcrypt": "^5.1.0",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
     "express": "^4.18.2",

@@ -1,15 +1,10 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
-const pool = mysql.createPool({
-  // Defaults keep local MariaDB/MySQL installations working even when the
-  // password is intentionally blank. Production must provide these via .env.
-  host: process.env.DB_HOST || 'localhost',
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME || 'tcc',
+const getDatabaseOptions = require('./databaseOptions');
+
+const pool = mysql.createPool(getDatabaseOptions({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
-});
+}));
 module.exports = pool;

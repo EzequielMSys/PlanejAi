@@ -203,7 +203,13 @@ function deserializarRedacao(row) {
     sugestoes: sugestoes,
     competencias_enem: competenciasEnem,
     repertorio_sugerido: repertorioSugerido,
-    ia_evidencias: iaEvidencias
+    ia_evidencias: iaEvidencias,
+    deteccao_ia: {
+      nivel: row.ia_nivel || 'insuficiente',
+      evidencias: iaEvidencias || [],
+      confiancaLimitada: true,
+      aviso: 'Sinais estatísticos não comprovam uso de IA e exigem avaliação humana contextual.'
+    }
   };
 }
 

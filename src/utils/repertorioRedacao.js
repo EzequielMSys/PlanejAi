@@ -174,6 +174,25 @@ function sugerirTemaPorPalavraChave(palavraChave) {
 
   // Busca parcial por área
   const porArea = TEMAS.find((t) => normalizar(t.area).includes(alvo));
+  const termos = alvo.split(/\s+/).filter((termo) => termo.length > 2);
+  const sinonimos = {
+    escola: ['educacao'], ensino: ['educacao'], professor: ['educacao'],
+    internet: ['tecnologia', 'comunicacao'], ia: ['tecnologia'], redes: ['tecnologia', 'comunicacao'],
+    ansiedade: ['saude_mental'], jovem: ['saude_mental', 'educacao'],
+    clima: ['meio_ambiente'], lixo: ['meio_ambiente'], consumo: ['meio_ambiente'],
+    pobreza: ['desigualdade'], renda: ['desigualdade', 'trabalho'], emprego: ['trabalho'],
+    noticia: ['comunicacao'], desinformacao: ['comunicacao', 'democracia'], politica: ['democracia']
+  };
+  const expandidos = [...termos, ...termos.flatMap((termo) => sinonimos[termo] || [])];
+  const ranqueados = TEMAS.map((tema) => {
+    const base = normalizar(`${tema.id} ${tema.area} ${tema.tema} ${tema.proposta}`);
+    const pontos = expandidos.reduce((total, termo) => total + (base.includes(termo) ? (base.startsWith(termo) ? 3 : 1) : 0), 0);
+    return { tema, pontos };
+  }).sort((a, b) => b.pontos - a.pontos);
+  if (ranqueados[0]?.pontos > 0) {
+    return ranqueados[0].tema;
+  }
+
   if (porArea) {
     return porArea;
   }

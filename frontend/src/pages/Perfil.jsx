@@ -357,7 +357,7 @@ const handleSaveEstudos = async (e) => {
 
       <div className="max-w-4xl mx-auto relative z-10">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <div className="bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+          <div className="workspace-hero profile-hero bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
             <div className="absolute inset-0 bg-black/20" />
 
             <div className="relative z-10 text-center">

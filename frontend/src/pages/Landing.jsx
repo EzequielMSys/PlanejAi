@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import ThemeToggle from '../components/ThemeToggle'
+import Logo from '../components/Logo'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -14,89 +15,23 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.15 } }
 }
 
-const letterStagger = {
-  hidden: { opacity: 0, y: 60, rotateX: 90 },
-  visible: (i) => ({
-    opacity: 1,
-    y: 0,
-    rotateX: 0,
-    transition: { delay: 0.4 + i * 0.08, duration: 0.6, ease: 'easeOut' }
-  })
-}
-
-// Letters for the animated "PlanejAI" acronym
-const BRAND_LETTERS = ['P', 'l', 'a', 'n', 'e', 'j', 'A', 'I']
-
 function explodeConfetti() {
-  const defaults = { colors: ['#9394CF', '#4B4C9D', '#7778BD', '#A9AAE8', '#ffffff'] }
+  const defaults = { colors: ['#7C3AED', '#A855F7', '#C4B5FD', '#E9D5FF', '#ffffff'] }
   confetti({ ...defaults, particleCount: 120, spread: 80, origin: { y: 0.6 } })
   confetti({ ...defaults, particleCount: 60, angle: 60, spread: 60, origin: { x: 0 } })
   confetti({ ...defaults, particleCount: 60, angle: 120, spread: 60, origin: { x: 1 } })
 }
 
-// Floating particles inside the hero
-function Particles() {
-  const particles = Array.from({ length: 18 })
-  return (
-    <div className="particle-field">
-      {particles.map((_, i) => (
-        <motion.span
-          key={i}
-          className="absolute rounded-full bg-white/40 dark:bg-white/30"
-          style={{
-            left: `${(i * 37) % 100}%`,
-            bottom: `${(i * 23) % 90}%`,
-            width: `${4 + (i % 4) * 3}px`,
-            height: `${4 + (i % 4) * 3}px`,
-            animation: `particle ${10 + (i % 6) * 2}s linear ${i * 0.7}s infinite`
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
-// The animated "PlanejAI" acronym
 function AnimatedBrand() {
   return (
     <motion.div
-      initial="hidden"
-      animate="visible"
-      className="relative select-none"
-      style={{ perspective: 800 }}
+      initial={{ opacity: 0, x: -16 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.5 }}
+      className="inline-flex select-none items-center gap-3"
     >
-      <div className="flex items-center justify-center gap-1 sm:gap-2">
-        {BRAND_LETTERS.map((letter, i) => (
-          <motion.span
-            key={i}
-            custom={i}
-            variants={letterStagger}
-            className={`inline-block font-black leading-none
-              ${i >= 6 ? 'text-white' : 'text-transparent bg-clip-text'}
-              translate-z-0`}
-            style={{
-              fontSize: 'clamp(4rem, 16vw, 11rem)',
-              backgroundImage: i < 6
-                ? 'linear-gradient(120deg, #7c7de0, #4B4C9D, #9394CF, #7c7de0)'
-                : undefined,
-              backgroundSize: '300% 300%',
-              animation: i < 6 ? 'gradientX 5s ease infinite' : undefined,
-              textShadow: i >= 6 ? '0 0 30px rgba(147,148,207,0.9), 0 0 60px rgba(75,76,157,0.6)' : undefined,
-              transform: i % 2 === 0 ? undefined : 'translateY(6px)'
-            }}
-            whileHover={{ scale: 1.15, y: -8, rotate: i % 2 === 0 ? -6 : 6 }}
-          >
-            {letter}
-          </motion.span>
-        ))}
-      </div>
-
-      {/* Glow layer behind the acronym */}
-      <div className="absolute inset-0 -z-10 flex items-center justify-center blur-2xl opacity-60 dark:opacity-40">
-        <span className="font-black text-[#4B4C9D] dark:text-[#A9AAE8]" style={{ fontSize: 'clamp(4rem, 16vw, 11rem)' }}>
-          PlanejAI
-        </span>
-      </div>
+      <Logo className="h-12 w-12" />
+      <span className="text-2xl font-black tracking-[-0.04em] text-[#241A38] dark:text-white sm:text-3xl">Planej<span className="text-[#7C3AED] dark:text-[#C4B5FD]">AI</span></span>
     </motion.div>
   )
 }
@@ -104,10 +39,10 @@ function AnimatedBrand() {
 // Stats section with animated counters
 function Stats() {
   const stats = [
-    { value: 1000, suffix: '+', label: 'Cronogramas gerados' },
-    { value: 500, suffix: '+', label: 'Alunos apoiados' },
-    { value: 98, suffix: '%', label: 'Satisfação' },
-    { value: 24, suffix: 'h', label: 'Suporte ativo' }
+    { value: 4, suffix: '', label: 'áreas de conhecimento' },
+    { value: 7, suffix: '', label: 'dias organizados' },
+    { value: 100, suffix: '%', label: 'adaptado à sua rotina' },
+    { value: 1, suffix: '', label: 'plano centralizado' }
   ]
 
   return (
@@ -179,18 +114,18 @@ function useInViewOnce(ref, callback) {
   return () => observer.disconnect()
 }
 
-function FeatureCard({ emoji, title, desc }) {
+function FeatureCard({ number, title, desc }) {
   return (
     <motion.div
       variants={fadeUp}
-      className="bg-white dark:bg-[#26254A] text-center group hover:scale-[1.03] hover:-translate-y-1 hover:shadow-[0_30px_80px_rgba(75,76,157,0.3)] transition-all duration-300 p-8 rounded-[2rem] shadow-xl border border-[#9394CF]/30 dark:border-white/10"
+      className="group rounded-[1.75rem] border border-[#E4E3F0] bg-white p-8 text-left shadow-[0_22px_60px_-42px_rgba(35,31,77,.5)] transition-all duration-300 hover:-translate-y-1 hover:border-[#C9C5F4] hover:shadow-[0_28px_70px_-40px_rgba(75,67,183,.45)] dark:border-white/10 dark:bg-[#211F3D]"
     >
-      <div className="relative w-20 h-20 bg-gradient-to-br from-[#9394CF] to-[#4B4C9D] rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 shadow-lg">
-        <span className="text-3xl">{emoji}</span>
-        <span className="absolute inset-0 rounded-full bg-white/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="mb-8 flex items-center justify-between">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#6157D9] text-sm font-black text-white shadow-md shadow-indigo-200 dark:shadow-none">{number}</span>
+        <span className="text-2xl text-[#B8B5CA] transition group-hover:translate-x-1 group-hover:text-[#6157D9]">↗</span>
       </div>
 
-      <h3 className="text-2xl font-extrabold text-black dark:text-white mb-4">
+      <h3 className="mb-3 text-xl font-extrabold tracking-tight text-black dark:text-white">
         {title}
       </h3>
 
@@ -198,6 +133,41 @@ function FeatureCard({ emoji, title, desc }) {
         {desc}
       </p>
     </motion.div>
+  )
+}
+
+function StudyMap() {
+  const items = [
+    { time: '16:00', title: 'Matemática', detail: 'Funções · 45 min', side: 'left' },
+    { time: '17:00', title: 'Redação', detail: 'Repertório · 30 min', side: 'right' },
+    { time: '18:10', title: 'Biologia', detail: 'Ecologia · 35 min', side: 'left' }
+  ]
+
+  return (
+    <div className="relative mx-auto min-h-[430px] max-w-[480px] overflow-hidden rounded-[2rem] border border-[#D9CDF5] bg-[#FCFAFF] p-6 shadow-[0_28px_80px_-42px_rgba(76,29,149,.45)] dark:border-white/10 dark:bg-[#20172F] sm:p-8">
+      <div className="absolute inset-0 opacity-45 [background-image:linear-gradient(#E9E1F7_1px,transparent_1px),linear-gradient(90deg,#E9E1F7_1px,transparent_1px)] [background-size:28px_28px] dark:opacity-[.06]" />
+      <div className="relative">
+        <div className="mb-8 flex items-end justify-between">
+          <div><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#8A769F] dark:text-white/40">Quinta-feira</p><h3 className="mt-1 text-2xl font-black tracking-tight text-[#2A1D3D] dark:text-white">Minha trilha</h3></div>
+          <span className="rounded-full bg-[#EEE7FF] px-3 py-1.5 text-xs font-black text-[#6D28D9] dark:bg-white/10 dark:text-[#D8B4FE]">3 blocos</span>
+        </div>
+
+        <div className="relative space-y-5">
+          <div className="absolute bottom-5 left-4 top-5 w-px bg-gradient-to-b from-[#A78BFA] via-[#7C3AED] to-[#D8B4FE]" />
+          {items.map((item, index) => (
+            <motion.div key={item.title} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .45 + index * .12 }} className="relative grid grid-cols-[34px_1fr] gap-4">
+              <span className={`relative z-10 mt-5 h-8 w-8 rounded-full border-[6px] border-[#FCFAFF] dark:border-[#20172F] ${index === 1 ? 'bg-[#7C3AED]' : 'bg-[#C4B5FD]'}`} />
+              <div className={`rounded-2xl border p-4 ${index === 1 ? 'rotate-[1deg] border-[#8B5CF6] bg-[#7C3AED] text-white shadow-lg shadow-purple-200 dark:shadow-none' : 'border-[#E3D9F5] bg-white text-[#2B2138] dark:border-white/10 dark:bg-white/[.06] dark:text-white'}`}>
+                <div className="flex items-center justify-between gap-3"><strong>{item.title}</strong><span className={`font-mono text-xs ${index === 1 ? 'text-white/70' : 'text-[#8A769F] dark:text-white/40'}`}>{item.time}</span></div>
+                <p className={`mt-1 text-sm ${index === 1 ? 'text-white/75' : 'text-[#7E718C] dark:text-white/45'}`}>{item.detail}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="mt-7 flex items-center justify-between border-t border-[#E9E1F4] pt-5 dark:border-white/10"><span className="text-sm font-bold text-[#6F607E] dark:text-white/50">Ritmo do dia</span><span className="font-mono text-sm font-black text-[#7C3AED] dark:text-[#C4B5FD]">110 min</span></div>
+      </div>
+    </div>
   )
 }
 
@@ -210,63 +180,50 @@ const Landing = () => {
       </div>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] pt-32 pb-20 bg-animated-grid">
+      <section className="relative overflow-hidden bg-[#F5F0FF] pb-20 pt-24 dark:bg-[#140F20] sm:pt-28">
         {/* Ambient animated blobs */}
-        <div className="absolute top-16 left-10 w-40 h-40 bg-white/20 rounded-full blur-xl animate-float" />
-        <div className="absolute top-40 right-16 w-56 h-56 bg-black/10 rounded-full blur-2xl animate-float-slow" />
-        <div className="absolute top-32 right-1/4 w-24 h-24 border border-white/40 rounded-full animate-pulse-glow" />
-        <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-white/10 rounded-full blur-2xl animate-float" />
-        <div className="absolute -top-10 -left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute -left-24 top-20 h-72 w-72 rounded-full border-[52px] border-[#E5D8FF] dark:border-[#7C3AED]/10" />
+        <div className="absolute -right-20 bottom-[-9rem] h-96 w-96 rounded-full bg-[#DDD0FA] blur-3xl dark:bg-[#6D28D9]/15" />
         {/* Rotating decorative ring */}
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 w-[26rem] h-[26rem] border border-white/10 rounded-full animate-spin-slower" />
-        <div className="absolute top-32 left-1/2 -translate-x-1/2 w-[20rem] h-[20rem] border border-white/10 rounded-full animate-spin-slow" />
+        <div className="absolute right-[42%] top-20 h-16 w-16 rotate-12 rounded-2xl border border-[#C4B5FD]/60 dark:border-white/10" />
 
-        {/* Floating particles */}
-        <Particles />
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
             variants={stagger}
             initial="hidden"
             animate="visible"
-            className="bg-white/85 dark:bg-white/10 backdrop-blur-xl rounded-[3rem] p-10 md:p-14 shadow-2xl border border-white/60 dark:border-white/20 card-glow"
+            className="grid items-center gap-12 text-left lg:grid-cols-[1.02fr_.98fr]"
           >
+            <div>
             {/* Animated logo/acronym */}
-            <motion.div variants={fadeUp} className="mb-8 flex justify-center">
+            <motion.div variants={fadeUp} className="mb-10 flex justify-start">
               <AnimatedBrand />
             </motion.div>
 
             <motion.h1
               variants={fadeUp}
-              className="text-4xl md:text-6xl font-black text-black dark:text-white mb-6 leading-tight tracking-tight"
+              className="max-w-3xl text-5xl font-black leading-[.98] tracking-[-0.055em] text-[#251638] dark:text-white sm:text-6xl md:text-7xl"
             >
-              Estude com{' '}
-              <span className="text-gradient-animated inline-block">
-                inteligência
+              Sua semana tem um ritmo.{' '}
+                <span className="inline-block text-[#7C3AED] dark:text-[#B794F6]">
+                Seu estudo também.
               </span>
             </motion.h1>
 
             <motion.p
               variants={fadeUp}
-              className="text-lg md:text-2xl text-black/75 dark:text-white/80 max-w-3xl mx-auto mb-8 leading-relaxed"
+              className="mb-8 mt-7 max-w-xl text-lg leading-relaxed text-[#6F607E] dark:text-white/55 md:text-xl"
             >
-              Organize sua rotina com cronogramas personalizados, metas claras e acompanhamento inteligente.
+              Transforme horários soltos, prioridades e objetivos em uma trilha de estudos que você realmente consegue seguir.
             </motion.p>
-
-            {/* Decorative divider */}
-            <motion.div variants={fadeUp} className="flex items-center justify-center gap-3 mb-8">
-              <span className="h-px w-16 bg-gradient-to-r from-transparent to-[#4B4C9D] dark:to-white/40" />
-              <span className="text-2xl animate-bounce-glow">🚀</span>
-              <span className="h-px w-16 bg-gradient-to-l from-transparent to-[#4B4C9D] dark:to-white/40" />
-            </motion.div>
 
             <motion.div
               variants={fadeUp}
-              className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-2xl mx-auto"
+              className="flex max-w-2xl flex-col items-stretch gap-3 sm:flex-row sm:items-center"
             >
               <Link
                 to="/login"
-                className="shine-overlay bg-black dark:bg-white text-white dark:text-black text-lg font-bold py-4 px-12 w-full sm:w-auto rounded-full shadow-xl hover:bg-[#4B4C9D] dark:hover:bg-[#9394CF] transform hover:-translate-y-1 hover:shadow-2xl transition-all duration-300"
+                className="w-full rounded-xl border border-[#CFC0E8] bg-white/60 px-7 py-4 text-center font-extrabold text-[#4C3863] transition hover:border-[#A78BFA] hover:bg-white dark:border-white/15 dark:bg-white/5 dark:text-white sm:w-auto"
               >
                 Acessar sistema
               </Link>
@@ -274,24 +231,29 @@ const Landing = () => {
               <Link
                 to="/register"
                 onClick={explodeConfetti}
-                className="shine-overlay bg-[#4B4C9D] text-white text-lg font-bold py-4 px-12 w-full sm:w-auto rounded-full shadow-xl hover:bg-black dark:hover:bg-white dark:hover:text-black transform hover:-translate-y-1 hover:shadow-2xl animate-pulse-glow transition-all duration-300"
+                className="w-full rounded-xl bg-[#7C3AED] px-7 py-4 text-center font-extrabold text-white shadow-lg shadow-purple-300/30 transition hover:-translate-y-0.5 hover:bg-[#6D28D9] dark:shadow-none sm:w-auto"
               >
-                Começar agora ✨
+                Montar minha trilha
               </Link>
             </motion.div>
+
+            <motion.div variants={fadeUp} className="mt-9 flex flex-wrap gap-x-6 gap-y-2 text-sm font-bold text-[#796989] dark:text-white/40"><span>✓ Horários flexíveis</span><span>✓ Foco por matéria</span><span>✓ Progresso visível</span></motion.div>
+            </div>
+
+            <StudyMap />
           </motion.div>
         </div>
       </section>
 
       {/* Stats */}
-      <section className="py-16 bg-white dark:bg-[#1E1D3A]">
+      <section className="bg-white py-16 dark:bg-[#1A1426]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Stats />
         </div>
       </section>
 
       {/* Features */}
-      <section className="py-32 bg-[#F7F7FB] dark:bg-[#0F0E20]">
+      <section className="bg-[#FAF8FD] py-32 dark:bg-[#120E1A]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             variants={stagger}
@@ -322,17 +284,17 @@ const Landing = () => {
             className="grid md:grid-cols-3 gap-8"
           >
             <FeatureCard
-              emoji="📓"
+              number="01"
               title="Cronogramas Inteligentes"
               desc="Organização automática com base no seu tempo disponível e nos seus objetivos."
             />
             <FeatureCard
-              emoji="🗓️"
+              number="02"
               title="Personalização Total"
               desc="Você informa sua rotina, dificuldades, prioridades e metas de estudo."
             />
             <FeatureCard
-              emoji="📈"
+              number="03"
               title="Evolução Contínua"
               desc="Acompanhe seu progresso e ajuste seus estudos conforme seu desempenho."
             />
