@@ -216,6 +216,26 @@ async function removerConteudosDia(idDia) {
   )
 }
 
+async function moverConteudo(idConteudoCronograma, idDiaDestino, idUsuario) {
+  const [result] = await pool.execute(
+    `UPDATE cronograma_conteudos cc
+     INNER JOIN cronograma_dias origem ON origem.id_dia = cc.id_dia
+     INNER JOIN cronogramas cron_origem ON cron_origem.id_cronograma = origem.id_cronograma
+     INNER JOIN perfil_estudo perfil_origem ON perfil_origem.id_perfil = cron_origem.id_perfil
+     INNER JOIN cronograma_dias destino ON destino.id_dia = ?
+     INNER JOIN cronogramas cron_destino ON cron_destino.id_cronograma = destino.id_cronograma
+     INNER JOIN perfil_estudo perfil_destino ON perfil_destino.id_perfil = cron_destino.id_perfil
+     SET cc.id_dia = destino.id_dia
+     WHERE cc.id = ?
+       AND perfil_origem.id_usuario = ?
+       AND perfil_destino.id_usuario = ?
+       AND cron_origem.id_cronograma = cron_destino.id_cronograma`,
+    [idDiaDestino, idConteudoCronograma, idUsuario, idUsuario]
+  )
+  if (!result.affectedRows) return null
+  return obterConteudoCronogramaPorId(idConteudoCronograma)
+}
+
 module.exports = {
   atribuirConteudoAoDia,
   listarConteudosPorDia,
@@ -230,5 +250,6 @@ module.exports = {
   contarConteudosPorCronograma,
   contarConteudosConcluidosPorCronograma,
   removerConteudo,
-  removerConteudosDia
+  removerConteudosDia,
+  moverConteudo
 }

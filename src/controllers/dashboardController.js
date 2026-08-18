@@ -31,4 +31,13 @@ async function desempenhoUsuarios(req, res) {
   }
 }
 
-module.exports = { estatisticas, entregasPendentes, desempenhoUsuarios };
+async function aprendizagemUsuarios(req, res) {
+  try {
+    return res.json(await dashboardModel.obterAprendizagemUsuarios());
+  } catch (error) {
+    console.error('[DASHBOARD APRENDIZAGEM]', error);
+    return res.status(500).json({ message: 'Erro ao carregar indicadores de aprendizagem.' });
+  }
+}
+
+module.exports = { estatisticas, entregasPendentes, desempenhoUsuarios, aprendizagemUsuarios };

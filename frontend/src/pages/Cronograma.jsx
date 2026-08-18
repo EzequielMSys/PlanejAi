@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import confetti from 'canvas-confetti'
 import cronogramaService from '../services/cronogramaService'
 import { useAuth } from '../context/AuthContext'
 import MaterialViewer from '../components/MaterialViewer'
+import { exportarCronograma } from '../utils/calendarExport'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -22,6 +24,7 @@ function formatarData(data) {
 }
 
 export default function Cronograma() {
+  const navigate = useNavigate()
   const { isGestor } = useAuth()
   const [cronogramas, setCronogramas] = useState([])
   const [loading, setLoading] = useState(true)
@@ -33,6 +36,8 @@ export default function Cronograma() {
   const [editLink, setEditLink] = useState('')
   const [enviandoMaterial, setEnviandoMaterial] = useState(null)
   const [materialAberto, setMaterialAberto] = useState(null)
+  const [conteudoArrastado, setConteudoArrastado] = useState(null)
+  const [diaAlvo, setDiaAlvo] = useState(null)
   const celebradoRef = useRef(false)
 
   async function carregarCronogramas() {
@@ -43,6 +48,16 @@ export default function Cronograma() {
       toast.error('Erro ao carregar cronograma.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function replanejar() {
+    try {
+      await cronogramaService.replanejar()
+      setLoading(true)
+      await carregarCronogramas()
+    } catch {
+      // O serviço já exibe a mensagem adequada.
     }
   }
 
@@ -184,6 +199,25 @@ async function concluirDia(idDia) {
       setConcluindoConteudo(null)
     }
   }
+  async function moverConteudo(idConteudo, idDiaDestino) {
+    if (!idConteudo || !idDiaDestino) return
+    try {
+      await cronogramaService.moverConteudo(idConteudo, idDiaDestino)
+      setDiasExpandidos((current) => ({ ...current, [idDiaDestino]: true }))
+      await carregarCronogramas()
+    } catch { /* o serviço já exibe a mensagem contextual */
+    } finally {
+      setConteudoArrastado(null)
+      setDiaAlvo(null)
+    }
+  }
+
+  function soltarConteudo(event, idDiaDestino) {
+    event.preventDefault()
+    const id = conteudoArrastado || Number(event.dataTransfer.getData('text/plain'))
+    if (id) moverConteudo(id, idDiaDestino)
+  }
+
 
   function alternarExpansaoDia(idDia) {
     setDiasExpandidos((prev) => ({
@@ -276,6 +310,8 @@ async function concluirDia(idDia) {
               </button>
             </div>
           </section>
+
+          {cronogramaAtual && <div className="mb-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={replanejar} className="rounded-full border border-[#7C3AED]/25 bg-white px-5 py-3 text-sm font-black text-[#6D28D9] dark:bg-[#211A2D] dark:text-[#CBB3FF]">Replanejar atrasos</button><button type="button" onClick={() => exportarCronograma(cronogramaAtual)} className="rounded-full bg-[#6D3EC5] px-5 py-3 text-sm font-black text-white">Exportar calendário</button></div>}
 
           {!cronogramaAtual ? (
             <section className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.9fr] lg:items-center">
@@ -373,7 +409,10 @@ async function concluirDia(idDia) {
                   return (
                     <div
                       key={idDia || index}
-                      className="group relative overflow-hidden bg-white rounded-[2rem] p-5 shadow-xl border border-[#9394CF]/20 before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 before:bg-[#C4B5FD] hover:before:bg-[#7C3AED]"
+                      onDragOver={(event) => { event.preventDefault(); if (conteudoArrastado) setDiaAlvo(idDia) }}
+                      onDragLeave={() => setDiaAlvo((current) => current === idDia ? null : current)}
+                      onDrop={(event) => soltarConteudo(event, idDia)}
+                      className={`group relative overflow-hidden rounded-[2rem] p-5 shadow-xl border before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 transition ${diaAlvo === idDia ? 'border-[#7C3AED] bg-[#F3ECFC] ring-4 ring-[#7C3AED]/10 before:bg-[#7C3AED]' : 'border-[#9394CF]/20 bg-white before:bg-[#C4B5FD] hover:before:bg-[#7C3AED]'}`}
                     >
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex-1">
@@ -445,6 +484,10 @@ async function concluirDia(idDia) {
                                     ? 'bg-green-50 border-green-200'
                                     : 'bg-[#F7F7FB] border-[#9394CF]/20'
                                 }`}
+                                draggable={!conteudoConcluido}
+                                onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(idConteudo)); setConteudoArrastado(idConteudo) }}
+                                onDragEnd={() => { setConteudoArrastado(null); setDiaAlvo(null) }}
+                                title={conteudoConcluido ? undefined : 'Arraste para outro dia'}
                               >
                                 <div className="flex-1">
                                   <p
@@ -467,14 +510,10 @@ async function concluirDia(idDia) {
                                 {conteudo.link && (
                                   <button
                                     type="button"
-                                    onClick={() => setMaterialAberto({ titulo: conteudo.titulo, tipo: conteudo.tipo, url: conteudo.link })}
+                                    onClick={() => navigate('/estudar', { state: { conteudo, dia } })}
                                     className="text-[#4B4C9D] text-sm font-bold hover:underline"
                                   >
-                                    {conteudo.tipo === 'VIDEO'
-                                      ? 'Assistir à aula'
-                                      : conteudo.tipo === 'PDF'
-                                        ? 'Abrir PDF'
-                                        : 'Ler material'}
+                                    Começar sessão
                                   </button>
                                 )}
 
@@ -525,8 +564,15 @@ async function concluirDia(idDia) {
 
                                 <MateriaisComplementares materiais={conteudo.materiais} onOpen={setMaterialAberto} />
 
-                                <button
+                                {!conteudoConcluido && <select
+                                  aria-label={`Mover ${conteudo.titulo || 'conteúdo'} para outro dia`}
+                                  value=""
+                                  onChange={(event) => { if (event.target.value) moverConteudo(idConteudo, Number(event.target.value)) }}
+                                  className="rounded-full border border-[#9394CF]/30 bg-white px-3 py-2 text-xs font-bold text-[#4B4C9D]"
+                                ><option value="">Mover para…</option>{dias.filter((item) => (item.id_dia || item.id) !== idDia).map((item) => <option key={item.id_dia || item.id} value={item.id_dia || item.id}>{formatarData(item.data_estudo)}</option>)}</select>}
+
                                   type="button"
+                                <button
                                   onClick={() =>
                                     alternarConteudo(conteudo, conteudoConcluido)
                                   }

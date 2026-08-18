@@ -14,6 +14,7 @@ const redacaoRoutes = require("./routes/redacaoRoutes");
 const conteudoRoutes = require("./routes/conteudoRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const avisoRoutes = require("./routes/avisoRoutes");
+const aprendizagemRoutes = require("./routes/aprendizagemRoutes");
 
 const app = express();
 app.disable("x-powered-by");
@@ -75,6 +76,7 @@ app.use("/api/redacao", redacaoRoutes);
 app.use("/api/conteudos", conteudoRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/avisos", avisoRoutes);
+app.use("/api/aprendizagem", aprendizagemRoutes);
 
 app.use(uploadErrorHandler);
 
@@ -104,7 +106,7 @@ app.get("/api/health", async (req, res, next) => {
 
 app.use("*", (req, res) => {
   res.status(404).json({
-    error: "Endpoint not found",
+    error: "Endpoint não encontrado.",
     method: req.method,
     path: req.originalUrl,
   });
@@ -118,7 +120,7 @@ app.use((err, req, res, next) => {
       status === 413
         ? "Payload muito grande."
         : status === 503
-          ? "Database unavailable"
+          ? "Banco de dados indisponível."
           : "Internal server error",
     request_id: req.requestId,
   });

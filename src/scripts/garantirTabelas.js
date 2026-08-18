@@ -7,7 +7,7 @@ const getDatabaseOptions = require('../config/databaseOptions');
 async function garantirTabelas() {
   const connection = await mysql.createConnection(getDatabaseOptions({ multipleStatements: true }));
 
-  const tabelasParaVerificar = ['avisos', 'conteudos', 'atividades', 'respostas_usuario', 'cronogramas', 'cronograma_dias', 'cronograma_conteudos'];
+  const tabelasParaVerificar = ['avisos', 'conteudos', 'atividades', 'respostas_usuario', 'cronogramas', 'cronograma_dias', 'cronograma_conteudos', 'questoes_estudo', 'tentativas_questoes', 'revisoes_estudo', 'caderno_erros', 'redacao_versoes'];
   const faltantes = [];
 
   for (const tabela of tabelasParaVerificar) {

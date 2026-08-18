@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import redacaoService from '../services/redacaoService'
 import '../components/EssayRecords.css'
 import EssayStudio from '../components/EssayStudio'
+import EssayVersions from '../components/EssayVersionsPro'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -550,6 +551,8 @@ export default function Redacoes() {
                               </p>
                               <TextoComErros texto={redacao.texto} erros={erros} />
                             </div>
+
+                            {!isGestor && <EssayVersions redacao={redacao} />}
 
                             {erros.length > 0 && (
                               <div className="essay-record__panel essay-record__errors p-4 rounded-[1.5rem] bg-red-50 border border-red-200">

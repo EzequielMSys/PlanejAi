@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import redacaoService from '../services/redacaoService'
 import './EssayStudio.css'
+import WritingRadar from './WritingRadar'
 
 const DRAFT_KEY = 'planejai:redacao:rascunho:v2'
 
@@ -111,7 +112,7 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
         <textarea aria-label="Texto da redação" value={form.texto} onChange={(e) => setForm((f) => ({ ...f, texto: e.target.value }))} placeholder={'Comece pela sua tese.\n\nDepois, desenvolva um argumento por parágrafo...'} spellCheck="true" />
         <div className="essay-sheet-actions"><button type="button" onClick={descartar}>Descartar</button><div><button type="button" onClick={analisar} disabled={analisando}>Pré-corrigir</button><button type="submit" disabled={enviando || metricas.palavras < 30}>{enviando ? 'Enviando...' : 'Finalizar e enviar'}</button></div></div>
       </main>
-      {!foco && <aside className="essay-coach"><span className="essay-kicker">COACH DE REVISÃO</span>{diagnostico ? <DiagnosticPanel diagnostico={diagnostico} /> : <><h3>Antes de entregar</h3><p>O bom texto não nasce pronto. Faça três leituras, cada uma com uma missão.</p><ol><li><b>Ideia</b><span>A tese responde exatamente ao tema?</span></li><li><b>Prova</b><span>Cada argumento tem explicação e consequência?</span></li><li><b>Forma</b><span>Há clareza, coesão e pontuação?</span></li></ol><blockquote>Repertório bom não enfeita. Ele ajuda a provar alguma coisa.</blockquote></>}</aside>}
+      {!foco && <aside className="essay-coach"><span className="essay-kicker">COACH DE REVISÃO</span><WritingRadar text={form.texto} />{diagnostico ? <DiagnosticPanel diagnostico={diagnostico} /> : <><h3>Antes de entregar</h3><p>O bom texto não nasce pronto. Faça três leituras, cada uma com uma missão.</p><ol><li><b>Ideia</b><span>A tese responde exatamente ao tema?</span></li><li><b>Prova</b><span>Cada argumento tem explicação e consequência?</span></li><li><b>Forma</b><span>Há clareza, coesão e pontuação?</span></li></ol><blockquote>Repertório bom não enfeita. Ele ajuda a provar alguma coisa.</blockquote></>}</aside>}
     </form>
     {!foco && <TemaLab sugestao={sugestao} usarTema={(tema) => setForm((f) => ({ ...f, tema }))} />}
   </div>

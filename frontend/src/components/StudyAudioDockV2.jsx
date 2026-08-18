@@ -5,6 +5,10 @@ import './StudyAudioDockV2.css'
 
 const STORAGE_KEY = 'planejai:study-audio'
 const VOLUME_KEY = 'planejai:ambient-volume'
+const POSITION_KEY = 'planejai:study-audio-position'
+const FREE_POSITION_KEY = 'planejai:study-audio-free-position'
+const COMPACT_KEY = 'planejai:study-audio-compact'
+const POSICOES = new Set(['bottom-left', 'bottom-right', 'top-left', 'top-right', 'free'])
 const SUGESTOES = [
   { nome: 'Deep Focus', detalhe: 'Instrumental', url: 'https://open.spotify.com/playlist/37i9dQZF1DWZeKCadgRdKQ' },
   { nome: 'Peaceful Piano', detalhe: 'Piano leve', url: 'https://open.spotify.com/playlist/37i9dQZF1DX4sWSpwq3LiO' },
@@ -74,8 +78,19 @@ export default function StudyAudioDockV2() {
   const [conectandoConta, setConectandoConta] = useState(false)
   const spotifyClientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID?.trim()
   const [volume, setVolume] = useState(() => Number(localStorage.getItem(VOLUME_KEY) || 32))
+  const [posicao, setPosicao] = useState(() => {
+    const salva = localStorage.getItem(POSITION_KEY)
+    return POSICOES.has(salva) ? salva : 'bottom-left'
+  })
+  const [posicaoLivre, setPosicaoLivre] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(FREE_POSITION_KEY)) || { x: 280, y: 90 } } catch { return { x: 280, y: 90 } }
+  })
+  const [compacto, setCompacto] = useState(() => localStorage.getItem(COMPACT_KEY) === 'true')
+  const [arrastando, setArrastando] = useState(false)
   const [mudo, setMudo] = useState(false)
   const [timer, setTimer] = useState(0)
+  const dockRef = useRef(null)
+  const arrasteRef = useRef(null)
   const hostRef = useRef(null)
   const controllerRef = useRef(null)
   const audioRef = useRef(null)
@@ -122,6 +137,48 @@ export default function StudyAudioDockV2() {
     localStorage.setItem(VOLUME_KEY, String(volume))
     if (audioRef.current?.gain) audioRef.current.gain.gain.value = mudo ? 0 : volume / 100
   }, [volume, mudo])
+
+  useEffect(() => {
+    localStorage.setItem(POSITION_KEY, posicao)
+  }, [posicao])
+
+  useEffect(() => {
+    localStorage.setItem(FREE_POSITION_KEY, JSON.stringify(posicaoLivre))
+  }, [posicaoLivre])
+
+  useEffect(() => {
+    localStorage.setItem(COMPACT_KEY, String(compacto))
+  }, [compacto])
+
+  useEffect(() => {
+    const mover = (event) => {
+      if (!arrasteRef.current || !dockRef.current) return
+      const largura = dockRef.current.offsetWidth
+      const altura = Math.min(dockRef.current.offsetHeight, window.innerHeight - 16)
+      setPosicaoLivre({
+        x: Math.max(8, Math.min(window.innerWidth - largura - 8, event.clientX - arrasteRef.current.offsetX)),
+        y: Math.max(8, Math.min(window.innerHeight - altura - 8, event.clientY - arrasteRef.current.offsetY))
+      })
+    }
+    const parar = () => {
+      arrasteRef.current = null
+      setArrastando(false)
+    }
+    window.addEventListener('pointermove', mover)
+    window.addEventListener('pointerup', parar)
+    return () => { window.removeEventListener('pointermove', mover); window.removeEventListener('pointerup', parar) }
+  }, [])
+
+  function iniciarArraste(event) {
+    if (window.innerWidth <= 640) return
+    const rect = dockRef.current?.getBoundingClientRect()
+    if (!rect) return
+    event.preventDefault()
+    event.stopPropagation()
+    setPosicao('free')
+    setArrastando(true)
+    arrasteRef.current = { offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top }
+  }
 
   useEffect(() => {
     if (!spotifyClientId) return
@@ -254,15 +311,33 @@ export default function StudyAudioDockV2() {
   }
 
   return (
-    <aside className={`study-audio study-audio-v2 ${aberto ? 'is-open' : ''}`} aria-label="Central de áudio para estudar">
-      <button className="study-audio-trigger" type="button" onClick={() => setAberto((v) => !v)} aria-expanded={aberto}>
-        <span className="study-audio-bars" aria-hidden="true"><i /><i /><i /></span>
-        <span><b>Central de áudio</b><small>{ambiente !== 'desligado' ? `Ambiente: ${ambiente}` : 'Spotify + sons de foco'}</small></span>
-        <span className="study-audio-chevron" aria-hidden="true">⌃</span>
-      </button>
+    <aside ref={dockRef} style={posicao === 'free' ? { left: posicaoLivre.x, top: posicaoLivre.y, right: 'auto', bottom: 'auto' } : undefined} className={`study-audio study-audio-v2 dock-${posicao} ${compacto ? 'is-compact' : ''} ${aberto ? 'is-open' : ''} ${arrastando ? 'is-dragging' : ''}`} aria-label="Central de áudio para estudar">
+      <div className="study-audio-launcher">
+        <button className="study-audio-drag-handle study-audio-drag-handle--collapsed" type="button" onPointerDown={iniciarArraste} aria-label="Mover central de áudio" title="Segure e arraste para mover">⠿</button>
+        <button className="study-audio-trigger" type="button" onClick={() => setAberto((v) => !v)} aria-expanded={aberto}>
+          <span className="study-audio-bars" aria-hidden="true"><i /><i /><i /></span>
+          <span><b>Central de áudio</b><small>{ambiente !== 'desligado' ? `Ambiente: ${ambiente}` : 'Spotify + sons de foco'}</small></span>
+          <span className="study-audio-chevron" aria-hidden="true">⌃</span>
+        </button>
+      </div>
 
       {aberto && <div className="study-audio-panel">
-        <div className="study-audio-heading"><div><span>PLANEJAI / STUDY RADIO</span><h2>Controle o clima do estudo.</h2></div><button type="button" onClick={() => setAberto(false)} aria-label="Minimizar">—</button></div>
+        <div className="study-audio-heading">
+          <button className="study-audio-drag-handle" type="button" onPointerDown={iniciarArraste} aria-label="Mover central de áudio" title="Segure e arraste para mover">⠿</button>
+          <div className="study-audio-heading-copy"><span>PLANEJAI / STUDY RADIO</span><h2>Controle o clima do estudo.</h2></div>
+          <div className="study-audio-layout-tools">
+            <label htmlFor="audio-position">Posição</label>
+            <select id="audio-position" value={posicao} onChange={(event) => setPosicao(event.target.value)} aria-label="Posição do player">
+              <option value="bottom-left">Inferior esquerda</option>
+              <option value="bottom-right">Inferior direita</option>
+              <option value="top-left">Superior esquerda</option>
+              <option value="top-right">Superior direita</option>
+              <option value="free">Livre — arraste</option>
+            </select>
+            <button type="button" onClick={() => { setCompacto((valor) => !valor); setAba('spotify') }} aria-label={compacto ? 'Expandir player' : 'Compactar player'}>{compacto ? 'Expandir' : 'Compactar'}</button>
+            <button type="button" onClick={() => setAberto(false)} aria-label="Minimizar">—</button>
+          </div>
+        </div>
         <div className="audio-tabs" role="tablist"><button className={aba === 'spotify' ? 'is-active' : ''} type="button" onClick={() => setAba('spotify')}>Spotify</button><button className={aba === 'ambiente' ? 'is-active' : ''} type="button" onClick={() => setAba('ambiente')}>Ambiente local</button></div>
 
         <div className={aba === 'spotify' ? 'audio-pane' : 'audio-pane audio-pane-hidden'}>

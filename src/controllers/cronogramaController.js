@@ -1,4 +1,6 @@
 const cronogramaService = require('../services/cronogramaService')
+const adaptiveScheduleModel = require('../models/adaptiveScheduleModel')
+const aprendizagemModel = require('../models/aprendizagemModel')
 
 function tratarErroCronograma(error, res) {
   const mensagensUsuario = [
@@ -96,10 +98,19 @@ async function reabrirDia(req, res) {
 async function concluirConteudo(req, res) {
   try {
     const { conteudoCronogramaId } = req.params
+    const referencia = await cronogramaService.obterConteudoCronogramaPorId(conteudoCronogramaId)
 
     const conteudo = await cronogramaService.concluirConteudo(
       conteudoCronogramaId
     )
+    if (referencia?.id_conteudo) {
+      try {
+        await aprendizagemModel.adicionarRevisao(req.usuario.id_usuario || req.usuario.id, referencia.id_conteudo)
+      } catch (reviewError) {
+        console.error('[REVISAO AUTOMATICA]', reviewError.message)
+      }
+    }
+
 
     return res.status(200).json({
       message: 'Conteúdo concluído!',
@@ -155,6 +166,30 @@ async function uploadMaterial(req, res) {
   }
 }
 
+async function moverConteudo(req, res) {
+  try {
+    const { conteudoCronogramaId } = req.params
+    const { idDiaDestino } = req.body
+    if (!Number(idDiaDestino)) return res.status(400).json({ message: 'Escolha um dia de destino válido.' })
+    const conteudo = await cronogramaService.moverConteudo(conteudoCronogramaId, idDiaDestino, req.usuario.id_usuario || req.usuario.id)
+    if (!conteudo) return res.status(404).json({ message: 'Conteúdo ou dia de destino não encontrado neste cronograma.' })
+    return res.json({ message: 'Sessão movida para o novo dia.', conteudo })
+  } catch (error) {
+    console.error('[CRONOGRAMA MOVER]', error)
+    return res.status(500).json({ message: 'Não foi possível mover a sessão.' })
+  }
+}
+
+async function replanejarAtrasados(req, res) {
+  try {
+    const resultado = await adaptiveScheduleModel.replanejarAtrasados(req.usuario.id_usuario || req.usuario.id)
+    return res.json({ message: resultado.reagendados ? `${resultado.reagendados} dia(s) atrasado(s) foram redistribuídos.` : 'Não há pendências atrasadas.', ...resultado })
+  } catch (error) {
+    console.error('[CRONOGRAMA ADAPTATIVO]', error)
+    return res.status(500).json({ message: 'Não foi possível replanejar o cronograma.' })
+  }
+}
+
 module.exports = {
   gerarCronograma,
   listarCronogramas,
@@ -164,5 +199,7 @@ module.exports = {
   concluirConteudo,
   reabrirConteudo,
   atualizarConteudoCronograma,
-  uploadMaterial
+  uploadMaterial,
+  replanejarAtrasados,
+  moverConteudo
 }

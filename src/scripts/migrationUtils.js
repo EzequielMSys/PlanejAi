@@ -10,7 +10,8 @@ const migrationOrder = [
   'add_redacao_review.sql',
   'add_redacao_enem_analysis.sql',
   'expand_areas_foco_schema.sql',
-  'fix_cronograma_schema.sql'
+  'fix_cronograma_schema.sql',
+  'add_learning_engine.sql'
 ];
 
 function sortMigrations(files) {

@@ -1,0 +1,150 @@
+:root {
+  --pj-ink: #251a2d;
+  --pj-muted: #716578;
+  --pj-canvas: #f7f3f8;
+  --pj-paper: #fffdfb;
+  --pj-paper-strong: #ffffff;
+  --pj-line: #e3d9e8;
+  --pj-purple: #6f3fbd;
+  --pj-purple-strong: #58309c;
+  --pj-purple-soft: #eee5f7;
+  --pj-lilac: #b89add;
+  --pj-mint: #8fd6bd;
+  --pj-amber: #e5a94f;
+  --pj-danger: #c55d72;
+  --pj-success: #2f8b6c;
+  --pj-radius-sm: 0.75rem;
+  --pj-radius-md: 1.15rem;
+  --pj-radius-lg: 1.75rem;
+  --pj-shadow: 0 24px 65px -48px rgba(52, 30, 68, 0.7);
+  --pj-shadow-float: 0 26px 70px -35px rgba(61, 31, 92, 0.45);
+}
+
+.dark {
+  --pj-ink: #fbf8ff;
+  --pj-muted: #bdb1c6;
+  --pj-canvas: #130f18;
+  --pj-paper: #1d1723;
+  --pj-paper-strong: #241b2c;
+  --pj-line: #3b2d47;
+  --pj-purple: #b58ae8;
+  --pj-purple-strong: #c9a7f1;
+  --pj-purple-soft: #30213f;
+  --pj-lilac: #9f7bc6;
+  --pj-mint: #75c9ac;
+  --pj-amber: #efbd6d;
+  --pj-danger: #ef8ea1;
+  --pj-success: #67caa7;
+  --pj-shadow: 0 26px 70px -45px rgba(0, 0, 0, 0.95);
+  --pj-shadow-float: 0 30px 80px -42px rgba(0, 0, 0, 0.9);
+}
+
+body {
+  background: var(--pj-canvas);
+  color: var(--pj-ink);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--pj-purple) 28%, transparent);
+  color: var(--pj-ink);
+}
+
+:where(button, a, input, textarea, select):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--pj-purple) 32%, transparent);
+  outline-offset: 3px;
+}
+
+.pj-page {
+  min-height: 100vh;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--pj-line) 32%, transparent) 1px, transparent 1px),
+    linear-gradient(180deg, color-mix(in srgb, var(--pj-line) 22%, transparent) 1px, transparent 1px),
+    var(--pj-canvas);
+  background-size: 64px 64px;
+  color: var(--pj-ink);
+  padding: 1.5rem clamp(1rem, 3vw, 2.5rem) 5rem;
+}
+
+.pj-wrap { width: min(1180px, 100%); margin-inline: auto; }
+
+.pj-eyebrow {
+  color: var(--pj-purple);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+}
+
+.pj-panel {
+  border: 1px solid var(--pj-line);
+  border-radius: var(--pj-radius-lg);
+  background: color-mix(in srgb, var(--pj-paper) 94%, transparent);
+  box-shadow: var(--pj-shadow);
+}
+
+.pj-button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 0.8rem;
+  padding: 0.72rem 1.1rem;
+  font-size: 0.83rem;
+  font-weight: 850;
+  line-height: 1;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+.pj-button:hover { transform: translateY(-1px); }
+.pj-button:active { transform: translateY(0); }
+.pj-button:disabled { cursor: not-allowed; opacity: 0.55; transform: none; }
+.pj-button--primary { background: var(--pj-purple-strong); color: #fff; box-shadow: 0 12px 28px -17px var(--pj-purple); }
+.dark .pj-button--primary { background: #8d5bc8; color: #fff; }
+.pj-button--secondary { border-color: var(--pj-line); background: var(--pj-paper-strong); color: var(--pj-ink); }
+.pj-button--quiet { border-color: transparent; background: var(--pj-purple-soft); color: var(--pj-purple-strong); }
+
+.pj-tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--pj-line);
+  border-radius: 999px;
+  background: var(--pj-paper);
+  padding: 0.38rem 0.68rem;
+  color: var(--pj-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+.connection-alert a {
+  border: 1px solid currentColor;
+  border-radius: 0.65rem;
+  padding: 0.42rem 0.65rem;
+  color: inherit;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.pj-field {
+  width: 100%;
+  border: 1px solid var(--pj-line);
+  border-radius: 0.9rem;
+  background: var(--pj-paper-strong);
+  color: var(--pj-ink);
+  padding: 0.85rem 0.95rem;
+  outline: none;
+}
+
+.pj-field::placeholder { color: color-mix(in srgb, var(--pj-muted) 72%, transparent); }
+.pj-field:focus { border-color: var(--pj-purple); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pj-purple) 10%, transparent); }
+
+.pj-rule { height: 1px; background: var(--pj-line); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+@media (max-width: 640px) {
+  .pj-page { background-size: 40px 40px; padding-inline: 0.8rem; }
+  .pj-panel { border-radius: 1.3rem; }
+}

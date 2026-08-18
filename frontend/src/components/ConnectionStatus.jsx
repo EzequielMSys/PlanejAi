@@ -45,6 +45,7 @@ export default function ConnectionStatus() {
           : 'Verifique o backend e a conexão com o banco.'}
       </p>
       <button type="button" onClick={checkConnection}>Tentar novamente</button>
+      <a href="#/status">Ver diagnóstico</a>
     </div>
   )
 }

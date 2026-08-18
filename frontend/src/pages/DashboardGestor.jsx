@@ -35,6 +35,7 @@ export default function DashboardGestor() {
   const [estatisticas, setEstatisticas] = useState(null)
   const [entregas, setEntregas] = useState([])
   const [desempenho, setDesempenho] = useState([])
+  const [aprendizagem, setAprendizagem] = useState([])
   const [avisos, setAvisos] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [mostrarFormAviso, setMostrarFormAviso] = useState(false)
@@ -48,15 +49,17 @@ export default function DashboardGestor() {
 
   async function carregarDados() {
     try {
-      const [est, ent, des, av] = await Promise.all([
+      const [est, ent, des, apr, av] = await Promise.all([
         dashboardService.estatisticas(),
         dashboardService.entregasPendentes(),
         dashboardService.desempenho(),
+        dashboardService.aprendizagem(),
         avisoService.listar()
       ])
       setEstatisticas(est)
       setEntregas(Array.isArray(ent) ? ent : [])
       setDesempenho(Array.isArray(des) ? des : [])
+      setAprendizagem(Array.isArray(apr) ? apr : [])
       setAvisos(Array.isArray(av) ? av : [])
     } catch {
       toast.error('Erro ao carregar dados do painel.')
@@ -187,6 +190,10 @@ export default function DashboardGestor() {
               </div>
             )}
           </div>
+        </motion.section>
+        <motion.section variants={fadeUp} initial="hidden" animate="visible" className="rounded-[2.5rem] border border-[#9394CF]/20 bg-white p-6 shadow-xl dark:bg-[#1E1D3A]">
+          <div className="mb-5"><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#6D3EC5] dark:text-[#CBB3FF]">Sinais pedagógicos</p><h2 className="text-xl font-black">Quem precisa de uma intervenção</h2></div>
+          {aprendizagem.length === 0 ? <p className="text-sm text-black/55 dark:text-white/55">Os indicadores aparecem depois das primeiras práticas.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[650px] text-left text-sm"><thead><tr className="border-b border-black/10 text-xs uppercase tracking-wider text-black/45 dark:border-white/10 dark:text-white/45"><th className="p-3">Aluno</th><th className="p-3">Acerto</th><th className="p-3">Erros</th><th className="p-3">Revisões vencidas</th><th className="p-3">Sinal</th></tr></thead><tbody>{aprendizagem.map((aluno)=>{const risco=Number(aluno.taxa_acerto)<50||Number(aluno.revisoes_atrasadas)>5;return <tr key={aluno.id_usuario} className="border-b border-black/5 dark:border-white/5"><td className="p-3"><b>{aluno.nome}</b><small className="block opacity-55">{aluno.email}</small></td><td className="p-3 font-black">{aluno.taxa_acerto}%</td><td className="p-3">{aluno.erros_pendentes}</td><td className="p-3">{aluno.revisoes_atrasadas}</td><td className="p-3"><span className={`rounded-full px-3 py-1 text-xs font-black ${risco?'bg-amber-100 text-amber-800':'bg-emerald-100 text-emerald-800'}`}>{risco?'Acompanhar':'No ritmo'}</span></td></tr>})}</tbody></table></div>}
         </motion.section>
 
         <motion.section variants={fadeUp} initial="hidden" animate="visible" className="bg-white dark:bg-[#1E1D3A] rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">

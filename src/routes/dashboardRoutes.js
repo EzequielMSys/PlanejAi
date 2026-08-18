@@ -5,5 +5,6 @@ const { authMiddleware, isGestorPedagogico } = require('../middlewares/authMiddl
 router.get('/estatisticas', authMiddleware, isGestorPedagogico, dashboardController.estatisticas);
 router.get('/entregas-pendentes', authMiddleware, isGestorPedagogico, dashboardController.entregasPendentes);
 router.get('/desempenho', authMiddleware, isGestorPedagogico, dashboardController.desempenhoUsuarios);
+router.get('/aprendizagem', authMiddleware, isGestorPedagogico, dashboardController.aprendizagemUsuarios);
 
 module.exports = router;

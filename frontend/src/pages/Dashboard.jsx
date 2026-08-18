@@ -241,18 +241,18 @@ export default function Dashboard() {
                   </p>
                 </div>
 
-                <div className="bg-white dark:bg-[#1E1D3A] rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
-                  <p className="text-sm font-bold text-black/50 dark:text-white/50 mb-1">
+                <div className="dashboard-next-card bg-white dark:bg-[#1E1D3A] rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
+                  <p className="dashboard-next-label text-sm font-bold text-black/50 dark:text-white/50 mb-1">
                     Próximo estudo
                   </p>
 
-                  <p className="text-lg font-black text-black dark:text-white capitalize">
+                  <p className="dashboard-next-title text-lg font-black text-black dark:text-white capitalize">
                     {stats.proximoDia
                       ? formatarData(stats.proximoDia.data_estudo)
                       : 'Tudo concluído'}
                   </p>
 
-                  <p className="text-sm text-black/60 dark:text-white/60 mt-1">
+                  <p className="dashboard-next-detail text-sm text-black/60 dark:text-white/60 mt-1">
                     {stats.proximoDia
                       ? `${stats.proximoDia.tempo_previsto || 0} minutos previstos`
                       : 'Parabéns pelo progresso!'}
@@ -261,7 +261,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => navigate('/cronograma')}
-                    className="mt-5 w-full bg-[#4B4C9D] text-white px-5 py-3 rounded-full font-bold hover:bg-black transition"
+                    className="dashboard-next-action mt-5 w-full bg-[#4B4C9D] text-white px-5 py-3 rounded-full font-bold transition"
                   >
                     Abrir cronograma
                   </button>

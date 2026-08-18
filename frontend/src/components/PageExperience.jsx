@@ -9,6 +9,7 @@ const titles = {
   "/inicio": "Visão geral — PlanejAI",
   "/dashboard": "Visão geral — PlanejAI",
   "/cronograma": "Meu cronograma — PlanejAI",
+  "/aprendizagem": "Laboratório de aprendizagem — PlanejAI",
   "/redacoes": "Redações — PlanejAI",
   "/atividades": "Atividades — PlanejAI",
   "/minhas-atividades": "Minhas atividades — PlanejAI",
@@ -47,6 +48,7 @@ export default function PageExperience() {
         const shortcuts = {
           1: "/inicio",
           c: "/cronograma",
+          l: "/aprendizagem",
           r: "/redacoes",
           a: "/atividades",
         };

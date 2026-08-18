@@ -37,6 +37,11 @@ router.get(
   authMiddleware,
   cronogramaController.obterCronogramaAtivo
 )
+router.post(
+  '/replanejar',
+  authMiddleware,
+  cronogramaController.replanejarAtrasados
+)
 
 /**
  * Concluir dia do cronograma
@@ -68,6 +73,12 @@ router.patch(
 /**
  * Reabrir conteúdo específico
  */
+router.patch(
+  '/conteudos/:conteudoCronogramaId/mover',
+  authMiddleware,
+  cronogramaController.moverConteudo
+)
+
 router.patch(
   '/conteudos/:conteudoCronogramaId/reabrir',
   authMiddleware,

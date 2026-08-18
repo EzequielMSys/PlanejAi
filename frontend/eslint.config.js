@@ -13,7 +13,7 @@ export default [
         window: 'readonly', document: 'readonly', localStorage: 'readonly', console: 'readonly',
         fetch: 'readonly', FormData: 'readonly', alert: 'readonly', confirm: 'readonly',
         setTimeout: 'readonly', performance: 'readonly', requestAnimationFrame: 'readonly',
-        IntersectionObserver: 'readonly'
+        IntersectionObserver: 'readonly', URL: 'readonly', Blob: 'readonly'
       }
     },
     plugins: { 'react-hooks': reactHooks },

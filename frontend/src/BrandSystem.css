@@ -129,6 +129,7 @@ body[data-page] p { text-wrap: pretty; }
 body[data-page="inicio"] .workspace-hero::after,
 body[data-page="dashboard"] .workspace-hero::after { content: '01'; }
 body[data-page="cronograma"] .workspace-hero::after { content: '02'; }
+body[data-page="aprendizagem"] .workspace-hero::after { content: 'LAB'; }
 body[data-page="redacoes"] .workspace-hero::after { content: '03'; }
 body[data-page="atividades"] .workspace-hero::after { content: '04'; }
 body[data-page="minhas-atividades"] .workspace-hero::after { content: '05'; }

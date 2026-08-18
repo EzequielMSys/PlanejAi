@@ -9,7 +9,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import PrimeiroAcesso from './pages/PrimeiroAcesso'
 import Onboarding from './pages/Onboarding'
-import Dashboard from './pages/Dashboard'
+import Dashboard from './pages/TodayDashboard'
 import DashboardGestor from './pages/DashboardGestor'
 import Cronograma from './pages/Cronograma'
 import Redacoes from './pages/Redacoes'
@@ -23,6 +23,9 @@ import Materiais from './pages/Materiais'
 import MinhasAtividades from './pages/MinhasAtividades'
 import AvisosAluno from './pages/AvisosAluno'
 import NotFound from './pages/NotFound'
+import StudySession from './pages/StudySession'
+import Aprendizagem from './pages/Aprendizagem'
+import SystemStatus from './pages/SystemStatus'
 
 function App() {
   return (
@@ -41,6 +44,9 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard-gestor" element={<DashboardGestor />} />
 <Route path="/cronograma" element={<Cronograma />} />
+            <Route path="/estudar" element={<StudySession />} />
+            <Route path="/status" element={<SystemStatus />} />
+            <Route path="/aprendizagem" element={<Aprendizagem />} />
             <Route path="/redacoes" element={<Redacoes />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/atividades" element={<Atividades />} />

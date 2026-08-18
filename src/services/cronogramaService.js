@@ -225,6 +225,10 @@ class CronogramaService {
   async obterConteudoCronogramaPorId(idConteudoCronograma) {
     return cronogramaConteudoModel.obterConteudoCronogramaPorId(idConteudoCronograma)
   }
+  async moverConteudo(idConteudoCronograma, idDiaDestino, idUsuario) {
+    return cronogramaConteudoModel.moverConteudo(idConteudoCronograma, idDiaDestino, idUsuario)
+  }
+
 }
 
 module.exports = new CronogramaService()

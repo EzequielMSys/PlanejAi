@@ -41,6 +41,15 @@ const cronogramaService = {
       tratarErro(error, 'Erro ao gerar cronograma.')
     }
   },
+  async replanejar() {
+    try {
+      const response = await api.post('/replanejar')
+      toast.success(response.data.message)
+      return response.data
+    } catch (error) {
+      tratarErro(error, 'Erro ao replanejar pendências.')
+    }
+  },
 
   async listarCronogramas() {
     try {
@@ -107,6 +116,16 @@ const cronogramaService = {
       tratarErro(error, 'Erro ao concluir conteúdo.')
     }
   },
+  async moverConteudo(conteudoCronogramaId, idDiaDestino) {
+    try {
+      const response = await api.patch(`/conteudos/${conteudoCronogramaId}/mover`, { idDiaDestino })
+      toast.success(response.data.message || 'Sessão movida.')
+      return response.data.conteudo
+    } catch (error) {
+      tratarErro(error, 'Não foi possível mover a sessão.')
+    }
+  },
+
 
   async reabrirConteudo(conteudoCronogramaId) {
     try {
