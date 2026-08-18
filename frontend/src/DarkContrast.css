@@ -171,3 +171,105 @@
   .dark { --brand-line: 145 119 165; --color-muted: 225 216 232; }
   .dark .app-shell main [class*="text-black/"] { color: rgb(var(--brand-ink) / .94) !important; }
 }
+
+/* Perfil: superfícies e textos explícitos para evitar contraste branco sobre branco. */
+body[data-page="perfil"] .app-shell main .profile-hero {
+  border-color: rgb(211 191 255 / .42) !important;
+  background:
+    radial-gradient(circle at 16% 8%, rgb(216 192 255 / .3), transparent 17rem),
+    linear-gradient(135deg, #6035a2 0%, #382260 56%, #211638 100%) !important;
+}
+
+body[data-page="perfil"] .profile-page {
+  background: #f7f3fb !important;
+  color: #2b1938 !important;
+}
+
+body[data-page="perfil"] .profile-tabs,
+body[data-page="perfil"] .profile-card {
+  border-color: #ded1ec !important;
+  background: #fff !important;
+  color: #2b1938 !important;
+}
+
+body[data-page="perfil"] .profile-page input,
+body[data-page="perfil"] .profile-page select,
+body[data-page="perfil"] .profile-page .bg-\[\#F7F7FB\] {
+  border-color: #d4c5e4 !important;
+  background: #fbf9fd !important;
+  color: #2b1938 !important;
+}
+
+.dark body[data-page="perfil"] .profile-page {
+  background: #130f18 !important;
+  color: #fbf8ff !important;
+}
+
+.dark body[data-page="perfil"] .app-shell main .profile-hero {
+  border-color: rgb(205 175 255 / .28) !important;
+  background:
+    radial-gradient(circle at 16% 8%, rgb(175 126 255 / .25), transparent 17rem),
+    linear-gradient(135deg, #392061 0%, #241637 56%, #130d1d 100%) !important;
+}
+
+.dark body[data-page="perfil"] .profile-tabs,
+.dark body[data-page="perfil"] .profile-card {
+  border-color: #4d3960 !important;
+  background: #21182a !important;
+  color: #fbf8ff !important;
+}
+
+.dark body[data-page="perfil"] .profile-page h2,
+.dark body[data-page="perfil"] .profile-page label,
+.dark body[data-page="perfil"] .profile-page span:not(.text-white) {
+  color: #fbf8ff !important;
+}
+
+.dark body[data-page="perfil"] .profile-page input,
+.dark body[data-page="perfil"] .profile-page select,
+.dark body[data-page="perfil"] .profile-page .bg-\[\#F7F7FB\],
+.dark body[data-page="perfil"] .profile-page input.bg-white {
+  border-color: #514061 !important;
+  background: #2a2034 !important;
+  color: #fbf8ff !important;
+}
+
+.dark body[data-page="perfil"] .profile-page input::placeholder {
+  color: #cbbcd5 !important;
+}
+
+/* Cronograma: superfícies previsíveis em ambos os temas, inclusive estados de arraste. */
+body[data-page="cronograma"] .schedule-page {
+  background: #f7f3fb !important;
+  color: #2b1938 !important;
+}
+
+body[data-page="cronograma"] .schedule-surface,
+body[data-page="cronograma"] .schedule-day {
+  border-color: #ded1ec !important;
+  background-color: #fff !important;
+  color: #2b1938 !important;
+}
+
+.dark body[data-page="cronograma"] .schedule-page {
+  background: #130f18 !important;
+  color: #fbf8ff !important;
+}
+
+.dark body[data-page="cronograma"] .schedule-surface,
+.dark body[data-page="cronograma"] .schedule-day {
+  border-color: #4d3960 !important;
+  background-color: #21182a !important;
+  color: #fbf8ff !important;
+}
+
+.dark body[data-page="cronograma"] .schedule-day.bg-\[\#F3ECFC\] {
+  background-color: #30223e !important;
+}
+
+@media (max-width: 640px) {
+  body[data-page="cronograma"] .schedule-page { padding: 1rem .8rem 5rem !important; }
+  body[data-page="cronograma"] .schedule-page .workspace-hero { border-radius: 1.5rem !important; padding: 1.5rem !important; }
+  body[data-page="cronograma"] .schedule-day > div > div:last-child { width: 100%; flex-wrap: wrap; }
+  body[data-page="cronograma"] .schedule-day > div > div:last-child > button { flex: 1 1 9rem; }
+}

@@ -1,0 +1,47 @@
+/* Camada final compartilhada: contraste, campos e adaptação a telas pequenas. */
+:root { color-scheme: light; }
+.dark { color-scheme: dark; }
+
+.app-shell {
+  background: rgb(var(--brand-canvas, 247 243 248));
+  color: rgb(var(--brand-ink, 37 26 45));
+}
+
+.app-shell main :is(input, select, textarea) {
+  color: rgb(var(--brand-ink, 37 26 45));
+  caret-color: rgb(var(--route-accent, 109 60 211));
+}
+
+.app-shell main :is(input, select, textarea)::placeholder {
+  color: rgb(var(--brand-ink, 37 26 45) / .58);
+  opacity: 1;
+}
+
+.app-shell main :is(input, select, textarea):focus-visible,
+.app-shell main button:focus-visible,
+.app-shell main a:focus-visible {
+  outline: 3px solid rgb(var(--route-accent, 109 60 211) / .5);
+  outline-offset: 3px;
+}
+
+.dark .app-shell main :is(input, select, textarea) {
+  border-color: rgb(var(--brand-line) / .88);
+  background-color: rgb(var(--brand-paper));
+  color: rgb(var(--brand-ink));
+}
+
+.dark .app-shell main :is(input, select, textarea)::placeholder {
+  color: rgb(var(--brand-ink) / .68);
+}
+
+@media (max-width: 640px) {
+  .app-shell main { overflow-x: clip; }
+  .app-shell main :is(input, select, textarea) { min-height: 2.75rem; font-size: 16px; }
+  .app-shell main .pj-button { width: 100%; }
+  .app-shell main .pj-page { padding: 1rem .8rem 5rem; }
+}
+
+@media (prefers-contrast: more) {
+  .app-shell main :is(input, select, textarea, button) { border-width: 2px; }
+  .app-shell main :is(a, button) { text-decoration-thickness: 2px; }
+}

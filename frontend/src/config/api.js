@@ -16,7 +16,7 @@ export function apiUrl(path) {
 }
 
 export function resolveBackendAsset(path) {
-  if (!path || /^(?:https?:)?\/\//i.test(path) || path.startsWith('data:')) {
+  if (!path || /^(?:https?:)?\/\//i.test(path) || /^(?:data|blob):/i.test(path)) {
     return path || ''
   }
 

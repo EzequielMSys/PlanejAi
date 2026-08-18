@@ -270,7 +270,7 @@ async function concluirDia(idDia) {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7FB] text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
+    <div className="schedule-page min-h-screen bg-[#F7F7FB] text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-72 h-72 bg-[#9394CF]/20 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#4B4C9D]/10 rounded-full blur-3xl" />
 
@@ -361,7 +361,7 @@ async function concluirDia(idDia) {
               </section>
 
               <section className="grid lg:grid-cols-3 gap-6 mb-8">
-                <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
+                <div className="schedule-surface lg:col-span-2 bg-white rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
                   <div className="flex justify-between text-sm font-bold mb-2">
                     <span>Progresso geral</span>
                     <span>{progresso}%</span>
@@ -375,7 +375,7 @@ async function concluirDia(idDia) {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
+                <div className="schedule-surface bg-white rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
                   <p className="text-sm font-bold text-black/50 mb-1">
                     Próximo estudo
                   </p>
@@ -412,7 +412,7 @@ async function concluirDia(idDia) {
                       onDragOver={(event) => { event.preventDefault(); if (conteudoArrastado) setDiaAlvo(idDia) }}
                       onDragLeave={() => setDiaAlvo((current) => current === idDia ? null : current)}
                       onDrop={(event) => soltarConteudo(event, idDia)}
-                      className={`group relative overflow-hidden rounded-[2rem] p-5 shadow-xl border before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 transition ${diaAlvo === idDia ? 'border-[#7C3AED] bg-[#F3ECFC] ring-4 ring-[#7C3AED]/10 before:bg-[#7C3AED]' : 'border-[#9394CF]/20 bg-white before:bg-[#C4B5FD] hover:before:bg-[#7C3AED]'}`}
+                      className={`schedule-day group relative overflow-hidden rounded-[2rem] p-5 shadow-xl border before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 transition ${diaAlvo === idDia ? 'border-[#7C3AED] bg-[#F3ECFC] ring-4 ring-[#7C3AED]/10 before:bg-[#7C3AED]' : 'border-[#9394CF]/20 bg-white before:bg-[#C4B5FD] hover:before:bg-[#7C3AED]'}`}
                     >
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex-1">
@@ -571,7 +571,6 @@ async function concluirDia(idDia) {
                                   className="rounded-full border border-[#9394CF]/30 bg-white px-3 py-2 text-xs font-bold text-[#4B4C9D]"
                                 ><option value="">Mover para…</option>{dias.filter((item) => (item.id_dia || item.id) !== idDia).map((item) => <option key={item.id_dia || item.id} value={item.id_dia || item.id}>{formatarData(item.data_estudo)}</option>)}</select>}
 
-                                  type="button"
                                 <button
                                   onClick={() =>
                                     alternarConteudo(conteudo, conteudoConcluido)
@@ -611,7 +610,7 @@ async function concluirDia(idDia) {
 
 function CardStat({ titulo, valor }) {
   return (
-    <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-[#9394CF]/20">
+    <div className="schedule-surface bg-white rounded-[2rem] p-6 shadow-xl border border-[#9394CF]/20">
       <p className="text-sm font-bold text-black/50 mb-1">
         {titulo}
       </p>

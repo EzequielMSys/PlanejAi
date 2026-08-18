@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 const questionBank = require('../data/questionBank');
 const { calcularProximaRevisao } = require('../utils/reviewScheduler');
-const { embaralharQuestao, validarEmbaralhamento } = require('../utils/questionShuffle');
+const { embaralharSimulado, validarEmbaralhamento } = require('../utils/questionShuffle');
 
 async function garantirBancoQuestoes() {
   for (const questao of questionBank) {
@@ -55,7 +55,7 @@ async function gerarSimulado(idUsuario, { quantidade = 10, disciplina, dificulda
      WHERE q.ativo = 1 ${filtro}
      ORDER BY erros_anteriores DESC, RAND() LIMIT ?`, params
   );
-  return rows.map((row) => embaralharQuestao(desserializarQuestao(row)));
+  return embaralharSimulado(rows.map((row) => desserializarQuestao(row, true)));
 }
 
 async function responderQuestao(idUsuario, idQuestao, resposta, duracaoSegundos, embaralhamento) {
@@ -187,4 +187,3 @@ async function listarVersoesRedacao(idUsuario, idRedacao) {
 }
 
 module.exports = { garantirBancoQuestoes, gerarSimulado, responderQuestao, listarCadernoErros, atualizarErro, listarRevisoes, adicionarRevisao, avaliarRevisao, obterResumo, criarVersaoRedacao, listarVersoesRedacao };
-

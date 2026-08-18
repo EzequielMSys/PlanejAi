@@ -13,6 +13,7 @@ export default function FocusTimer() {
   const [open, setOpen] = useState(false)
   const [remaining, setRemaining] = useState(DEFAULT_SECONDS)
   const [running, setRunning] = useState(false)
+  const [cycleSeconds, setCycleSeconds] = useState(DEFAULT_SECONDS)
 
   useEffect(() => {
     const savedEnd = Number(window.localStorage.getItem('focus-end'))
@@ -31,7 +32,11 @@ export default function FocusTimer() {
       if (next === 0) {
         window.clearInterval(interval)
         window.localStorage.removeItem('focus-end')
+        const minutes = Math.max(1, Math.round(cycleSeconds / 60))
+        const anteriores = JSON.parse(window.localStorage.getItem('planejai:study-sessions') || '[]')
+        window.localStorage.setItem('planejai:study-sessions', JSON.stringify([...anteriores.slice(-199), { finishedAt: new Date().toISOString(), minutes, source: 'focus-timer' }]))
         setRunning(false)
+        if (window.Notification?.permission === 'granted') new window.Notification('PlanejAI', { body: 'Ciclo concluído. Hora de respirar um pouco!' })
         toast.success('Ciclo concluído. Hora de respirar um pouco!')
       }
     }, 1000)
@@ -46,6 +51,7 @@ export default function FocusTimer() {
   const chooseDuration = (minutes) => {
     pause()
     setRemaining(minutes * 60)
+    setCycleSeconds(minutes * 60)
   }
 
   const toggleTimer = () => {
@@ -53,6 +59,7 @@ export default function FocusTimer() {
       pause()
       return
     }
+    if (window.Notification?.permission === 'default') window.Notification.requestPermission().catch(() => {})
     window.localStorage.setItem('focus-end', String(Date.now() + remaining * 1000))
     setRunning(true)
   }

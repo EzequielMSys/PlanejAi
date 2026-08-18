@@ -17,6 +17,12 @@ const {
 /**
  * Perfil do usuário logado
  */
+router.delete(
+  '/me/foto',
+  authMiddleware,
+  usuarioController.removerFotoPerfil
+)
+
 router.get(
   '/me',
   authMiddleware,

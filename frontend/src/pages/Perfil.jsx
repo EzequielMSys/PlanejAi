@@ -7,8 +7,7 @@ import cronogramaService from '../services/cronogramaService'
 import ChecklistMaterias from '../components/ChecklistMaterias'
 import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
-
-const API_URL = ''
+import { resolveBackendAsset } from '../config/api'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -55,9 +54,16 @@ function validarSenha(senha) {
 }
 
 function getFotoUrl(fotoUrl) {
-  if (!fotoUrl) return null
-  if (fotoUrl.startsWith('http')) return fotoUrl
-  return fotoUrl
+  return resolveBackendAsset(fotoUrl)
+}
+
+function arquivoComoDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new window.FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
 }
 
 const diasPadrao = [
@@ -77,6 +83,7 @@ export default function Perfil() {
   const [tab, setTab] = useState('info')
   const [saving, setSaving] = useState(false)
   const [uploadingFoto, setUploadingFoto] = useState(false)
+  const [removingFoto, setRemovingFoto] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState(user?.foto_url || null)
 
   const [form, setForm] = useState({
@@ -173,19 +180,37 @@ export default function Perfil() {
       return
     }
 
+    const fotoAnterior = avatarPreview
     setUploadingFoto(true)
 
     try {
+      setAvatarPreview(await arquivoComoDataUrl(file))
       const response = await usuarioService.uploadFotoPerfil(file)
       const usuarioAtualizado = response.usuario
 
       updateUser(usuarioAtualizado)
       setAvatarPreview(usuarioAtualizado.foto_url || null)
     } catch (error) {
+      setAvatarPreview(fotoAnterior)
       toast.error(error.response?.data?.error || 'Erro ao enviar foto.')
     } finally {
       setUploadingFoto(false)
       e.target.value = ''
+    }
+  }
+
+  const handleRemoverFoto = async () => {
+    if (!window.confirm('Remover sua foto de perfil?')) return
+
+    setRemovingFoto(true)
+    try {
+      const response = await usuarioService.removerFotoPerfil()
+      updateUser(response.usuario)
+      setAvatarPreview(null)
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erro ao remover foto.')
+    } finally {
+      setRemovingFoto(false)
     }
   }
 
@@ -351,7 +376,7 @@ const handleSaveEstudos = async (e) => {
     : 'Não informado'
 
   return (
-    <div className="min-h-screen bg-[#F7F7FB] text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
+    <div className="profile-page min-h-screen bg-[#F7F7FB] text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-72 h-72 bg-[#9394CF]/20 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#4B4C9D]/10 rounded-full blur-3xl" />
 
@@ -382,6 +407,8 @@ const handleSaveEstudos = async (e) => {
                   onClick={() => fileRef.current?.click()}
                   disabled={uploadingFoto}
                   className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-[#4B4C9D] transition-all shadow-xl disabled:opacity-50"
+                  aria-label="Trocar foto de perfil"
+                  title="Trocar foto"
                 >
                   {uploadingFoto ? <IconSpinner /> : <IconCamera />}
                 </button>
@@ -393,6 +420,17 @@ const handleSaveEstudos = async (e) => {
                   className="hidden"
                   onChange={handleUploadFoto}
                 />
+                {avatarPreview && (
+                  <button
+                    type="button"
+                    onClick={handleRemoverFoto}
+                    disabled={uploadingFoto || removingFoto}
+                    className="absolute bottom-0 left-0 rounded-full bg-white px-3 py-2 text-xs font-black text-[#4B2A6D] shadow-xl transition hover:bg-[#F3EAFE] disabled:opacity-50"
+                    aria-label="Remover foto de perfil"
+                  >
+                    {removingFoto ? 'Removendo…' : 'Remover'}
+                  </button>
+                )}
               </div>
 
               <h1 className="text-3xl md:text-4xl font-black text-white mt-5 tracking-tight">
@@ -405,7 +443,7 @@ const handleSaveEstudos = async (e) => {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-6 bg-white p-1.5 rounded-full border border-[#9394CF]/20 w-fit mx-auto shadow-xl">
+          <div className="profile-tabs flex flex-wrap gap-2 mb-6 bg-white p-1.5 rounded-full border border-[#9394CF]/20 w-fit mx-auto shadow-xl">
             <button
               type="button"
               onClick={() => setTab('info')}
@@ -444,7 +482,7 @@ const handleSaveEstudos = async (e) => {
           </div>
 
           {tab === 'info' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
               <form onSubmit={handleSaveInfo} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <input className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome completo" required />
@@ -461,7 +499,7 @@ const handleSaveEstudos = async (e) => {
           )}
 
           {tab === 'seguranca' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
               <h2 className="text-xl font-black text-black mb-6 flex items-center gap-2">
                 <IconLock /> Alterar senha
               </h2>
@@ -485,7 +523,7 @@ const handleSaveEstudos = async (e) => {
           )}
 
           {tab === 'estudos' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
               <h2 className="text-xl font-black text-black mb-2 flex items-center gap-2">
                 <IconBook /> Perfil de estudo
               </h2>

@@ -30,6 +30,16 @@ function getLocalMinutes() {
   } catch { return 0 }
 }
 
+function getWeekMinutes() {
+  try {
+    const sessions = JSON.parse(localStorage.getItem('planejai:study-sessions') || '[]')
+    const inicio = new Date()
+    inicio.setHours(0, 0, 0, 0)
+    inicio.setDate(inicio.getDate() - ((inicio.getDay() + 6) % 7))
+    return sessions.filter((item) => new Date(item.finishedAt).getTime() >= inicio.getTime()).reduce((sum, item) => sum + Number(item.minutes || 0), 0)
+  } catch { return 0 }
+}
+
 function calculateStreak(days) {
   const completed = new Set(days.filter(isDone).map((day) => isoDay(day.data_estudo)))
   let cursor = new Date(); cursor.setHours(12, 0, 0, 0)
@@ -55,6 +65,7 @@ export default function TodayDashboard() {
   const navigate = useNavigate()
   const [data, setData] = useState({ schedules: [], learning: null, reviews: [], errors: [] })
   const [loading, setLoading] = useState(true)
+  const [weeklyGoal, setWeeklyGoal] = useState(() => Math.max(30, Number(localStorage.getItem('planejai:weekly-goal')) || 180))
 
   useEffect(() => {
     let active = true
@@ -88,6 +99,8 @@ export default function TodayDashboard() {
   const todayItems = todayDay?.conteudos || []
   const todayDone = todayItems.filter(isDone).length
   const streak = calculateStreak(days)
+  const weeklyMinutes = getWeekMinutes()
+  const weeklyProgress = Math.min(100, Math.round((weeklyMinutes / weeklyGoal) * 100))
   const focusDiscipline = data.learning?.porDisciplina?.[0]
   const name = user?.apelido || user?.nome?.split(' ')[0] || 'estudante'
 
@@ -145,6 +158,17 @@ export default function TodayDashboard() {
             <button type="button" className="pj-button pj-button--secondary" onClick={() => navigate('/aprendizagem')}>Treinar agora →</button>
           </article>
           <article className="today-pulse pj-panel"><div><span>Ritmo da semana</span><strong>{todayDone}/{todayItems.length || 0}</strong></div><div className="today-pulse-bars">{[0,1,2,3,4,5,6].map((n) => <i key={n} style={{ height: `${28 + ((n * 19 + progress) % 58)}%` }} />)}</div><small>Não é sobre estudar o dia inteiro. É sobre voltar amanhã.</small></article>
+          <article className="today-goal pj-panel">
+            <div><span className="pj-eyebrow">Meta da semana</span><strong>{weeklyMinutes} / {weeklyGoal} min</strong></div>
+            <div className="today-goal-track" aria-label={`${weeklyProgress}% da meta semanal concluída`}><i style={{ width: `${weeklyProgress}%` }} /></div>
+            <label>Meta em minutos
+              <input type="number" min="30" step="30" value={weeklyGoal} onChange={(event) => {
+                const next = Math.max(30, Number(event.target.value) || 30)
+                setWeeklyGoal(next)
+                localStorage.setItem('planejai:weekly-goal', String(next))
+              }} />
+            </label>
+          </article>
           {(isAdmin || isDono || user?.tipo === 'docente') && <button type="button" className="today-manager" onClick={() => navigate(isDono ? '/dono' : '/dashboard-gestor')}>Abrir visão de gestão <span>↗</span></button>}
         </aside>
       </section>

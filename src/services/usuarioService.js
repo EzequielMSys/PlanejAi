@@ -105,6 +105,18 @@ if (dados.nome !== undefined && dados.nome !== null && dados.nome !== '') {
     return await usuarioModel.atualizarUsuario(id, { tipo })
   }
 
+  async removerFotoPerfil(id, usuarioLogado) {
+    const usuarioLogadoId = obterIdUsuario(usuarioLogado)
+    const usuarioAlvo = await usuarioModel.buscarPorId(id)
+
+    if (!usuarioAlvo) throw new Error('UsuÃ¡rio nÃ£o encontrado.')
+    if (Number(id) !== Number(usuarioLogadoId) && !['admin', 'dono'].includes(usuarioLogado.tipo)) {
+      throw new Error('PermissÃ£o negada para editar outro usuÃ¡rio.')
+    }
+
+    return usuarioModel.atualizarUsuario(id, { foto_url: null })
+  }
+
   async ativarDesativar(id, ativo, usuarioLogado) {
     const usuarioLogadoId = obterIdUsuario(usuarioLogado)
 

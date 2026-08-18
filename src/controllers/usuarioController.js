@@ -128,6 +128,16 @@ async function uploadFotoPerfil(req, res) {
   }
 }
 
+async function removerFotoPerfil(req, res) {
+  try {
+    const usuarioId = req.usuario.id_usuario || req.usuario.id
+    const usuarioAtualizado = await usuarioService.removerFotoPerfil(usuarioId, req.usuario)
+    return res.status(200).json({ message: 'Foto de perfil removida.', usuario: usuarioAtualizado })
+  } catch (error) {
+    return tratarErroUsuario(error, res)
+  }
+}
+
 async function alterarTipo(req, res) {
   try {
     const usuarioId = req.params.id
@@ -241,6 +251,7 @@ module.exports = {
   obterPorId,
   atualizar,
   uploadFotoPerfil,
+  removerFotoPerfil,
   alterarTipo,
   alterarStatus,
   resetarSenha,

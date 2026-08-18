@@ -13,7 +13,7 @@
     "seed:conteudos": "node src/scripts/seedConteudos.js",
     "repair:conteudos": "node src/scripts/repairContentLinks.js",
     "test:redacao": "node src/scripts/testEssayAnalysis.js",
-    "test": "node --test test/*.test.js",
+    "test": "node --test test",
     "check:backend": "node --check src/server.js && node --check src/controllers/authController.js && node --check src/controllers/aprendizagemController.js && node --check src/controllers/cronogramaController.js && node --check src/models/aprendizagemModel.js && node --check src/models/cronogramaConteudoModel.js && node --check src/services/cronogramaService.js && node --check src/services/authService.js && node --check src/middlewares/authMiddleware.js && node --check src/middlewares/platformMiddleware.js && node --check src/middlewares/uploadMiddleware.js",
     "check": "npm test && npm run check:backend && npm run check:frontend",
     "check:frontend": "npm run lint --prefix frontend && npm run build --prefix frontend",

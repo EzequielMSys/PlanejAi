@@ -86,6 +86,17 @@ const usuarioService = {
     }
   },
 
+  async removerFotoPerfil() {
+    try {
+      const response = await api.delete('/me/foto')
+      toast.success(response.data.message || 'Foto removida com sucesso!')
+      return response.data
+    } catch (error) {
+      toast.error(extrairMensagem(error, 'Erro ao remover foto.'))
+      throw error
+    }
+  },
+
   async alterarTipo(id, tipo) {
     try {
       const response = await api.patch(
