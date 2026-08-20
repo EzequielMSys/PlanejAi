@@ -1,5 +1,12 @@
 const pool = require('../config/db');
 
+function serializarMateriais(materiais) {
+  if (typeof materiais === 'string') {
+    try { return JSON.stringify(JSON.parse(materiais)); } catch { return JSON.stringify([]); }
+  }
+  return JSON.stringify(Array.isArray(materiais) ? materiais : []);
+}
+
 /**
  * Cria um novo conteúdo
  */
@@ -105,12 +112,12 @@ async function listarTodos() {
  * Atualiza conteúdo
  */
 async function atualizarConteudo(idConteudo, dados) {
-  const { area, disciplina, titulo, tipo, link, nivel, materiais = [], atualizado_por = null } = dados;
+  const { area = null, disciplina = null, titulo = null, tipo = null, link, nivel = null, materiais = [], atualizado_por = null } = dados;
   await pool.execute(
     `UPDATE conteudos 
      SET area = ?, disciplina = ?, titulo = ?, tipo = ?, link = ?, nivel = ?, materiais = ?, atualizado_por = ?
      WHERE id_conteudo = ?`,
-    [area, disciplina, titulo, tipo, link || null, nivel, JSON.stringify(materiais), atualizado_por, idConteudo]
+    [area, disciplina, titulo, tipo, link || null, nivel, serializarMateriais(materiais), atualizado_por, idConteudo]
   );
   return { id_conteudo: idConteudo, ...dados };
 }

@@ -141,8 +141,10 @@ async function reabrirConteudo(req, res) {
 async function atualizarConteudoCronograma(req, res) {
   try {
     const { conteudoCronogramaId } = req.params
-    const { link, titulo, descricao, materiais } = req.body
-    const resultado = await cronogramaService.atualizarConteudoCronograma(conteudoCronogramaId, { link, titulo, descricao, materiais })
+    const dados = Object.fromEntries(
+      Object.entries(req.body || {}).filter(([, valor]) => valor !== undefined)
+    )
+    const resultado = await cronogramaService.atualizarConteudoCronograma(conteudoCronogramaId, dados)
     return res.status(200).json({ message: 'Conteúdo atualizado.', conteudo: resultado })
   } catch (error) {
     console.error('[CRONOGRAMA]', error)

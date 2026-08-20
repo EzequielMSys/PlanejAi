@@ -4,19 +4,10 @@ import { toast } from 'react-hot-toast'
 import cronogramaService from '../services/cronogramaService'
 import aprendizagemService from '../services/aprendizagemService'
 import { resolveBackendAsset } from '../config/api'
+import StudyGuide, { isExternalStudySource } from '../components/StudyGuide'
 import './StudySession.css'
 
 const SESSION_CONTENT_KEY = 'planejai:active-study-content'
-
-function getYoutubeEmbed(url) {
-  try {
-    const parsed = new URL(url)
-    let id = parsed.hostname.includes('youtu.be') ? parsed.pathname.split('/').filter(Boolean)[0] : parsed.searchParams.get('v')
-    if (!id && parsed.pathname.includes('/embed/')) id = parsed.pathname.split('/embed/')[1]?.split('/')[0]
-    if (!id && parsed.pathname.includes('/shorts/')) id = parsed.pathname.split('/shorts/')[1]?.split('/')[0]
-    return id ? `https://www.youtube-nocookie.com/embed/${id}` : ''
-  } catch { return '' }
-}
 
 function fmt(seconds) {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
@@ -37,12 +28,12 @@ function saveStudyHistory(content, minutes, difficulty) {
 function StudyMaterial({ content }) {
   const url = resolveBackendAsset(content?.link || content?.url || '')
   const type = String(content?.tipo || '').toUpperCase()
-  const youtube = getYoutubeEmbed(url)
+  const externalSource = isExternalStudySource(url)
   const pdf = type.includes('PDF') || /\.pdf(?:$|[?#])/i.test(url)
   const video = type.includes('VIDEO') && /\.(mp4|webm|ogg)(?:$|[?#])/i.test(url)
 
   if (!url) return <div className="session-no-material"><span>SEM ANEXO</span><h2>Use esta sessão para estudar pelo seu próprio material.</h2><p>As anotações e o tempo ainda serão salvos neste navegador.</p></div>
-  if (youtube) return <iframe className="session-frame" src={youtube} title={content.titulo} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+  if (externalSource) return <StudyGuide material={content} sourceUrl={url} />
   if (video) return <video className="session-frame" src={url} controls />
   if (pdf) return <iframe className="session-frame" src={`${url}#view=FitH&toolbar=1`} title={content.titulo} />
   return <iframe className="session-frame" src={url} title={content.titulo} sandbox="allow-scripts allow-same-origin allow-forms allow-popups" />

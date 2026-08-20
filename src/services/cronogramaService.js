@@ -46,6 +46,12 @@ function removerDuplicadosPorId(conteudos) {
   return Array.from(mapa.values())
 }
 
+function combinarDadosConteudo(atual, alteracoes = {}) {
+  return Object.fromEntries(
+    Object.entries({ ...atual, ...alteracoes }).filter(([, valor]) => valor !== undefined)
+  )
+}
+
 class CronogramaService {
   async buscarConteudosDoPerfil(perfil) {
     const areas = normalizarListaAreas(perfil.areas_foco)
@@ -218,7 +224,7 @@ class CronogramaService {
 
     if (!conteudo.id_conteudo) return conteudo
 
-    const atualizados = await conteudoModel.atualizarConteudo(conteudo.id_conteudo, dados)
+    await conteudoModel.atualizarConteudo(conteudo.id_conteudo, combinarDadosConteudo(conteudo, dados))
     return cronogramaConteudoModel.obterConteudoCronogramaPorId(idConteudoCronograma)
   }
 

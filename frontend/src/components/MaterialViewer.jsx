@@ -1,34 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { resolveBackendAsset } from '../config/api'
-
-function youtubeEmbed(url) {
-  try {
-    const parsed = new window.URL(url)
-    const id = parsed.hostname.includes('youtu.be')
-      ? parsed.pathname.slice(1)
-      : parsed.searchParams.get('v')
-    return id ? `https://www.youtube-nocookie.com/embed/${id}` : null
-  } catch {
-    return null
-  }
-}
-
-function wikipediaTitle(url) {
-  try {
-    const parsed = new window.URL(url)
-    if (parsed.hostname !== 'pt.wikipedia.org' || !parsed.pathname.startsWith('/wiki/')) return null
-    return decodeURIComponent(parsed.pathname.replace('/wiki/', ''))
-  } catch {
-    return null
-  }
-}
+import StudyGuide, { isExternalStudySource } from './StudyGuide'
 
 export default function MaterialViewer({ material, onClose }) {
-  const [article, setArticle] = useState(null)
-  const [articleError, setArticleError] = useState(false)
-  const url = resolveBackendAsset(material?.url || '')
-  const wikiTitle = useMemo(() => wikipediaTitle(url), [url])
-  const embedUrl = useMemo(() => youtubeEmbed(url), [url])
+  const url = resolveBackendAsset(material?.url || material?.link || '')
+  const externalSource = useMemo(() => isExternalStudySource(url), [url])
   const type = String(material?.tipo || '').toUpperCase()
   const isPdf = type === 'PDF' || type.includes('PDF') || /\.pdf(?:$|[?#])/i.test(url)
   const isVideoFile = type.includes('VIDEO') && /\.(mp4|webm|ogg)(?:$|[?#])/i.test(url)
@@ -45,19 +21,6 @@ export default function MaterialViewer({ material, onClose }) {
     }
   }, [material, onClose])
 
-  useEffect(() => {
-    if (!wikiTitle) return
-    setArticle(null)
-    setArticleError(false)
-    fetch(`https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`)
-      .then((response) => {
-        if (!response.ok) throw new Error('Leitura indisponível')
-        return response.json()
-      })
-      .then(setArticle)
-      .catch(() => setArticleError(true))
-  }, [wikiTitle])
-
   if (!material) return null
 
   return (
@@ -72,20 +35,12 @@ export default function MaterialViewer({ material, onClose }) {
         </header>
 
         <div className="material-viewer-body">
-          {embedUrl ? (
-            <iframe src={embedUrl} title={material.titulo} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+          {externalSource ? (
+            <StudyGuide material={material} sourceUrl={url} />
           ) : isVideoFile ? (
             <video src={url} controls autoPlay className="h-full w-full bg-black" />
           ) : isPdf ? (
             <iframe src={`${url}#view=FitH`} title={material.titulo} />
-          ) : wikiTitle ? (
-            <article className="material-article">
-              {article?.thumbnail?.source && <img src={article.thumbnail.source} alt="" />}
-              <span>Leitura orientada</span>
-              <h3>{article?.title || material.titulo}</h3>
-              {article ? <p>{article.extract}</p> : articleError ? <p>Não foi possível carregar esta leitura agora.</p> : <p>Preparando conteúdo…</p>}
-              <small>Conteúdo introdutório da Wikipédia, disponibilizado sob CC BY-SA.</small>
-            </article>
           ) : (
             <iframe src={url} title={material.titulo} />
           )}
