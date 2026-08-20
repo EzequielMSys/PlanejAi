@@ -136,12 +136,42 @@ async function avaliarRevisao(idUsuario, idConteudo, resultado) {
   return proximo;
 }
 
+async function registrarSessao(idUsuario, { idConteudo, minutos, resultado }) {
+  const duracao = Math.max(1, Math.min(720, Math.round(Number(minutos) || 0)));
+  const nivel = ['DIFICIL', 'LEMBREI', 'DOMINEI'].includes(resultado) ? resultado : null;
+  await pool.execute(
+    'INSERT INTO sessoes_estudo (id_usuario, id_conteudo, duracao_minutos, resultado) VALUES (?, ?, ?, ?)',
+    [idUsuario, Number(idConteudo) || null, duracao, nivel]
+  );
+  return { minutos: duracao };
+}
+
+async function obterMetaSemanal(idUsuario) {
+  const [rows] = await pool.execute('SELECT minutos_meta FROM metas_semanais_estudo WHERE id_usuario = ?', [idUsuario]);
+  return { minutosMeta: Number(rows[0]?.minutos_meta || 180) };
+}
+
+async function atualizarMetaSemanal(idUsuario, minutosMeta) {
+  const minutos = Math.max(30, Math.min(1680, Math.round(Number(minutosMeta) || 180)));
+  await pool.execute(
+    `INSERT INTO metas_semanais_estudo (id_usuario, minutos_meta) VALUES (?, ?)
+     ON DUPLICATE KEY UPDATE minutos_meta = VALUES(minutos_meta)`,
+    [idUsuario, minutos]
+  );
+  return { minutosMeta: minutos };
+}
+
 async function obterResumo(idUsuario) {
-  const [[revisoes], [questoes], [erros], [dominio]] = await Promise.all([
+  const [[revisoes], [questoes], [erros], [dominio], [sessoes], [diasConcluidos], [meta]] = await Promise.all([
     pool.execute('SELECT COUNT(*) AS hoje FROM revisoes_estudo WHERE id_usuario = ? AND proxima_revisao <= CURRENT_DATE', [idUsuario]),
     pool.execute('SELECT COUNT(*) AS total, COALESCE(ROUND(AVG(acertou) * 100), 0) AS acerto FROM tentativas_questoes WHERE id_usuario = ?', [idUsuario]),
     pool.execute('SELECT COUNT(*) AS pendentes FROM caderno_erros WHERE id_usuario = ? AND resolvido = 0', [idUsuario]),
-    pool.execute('SELECT COALESCE(ROUND(AVG(nivel_dominio) * 10), 0) AS percentual FROM revisoes_estudo WHERE id_usuario = ?', [idUsuario])
+    pool.execute('SELECT COALESCE(ROUND(AVG(nivel_dominio) * 10), 0) AS percentual FROM revisoes_estudo WHERE id_usuario = ?', [idUsuario]),
+    pool.execute(`SELECT COALESCE(SUM(duracao_minutos), 0) AS minutos_semana FROM sessoes_estudo
+      WHERE id_usuario = ? AND concluida_em >= DATE_SUB(CURRENT_DATE, INTERVAL WEEKDAY(CURRENT_DATE) DAY)`, [idUsuario]),
+    pool.execute(`SELECT COUNT(*) AS total FROM cronograma_dias d JOIN cronogramas c ON c.id_cronograma = d.id_cronograma
+      JOIN perfil_estudo p ON p.id_perfil = c.id_perfil WHERE p.id_usuario = ? AND d.concluido = 1`, [idUsuario]),
+    pool.execute('SELECT minutos_meta FROM metas_semanais_estudo WHERE id_usuario = ?', [idUsuario])
   ]);
   const [porDisciplina] = await pool.execute(
     `SELECT q.disciplina, COUNT(*) AS tentativas, ROUND(AVG(t.acertou) * 100) AS acerto
@@ -165,7 +195,42 @@ async function obterResumo(idUsuario) {
     media: notas.length ? Math.round(notas.reduce((soma, nota) => soma + nota, 0) / notas.length) : 0,
     avaliacoes: notas.length
   }));
-  return { revisoesHoje: revisoes[0].hoje, questoesRespondidas: questoes[0].total, taxaAcerto: questoes[0].acerto, errosPendentes: erros[0].pendentes, dominio: dominio[0].percentual, porDisciplina, competenciasEnem };
+  const [porDificuldade] = await pool.execute(
+    `SELECT q.dificuldade, COUNT(*) AS tentativas, COALESCE(ROUND(AVG(t.acertou) * 100), 0) AS acerto
+     FROM tentativas_questoes t JOIN questoes_estudo q ON q.id_questao = t.id_questao
+     WHERE t.id_usuario = ? GROUP BY q.dificuldade ORDER BY FIELD(q.dificuldade, 'DIFICIL', 'MEDIA', 'FACIL')`, [idUsuario]
+  );
+  const disciplinaCritica = porDisciplina[0];
+  const recomendacoes = [];
+  if (Number(revisoes[0].hoje) > 0) recomendacoes.push({ tipo: 'REVISAO', texto: `${revisoes[0].hoje} revisão(ões) estão prontas para consolidar sua memória.` });
+  if (disciplinaCritica && Number(disciplinaCritica.acerto) < 70) recomendacoes.push({ tipo: 'DISCIPLINA', texto: `Priorize ${disciplinaCritica.disciplina}: seu acerto atual é ${disciplinaCritica.acerto}%.` });
+  if (Number(erros[0].pendentes) > 0) recomendacoes.push({ tipo: 'ERROS', texto: `Retome ${erros[0].pendentes} questão(ões) do caderno de erros antes de fazer um novo simulado.` });
+  return {
+    revisoesHoje: revisoes[0].hoje,
+    questoesRespondidas: questoes[0].total,
+    taxaAcerto: questoes[0].acerto,
+    errosPendentes: erros[0].pendentes,
+    dominio: dominio[0].percentual,
+    minutosSemana: Number(sessoes[0].minutos_semana || 0),
+    metaSemanal: Number(meta[0]?.minutos_meta || 180),
+    diasConcluidos: Number(diasConcluidos[0].total || 0),
+    porDisciplina,
+    porDificuldade,
+    recomendacoes,
+    competenciasEnem
+  };
+}
+
+async function obterEvolucao(idUsuario) {
+  const [rows] = await pool.execute(
+    `SELECT q.disciplina,
+      COALESCE(ROUND(AVG(CASE WHEN t.criado_em >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) THEN t.acertou END) * 100), 0) AS atual,
+      COALESCE(ROUND(AVG(CASE WHEN t.criado_em < DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) AND t.criado_em >= DATE_SUB(CURRENT_DATE, INTERVAL 60 DAY) THEN t.acertou END) * 100), 0) AS anterior
+     FROM tentativas_questoes t JOIN questoes_estudo q ON q.id_questao = t.id_questao
+     WHERE t.id_usuario = ? AND t.criado_em >= DATE_SUB(CURRENT_DATE, INTERVAL 60 DAY)
+     GROUP BY q.disciplina ORDER BY atual ASC`, [idUsuario]
+  );
+  return rows.map((row) => ({ ...row, variacao: Number(row.atual) - Number(row.anterior) }));
 }
 
 async function criarVersaoRedacao(idUsuario, idRedacao, { texto, observacao }) {
@@ -186,4 +251,4 @@ async function listarVersoesRedacao(idUsuario, idRedacao) {
   return rows.map((row) => ({ ...row, competencias_enem: typeof row.competencias_enem === 'string' ? JSON.parse(row.competencias_enem || 'null') : row.competencias_enem }));
 }
 
-module.exports = { garantirBancoQuestoes, gerarSimulado, responderQuestao, listarCadernoErros, atualizarErro, listarRevisoes, adicionarRevisao, avaliarRevisao, obterResumo, criarVersaoRedacao, listarVersoesRedacao };
+module.exports = { garantirBancoQuestoes, gerarSimulado, responderQuestao, listarCadernoErros, atualizarErro, listarRevisoes, adicionarRevisao, avaliarRevisao, registrarSessao, obterMetaSemanal, atualizarMetaSemanal, obterResumo, obterEvolucao, criarVersaoRedacao, listarVersoesRedacao };

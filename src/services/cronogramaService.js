@@ -4,6 +4,8 @@ const cronogramaModel = require('../models/cronogramaModel')
 const cronogramaDiaModel = require('../models/cronogramaDiaModel')
 const cronogramaConteudoModel = require('../models/cronogramaConteudoModel')
 const conteudoModel = require('../models/conteudoModel')
+const avaliacaoModel = require('../models/cronogramaAvaliacaoModel')
+const inteligenciaModel = require('../models/inteligenciaModel')
 
 const DIAS_SEMANA = {
   DOM: 0,
@@ -17,6 +19,10 @@ const DIAS_SEMANA = {
 
 function formatarDataISO(data) {
   return data.toISOString().split('T')[0]
+}
+
+function chaveData(data) {
+  return data instanceof Date ? data.toISOString().slice(0, 10) : String(data).slice(0, 10)
 }
 
 function obterCodigoDia(data) {
@@ -53,6 +59,53 @@ function combinarDadosConteudo(atual, alteracoes = {}) {
 }
 
 class CronogramaService {
+  async validarDiaLiberado(idDia, idUsuario) {
+    const dia = await avaliacaoModel.obterDiaDoUsuario(idDia, idUsuario)
+    if (!dia) throw new Error('Dia do cronograma não encontrado.')
+    const dias = await cronogramaDiaModel.listarDiasPorCronograma(dia.id_cronograma)
+    const indice = dias.findIndex((item) => Number(item.id_dia) === Number(idDia))
+    const anterioresConcluidos = dias.slice(0, indice).every((item) => Number(item.concluido) === 1)
+    if (!anterioresConcluidos) throw new Error('Conclua os dias anteriores antes de avançar no cronograma.')
+    const hoje = new Date().toISOString().slice(0, 10)
+    const dataDia = chaveData(dia.data_estudo)
+    if (dataDia > hoje && !(await avaliacaoModel.diaTemDesafioAprovado(idDia, idUsuario))) {
+      throw new Error('Este dia ainda está bloqueado. Faça o desafio de avanço para liberá-lo antecipadamente.')
+    }
+    return dia
+  }
+
+  async iniciarDesafioAdiantamento(idDia, idUsuario) {
+    const dia = await avaliacaoModel.obterDiaDoUsuario(idDia, idUsuario)
+    if (!dia) throw new Error('Dia do cronograma não encontrado.')
+    const hoje = new Date().toISOString().slice(0, 10)
+    if (chaveData(dia.data_estudo) <= hoje) throw new Error('Este dia já está disponível pela data do cronograma.')
+    const dias = await cronogramaDiaModel.listarDiasPorCronograma(dia.id_cronograma)
+    const indice = dias.findIndex((item) => Number(item.id_dia) === Number(idDia))
+    if (!dias.slice(0, indice).every((item) => Number(item.concluido) === 1)) throw new Error('Conclua os dias anteriores antes de tentar adiantar este dia.')
+    return avaliacaoModel.iniciar({ idUsuario, idCronograma: dia.id_cronograma, idDia, tipo: 'ADIANTAMENTO', quantidade: 5, minimoAcertos: 4 })
+  }
+
+  async iniciarProvaFinal(idCronograma, idUsuario) {
+    const cronograma = await avaliacaoModel.obterCronogramaDoUsuario(idCronograma, idUsuario)
+    if (!cronograma) throw new Error('Cronograma não encontrado.')
+    const total = await cronogramaConteudoModel.contarConteudosPorCronograma(idCronograma)
+    const concluidos = await cronogramaConteudoModel.contarConteudosConcluidosPorCronograma(idCronograma)
+    if (!total || total !== concluidos) throw new Error('Conclua todos os conteúdos do cronograma antes de iniciar a prova final.')
+    return avaliacaoModel.iniciar({ idUsuario, idCronograma, tipo: 'FINAL', quantidade: 20, minimoAcertos: 14 })
+  }
+
+  async enviarAvaliacao(idAvaliacao, idUsuario, respostas) {
+    return avaliacaoModel.enviar(idAvaliacao, idUsuario, respostas)
+  }
+
+  async retomarAvaliacao(idAvaliacao, idUsuario) {
+    return avaliacaoModel.retomar(idAvaliacao, idUsuario)
+  }
+
+  async abandonarAvaliacao(idAvaliacao, idUsuario) {
+    return avaliacaoModel.abandonar(idAvaliacao, idUsuario)
+  }
+
   async buscarConteudosDoPerfil(perfil) {
     const areas = normalizarListaAreas(perfil.areas_foco)
     const conteudos = []
@@ -91,6 +144,13 @@ class CronogramaService {
 
     if (conteudos.length === 0) {
       throw new Error('Nenhum conteúdo cadastrado para as áreas de foco informadas')
+    }
+
+    const provas = await inteligenciaModel.provas(usuarioId)
+    const proximaProva = provas.find((prova) => chaveData(prova.data_prova) >= formatarDataISO(new Date()))
+    if (proximaProva?.materias?.length) {
+      const pesos = new Map(proximaProva.materias.map((materia) => [String(materia.disciplina || materia).toLowerCase(), Number(materia.peso || 1)]))
+      conteudos.sort((a, b) => (pesos.get(String(b.disciplina).toLowerCase()) || 0) - (pesos.get(String(a.disciplina).toLowerCase()) || 0))
     }
 
     await cronogramaModel.desativarCronogramasAtivos(perfil.id_perfil)
@@ -165,6 +225,28 @@ class CronogramaService {
       )
 
       if (completo) {
+        const hoje = new Date().toISOString().slice(0, 10)
+        let anteriorConcluido = true
+        for (const dia of completo.dias) {
+          const adiantado = await avaliacaoModel.diaTemDesafioAprovado(dia.id_dia, usuarioId)
+          const futuro = chaveData(dia.data_estudo) > hoje
+          dia.bloqueado = !Number(dia.concluido) && (!anteriorConcluido || (futuro && !adiantado))
+          dia.requer_desafio = !Number(dia.concluido) && anteriorConcluido && futuro && !adiantado
+          dia.desbloqueado_antecipadamente = adiantado
+          anteriorConcluido = anteriorConcluido && Number(dia.concluido) === 1
+        }
+        const totalConteudos = await cronogramaConteudoModel.contarConteudosPorCronograma(completo.id_cronograma)
+        const concluidos = await cronogramaConteudoModel.contarConteudosConcluidosPorCronograma(completo.id_cronograma)
+        const prova = await avaliacaoModel.obterProvaFinal(completo.id_cronograma, usuarioId)
+        const emAndamento = await avaliacaoModel.obterEmAndamento(completo.id_cronograma, usuarioId)
+        completo.prova_final = { disponivel: totalConteudos > 0 && totalConteudos === concluidos && completo.status !== 'CONCLUIDO', concluida: completo.status === 'CONCLUIDO', ultima: prova ? { status: prova.status, percentual: prova.percentual } : null }
+        completo.avaliacao_em_andamento = emAndamento ? {
+          id_avaliacao: emAndamento.id_avaliacao,
+          id_dia: emAndamento.id_dia,
+          tipo: emAndamento.tipo,
+          total: Number(emAndamento.total_questoes),
+          minimoAcertos: Number(emAndamento.minimo_acertos)
+        } : null
         cronogramasCompletos.push(completo)
       }
     }
@@ -184,8 +266,11 @@ class CronogramaService {
     )
   }
 
-  async marcarConcluido(idDia) {
-    await cronogramaConteudoModel.marcarTodosConcluidos(idDia)
+  async marcarConcluido(idDia, idUsuario) {
+    await this.validarDiaLiberado(idDia, idUsuario)
+    const total = await cronogramaConteudoModel.contarConteudosPorDia(idDia)
+    const concluidos = await cronogramaConteudoModel.contarConteudosConcluidosPorDia(idDia)
+    if (!total || total !== concluidos) throw new Error('Conclua todos os conteúdos deste dia antes de confirmá-lo.')
     await cronogramaDiaModel.marcarDiaConcluido(idDia)
 
     return {
@@ -206,7 +291,10 @@ class CronogramaService {
     }
   }
 
-  async concluirConteudo(idConteudoCronograma) {
+  async concluirConteudo(idConteudoCronograma, idUsuario) {
+    const conteudo = await cronogramaConteudoModel.obterConteudoCronogramaPorId(idConteudoCronograma)
+    if (!conteudo) throw new Error('Conteúdo do cronograma não encontrado.')
+    await this.validarDiaLiberado(conteudo.id_dia, idUsuario)
     return cronogramaConteudoModel.marcarConcluido(idConteudoCronograma)
   }
 

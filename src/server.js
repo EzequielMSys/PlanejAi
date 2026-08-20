@@ -15,6 +15,7 @@ const conteudoRoutes = require("./routes/conteudoRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const avisoRoutes = require("./routes/avisoRoutes");
 const aprendizagemRoutes = require("./routes/aprendizagemRoutes");
+const inteligenciaRoutes = require("./routes/inteligenciaRoutes");
 
 const app = express();
 app.disable("x-powered-by");
@@ -77,6 +78,7 @@ app.use("/api/conteudos", conteudoRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/avisos", avisoRoutes);
 app.use("/api/aprendizagem", aprendizagemRoutes);
+app.use("/api/inteligencia", inteligenciaRoutes);
 
 app.use(uploadErrorHandler);
 

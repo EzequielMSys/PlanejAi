@@ -10,7 +10,7 @@ function tratarErroCronograma(error, res) {
     'Nenhum conteúdo cadastrado para as áreas de foco informadas'
   ]
 
-  if (mensagensUsuario.includes(error.message)) {
+  if (mensagensUsuario.includes(error.message) || /Conclua os dias anteriores|ainda está bloqueado|Conclua todos os conteúdos/.test(error.message || '')) {
     return res.status(400).json({
       error: error.message
     })
@@ -69,7 +69,7 @@ async function concluirDia(req, res) {
   try {
     const { diaId } = req.params
 
-    const resultado = await cronogramaService.marcarConcluido(diaId)
+    const resultado = await cronogramaService.marcarConcluido(diaId, req.usuario.id_usuario || req.usuario.id)
 
     return res.status(200).json({
       message: 'Dia marcado como concluído!',
@@ -101,7 +101,7 @@ async function concluirConteudo(req, res) {
     const referencia = await cronogramaService.obterConteudoCronogramaPorId(conteudoCronogramaId)
 
     const conteudo = await cronogramaService.concluirConteudo(
-      conteudoCronogramaId
+      conteudoCronogramaId, req.usuario.id_usuario || req.usuario.id
     )
     if (referencia?.id_conteudo) {
       try {
@@ -192,6 +192,36 @@ async function replanejarAtrasados(req, res) {
   }
 }
 
+async function analisarAtrasos(req, res) {
+  try { return res.json(await adaptiveScheduleModel.analisarAtrasos(req.usuario.id_usuario || req.usuario.id)) }
+  catch (error) { return res.status(500).json({ message: 'Não foi possível analisar os atrasos.' }) }
+}
+
+async function iniciarDesafio(req, res) {
+  try { return res.json(await cronogramaService.iniciarDesafioAdiantamento(req.params.diaId, req.usuario.id_usuario || req.usuario.id)) }
+  catch (error) { return res.status(400).json({ message: error.message }) }
+}
+
+async function iniciarProvaFinal(req, res) {
+  try { return res.json(await cronogramaService.iniciarProvaFinal(req.params.cronogramaId, req.usuario.id_usuario || req.usuario.id)) }
+  catch (error) { return res.status(400).json({ message: error.message }) }
+}
+
+async function enviarAvaliacao(req, res) {
+  try { return res.json(await cronogramaService.enviarAvaliacao(req.params.avaliacaoId, req.usuario.id_usuario || req.usuario.id, req.body.respostas)) }
+  catch (error) { return res.status(400).json({ message: error.message }) }
+}
+
+async function retomarAvaliacao(req, res) {
+  try { return res.json(await cronogramaService.retomarAvaliacao(req.params.avaliacaoId, req.usuario.id_usuario || req.usuario.id)) }
+  catch (error) { return res.status(400).json({ message: error.message }) }
+}
+
+async function abandonarAvaliacao(req, res) {
+  try { return res.json(await cronogramaService.abandonarAvaliacao(req.params.avaliacaoId, req.usuario.id_usuario || req.usuario.id)) }
+  catch (error) { return res.status(400).json({ message: error.message }) }
+}
+
 module.exports = {
   gerarCronograma,
   listarCronogramas,
@@ -203,5 +233,11 @@ module.exports = {
   atualizarConteudoCronograma,
   uploadMaterial,
   replanejarAtrasados,
-  moverConteudo
+  analisarAtrasos,
+  moverConteudo,
+  iniciarDesafio,
+  iniciarProvaFinal,
+  enviarAvaliacao,
+  retomarAvaliacao,
+  abandonarAvaliacao
 }

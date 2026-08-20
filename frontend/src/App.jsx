@@ -26,6 +26,7 @@ import NotFound from './pages/NotFound'
 import StudySession from './pages/StudySession'
 import Aprendizagem from './pages/Aprendizagem'
 import SystemStatus from './pages/SystemStatus'
+import PlanejamentoInteligente from './pages/PlanejamentoInteligente'
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
             <Route path="/estudar" element={<StudySession />} />
             <Route path="/status" element={<SystemStatus />} />
             <Route path="/aprendizagem" element={<Aprendizagem />} />
+            <Route path="/planejamento-inteligente" element={<PlanejamentoInteligente />} />
             <Route path="/redacoes" element={<Redacoes />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/atividades" element={<Atividades />} />

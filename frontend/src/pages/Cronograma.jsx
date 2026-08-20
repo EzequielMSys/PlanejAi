@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti'
 import cronogramaService from '../services/cronogramaService'
 import { useAuth } from '../context/AuthContext'
 import MaterialViewer from '../components/MaterialViewer'
+import CronogramaAssessment from '../components/CronogramaAssessment'
 import { exportarCronograma } from '../utils/calendarExport'
 
 const fadeUp = {
@@ -38,6 +39,8 @@ export default function Cronograma() {
   const [materialAberto, setMaterialAberto] = useState(null)
   const [conteudoArrastado, setConteudoArrastado] = useState(null)
   const [diaAlvo, setDiaAlvo] = useState(null)
+  const [avaliacao, setAvaliacao] = useState(null)
+  const [recuperacao, setRecuperacao] = useState(null)
   const celebradoRef = useRef(false)
 
   async function carregarCronogramas() {
@@ -59,6 +62,42 @@ export default function Cronograma() {
     } catch {
       // O serviço já exibe a mensagem adequada.
     }
+  }
+
+  async function abrirRecuperacao() {
+    try { setRecuperacao(await cronogramaService.recuperacao()) }
+    catch { toast.error('Não foi possível analisar seus atrasos.') }
+  }
+
+  async function iniciarDesafio(idDia) {
+    try { setAvaliacao(await cronogramaService.desafioAdiantamento(idDia)) }
+    catch (error) { toast.error(error.response?.data?.message || 'Não foi possível iniciar o desafio.') }
+  }
+
+  async function iniciarProvaFinal() {
+    try { setAvaliacao(await cronogramaService.provaFinal(cronogramaAtual.id_cronograma)) }
+    catch (error) { toast.error(error.response?.data?.message || 'Não foi possível iniciar a prova final.') }
+  }
+
+  async function retomarAvaliacao(idAvaliacao) {
+    try { setAvaliacao(await cronogramaService.retomarAvaliacao(idAvaliacao)) }
+    catch (error) { toast.error(error.response?.data?.message || 'Não foi possível retomar a avaliação.') }
+  }
+
+  async function abandonarAvaliacao(idAvaliacao) {
+    if (!window.confirm('Descartar esta avaliação? As respostas escolhidas neste aparelho serão apagadas e será possível iniciar outra.')) return
+    try {
+      await cronogramaService.abandonarAvaliacao(idAvaliacao)
+      localStorage.removeItem(`planejai:avaliacao:${idAvaliacao}`)
+      await carregarCronogramas()
+      toast.success('Avaliação descartada. Você já pode iniciar uma nova.')
+    } catch (error) { toast.error(error.response?.data?.message || 'Não foi possível descartar a avaliação.') }
+  }
+
+  async function enviarAvaliacao(idAvaliacao, respostas) {
+    const resultado = await cronogramaService.enviarAvaliacao(idAvaliacao, respostas)
+    await carregarCronogramas()
+    return resultado
   }
 
   useEffect(() => {
@@ -311,7 +350,7 @@ async function concluirDia(idDia) {
             </div>
           </section>
 
-          {cronogramaAtual && <div className="mb-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={replanejar} className="rounded-full border border-[#7C3AED]/25 bg-white px-5 py-3 text-sm font-black text-[#6D28D9] dark:bg-[#211A2D] dark:text-[#CBB3FF]">Replanejar atrasos</button><button type="button" onClick={() => exportarCronograma(cronogramaAtual)} className="rounded-full bg-[#6D3EC5] px-5 py-3 text-sm font-black text-white">Exportar calendário</button></div>}
+          {cronogramaAtual && <div className="mb-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={abrirRecuperacao} className="rounded-full border border-[#7C3AED]/25 bg-white px-5 py-3 text-sm font-black text-[#6D28D9] dark:bg-[#211A2D] dark:text-[#CBB3FF]">Plano de recuperação</button><button type="button" onClick={() => exportarCronograma(cronogramaAtual)} className="rounded-full bg-[#6D3EC5] px-5 py-3 text-sm font-black text-white">Exportar calendário</button></div>}
 
           {!cronogramaAtual ? (
             <section className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.9fr] lg:items-center">
@@ -392,12 +431,17 @@ async function concluirDia(idDia) {
                 </div>
               </section>
 
+              {cronogramaAtual.avaliacao_em_andamento && <section className="schedule-surface mb-8 rounded-[2rem] border border-[#7C3AED]/30 bg-[#F3ECFC] p-6 dark:bg-[#291D38]"><p className="text-xs font-black uppercase tracking-[.18em] text-[#7C3AED]">Avaliação em andamento</p><h2 className="mt-1 text-2xl font-black">{cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'Sua prova final está pronta para continuar.' : 'Seu desafio de avanço está pronto para continuar.'}</h2><p className="mt-2 text-sm text-black/65 dark:text-white/65">Você pode fechar a tela e voltar quando quiser. As questões permanecem as mesmas; neste aparelho, as escolhas também são preservadas.</p><div className="mt-4 flex flex-wrap gap-3"><button type="button" onClick={() => retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)} className="rounded-full bg-[#4B4C9D] px-5 py-3 font-black text-white">Retomar {cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'prova final' : 'desafio'}</button><button type="button" onClick={() => abandonarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)} className="rounded-full border border-[#7C3AED] px-5 py-3 font-bold text-[#6D28D9]">Descartar e iniciar outra</button></div></section>}
+              {cronogramaAtual.prova_final?.disponivel && !cronogramaAtual.avaliacao_em_andamento && <section className="schedule-surface mb-8 rounded-[2rem] border border-[#7C3AED]/30 bg-[#F3ECFC] p-6 dark:bg-[#291D38]"><p className="text-xs font-black uppercase tracking-[.18em] text-[#7C3AED]">Etapa final</p><h2 className="mt-1 text-2xl font-black">Seu cronograma foi concluído. Agora comprove seu domínio.</h2><p className="mt-2 text-sm text-black/65 dark:text-white/65">A prova final tem 20 questões das matérias estudadas. É necessário acertar ao menos 14 para concluir a trilha.</p><button type="button" onClick={iniciarProvaFinal} className="mt-4 rounded-full bg-[#4B4C9D] px-5 py-3 font-black text-white">Iniciar prova final</button></section>}
+              {cronogramaAtual.prova_final?.concluida && <section className="schedule-surface mb-8 rounded-[2rem] border border-emerald-400/30 bg-emerald-50 p-6 text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-100"><b>Trilha certificada.</b> Você concluiu o cronograma e foi aprovado na prova final.</section>}
+
 <section className="grid gap-4">
                 {dias.map((dia, index) => {
                   const idDia = dia.id_dia || dia.id
                   const concluido =
                     Number(dia.concluido) === 1 ||
                     dia.status === 'concluído'
+                  const bloqueado = Boolean(dia.bloqueado)
 
                   const conteudos = dia.conteudos || []
                   const expandido = Boolean(diasExpandidos[idDia])
@@ -412,7 +456,7 @@ async function concluirDia(idDia) {
                       onDragOver={(event) => { event.preventDefault(); if (conteudoArrastado) setDiaAlvo(idDia) }}
                       onDragLeave={() => setDiaAlvo((current) => current === idDia ? null : current)}
                       onDrop={(event) => soltarConteudo(event, idDia)}
-                      className={`schedule-day group relative overflow-hidden rounded-[2rem] p-5 shadow-xl border before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 transition ${diaAlvo === idDia ? 'border-[#7C3AED] bg-[#F3ECFC] ring-4 ring-[#7C3AED]/10 before:bg-[#7C3AED]' : 'border-[#9394CF]/20 bg-white before:bg-[#C4B5FD] hover:before:bg-[#7C3AED]'}`}
+                      className={`schedule-day group relative overflow-hidden rounded-[2rem] p-5 shadow-xl border before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 transition ${bloqueado ? 'border-[#9394CF]/15 bg-black/[.03] opacity-75 before:bg-[#8A769F]' : diaAlvo === idDia ? 'border-[#7C3AED] bg-[#F3ECFC] ring-4 ring-[#7C3AED]/10 before:bg-[#7C3AED]' : 'border-[#9394CF]/20 bg-white before:bg-[#C4B5FD] hover:before:bg-[#7C3AED]'}`}
                     >
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex-1">
@@ -436,13 +480,15 @@ async function concluirDia(idDia) {
                             className={`px-4 py-2 rounded-full text-sm font-bold border ${
                               concluido
                                 ? 'bg-green-100 text-green-700 border-green-300'
-                                : 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                                : bloqueado ? 'bg-slate-100 text-slate-700 border-slate-300' : 'bg-yellow-100 text-yellow-700 border-yellow-300'
                             }`}
                           >
-                            {concluido ? 'Concluído' : 'Pendente'}
+                            {concluido ? 'Concluído' : bloqueado ? 'Bloqueado' : 'Pendente'}
                           </span>
 
-                          {!concluido && (
+                          {dia.requer_desafio && <button type="button" onClick={() => cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao) : iniciarDesafio(idDia)} className="rounded-full border border-[#7C3AED] px-4 py-2.5 text-sm font-bold text-[#6D28D9]">{cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? 'Retomar desafio' : 'Desafio para liberar'}</button>}
+
+                          {!concluido && !bloqueado && (
                             <button
                               type="button"
                               onClick={() => concluirDia(idDia)}
@@ -453,7 +499,7 @@ async function concluirDia(idDia) {
                             </button>
                           )}
 
-                          {conteudos.length > 0 && (
+                          {conteudos.length > 0 && !bloqueado && (
                             <button
                               type="button"
                               onClick={() => alternarExpansaoDia(idDia)}
@@ -484,7 +530,7 @@ async function concluirDia(idDia) {
                                     ? 'bg-green-50 border-green-200'
                                     : 'bg-[#F7F7FB] border-[#9394CF]/20'
                                 }`}
-                                draggable={!conteudoConcluido}
+                                draggable={isGestor && !conteudoConcluido}
                                 onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(idConteudo)); setConteudoArrastado(idConteudo) }}
                                 onDragEnd={() => { setConteudoArrastado(null); setDiaAlvo(null) }}
                                 title={conteudoConcluido ? undefined : 'Arraste para outro dia'}
@@ -564,7 +610,7 @@ async function concluirDia(idDia) {
 
                                 <MateriaisComplementares materiais={conteudo.materiais} onOpen={setMaterialAberto} />
 
-                                {!conteudoConcluido && <select
+                                {isGestor && !conteudoConcluido && <select
                                   aria-label={`Mover ${conteudo.titulo || 'conteúdo'} para outro dia`}
                                   value=""
                                   onChange={(event) => { if (event.target.value) moverConteudo(idConteudo, Number(event.target.value)) }}
@@ -593,6 +639,7 @@ async function concluirDia(idDia) {
                           })}
                         </div>
                       )}
+                      {bloqueado && <p className="mt-4 border-t border-[#9394CF]/20 pt-4 text-sm font-semibold text-black/55 dark:text-white/55">{dia.requer_desafio ? 'Conclua o desafio de 5 questões (4 acertos) para estudar este dia antes da data prevista.' : 'Conclua os dias anteriores para liberar esta etapa.'}</p>}
                     </div>
                   )
                 })}
@@ -604,6 +651,8 @@ async function concluirDia(idDia) {
       {materialAberto && (
         <MaterialViewer material={materialAberto} onClose={() => setMaterialAberto(null)} />
       )}
+      {avaliacao && <CronogramaAssessment assessment={avaliacao} onSubmit={enviarAvaliacao} onClose={() => { setAvaliacao(null); carregarCronogramas() }} />}
+      {recuperacao && <div className="fixed inset-0 z-[130] grid place-items-center bg-black/60 p-4"><section className="max-w-lg rounded-[2rem] bg-white p-6 text-[#21162F] dark:bg-[#211A2D] dark:text-white"><h2 className="text-2xl font-black">Plano de recuperação</h2><p className="mt-2 text-sm opacity-70">Há {recuperacao.dias_atrasados} dia(s) atrasado(s) e {recuperacao.conteudos_pendentes} conteúdo(s) pendente(s).</p><div className="mt-5 grid gap-3">{recuperacao.opcoes.map((opcao) => <button key={opcao.id} onClick={async () => { if (opcao.id === 'REDISTRIBUIR' || opcao.id === 'REDUZIR') await replanejar(); setRecuperacao(null); if (opcao.id === 'MANTER') toast('O cronograma foi mantido como está.'); }} className="rounded-2xl border p-4 text-left"><b>{opcao.titulo}</b><span className="mt-1 block text-sm opacity-65">{opcao.impacto}</span></button>)}</div><button onClick={() => setRecuperacao(null)} className="mt-5 text-sm font-bold underline">Fechar</button></section></div>}
     </div>
   )
 }

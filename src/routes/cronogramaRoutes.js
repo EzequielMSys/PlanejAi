@@ -42,6 +42,12 @@ router.post(
   authMiddleware,
   cronogramaController.replanejarAtrasados
 )
+router.get('/recuperacao', authMiddleware, cronogramaController.analisarAtrasos)
+router.post('/dias/:diaId/desafio', authMiddleware, cronogramaController.iniciarDesafio)
+router.post('/cronogramas/:cronogramaId/prova-final', authMiddleware, cronogramaController.iniciarProvaFinal)
+router.get('/avaliacoes/:avaliacaoId/retomar', authMiddleware, cronogramaController.retomarAvaliacao)
+router.post('/avaliacoes/:avaliacaoId/abandonar', authMiddleware, cronogramaController.abandonarAvaliacao)
+router.post('/avaliacoes/:avaliacaoId/enviar', authMiddleware, cronogramaController.enviarAvaliacao)
 
 /**
  * Concluir dia do cronograma
@@ -75,7 +81,7 @@ router.patch(
  */
 router.patch(
   '/conteudos/:conteudoCronogramaId/mover',
-  authMiddleware,
+  authMiddleware, isGestorPedagogico,
   cronogramaController.moverConteudo
 )
 

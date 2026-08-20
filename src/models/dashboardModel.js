@@ -52,7 +52,8 @@ async function obterAprendizagemUsuarios() {
      LEFT JOIN tentativas_questoes t ON t.id_usuario = u.id_usuario
      LEFT JOIN caderno_erros e ON e.id_usuario = u.id_usuario
      LEFT JOIN revisoes_estudo r ON r.id_usuario = u.id_usuario
-     WHERE u.tipo = 'aluno' AND u.ativo = 1
+     LEFT JOIN privacidade_aprendizagem pa ON pa.id_usuario = u.id_usuario
+     WHERE u.tipo = 'aluno' AND u.ativo = 1 AND COALESCE(pa.visibilidade, 'RESUMO') <> 'PRIVADO'
      GROUP BY u.id_usuario ORDER BY revisoes_atrasadas DESC, taxa_acerto ASC`
   );
   return rows;

@@ -22,5 +22,19 @@ async function replanejarAtrasados(idUsuario) {
   return { reagendados: dias.length };
 }
 
-module.exports = { replanejarAtrasados };
+async function analisarAtrasos(idUsuario) {
+  const [[dados]] = await pool.execute(
+    `SELECT COUNT(DISTINCT cd.id_dia) AS dias_atrasados, COUNT(cc.id) AS conteudos_pendentes
+     FROM cronograma_dias cd JOIN cronogramas c ON c.id_cronograma = cd.id_cronograma
+     JOIN perfil_estudo p ON p.id_perfil = c.id_perfil JOIN cronograma_conteudos cc ON cc.id_dia = cd.id_dia
+     WHERE p.id_usuario = ? AND c.status = 'ATIVO' AND cd.data_estudo < CURRENT_DATE AND cc.concluido = 0`, [idUsuario]
+  )
+  const dias = Number(dados.dias_atrasados || 0); const conteudos = Number(dados.conteudos_pendentes || 0)
+  return { dias_atrasados: dias, conteudos_pendentes: conteudos, opcoes: [
+    { id: 'MANTER', titulo: 'Manter ritmo', impacto: 'Preserva o plano atual; pendências continuarão visíveis.' },
+    { id: 'REDISTRIBUIR', titulo: 'Redistribuir', impacto: `Move ${dias} dia(s) atrasado(s) para os próximos dias.` },
+    { id: 'REDUZIR', titulo: 'Reduzir carga', impacto: 'Redistribui pendências e reduz o tempo previsto por dia para tornar a retomada viável.' }
+  ] }
+}
 
+module.exports = { replanejarAtrasados, analisarAtrasos };

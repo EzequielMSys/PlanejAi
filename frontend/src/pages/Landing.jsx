@@ -136,36 +136,55 @@ function FeatureCard({ number, title, desc }) {
   )
 }
 
+const TRILHAS_DE_EXEMPLO = [
+  ['Matemática', 'Funções', [35, 45, 50]], ['Redação', 'Repertório', [30, 40, 45]],
+  ['Biologia', 'Ecologia', [30, 35, 45]], ['Física', 'Cinemática', [35, 45, 50]],
+  ['Química', 'Estequiometria', [30, 40, 50]], ['Português', 'Interpretação de texto', [30, 35, 45]],
+  ['História', 'Brasil República', [35, 40, 50]], ['Geografia', 'Urbanização', [30, 40, 45]],
+  ['Inglês', 'Tempos verbais', [25, 30, 40]], ['Literatura', 'Modernismo', [30, 40, 45]]
+]
+const DIAS_DE_EXEMPLO = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
+
+function criarTrilhaAleatoria() {
+  const opcoes = [...TRILHAS_DE_EXEMPLO].sort(() => Math.random() - 0.5).slice(0, 3)
+  const inicio = 8 * 60 + Math.floor(Math.random() * 9) * 30
+  let cursor = inicio
+  const itens = opcoes.map(([title, assunto, duracoes], index) => {
+    const minutos = duracoes[Math.floor(Math.random() * duracoes.length)]
+    const hora = `${String(Math.floor(cursor / 60)).padStart(2, '0')}:${String(cursor % 60).padStart(2, '0')}`
+    cursor += minutos + [15, 20, 25][Math.floor(Math.random() * 3)]
+    return { title, detail: `${assunto} · ${minutos} min`, time: hora, featured: false, minutos, id: `${title}-${index}` }
+  })
+  itens[Math.floor(Math.random() * itens.length)].featured = true
+  return { day: DIAS_DE_EXEMPLO[Math.floor(Math.random() * DIAS_DE_EXEMPLO.length)], items: itens, total: itens.reduce((soma, item) => soma + item.minutos, 0) }
+}
+
 function StudyMap() {
-  const items = [
-    { time: '16:00', title: 'Matemática', detail: 'Funções · 45 min', side: 'left' },
-    { time: '17:00', title: 'Redação', detail: 'Repertório · 30 min', side: 'right' },
-    { time: '18:10', title: 'Biologia', detail: 'Ecologia · 35 min', side: 'left' }
-  ]
+  const [trilha] = useState(criarTrilhaAleatoria)
 
   return (
     <div className="relative mx-auto min-h-[430px] max-w-[480px] overflow-hidden rounded-[2rem] border border-[#D9CDF5] bg-[#FCFAFF] p-6 shadow-[0_28px_80px_-42px_rgba(76,29,149,.45)] dark:border-white/10 dark:bg-[#20172F] sm:p-8">
       <div className="absolute inset-0 opacity-45 [background-image:linear-gradient(#E9E1F7_1px,transparent_1px),linear-gradient(90deg,#E9E1F7_1px,transparent_1px)] [background-size:28px_28px] dark:opacity-[.06]" />
       <div className="relative">
         <div className="mb-8 flex items-end justify-between">
-          <div><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#8A769F] dark:text-white/40">Quinta-feira</p><h3 className="mt-1 text-2xl font-black tracking-tight text-[#2A1D3D] dark:text-white">Minha trilha</h3></div>
+          <div><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#8A769F] dark:text-white/40">{trilha.day}</p><h3 className="mt-1 text-2xl font-black tracking-tight text-[#2A1D3D] dark:text-white">Minha trilha</h3></div>
           <span className="rounded-full bg-[#EEE7FF] px-3 py-1.5 text-xs font-black text-[#6D28D9] dark:bg-white/10 dark:text-[#D8B4FE]">3 blocos</span>
         </div>
 
         <div className="relative space-y-5">
           <div className="absolute bottom-5 left-4 top-5 w-px bg-gradient-to-b from-[#A78BFA] via-[#7C3AED] to-[#D8B4FE]" />
-          {items.map((item, index) => (
-            <motion.div key={item.title} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .45 + index * .12 }} className="relative grid grid-cols-[34px_1fr] gap-4">
-              <span className={`relative z-10 mt-5 h-8 w-8 rounded-full border-[6px] border-[#FCFAFF] dark:border-[#20172F] ${index === 1 ? 'bg-[#7C3AED]' : 'bg-[#C4B5FD]'}`} />
-              <div className={`rounded-2xl border p-4 ${index === 1 ? 'rotate-[1deg] border-[#8B5CF6] bg-[#7C3AED] text-white shadow-lg shadow-purple-200 dark:shadow-none' : 'border-[#E3D9F5] bg-white text-[#2B2138] dark:border-white/10 dark:bg-white/[.06] dark:text-white'}`}>
-                <div className="flex items-center justify-between gap-3"><strong>{item.title}</strong><span className={`font-mono text-xs ${index === 1 ? 'text-white/70' : 'text-[#8A769F] dark:text-white/40'}`}>{item.time}</span></div>
-                <p className={`mt-1 text-sm ${index === 1 ? 'text-white/75' : 'text-[#7E718C] dark:text-white/45'}`}>{item.detail}</p>
+          {trilha.items.map((item, index) => (
+            <motion.div key={item.id} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .45 + index * .12 }} className="relative grid grid-cols-[34px_1fr] gap-4">
+              <span className={`relative z-10 mt-5 h-8 w-8 rounded-full border-[6px] border-[#FCFAFF] dark:border-[#20172F] ${item.featured ? 'bg-[#7C3AED]' : 'bg-[#C4B5FD]'}`} />
+              <div className={`rounded-2xl border p-4 ${item.featured ? 'rotate-[1deg] border-[#8B5CF6] bg-[#7C3AED] text-white shadow-lg shadow-purple-200 dark:shadow-none' : 'border-[#E3D9F5] bg-white text-[#2B2138] dark:border-white/10 dark:bg-white/[.06] dark:text-white'}`}>
+                <div className="flex items-center justify-between gap-3"><strong>{item.title}</strong><span className={`font-mono text-xs ${item.featured ? 'text-white/70' : 'text-[#8A769F] dark:text-white/40'}`}>{item.time}</span></div>
+                <p className={`mt-1 text-sm ${item.featured ? 'text-white/75' : 'text-[#7E718C] dark:text-white/45'}`}>{item.detail}</p>
               </div>
             </motion.div>
           ))}
         </div>
 
-        <div className="mt-7 flex items-center justify-between border-t border-[#E9E1F4] pt-5 dark:border-white/10"><span className="text-sm font-bold text-[#6F607E] dark:text-white/50">Ritmo do dia</span><span className="font-mono text-sm font-black text-[#7C3AED] dark:text-[#C4B5FD]">110 min</span></div>
+        <div className="mt-7 flex items-center justify-between border-t border-[#E9E1F4] pt-5 dark:border-white/10"><span className="text-sm font-bold text-[#6F607E] dark:text-white/50">Ritmo do dia</span><span className="font-mono text-sm font-black text-[#7C3AED] dark:text-[#C4B5FD]">{trilha.total} min</span></div>
       </div>
     </div>
   )

@@ -96,6 +96,7 @@ export default function StudySession() {
         await aprendizagemService.adicionarRevisao(content.id_conteudo)
         await aprendizagemService.avaliarRevisao(content.id_conteudo, difficulty)
       }
+      await aprendizagemService.registrarSessao({ idConteudo: content.id_conteudo, minutos, resultado: difficulty })
       saveStudyHistory(content, minutes, difficulty)
       toast.success('Sessão concluída e próxima revisão agendada.')
       navigate('/inicio')

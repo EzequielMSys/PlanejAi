@@ -50,6 +50,12 @@ const cronogramaService = {
       tratarErro(error, 'Erro ao replanejar pendências.')
     }
   },
+  recuperacao: () => api.get('/recuperacao').then((response) => response.data),
+  desafioAdiantamento: (diaId) => api.post(`/dias/${diaId}/desafio`).then((response) => response.data),
+  provaFinal: (cronogramaId) => api.post(`/cronogramas/${cronogramaId}/prova-final`).then((response) => response.data),
+  retomarAvaliacao: (avaliacaoId) => api.get(`/avaliacoes/${avaliacaoId}/retomar`).then((response) => response.data),
+  abandonarAvaliacao: (avaliacaoId) => api.post(`/avaliacoes/${avaliacaoId}/abandonar`).then((response) => response.data),
+  enviarAvaliacao: (avaliacaoId, respostas) => api.post(`/avaliacoes/${avaliacaoId}/enviar`, { respostas }).then((response) => response.data),
 
   async listarCronogramas() {
     try {

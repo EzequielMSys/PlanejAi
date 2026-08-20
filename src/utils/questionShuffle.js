@@ -28,6 +28,11 @@ function embaralharQuestao(questao, random = Math.random, agora = Date.now()) {
   return criarQuestaoEmbaralhada(questao, ordem, agora)
 }
 
+function embaralharQuestaoComOrdem(questao, ordem, agora = Date.now()) {
+  if (!Array.isArray(ordem) || ordem.length !== questao.alternativas.length) throw new Error('Ordem de alternativas inválida.')
+  return criarQuestaoEmbaralhada(questao, ordem, agora)
+}
+
 function destinosEquilibrados(quantidade, random) {
   const restantes = Array(4).fill(Math.floor(quantidade / 4))
   for (const indice of embaralharLista([0, 1, 2, 3], random).slice(0, quantidade % 4)) restantes[indice] += 1
@@ -79,4 +84,4 @@ function validarEmbaralhamento(token, idQuestao, agora = Date.now()) {
   return payload.ordem
 }
 
-module.exports = { embaralharQuestao, embaralharSimulado, validarEmbaralhamento }
+module.exports = { embaralharQuestao, embaralharQuestaoComOrdem, embaralharSimulado, validarEmbaralhamento }

@@ -32,11 +32,12 @@ export default function Aprendizagem() {
   const [tempoRestante, setTempoRestante] = useState(null)
   const [resultados, setResultados] = useState([])
   const [relatorio, setRelatorio] = useState(null)
+  const [evolucao, setEvolucao] = useState([])
 
   async function carregar() {
     try {
-      const [r, rv, e] = await Promise.all([aprendizagem.resumo(), aprendizagem.revisoes(), aprendizagem.erros()])
-      setResumo(r); setRevisoes(rv); setErros(e)
+      const [r, rv, e, ev] = await Promise.all([aprendizagem.resumo(), aprendizagem.revisoes(), aprendizagem.erros(), aprendizagem.evolucao()])
+      setResumo(r); setRevisoes(rv); setErros(e); setEvolucao(ev)
     } catch { toast.error('Não foi possível carregar sua central de aprendizagem.') }
     finally { setCarregando(false) }
   }
@@ -93,6 +94,7 @@ export default function Aprendizagem() {
 
   const questao = questoes[indice]
   const disciplinaCritica = useMemo(() => resumo?.porDisciplina?.[0], [resumo])
+  function imprimirRelatorio() { window.print() }
 
   if (carregando) return <div className="min-h-[60vh] grid place-items-center font-black text-[#7952C7]">Preparando sua trilha…</div>
 
@@ -113,9 +115,9 @@ export default function Aprendizagem() {
         <Stat label="Domínio geral" value={`${resumo?.dominio || 0}%`} detail="baseado em revisões" />
       </section>
 
-      <nav className="mt-7 flex gap-2 overflow-x-auto rounded-2xl border border-[#7C4DFF]/15 bg-white p-2 dark:bg-[#1C1626]" aria-label="Seções de aprendizagem">
+      <div className="mt-7 flex flex-wrap items-center justify-between gap-3"><nav className="flex gap-2 overflow-x-auto rounded-2xl border border-[#7C4DFF]/15 bg-white p-2 dark:bg-[#1C1626]" aria-label="Seções de aprendizagem">
         {tabs.map(([id, label]) => <button key={id} onClick={() => setAba(id)} className={`whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-black transition ${aba === id ? 'bg-[#6D3EC5] text-white' : 'text-black/55 hover:bg-[#F0E8FA] dark:text-white/55 dark:hover:bg-white/5'}`}>{label}</button>)}
-      </nav>
+      </nav><button type="button" onClick={imprimirRelatorio} className="rounded-full border border-[#6D3EC5] px-4 py-2 text-sm font-black text-[#6D3EC5] print:hidden">Imprimir relatório / PDF</button></div>
 
       <section className="mt-4 rounded-[2rem] border border-[#7C4DFF]/15 bg-white p-5 dark:bg-[#1C1626] sm:p-8">
         {aba === 'revisoes' && <div><h2 className="text-2xl font-black">Fila de hoje</h2><p className="mt-1 text-sm text-black/55 dark:text-white/55">Diga honestamente como a lembrança veio. O intervalo se ajusta sozinho.</p>
@@ -125,7 +127,8 @@ export default function Aprendizagem() {
 
         {aba === 'erros' && <div><h2 className="text-2xl font-black">Caderno de erros</h2><p className="mt-1 text-sm text-black/55 dark:text-white/55">Aqui o erro não vira punição: vira evidência, reflexão e nova tentativa.</p><div className="mt-6 grid gap-4">{erros.length === 0 ? <Empty title="Nenhum erro pendente" text="Quando uma questão escapar, ela aparecerá aqui automaticamente com data de retomada." /> : erros.map((item) => <article key={item.id_erro} className={`rounded-2xl border p-5 ${item.resolvido ? 'border-emerald-500/20 opacity-65' : 'border-[#7C4DFF]/15'}`}><div className="flex flex-wrap justify-between gap-2"><b className="text-sm text-[#7952C7] dark:text-[#CBB3FF]">{item.disciplina}</b><span className="text-xs font-bold">{item.total_erros} erro(s)</span></div><h3 className="mt-2 font-black">{item.enunciado}</h3><p className="mt-3 text-sm text-black/55 dark:text-white/55">{item.explicacao}</p><textarea defaultValue={item.reflexao || ''} onBlur={(e) => aprendizagem.atualizarErro(item.id_erro,{ reflexao:e.target.value })} placeholder="O que me confundiu? Qual pista vou procurar na próxima vez?" className="mt-4 min-h-24 w-full rounded-xl border border-[#7C4DFF]/20 bg-transparent p-3 text-sm outline-none focus:border-[#7C4DFF]" /><button onClick={async()=>{const lista=await aprendizagem.atualizarErro(item.id_erro,{resolvido:!item.resolvido});setErros(lista)}} className="mt-3 rounded-full border border-[#7C4DFF]/30 px-4 py-2 text-xs font-black">{item.resolvido ? 'Reabrir' : 'Marcar como retomado'}</button></article>)}</div></div>}
 
-        {aba === 'dominio' && <div><h2 className="text-2xl font-black">Mapa de domínio</h2><p className="mt-1 text-sm text-black/55 dark:text-white/55">Leitura baseada nas respostas registradas — não em sensação de produtividade.</p><div className="mt-7 grid gap-4">{resumo?.porDisciplina?.length ? resumo.porDisciplina.map((item) => <div key={item.disciplina}><div className="mb-2 flex justify-between text-sm font-black"><span>{item.disciplina}</span><span>{item.acerto}% · {item.tentativas} tentativas</span></div><div className="h-3 overflow-hidden rounded-full bg-[#EEE8F3] dark:bg-white/10"><motion.div initial={{width:0}} animate={{width:`${item.acerto}%`}} className="h-full rounded-full bg-gradient-to-r from-[#6437B8] to-[#A874FF]" /></div></div>) : <Empty title="Seu mapa começa no primeiro simulado" text="Responda algumas questões para descobrir forças e lacunas reais por disciplina." action={iniciarSimulado} actionLabel="Começar agora" />}</div>{disciplinaCritica && <p className="mt-7 rounded-2xl bg-[#F2EAFB] p-4 text-sm dark:bg-[#2C203C]"><b>Próximo foco sugerido:</b> {disciplinaCritica.disciplina}, hoje com {disciplinaCritica.acerto}% de acerto.</p>}</div>}
+        {aba === 'dominio' && <div><h2 className="text-2xl font-black">Mapa de domínio</h2><p className="mt-1 text-sm text-black/55 dark:text-white/55">Leitura baseada nas respostas registradas — não em sensação de produtividade.</p><div className="mt-5 grid gap-3 sm:grid-cols-3"><Stat label="Tempo nesta semana" value={`${resumo?.minutosSemana || 0} min`} detail={`meta: ${resumo?.metaSemanal || 180} min`} /><Stat label="Dias concluídos" value={resumo?.diasConcluidos || 0} detail="no cronograma" /><Stat label="Desafio atual" value={resumo?.porDificuldade?.[0] ? `${resumo.porDificuldade[0].acerto}%` : '—'} detail={resumo?.porDificuldade?.[0] ? `${resumo.porDificuldade[0].dificuldade.toLowerCase()} · ${resumo.porDificuldade[0].tentativas} tentativas` : 'responda para medir'} /></div><div className="mt-7 grid gap-4">{resumo?.porDisciplina?.length ? resumo.porDisciplina.map((item) => <div key={item.disciplina}><div className="mb-2 flex justify-between text-sm font-black"><span>{item.disciplina}</span><span>{item.acerto}% · {item.tentativas} tentativas</span></div><div className="h-3 overflow-hidden rounded-full bg-[#EEE8F3] dark:bg-white/10"><motion.div initial={{width:0}} animate={{width:`${item.acerto}%`}} className="h-full rounded-full bg-gradient-to-r from-[#6437B8] to-[#A874FF]" /></div></div>) : <Empty title="Seu mapa começa no primeiro simulado" text="Responda algumas questões para descobrir forças e lacunas reais por disciplina." action={iniciarSimulado} actionLabel="Começar agora" />}</div>{resumo?.recomendacoes?.length > 0 && <div className="mt-7 rounded-2xl bg-[#F2EAFB] p-4 text-sm dark:bg-[#2C203C]"><b>Próximos passos recomendados</b><ul className="mt-2 list-disc space-y-1 pl-5">{resumo.recomendacoes.map((item) => <li key={item.tipo}>{item.texto}</li>)}</ul></div>}{disciplinaCritica && <p className="mt-4 rounded-2xl border border-[#7C4DFF]/15 p-4 text-sm"><b>Próximo foco sugerido:</b> {disciplinaCritica.disciplina}, hoje com {disciplinaCritica.acerto}% de acerto.</p>}</div>}
+        {aba === 'dominio' && evolucao.length > 0 && <section className="mt-7 rounded-2xl border border-[#7C4DFF]/15 p-5"><h3 className="font-black">Evolução em 30 dias</h3><div className="mt-3 grid gap-2">{evolucao.map((item) => <p key={item.disciplina} className="text-sm"><b>{item.disciplina}</b>: {item.anterior}% → {item.atual}% <span className={Number(item.variacao) >= 0 ? 'text-emerald-600' : 'text-rose-600'}>({Number(item.variacao) >= 0 ? '+' : ''}{item.variacao} pontos)</span></p>)}</div></section>}
         {aba === 'dominio' && <EnemCompetencies competencias={resumo?.competenciasEnem || []} />}
       </section>
     </div>

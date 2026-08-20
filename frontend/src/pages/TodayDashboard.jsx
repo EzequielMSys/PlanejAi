@@ -82,6 +82,7 @@ export default function TodayDashboard() {
         reviews: reviews.status === 'fulfilled' && Array.isArray(reviews.value) ? reviews.value : [],
         errors: errors.status === 'fulfilled' && Array.isArray(errors.value) ? errors.value : []
       })
+      if (learning.status === 'fulfilled' && Number(learning.value?.metaSemanal) >= 30) setWeeklyGoal(Number(learning.value.metaSemanal))
       if ([schedules, learning].every((result) => result.status === 'rejected')) toast.error('A central diária está temporariamente sem conexão com o servidor.')
     }).finally(() => active && setLoading(false))
     return () => { active = false }
@@ -99,7 +100,7 @@ export default function TodayDashboard() {
   const todayItems = todayDay?.conteudos || []
   const todayDone = todayItems.filter(isDone).length
   const streak = calculateStreak(days)
-  const weeklyMinutes = getWeekMinutes()
+  const weeklyMinutes = Number(data.learning?.minutosSemana ?? getWeekMinutes())
   const weeklyProgress = Math.min(100, Math.round((weeklyMinutes / weeklyGoal) * 100))
   const focusDiscipline = data.learning?.porDisciplina?.[0]
   const name = user?.apelido || user?.nome?.split(' ')[0] || 'estudante'
@@ -166,6 +167,7 @@ export default function TodayDashboard() {
                 const next = Math.max(30, Number(event.target.value) || 30)
                 setWeeklyGoal(next)
                 localStorage.setItem('planejai:weekly-goal', String(next))
+                aprendizagemService.atualizarMetaSemanal(next).catch(() => toast.error('A meta foi salva apenas neste aparelho por enquanto.'))
               }} />
             </label>
           </article>
