@@ -6,6 +6,9 @@ import redacaoService from '../services/redacaoService'
 import '../components/EssayRecords.css'
 import EssayStudio from '../components/EssayStudio'
 import EssayVersions from '../components/EssayVersionsPro'
+import WritingWorkshop from '../components/WritingWorkshop'
+import PeerReview from '../components/PeerReview'
+import EssayPortfolio from '../components/EssayPortfolio'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -301,6 +304,7 @@ export default function Redacoes() {
             </div>
           )}
 
+          {!modoEscrita && aba === 'minhas' && <><EssayPortfolio /><WritingWorkshop /><PeerReview /></>}
           {modoEscrita ? (<EssayStudio
             form={form}
             setForm={setForm}

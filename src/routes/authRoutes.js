@@ -7,6 +7,7 @@ const { authRateLimit } = require("../middlewares/platformMiddleware");
 router.post("/register", authRateLimit, authController.registrar);
 router.post("/login", authRateLimit, authController.login);
 router.post("/esqueci-senha", authRateLimit, authController.esqueciSenha);
+router.post("/redefinir-senha", authRateLimit, authController.redefinirSenha);
 router.post(
   "/trocar-senha-primeiro-acesso",
   authMiddleware,

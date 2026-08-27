@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import inteligencia from "../services/inteligenciaService";
 import perfil from "../services/perfilService";
+import AdaptiveLearningHub from "../components/AdaptiveLearningHub";
+import LearningPaths from "../components/LearningPaths";
 
 export default function PlanejamentoInteligente() {
   const [materias, setMaterias] = useState([]);
@@ -129,7 +131,7 @@ export default function PlanejamentoInteligente() {
     }
   }
   return (
-    <main className="min-h-screen bg-[#F7F4FA] px-4 py-7 text-[#21162F] dark:bg-[#120E18] dark:text-white sm:px-8">
+    <main className="intelligence-page min-h-screen bg-[#F7F4FA] px-4 py-7 text-[#21162F] dark:bg-[#120E18] dark:text-white sm:px-8">
       <div className="mx-auto max-w-5xl">
         <header className="rounded-[2rem] bg-[#241A34] p-7 text-white">
           <p className="text-xs font-black uppercase tracking-[.2em] text-[#CBB3FF]">
@@ -148,6 +150,8 @@ export default function PlanejamentoInteligente() {
             </p>
           ))}
         </header>
+        <AdaptiveLearningHub />
+        <LearningPaths />
         <section className="mt-5 grid gap-5 lg:grid-cols-2">
           <article className="rounded-[2rem] bg-white p-6 dark:bg-[#211A2D]">
             <h2 className="text-xl font-black">Diagnóstico inicial</h2>
@@ -229,7 +233,7 @@ export default function PlanejamentoInteligente() {
             <ul className="mt-5 space-y-2 text-sm">
               {metas.map((m) => (
                 <li key={`${m.disciplina}-${m.tipo}`}>
-                  <b>{m.disciplina}</b>: {m.alvo} {m.tipo.toLowerCase()}
+                  <b>{m.disciplina}</b>: {m.progresso || 0}/{m.alvo} {m.tipo.toLowerCase()} · sugestão {m.sugestaoDiaria || 0}/dia
                 </li>
               ))}
             </ul>

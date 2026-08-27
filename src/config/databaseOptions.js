@@ -73,3 +73,4 @@ function getDatabaseOptions(extra = {}) {
 }
 
 module.exports = getDatabaseOptions;
+module.exports.fromDatabaseUrl = fromDatabaseUrl;

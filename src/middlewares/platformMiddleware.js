@@ -16,6 +16,15 @@ function platformHeaders(req, res, next) {
   next();
 }
 
+function requestLogger(req, res, next) {
+  const started = process.hrtime.bigint()
+  res.once('finish', () => {
+    const durationMs = Number(process.hrtime.bigint() - started) / 1e6
+    console.log(JSON.stringify({ event: 'http_request', request_id: req.requestId, method: req.method, path: req.path, status: res.statusCode, duration_ms: Number(durationMs.toFixed(1)) }))
+  })
+  next()
+}
+
 function authRateLimit(req, res, next) {
   const key = `${req.ip}:${req.path}`;
   const now = Date.now();
@@ -50,4 +59,4 @@ function cleanupRateLimits() {
 const cleanupTimer = setInterval(cleanupRateLimits, 10 * 60 * 1000);
 cleanupTimer.unref();
 
-module.exports = { authRateLimit, platformHeaders };
+module.exports = { authRateLimit, platformHeaders, requestLogger };

@@ -2,6 +2,8 @@ const pool = require('../config/db');
 const questionBank = require('../data/questionBank');
 const { calcularProximaRevisao } = require('../utils/reviewScheduler');
 const { embaralharSimulado, validarEmbaralhamento } = require('../utils/questionShuffle');
+const adaptive = require('./adaptiveLearningModel');
+const { planJourney } = require('../utils/journeyPlanner');
 
 async function garantirBancoQuestoes() {
   for (const questao of questionBank) {
@@ -58,16 +60,18 @@ async function gerarSimulado(idUsuario, { quantidade = 10, disciplina, dificulda
   return embaralharSimulado(rows.map((row) => desserializarQuestao(row, true)));
 }
 
-async function responderQuestao(idUsuario, idQuestao, resposta, duracaoSegundos, embaralhamento) {
+async function responderQuestao(idUsuario, idQuestao, resposta, duracaoSegundos, embaralhamento, confianca = 'DUVIDA', pistasUsadas = 0) {
   const [rows] = await pool.execute('SELECT * FROM questoes_estudo WHERE id_questao = ? AND ativo = 1', [idQuestao]);
   if (!rows[0]) return null;
   const questao = desserializarQuestao(rows[0], true);
   const ordem = validarEmbaralhamento(embaralhamento, idQuestao);
   const respostaOriginal = ordem[Number(resposta)];
   const acertou = Number(respostaOriginal) === Number(questao.resposta_correta);
+  const nivelConfianca = ['CHUTEI','DUVIDA','CERTEZA'].includes(confianca) ? confianca : 'DUVIDA';
+  const totalPistas = Math.max(0, Math.min(3, Number(pistasUsadas) || 0));
   await pool.execute(
-    'INSERT INTO tentativas_questoes (id_usuario, id_questao, resposta, acertou, duracao_segundos) VALUES (?, ?, ?, ?, ?)',
-    [idUsuario, idQuestao, respostaOriginal, acertou ? 1 : 0, Math.max(0, Number(duracaoSegundos) || 0)]
+    'INSERT INTO tentativas_questoes (id_usuario, id_questao, resposta, acertou, duracao_segundos, confianca, pistas_usadas) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [idUsuario, idQuestao, respostaOriginal, acertou ? 1 : 0, Math.max(0, Number(duracaoSegundos) || 0), nivelConfianca, totalPistas]
   );
   if (acertou) {
     await pool.execute(
@@ -82,8 +86,10 @@ async function responderQuestao(idUsuario, idQuestao, resposta, duracaoSegundos,
        ultimo_erro_em = CURRENT_TIMESTAMP, proxima_tentativa = DATE_ADD(CURRENT_DATE, INTERVAL 2 DAY), resolvido_em = NULL`,
       [idUsuario, idQuestao]
     );
+    await adaptive.criarFlashcardDoErro(idUsuario, questao);
   }
-  return { acertou, respostaCorreta: ordem.indexOf(Number(questao.resposta_correta)), explicacao: questao.explicacao };
+  const dominio = await adaptive.registrarEvidencia(idUsuario, questao, { acertou, confianca: nivelConfianca, pistasUsadas: totalPistas });
+  return { acertou, respostaCorreta: ordem.indexOf(Number(questao.resposta_correta)), explicacao: questao.explicacao, dominio };
 }
 
 async function listarCadernoErros(idUsuario) {
@@ -95,12 +101,14 @@ async function listarCadernoErros(idUsuario) {
   return rows.map((row) => desserializarQuestao(row, true));
 }
 
-async function atualizarErro(idUsuario, idErro, { reflexao, resolvido }) {
+async function atualizarErro(idUsuario, idErro, { reflexao, resolvido, tipoErro, comoEvitar }) {
+  const tipo = ['CONCEITO','INTERPRETACAO','CALCULO','DISTRACAO','NAO_CLASSIFICADO'].includes(tipoErro) ? tipoErro : null;
   await pool.execute(
-    `UPDATE caderno_erros SET reflexao = COALESCE(?, reflexao), resolvido = COALESCE(?, resolvido),
+    `UPDATE caderno_erros SET reflexao = COALESCE(?, reflexao), tipo_erro = COALESCE(?, tipo_erro),
+     como_evitar = COALESCE(?, como_evitar), resolvido = COALESCE(?, resolvido),
      resolvido_em = CASE WHEN ? = 1 THEN CURRENT_TIMESTAMP WHEN ? = 0 THEN NULL ELSE resolvido_em END
      WHERE id_erro = ? AND id_usuario = ?`,
-    [reflexao ?? null, typeof resolvido === 'boolean' ? Number(resolvido) : null, Number(resolvido), Number(resolvido), idErro, idUsuario]
+    [reflexao ?? null, tipo, comoEvitar ?? null, typeof resolvido === 'boolean' ? Number(resolvido) : null, Number(resolvido), Number(resolvido), idErro, idUsuario]
   );
   return listarCadernoErros(idUsuario);
 }
@@ -233,6 +241,46 @@ async function obterEvolucao(idUsuario) {
   return rows.map((row) => ({ ...row, variacao: Number(row.atual) - Number(row.anterior) }));
 }
 
+async function obterJornada(idUsuario, minutos) {
+  const [resumo, revisoes, erros, [conteudos], [projetos]] = await Promise.all([
+    obterResumo(idUsuario),
+    listarRevisoes(idUsuario),
+    listarCadernoErros(idUsuario),
+    pool.execute(`SELECT cc.id AS id_item, cc.id_conteudo, cd.id_dia, cd.data_estudo,
+        c.titulo, c.disciplina, c.area, c.tipo, c.link
+      FROM cronograma_conteudos cc
+      JOIN cronograma_dias cd ON cd.id_dia = cc.id_dia
+      JOIN cronogramas cr ON cr.id_cronograma = cd.id_cronograma
+      JOIN perfil_estudo p ON p.id_perfil = cr.id_perfil
+      JOIN conteudos c ON c.id_conteudo = cc.id_conteudo
+      WHERE p.id_usuario = ? AND cr.status = 'ATIVO' AND cc.concluido = 0
+      ORDER BY (cd.data_estudo < CURRENT_DATE), cd.data_estudo, cc.id LIMIT 1`, [idUsuario]),
+    pool.execute(`SELECT id_projeto, tema, etapa, atualizado_em FROM projetos_redacao
+      WHERE id_usuario = ? AND etapa <> 'CONCLUIDO' ORDER BY atualizado_em DESC LIMIT 1`, [idUsuario])
+  ]);
+  const nextContent = conteudos[0] || null;
+  const writingProject = projetos[0] || null;
+  const plan = planJourney(minutos, {
+    reviews: revisoes.length,
+    reviewTitle: revisoes[0]?.titulo,
+    errors: erros.filter((item) => !item.resolvido).length,
+    criticalDiscipline: resumo.porDisciplina?.[0]?.disciplina,
+    nextContent,
+    writingProject
+  });
+  return {
+    generatedAt: new Date().toISOString(),
+    summary: {
+      reviews: Number(resumo.revisoesHoje || 0),
+      errors: Number(resumo.errosPendentes || 0),
+      weeklyMinutes: Number(resumo.minutosSemana || 0),
+      weeklyGoal: Number(resumo.metaSemanal || 180),
+      criticalDiscipline: resumo.porDisciplina?.[0] || null
+    },
+    ...plan
+  };
+}
+
 async function criarVersaoRedacao(idUsuario, idRedacao, { texto, observacao }) {
   const [redacoes] = await pool.execute('SELECT * FROM redacoes WHERE id_redacao = ? AND id_usuario = ?', [idRedacao, idUsuario]);
   if (!redacoes[0]) return null;
@@ -251,4 +299,4 @@ async function listarVersoesRedacao(idUsuario, idRedacao) {
   return rows.map((row) => ({ ...row, competencias_enem: typeof row.competencias_enem === 'string' ? JSON.parse(row.competencias_enem || 'null') : row.competencias_enem }));
 }
 
-module.exports = { garantirBancoQuestoes, gerarSimulado, responderQuestao, listarCadernoErros, atualizarErro, listarRevisoes, adicionarRevisao, avaliarRevisao, registrarSessao, obterMetaSemanal, atualizarMetaSemanal, obterResumo, obterEvolucao, criarVersaoRedacao, listarVersoesRedacao };
+module.exports = { garantirBancoQuestoes, gerarSimulado, responderQuestao, listarCadernoErros, atualizarErro, listarRevisoes, adicionarRevisao, avaliarRevisao, registrarSessao, obterMetaSemanal, atualizarMetaSemanal, obterResumo, obterEvolucao, obterJornada, criarVersaoRedacao, listarVersoesRedacao };

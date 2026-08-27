@@ -14,4 +14,5 @@ router.post('/flashcards/:idFlashcard/avaliar', controller.avaliarFlashcard)
 router.get('/busca', controller.buscar)
 router.get('/provas', controller.provas)
 router.post('/provas', controller.criarProva)
+router.get('/trilhas', controller.trilhas)
 module.exports = router

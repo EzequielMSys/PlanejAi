@@ -12,3 +12,4 @@ exports.avaliarFlashcard = (req, res) => responder(res, model.avaliarFlashcard(i
 exports.buscar = (req, res) => responder(res, model.buscar(idUsuario(req), req.query.q))
 exports.provas = (req, res) => responder(res, model.provas(idUsuario(req)))
 exports.criarProva = (req, res) => responder(res, model.criarProva(idUsuario(req), req.body))
+exports.trilhas = (req, res) => responder(res, model.trilhas(idUsuario(req)))

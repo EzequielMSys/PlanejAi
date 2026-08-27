@@ -1,22 +1,6 @@
-import axios from 'axios'
 import { toast } from 'react-hot-toast'
-import { apiUrl } from '../config/api'
-
-const API_BASE = apiUrl('/api/auth')
-
-const api = axios.create({
-  baseURL: API_BASE
-})
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-
-  return config
-})
+import { createApiClient } from './apiClient'
+const api = createApiClient('/api/auth')
 
 export const authService = {
   async login(email, senha) {
@@ -33,6 +17,12 @@ export const authService = {
   async esqueciSenha(email) {
     const response = await api.post('/esqueci-senha', { email })
     toast.success(response.data.message || 'Solicitação enviada!')
+    return response.data
+  },
+
+  async redefinirSenha(token, novaSenha, confirmarSenha) {
+    const response = await api.post('/redefinir-senha', { token, novaSenha, confirmarSenha })
+    toast.success(response.data.message || 'Senha redefinida!')
     return response.data
   },
 

@@ -1,6 +1,7 @@
 const fs = require('fs');
 
 const migrationOrder = [
+  '000_base_schema.sql',
   'add_auth_fields.sql',
   'add_perfil_and_owner_fields.sql',
   'add_pedagogical_activities.sql',
@@ -12,7 +13,16 @@ const migrationOrder = [
   'expand_areas_foco_schema.sql',
   'fix_cronograma_schema.sql',
   'add_learning_engine.sql',
-  'add_cronograma_progression.sql'
+  'add_cronograma_progression.sql',
+  'add_learning_progress.sql',
+  'add_study_intelligence.sql',
+  'add_adaptive_learning_v1_v2.sql',
+  'add_adaptive_v2_goals.sql',
+  'add_collaborative_learning_v3.sql',
+  'add_learning_paths_v3.sql',
+  'add_classes_v4.sql',
+  'enhance_peer_review_v5.sql',
+  'enhance_essay_portfolio_v6.sql'
 ];
 
 function sortMigrations(files) {

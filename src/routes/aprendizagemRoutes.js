@@ -5,6 +5,7 @@ const { authMiddleware } = require('../middlewares/authMiddleware');
 router.use(authMiddleware);
 router.get('/resumo', controller.resumo);
 router.get('/evolucao', controller.evolucao);
+router.get('/jornada', controller.jornada);
 router.get('/simulado', controller.simulado);
 router.post('/questoes/:idQuestao/responder', controller.responder);
 router.get('/erros', controller.erros);

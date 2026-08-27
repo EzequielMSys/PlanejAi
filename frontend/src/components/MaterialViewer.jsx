@@ -1,9 +1,11 @@
-import { useEffect, useMemo } from 'react'
-import { resolveBackendAsset } from '../config/api'
+import { useEffect, useMemo, useState } from 'react'
+import { resolveProtectedAsset } from '../services/fileService'
 import StudyGuide, { isExternalStudySource } from './StudyGuide'
 
 export default function MaterialViewer({ material, onClose }) {
-  const url = resolveBackendAsset(material?.url || material?.link || '')
+  const source = material?.url || material?.link || ''
+  const [url, setUrl] = useState('')
+  const [loadError, setLoadError] = useState('')
   const externalSource = useMemo(() => isExternalStudySource(url), [url])
   const type = String(material?.tipo || '').toUpperCase()
   const isPdf = type === 'PDF' || type.includes('PDF') || /\.pdf(?:$|[?#])/i.test(url)
@@ -21,6 +23,13 @@ export default function MaterialViewer({ material, onClose }) {
     }
   }, [material, onClose])
 
+  useEffect(() => {
+    let active = true
+    setLoadError('')
+    resolveProtectedAsset(source).then((value) => active && setUrl(value)).catch(() => active && setLoadError('Não foi possível autorizar este arquivo.'))
+    return () => { active = false }
+  }, [source])
+
   if (!material) return null
 
   return (
@@ -35,7 +44,11 @@ export default function MaterialViewer({ material, onClose }) {
         </header>
 
         <div className="material-viewer-body">
-          {externalSource ? (
+          {loadError ? (
+            <p role="alert" className="m-auto p-8 text-center">{loadError}</p>
+          ) : !url ? (
+            <p role="status" className="m-auto p-8 text-center">Preparando material…</p>
+          ) : externalSource ? (
             <StudyGuide material={material} sourceUrl={url} />
           ) : isVideoFile ? (
             <video src={url} controls autoPlay className="h-full w-full bg-black" />
@@ -48,7 +61,7 @@ export default function MaterialViewer({ material, onClose }) {
 
         <footer className="material-viewer-footer">
           <span>Pressione Esc para fechar</span>
-          <a href={url} target="_blank" rel="noopener noreferrer">Abrir externamente se necessário ↗</a>
+          {url && <a href={url} target="_blank" rel="noopener noreferrer">Abrir externamente se necessário ↗</a>}
         </footer>
       </section>
     </div>

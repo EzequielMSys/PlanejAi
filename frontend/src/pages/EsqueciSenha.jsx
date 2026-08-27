@@ -1,21 +1,18 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import authService from '../services/authService'
 
 const EsqueciSenha = () => {
   const [email, setEmail] = useState('')
-  const [senhaTemp, setSenhaTemp] = useState('')
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
-  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      const response = await authService.esqueciSenha(email)
-      setSenhaTemp(response.senha_temporaria)
+      await authService.esqueciSenha(email)
       setStep(2)
     } catch (error) {
     } finally {
@@ -46,13 +43,13 @@ const EsqueciSenha = () => {
           </div>
 
           <h2 className="text-3xl font-black text-black mb-4">
-            {step === 1 ? 'Esqueci minha senha' : 'Senha recuperada!'}
+            {step === 1 ? 'Esqueci minha senha' : 'Confira seu email'}
           </h2>
 
           <p className="text-black/65 font-semibold">
             {step === 1
-              ? 'Digite seu email e receba uma nova senha temporária'
-              : 'Use esta senha temporária para fazer login e altere-a imediatamente'
+              ? 'Digite seu email para receber um link seguro de recuperação'
+              : 'Se o endereço estiver cadastrado, enviaremos um link válido por 30 minutos'
             }
           </p>
         </div>
@@ -85,19 +82,15 @@ const EsqueciSenha = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Gerando...
+                  Enviando...
                 </>
               ) : (
-                'Gerar Nova Senha'
+                'Enviar link de recuperação'
               )}
             </button>
           </form>
         ) : (
           <div className="text-center space-y-6 pt-8">
-            <div className="bg-[#4B4C9D] text-white px-8 py-6 rounded-[2rem] shadow-2xl mx-auto max-w-sm font-mono text-2xl font-black tracking-wider animate-pulse">
-              {senhaTemp}
-            </div>
-
             <div className="bg-[#F7F7FB] border border-[#9394CF]/30 rounded-[2rem] p-6">
               <h3 className="text-lg font-black text-black mb-3">
                 Como usar:
@@ -106,12 +99,12 @@ const EsqueciSenha = () => {
               <ol className="text-sm text-black/65 space-y-2 text-left font-semibold">
                 <li className="flex items-start">
                   <span className="text-[#4B4C9D] font-black w-6 flex-shrink-0">1.</span>
-                  <span>Vá para login e use esta senha</span>
+                  <span>Abra o link enviado para seu email</span>
                 </li>
 
                 <li className="flex items-start">
                   <span className="text-[#4B4C9D] font-black w-6 flex-shrink-0">2.</span>
-                  <span>Altere imediatamente no primeiro acesso</span>
+                  <span>Crie uma nova senha forte</span>
                 </li>
               </ol>
             </div>

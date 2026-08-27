@@ -242,6 +242,33 @@ async function alterarSenha(id, senhaHash) {
   return buscarPorId(id)
 }
 
+async function salvarTokenRecuperacao(id, tokenHash, expiracao) {
+  await pool.execute(
+    `UPDATE usuarios SET token_recuperacao = ?, token_expiracao = ?, atualizado_em = CURRENT_TIMESTAMP
+     WHERE id_usuario = ?`,
+    [tokenHash, expiracao, id]
+  )
+}
+
+async function buscarPorTokenRecuperacao(tokenHash) {
+  const [rows] = await pool.execute(
+    `SELECT id_usuario AS id, id_usuario, email, ativo FROM usuarios
+     WHERE token_recuperacao = ? AND token_expiracao > CURRENT_TIMESTAMP LIMIT 1`,
+    [tokenHash]
+  )
+  return rows[0] || null
+}
+
+async function redefinirSenhaComToken(id, tokenHash, senhaHash) {
+  const [result] = await pool.execute(
+    `UPDATE usuarios SET senha = ?, senha_temporaria = 0, token_recuperacao = NULL,
+       token_expiracao = NULL, atualizado_em = CURRENT_TIMESTAMP
+     WHERE id_usuario = ? AND token_recuperacao = ? AND token_expiracao > CURRENT_TIMESTAMP`,
+    [senhaHash, id, tokenHash]
+  )
+  return result.affectedRows === 1
+}
+
 module.exports = {
   criarUsuario,
   buscarPorEmail,
@@ -255,5 +282,8 @@ module.exports = {
   resetarSenhaTemporaria,
   definirSenhaUsuario,
   trocarSenha,
-  alterarSenha
+  alterarSenha,
+  salvarTokenRecuperacao,
+  buscarPorTokenRecuperacao,
+  redefinirSenhaComToken
 }

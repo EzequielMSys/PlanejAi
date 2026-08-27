@@ -1,0 +1,16 @@
+const router = require('express').Router();
+const controller = require('../controllers/adaptiveLearningController');
+const { authMiddleware } = require('../middlewares/authMiddleware');
+router.use(authMiddleware);
+router.get('/competencias', controller.competencias);
+router.get('/proxima-acao', controller.proximaAcao);
+router.post('/sessoes', controller.iniciarSessao);
+router.patch('/sessoes/:id/concluir', controller.concluirSessao);
+router.post('/checkins', controller.checkin);
+router.get('/rotinas', controller.rotinas);
+router.put('/rotinas', controller.salvarRotina);
+router.get('/missoes', controller.missoes);
+router.get('/sequencia', controller.sequencia);
+router.get('/questoes/:idQuestao/pistas', controller.pistas);
+router.get('/simulado', controller.simuladoAdaptativo);
+module.exports = router;

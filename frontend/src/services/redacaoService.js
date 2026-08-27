@@ -1,20 +1,6 @@
-import axios from 'axios'
 import { toast } from 'react-hot-toast'
-import { apiUrl } from '../config/api'
-
-const api = axios.create({
-  baseURL: apiUrl('/api/redacao')
-})
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-
-  return config
-})
+import { createApiClient } from './apiClient'
+const api = createApiClient('/api/redacao')
 
 function tratarErro(error, mensagemPadrao) {
   const mensagem =
@@ -30,13 +16,13 @@ function tratarErro(error, mensagemPadrao) {
 const redacaoService = {
   async enviarRedacao({ tema, texto }) {
     try {
-      const response = await api.post('/', { tema, texto })
+      const response = await api.post('/', { tema, texto }, { offlineQueue: true })
 
       toast.success(
         response.data.message || 'Redação enviada com sucesso!'
       )
 
-      return response.data.redacao
+      return response.data.offline ? { tema, texto, offline: true, queueId: response.data.queueId } : response.data.redacao
     } catch (error) {
       tratarErro(error, 'Erro ao enviar redação.')
     }
@@ -50,6 +36,9 @@ const redacaoService = {
       tratarErro(error, 'Erro ao listar redações.')
     }
   },
+  async portfolio() { const response = await api.get('/portfolio'); return Array.isArray(response.data) ? response.data : [] },
+  async anotacoes(id) { const response = await api.get(`/${id}/anotacoes`); return response.data },
+  async criarAnotacao(id, dados) { const response = await api.post(`/${id}/anotacoes`, dados); return response.data },
 
   async listarTodasRedacoes() {
     try {

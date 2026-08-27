@@ -349,12 +349,21 @@ async function obterRedacao(req, res) {
       return res.status(404).json({ message: 'Redação não encontrada.' });
     }
 
+    const usuarioId = Number(req.usuario.id_usuario || req.usuario.id);
+    const podeGerenciar = ['dono', 'admin', 'adm', 'docente'].includes(req.usuario.tipo);
+    if (!podeGerenciar && Number(redacao.id_usuario) !== usuarioId) {
+      return res.status(404).json({ message: 'Redação não encontrada.' });
+    }
+
     return res.json(redacao);
   } catch (error) {
     console.error('Erro ao obter redação:', error);
     return res.status(500).json({ message: 'Erro interno ao obter redação.' });
   }
 }
+async function portfolio(req,res){try{return res.json(await redacaoModel.portfolio(req.usuario.id_usuario||req.usuario.id))}catch(error){return res.status(500).json({message:'Não foi possível carregar o portfólio.'})}}
+async function anotacoes(req,res){try{const podeGerir=['dono','admin','adm','docente'].includes(req.usuario.tipo);return res.json(await redacaoModel.listarAnotacoes(req.params.idRedacao,req.usuario.id_usuario||req.usuario.id,podeGerir))}catch(error){return res.status(500).json({message:'Não foi possível carregar os comentários.'})}}
+async function criarAnotacao(req,res){try{return res.status(201).json(await redacaoModel.criarAnotacao(req.params.idRedacao,req.usuario.id_usuario||req.usuario.id,req.body))}catch(error){return res.status(400).json({message:error.message})}}
 
 module.exports = {
   enviarRedacao,
@@ -363,5 +372,8 @@ module.exports = {
   avaliarRedacao,
   obterRedacao,
   sugerirTema,
-  analisarRascunho
+  analisarRascunho,
+  portfolio,
+  anotacoes,
+  criarAnotacao
 };

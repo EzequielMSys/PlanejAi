@@ -18,6 +18,16 @@ html:not(.dark) .app-sidebar .sidebar-account strong { color: #5b35bd !important
 
 .dark .app-sidebar { background: linear-gradient(180deg, #1d1528, #15101e) !important; }
 
+/* Profundidade, textura e separação espacial sem depender apenas da paleta. */
+.app-shell{position:relative;isolation:isolate;background-image:radial-gradient(circle at 12% 8%,rgba(255,255,255,.7),transparent 28%),linear-gradient(135deg,rgba(255,255,255,.2),transparent 42%)}
+.app-shell::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(80,55,95,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(80,55,95,.025) 1px,transparent 1px);background-size:32px 32px;mask-image:linear-gradient(to bottom,black,transparent 75%)}
+.app-sidebar{box-shadow:12px 0 42px rgba(35,22,45,.09)}
+.sidebar-account{position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 10px 28px rgba(40,25,52,.08)}
+.sidebar-account::after{content:"";position:absolute;right:-2rem;bottom:-3rem;width:6rem;height:6rem;border:1px solid currentColor;border-radius:50%;opacity:.06;pointer-events:none}
+#conteudo-principal{position:relative}
+#conteudo-principal>div:last-child{animation:page-enter .28s ease-out both}
+@keyframes page-enter{from{opacity:.01;transform:translateY(5px)}to{opacity:1;transform:none}}
+
 html:not(.dark) .app-shell main .workspace-hero[class*="bg-gradient"] {
   background: linear-gradient(90deg, rgba(124,58,237,.055) 1px, transparent 1px) 2.4rem 0 / 2.75rem 100%, #fdfbff !important;
 }

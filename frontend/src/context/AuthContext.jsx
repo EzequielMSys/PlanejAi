@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import authService from "../services/authService";
 import { apiUrl } from "../config/api";
 import { clearStoredSession, isTokenExpired } from "../utils/session";
+import { clearOfflineData } from "../utils/offlineStore";
 
 const AuthContext = createContext();
 
@@ -190,6 +191,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    clearOfflineData().catch(() => {});
     clearStoredSession();
 
     dispatch({
@@ -199,6 +201,17 @@ export const AuthProvider = ({ children }) => {
     toast.success("Até logo!");
     navigate("/");
   };
+
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      clearOfflineData().catch(() => {});
+      dispatch({ type: "LOGOUT" });
+      toast.error("Sua sessão expirou. Entre novamente.");
+      navigate("/login", { replace: true });
+    };
+    window.addEventListener("planejai:session-expired", handleExpiredSession);
+    return () => window.removeEventListener("planejai:session-expired", handleExpiredSession);
+  }, [navigate]);
 
   const updatePerfilCompleto = (completo) => {
     localStorage.setItem("perfil_completo", completo ? "true" : "false");

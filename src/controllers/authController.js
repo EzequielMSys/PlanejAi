@@ -88,23 +88,32 @@ async function esqueciSenha(req, res) {
       });
     }
 
-    const resultado = await authService.esqueciSenha(email);
+    await authService.esqueciSenha(email);
 
-    return res.status(200).json({
-      message: "Senha temporária gerada com sucesso.",
-      senha_temporaria: resultado.senha_temporaria,
+    return res.status(202).json({
+      message: "Se o email estiver cadastrado, você receberá um link de recuperação.",
     });
   } catch (error) {
-    if (error.message.includes("Email não encontrado")) {
-      return res.status(404).json({
-        error: error.message,
-      });
-    }
-
     console.error("[RECOVERY ERROR]", error);
-    return res.status(500).json({
-      error: "Erro interno ao recuperar senha.",
+    return res.status(202).json({
+      message: "Se o email estiver cadastrado, você receberá um link de recuperação.",
     });
+  }
+}
+
+async function redefinirSenha(req, res) {
+  try {
+    const { token, novaSenha, confirmarSenha } = req.body;
+    if (!token || !novaSenha || novaSenha !== confirmarSenha) {
+      return res.status(400).json({ error: "Dados de redefinição inválidos." });
+    }
+    return res.json(await authService.redefinirSenha(token, novaSenha));
+  } catch (error) {
+    if (error.message.includes("Token") || error.message.includes("Senha deve")) {
+      return res.status(400).json({ error: error.message });
+    }
+    console.error("[RESET PASSWORD ERROR]", error);
+    return res.status(500).json({ error: "Não foi possível redefinir a senha." });
   }
 }
 
@@ -194,6 +203,7 @@ module.exports = {
   registrar,
   login,
   esqueciSenha,
+  redefinirSenha,
   trocarSenhaPrimeiroAcesso,
   alterarSenha,
 };

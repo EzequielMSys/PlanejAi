@@ -160,6 +160,10 @@ async function mediaNotasUsuario(idUsuario) {
 /**
  * Deserializa campos JSON e normaliza nomes de colunas
  */
+async function portfolio(idUsuario) { const [rows]=await pool.execute(`SELECT r.*,(SELECT COUNT(*) FROM redacao_versoes v WHERE v.id_redacao=r.id_redacao) total_versoes,(SELECT COUNT(*) FROM redacao_anotacoes a WHERE a.id_redacao=r.id_redacao) total_anotacoes FROM redacoes r WHERE id_usuario=? AND portfolio_visivel=1 ORDER BY enviada_em DESC`,[idUsuario]);return rows.map(deserializarRedacao); }
+async function listarAnotacoes(idRedacao,idUsuario,podeGerir){const params=[idRedacao];let filtro='';if(!podeGerir){filtro=' AND r.id_usuario=?';params.push(idUsuario)}const[rows]=await pool.execute(`SELECT a.*,u.nome autor_nome FROM redacao_anotacoes a JOIN redacoes r ON r.id_redacao=a.id_redacao JOIN usuarios u ON u.id_usuario=a.criado_por WHERE a.id_redacao=?${filtro} ORDER BY a.inicio_texto,a.criada_em`,params);return rows}
+async function criarAnotacao(idRedacao,idUsuario,dados){const[[r]]=await pool.execute('SELECT texto FROM redacoes WHERE id_redacao=?',[idRedacao]);if(!r)throw new Error('Redação não encontrada.');const inicio=Math.max(0,Number(dados.inicioTexto)||0),fim=Math.min(r.texto.length,Math.max(inicio+1,Number(dados.fimTexto)||inicio+1));const trecho=r.texto.slice(inicio,fim).slice(0,500);if(!trecho||!String(dados.comentario||'').trim())throw new Error('Selecione um trecho e escreva o comentário.');const tipo=['ELOGIO','SUGESTAO','DUVIDA','CORRECAO'].includes(dados.tipo)?dados.tipo:'SUGESTAO';await pool.execute('INSERT INTO redacao_anotacoes(id_redacao,criado_por,inicio_texto,fim_texto,trecho,comentario,tipo) VALUES(?,?,?,?,?,?,?)',[idRedacao,idUsuario,inicio,fim,trecho,String(dados.comentario).trim(),tipo]);return listarAnotacoes(idRedacao,idUsuario,true)}
+
 function deserializarRedacao(row) {
   let errosTexto = null;
   let sugestoes = null;
@@ -223,5 +227,8 @@ module.exports = {
   avaliarRedacao,
   deletarRedacao,
   contarRedacoesPorUsuario,
-  mediaNotasUsuario
+  mediaNotasUsuario,
+  portfolio,
+  listarAnotacoes,
+  criarAnotacao
 };

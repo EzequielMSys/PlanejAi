@@ -7,6 +7,12 @@ const tiposGestao = new Set(['dono', 'admin', 'adm', 'docente']);
 const usuarioId = (req) => req.usuario.id_usuario || req.usuario.id;
 const eGestor = (req) => tiposGestao.has(req.usuario.tipo);
 
+function destinadaAoUsuario(atividade, id) {
+  if (!atividade.atribuicao || atividade.atribuicao === 'TODOS') return true;
+  return Array.isArray(atividade.destinatarios)
+    && atividade.destinatarios.map(String).includes(String(id));
+}
+
 function validarAtividade(body) {
   const { titulo, questoes = [], status = 'RASCUNHO' } = body;
   if (!titulo || !titulo.trim()) throw new Error('Título da atividade é obrigatório.');
@@ -105,6 +111,7 @@ async function responderAtividade(req, res) {
   try {
     const atividade = await atividadeModel.buscarPorId(req.params.idAtividade || req.body.atividade_id);
     if (!atividade || atividade.status !== 'PUBLICADA') return res.status(404).json({ message: 'Atividade não encontrada ou indisponível.' });
+    if (!eGestor(req) && !destinadaAoUsuario(atividade, usuarioId(req))) return res.status(404).json({ message: 'Atividade não encontrada ou indisponível.' });
     const respostas = req.body.respostas || req.body.resposta;
     if (!respostas || typeof respostas !== 'object') return res.status(400).json({ message: 'Preencha as respostas antes de enviar.' });
     const resultado = corrigirAutomaticamente(atividade.questoes, respostas);
@@ -123,15 +130,24 @@ async function entregas(req, res) {
 }
 
 async function corrigirEntrega(req, res) {
-  const nota = Number(req.body.nota); if (!Number.isFinite(nota) || nota < 0 || nota > 100) return res.status(400).json({ message: 'A nota deve estar entre 0 e 100.' });
-  const resposta = await respostaModel.obterPorId(req.params.idResposta); if (!resposta) return res.status(404).json({ message: 'Entrega não encontrada.' });
-  return res.json({ resposta: await respostaModel.corrigir(resposta.id_resposta, { nota, feedback: req.body.feedback, corrigidoPor: usuarioId(req) }) });
+  try {
+    const nota = Number(req.body.nota); if (!Number.isFinite(nota) || nota < 0 || nota > 100) return res.status(400).json({ message: 'A nota deve estar entre 0 e 100.' });
+    const resposta = await respostaModel.obterPorId(req.params.idResposta); if (!resposta) return res.status(404).json({ message: 'Entrega não encontrada.' });
+    const atividade = await atividadeModel.buscarPorId(resposta.id_atividade);
+    if (!atividade) return res.status(404).json({ message: 'Atividade não encontrada.' });
+    if (req.usuario.tipo === 'docente' && Number(atividade.criado_por) !== Number(usuarioId(req))) return res.status(403).json({ message: 'Você não pode corrigir esta entrega.' });
+    return res.json({ resposta: await respostaModel.corrigir(resposta.id_resposta, { nota, feedback: req.body.feedback, corrigidoPor: usuarioId(req) }) });
+  } catch (error) {
+    console.error('[CORRECAO ATIVIDADE]', error);
+    return res.status(500).json({ message: 'Erro ao corrigir entrega.' });
+  }
 }
 
 async function obter(req, res) {
   try {
     const atividade = await atividadeModel.buscarPorId(req.params.idAtividade);
     if (!atividade) return res.status(404).json({ message: 'Atividade não encontrada.' });
+    if (!eGestor(req) && (atividade.status !== 'PUBLICADA' || !destinadaAoUsuario(atividade, usuarioId(req)))) return res.status(404).json({ message: 'Atividade não encontrada.' });
     const resposta = await respostaModel.obterPorAtividadeEUsuario(atividade.id_atividade, usuarioId(req));
     return res.json({ atividade: eGestor(req) ? atividade : semGabarito(atividade), minhaResposta: resposta });
   } catch (error) { return res.status(500).json({ message: 'Erro ao obter atividade.' }); }

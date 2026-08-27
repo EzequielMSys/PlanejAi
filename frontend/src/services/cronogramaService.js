@@ -1,20 +1,6 @@
-import axios from 'axios'
 import { toast } from 'react-hot-toast'
-import { apiUrl } from '../config/api'
-
-const api = axios.create({
-  baseURL: apiUrl('/api/cronograma')
-})
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-
-  return config
-})
+import { createApiClient } from './apiClient'
+const api = createApiClient('/api/cronograma')
 
 function tratarErro(error, mensagemPadrao) {
   const mensagem =

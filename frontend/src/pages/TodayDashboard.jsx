@@ -120,7 +120,8 @@ export default function TodayDashboard() {
           <h1>{greeting()}, <em>{name}</em>.</h1>
           <p>{nextContent ? `Sua próxima ação é ${nextContent.titulo || 'continuar o plano'}. O resto pode esperar.` : 'Seu espaço está pronto. Escolha uma direção e avance um pouco hoje.'}</p>
           <div className="today-hero-actions">
-            <button type="button" className="pj-button pj-button--primary" onClick={() => start()}>{nextContent ? 'Começar sessão' : 'Organizar cronograma'} <span>→</span></button>
+            {user?.tipo === 'aluno' && <button type="button" className="pj-button pj-button--primary" onClick={() => navigate('/minha-jornada')}>Montar jornada por tempo <span>→</span></button>}
+            <button type="button" className="pj-button pj-button--secondary" onClick={() => start()}>{nextContent ? 'Começar conteúdo' : 'Organizar cronograma'}</button>
             <button type="button" className="pj-button pj-button--secondary" onClick={() => navigate('/aprendizagem')}>Abrir revisões</button>
           </div>
         </div>

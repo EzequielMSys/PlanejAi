@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import dashboardService from '../services/dashboardService'
 import avisoService from '../services/avisoService'
+import PedagogicalInterventions from '../components/PedagogicalInterventions'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -147,6 +148,7 @@ export default function DashboardGestor() {
         <motion.section variants={fadeUp} initial="hidden" animate="visible" className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((item) => <Card key={item.titulo} {...item} />)}
         </motion.section>
+        <PedagogicalInterventions />
 
         <motion.section variants={fadeUp} initial="hidden" animate="visible" className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white dark:bg-[#1E1D3A] rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">

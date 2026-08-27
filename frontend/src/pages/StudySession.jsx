@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import cronogramaService from '../services/cronogramaService'
 import aprendizagemService from '../services/aprendizagemService'
-import { resolveBackendAsset } from '../config/api'
+import { resolveProtectedAsset } from '../services/fileService'
 import StudyGuide, { isExternalStudySource } from '../components/StudyGuide'
+import DictationButton from '../components/DictationButton'
 import './StudySession.css'
 
 const SESSION_CONTENT_KEY = 'planejai:active-study-content'
@@ -26,13 +27,22 @@ function saveStudyHistory(content, minutes, difficulty) {
 }
 
 function StudyMaterial({ content }) {
-  const url = resolveBackendAsset(content?.link || content?.url || '')
+  const source = content?.link || content?.url || ''
+  const [url, setUrl] = useState('')
+  const [loadError, setLoadError] = useState('')
+  useEffect(() => {
+    let active = true
+    resolveProtectedAsset(source).then((value) => active && setUrl(value)).catch(() => active && setLoadError('Não foi possível autorizar este arquivo.'))
+    return () => { active = false }
+  }, [source])
   const type = String(content?.tipo || '').toUpperCase()
   const externalSource = isExternalStudySource(url)
   const pdf = type.includes('PDF') || /\.pdf(?:$|[?#])/i.test(url)
   const video = type.includes('VIDEO') && /\.(mp4|webm|ogg)(?:$|[?#])/i.test(url)
 
-  if (!url) return <div className="session-no-material"><span>SEM ANEXO</span><h2>Use esta sessão para estudar pelo seu próprio material.</h2><p>As anotações e o tempo ainda serão salvos neste navegador.</p></div>
+  if (loadError) return <div className="session-no-material" role="alert"><span>ACESSO INDISPONÍVEL</span><h2>{loadError}</h2></div>
+  if (!source) return <div className="session-no-material"><span>SEM ANEXO</span><h2>Use esta sessão para estudar pelo seu próprio material.</h2><p>As anotações e o tempo ainda serão salvos neste navegador.</p></div>
+  if (!url) return <div className="session-no-material" role="status"><span>CARREGANDO</span><h2>Preparando material…</h2></div>
   if (externalSource) return <StudyGuide material={content} sourceUrl={url} />
   if (video) return <video className="session-frame" src={url} controls />
   if (pdf) return <iframe className="session-frame" src={`${url}#view=FitH&toolbar=1`} title={content.titulo} />
@@ -96,7 +106,7 @@ export default function StudySession() {
         await aprendizagemService.adicionarRevisao(content.id_conteudo)
         await aprendizagemService.avaliarRevisao(content.id_conteudo, difficulty)
       }
-      await aprendizagemService.registrarSessao({ idConteudo: content.id_conteudo, minutos, resultado: difficulty })
+      await aprendizagemService.registrarSessao({ idConteudo: content.id_conteudo, minutos: minutes, resultado: difficulty })
       saveStudyHistory(content, minutes, difficulty)
       toast.success('Sessão concluída e próxima revisão agendada.')
       navigate('/inicio')
@@ -120,7 +130,7 @@ export default function StudySession() {
         <div className="session-workspace pj-panel">
           <nav className="session-tabs" aria-label="Ferramentas da sessão"><button className={tab === 'material' ? 'is-active' : ''} onClick={() => setTab('material')}>Material</button><button className={tab === 'notes' ? 'is-active' : ''} onClick={() => setTab('notes')}>Anotações <span>{saved ? 'salvas' : ''}</span></button></nav>
           <div className="session-canvas">
-            {tab === 'material' ? <StudyMaterial content={content} /> : <div className="session-notes"><header><div><span className="pj-eyebrow">Caderno da sessão</span><h2>Escreva para entender.</h2></div><small>{saved ? `Salvo às ${saved.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Salvamento automático'}</small></header><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={'Ideia principal:\n\nO que ainda não entendi:\n\nComo eu explicaria isso para alguém:'} /></div>}
+            {tab === 'material' ? <StudyMaterial content={content} /> : <div className="session-notes"><header><div><span className="pj-eyebrow">Caderno da sessão</span><h2>Escreva para entender.</h2><DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? ' ' : ''}${texto}`)}/></div><small>{saved ? `Salvo às ${saved.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Salvamento automático'}</small></header><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={'Ideia principal:\n\nO que ainda não entendi:\n\nComo eu explicaria isso para alguém:'} /></div>}
           </div>
         </div>
 

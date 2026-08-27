@@ -1,4 +1,4 @@
-const CACHE_NAME = 'planejai-shell-v1'
+const CACHE_NAME = 'planejai-shell-v2'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.add('./')).then(() => self.skipWaiting()))
@@ -15,7 +15,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request
   const url = new URL(request.url)
-  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.includes('/api/') || url.pathname.includes('/uploads/')) return
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.includes('/api/')) return
 
   if (request.mode === 'navigate') {
     event.respondWith(fetch(request).then((response) => {
@@ -26,7 +26,7 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  if (['script', 'style', 'image', 'font'].includes(request.destination)) {
+  if (url.pathname.includes('/uploads/') || ['script', 'style', 'image', 'font'].includes(request.destination)) {
     event.respondWith(caches.match(request).then((cached) => {
       const network = fetch(request).then((response) => {
         if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()))

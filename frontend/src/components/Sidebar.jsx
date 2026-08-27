@@ -81,9 +81,11 @@ export default function Sidebar({ isOpen, onClose }) {
 
 const navItems = [
     { path: '/inicio', label: 'Dashboard', icon: LayoutIcon },
+    ...(user?.tipo === 'aluno' ? [{ path: '/minha-jornada', label: 'Minha jornada', icon: DashboardIcon }] : []),
     { path: '/cronograma', label: 'Cronograma', icon: CalendarIcon },
     { path: '/aprendizagem', label: 'Aprendizagem', icon: DashboardIcon },
     { path: '/planejamento-inteligente', label: 'Planejamento', icon: CalendarIcon },
+    { path: '/turmas', label: 'Turmas', icon: UsersIcon },
     { path: '/redacoes', label: 'Redações', icon: RedacaoIcon },
     { path: '/atividades', label: 'Atividades', icon: RedacaoIcon },
     ...(user?.tipo === 'aluno' ? [{ path: '/minhas-atividades', label: 'Minhas atividades', icon: RedacaoIcon }] : []),

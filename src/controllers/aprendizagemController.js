@@ -5,8 +5,9 @@ const erro = (res, error) => { console.error('[APRENDIZAGEM]', error); return re
 
 async function resumo(req, res) { try { return res.json(await model.obterResumo(idUsuario(req))); } catch (error) { return erro(res, error); } }
 async function evolucao(req, res) { try { return res.json(await model.obterEvolucao(idUsuario(req))); } catch (error) { return erro(res, error); } }
+async function jornada(req, res) { try { return res.json(await model.obterJornada(idUsuario(req), req.query.minutos)); } catch (error) { return erro(res, error); } }
 async function simulado(req, res) { try { return res.json(await model.gerarSimulado(idUsuario(req), req.query)); } catch (error) { return erro(res, error); } }
-async function responder(req, res) { try { const resultado = await model.responderQuestao(idUsuario(req), req.params.idQuestao, req.body.resposta, req.body.duracaoSegundos, req.body.embaralhamento); return resultado ? res.json(resultado) : res.status(404).json({ message: 'Questão não encontrada.' }); } catch (error) { return res.status(400).json({ message: error.message || 'Resposta inválida.' }); } }
+async function responder(req, res) { try { const resultado = await model.responderQuestao(idUsuario(req), req.params.idQuestao, req.body.resposta, req.body.duracaoSegundos, req.body.embaralhamento, req.body.confianca, req.body.pistasUsadas); return resultado ? res.json(resultado) : res.status(404).json({ message: 'Questão não encontrada.' }); } catch (error) { return res.status(400).json({ message: error.message || 'Resposta inválida.' }); } }
 async function erros(req, res) { try { return res.json(await model.listarCadernoErros(idUsuario(req))); } catch (error) { return erro(res, error); } }
 async function atualizarErro(req, res) { try { return res.json(await model.atualizarErro(idUsuario(req), req.params.idErro, req.body)); } catch (error) { return erro(res, error); } }
 async function revisoes(req, res) { try { return res.json(await model.listarRevisoes(idUsuario(req))); } catch (error) { return erro(res, error); } }
@@ -18,4 +19,4 @@ async function atualizarMetaSemanal(req, res) { try { return res.json(await mode
 async function versoes(req, res) { try { return res.json(await model.listarVersoesRedacao(idUsuario(req), req.params.idRedacao)); } catch (error) { return erro(res, error); } }
 async function criarVersao(req, res) { try { const resultado = await model.criarVersaoRedacao(idUsuario(req), req.params.idRedacao, req.body); return resultado ? res.status(201).json(resultado) : res.status(404).json({ message: 'Redação não encontrada.' }); } catch (error) { return erro(res, error); } }
 
-module.exports = { resumo, evolucao, simulado, responder, erros, atualizarErro, revisoes, adicionarRevisao, avaliarRevisao, registrarSessao, metaSemanal, atualizarMetaSemanal, versoes, criarVersao };
+module.exports = { resumo, evolucao, jornada, simulado, responder, erros, atualizarErro, revisoes, adicionarRevisao, avaliarRevisao, registrarSessao, metaSemanal, atualizarMetaSemanal, versoes, criarVersao };

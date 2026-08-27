@@ -3,7 +3,8 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const pool = require("./config/db");
-const { platformHeaders } = require("./middlewares/platformMiddleware");
+const { platformHeaders, requestLogger } = require("./middlewares/platformMiddleware");
+const fileRoutes = require("./routes/fileRoutes");
 
 const authRoutes = require("./routes/authRoutes");
 const usuarioRoutes = require("./routes/usuarioRoutes");
@@ -16,17 +17,17 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const avisoRoutes = require("./routes/avisoRoutes");
 const aprendizagemRoutes = require("./routes/aprendizagemRoutes");
 const inteligenciaRoutes = require("./routes/inteligenciaRoutes");
+const adaptiveLearningRoutes = require("./routes/adaptiveLearningRoutes");
+const collaborativeLearningRoutes = require("./routes/collaborativeLearningRoutes");
+const turmaRoutes = require("./routes/turmaRoutes");
 
 const app = express();
 app.disable("x-powered-by");
 
 const garantirTabelas = require("./scripts/garantirTabelas");
 const repairContentLinks = require("./scripts/repairContentLinks");
-garantirTabelas()
-  .then(() => repairContentLinks())
-  .catch((error) => {
-    console.error("[MIGRATION] Falha ao garantir tabelas:", error.message);
-  });
+const seedDatabase = require("./scripts/seedDatabase");
+const { startBackupScheduler, getBackupStatus } = require("./services/backupScheduler");
 
 const uploadErrorHandler = require("./middlewares/uploadErrorHandler");
 
@@ -55,13 +56,14 @@ const corsOptions = {
 };
 
 app.use(platformHeaders);
+app.use(requestLogger);
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "2mb", strict: true }));
 app.use(express.urlencoded({ extended: false, limit: "256kb" }));
 
 app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "..", "uploads"), {
+  "/uploads/perfis",
+  express.static(path.join(__dirname, "..", "uploads", "perfis"), {
     maxAge: "1d",
     immutable: false,
     fallthrough: false,
@@ -69,6 +71,7 @@ app.use(
 );
 
 app.use("/api/auth", authRoutes);
+app.use("/api/files", fileRoutes);
 app.use("/api/usuarios", usuarioRoutes);
 app.use("/api/perfil", perfilRoutes);
 app.use("/api/cronograma", cronogramaRoutes);
@@ -79,6 +82,9 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/avisos", avisoRoutes);
 app.use("/api/aprendizagem", aprendizagemRoutes);
 app.use("/api/inteligencia", inteligenciaRoutes);
+app.use("/api/adaptativo", adaptiveLearningRoutes);
+app.use("/api/colaborativo", collaborativeLearningRoutes);
+app.use("/api/turmas", turmaRoutes);
 
 app.use(uploadErrorHandler);
 
@@ -99,6 +105,7 @@ app.get("/api/health", async (req, res, next) => {
       uptime_seconds: Math.round(process.uptime()),
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || "development",
+      backup: (() => { const value = getBackupStatus(); delete value.lastError; return value })(),
     });
   } catch (error) {
     error.status = 503;
@@ -130,12 +137,14 @@ app.use((err, req, res, next) => {
 
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
-  const server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-  });
+  let server;
 
   const shutdown = (signal) => {
     console.log(`[SERVER] ${signal} recebido. Encerrando com segurança...`);
+    if (!server) {
+      pool.end().finally(() => process.exit(1));
+      return;
+    }
     server.close(async () => {
       await pool.end();
       process.exit(0);
@@ -152,6 +161,28 @@ if (require.main === module) {
     console.error("[UNCAUGHT EXCEPTION]", error);
     shutdown("UNCAUGHT_EXCEPTION");
   });
+
+  async function start() {
+    try {
+      // A API só fica disponível depois que o schema e os dados derivados
+      // estiverem prontos. Assim nenhuma requisição disputa com as migrations.
+      await garantirTabelas();
+      if (process.env.AUTO_SEED_DATABASE !== "false") {
+        await seedDatabase();
+      }
+      await repairContentLinks();
+      server = app.listen(PORT, "0.0.0.0", () => {
+        console.log(`Servidor rodando na porta ${PORT}`);
+      });
+      startBackupScheduler();
+    } catch (error) {
+      console.error("[STARTUP] Banco de dados não pôde ser preparado:", error.message);
+      await pool.end();
+      process.exitCode = 1;
+    }
+  }
+
+  start();
 }
 
 module.exports = app;

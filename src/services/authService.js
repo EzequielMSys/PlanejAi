@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 const usuarioModel = require("../models/usuarioModel");
 const {
@@ -8,6 +9,7 @@ const {
   sanitizeUser,
 } = require("../utils/authUtils");
 const { getJwtSecret } = require("../config/jwtConfig");
+const { enviarRecuperacaoSenha } = require("./emailService");
 
 class AuthService {
   async registrar(dados) {
@@ -130,18 +132,41 @@ class AuthService {
     );
 
     if (!usuario) {
-      throw new Error("Email não encontrado.");
+      crypto.randomBytes(32);
+      return;
     }
 
-    const senhaTemporaria = gerarSenhaTemporaria();
-    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || "10", 10);
-    const senhaHash = await bcrypt.hash(senhaTemporaria, saltRounds);
-
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const expiracao = new Date(Date.now() + 30 * 60 * 1000);
     const usuarioId = usuario.id_usuario || usuario.id;
+    await usuarioModel.salvarTokenRecuperacao(usuarioId, tokenHash, expiracao);
 
-    await usuarioModel.resetarSenhaTemporaria(usuarioId, senhaHash);
+    const appUrl = String(process.env.APP_URL || "http://localhost:5173").replace(/\/$/, "");
+    await enviarRecuperacaoSenha({
+      email: usuario.email,
+      nome: usuario.nome,
+      resetUrl: `${appUrl}/redefinir-senha?token=${encodeURIComponent(token)}`,
+    });
+  }
 
-    return { senha_temporaria: senhaTemporaria };
+  async redefinirSenha(token, novaSenha) {
+    if (!/^[a-f0-9]{64}$/i.test(String(token || ""))) {
+      throw new Error("Token inválido ou expirado.");
+    }
+    if (!validarSenhaForte(novaSenha)) {
+      throw new Error("Senha deve ter no mínimo 8 caracteres, 1 letra maiúscula e 1 número.");
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const usuario = await usuarioModel.buscarPorTokenRecuperacao(tokenHash);
+    if (!usuario || usuario.ativo === 0) throw new Error("Token inválido ou expirado.");
+
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || "10", 10);
+    const senhaHash = await bcrypt.hash(novaSenha, saltRounds);
+    const updated = await usuarioModel.redefinirSenhaComToken(usuario.id_usuario, tokenHash, senhaHash);
+    if (!updated) throw new Error("Token inválido ou expirado.");
+    return { message: "Senha redefinida com sucesso." };
   }
 
   async trocarSenhaPrimeiroAcesso(usuarioId, senhaAtual, novaSenha) {

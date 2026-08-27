@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import redacaoService from '../services/redacaoService'
+import DictationButton from './DictationButton'
 import './EssayStudio.css'
 import WritingRadar from './WritingRadar'
 
@@ -110,7 +111,7 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
         <label htmlFor="essay-topic">Tema da redação</label>
         <div className="essay-topic-row"><input id="essay-topic" value={form.tema} onChange={(e) => setForm((f) => ({ ...f, tema: e.target.value }))} placeholder="Delimite o tema aqui" /><button type="button" onClick={onSugerir} disabled={sugerindo}>{sugerindo ? 'Criando...' : 'Tema Lab'}</button></div>
         <textarea aria-label="Texto da redação" value={form.texto} onChange={(e) => setForm((f) => ({ ...f, texto: e.target.value }))} placeholder={'Comece pela sua tese.\n\nDepois, desenvolva um argumento por parágrafo...'} spellCheck="true" />
-        <div className="essay-sheet-actions"><button type="button" onClick={descartar}>Descartar</button><div><button type="button" onClick={analisar} disabled={analisando}>Pré-corrigir</button><button type="submit" disabled={enviando || metricas.palavras < 30}>{enviando ? 'Enviando...' : 'Finalizar e enviar'}</button></div></div>
+        <div className="essay-sheet-actions"><div><button type="button" onClick={descartar}>Descartar</button><DictationButton onText={(texto) => setForm((f) => ({ ...f, texto: `${f.texto}${f.texto ? ' ' : ''}${texto}` }))}/></div><div><button type="button" onClick={analisar} disabled={analisando}>Pré-corrigir</button><button type="submit" disabled={enviando || metricas.palavras < 30}>{enviando ? 'Enviando...' : 'Finalizar e enviar'}</button></div></div>
       </main>
       {!foco && <aside className="essay-coach"><span className="essay-kicker">COACH DE REVISÃO</span><WritingRadar text={form.texto} />{diagnostico ? <DiagnosticPanel diagnostico={diagnostico} /> : <><h3>Antes de entregar</h3><p>O bom texto não nasce pronto. Faça três leituras, cada uma com uma missão.</p><ol><li><b>Ideia</b><span>A tese responde exatamente ao tema?</span></li><li><b>Prova</b><span>Cada argumento tem explicação e consequência?</span></li><li><b>Forma</b><span>Há clareza, coesão e pontuação?</span></li></ol><blockquote>Repertório bom não enfeita. Ele ajuda a provar alguma coisa.</blockquote></>}</aside>}
     </form>

@@ -1,4 +1,5 @@
 const usuarioService = require('../services/usuarioService')
+const privacyService = require('../services/privacyService')
 
 function tratarErroUsuario(error, res) {
   if (error.message.includes('não encontrado')) {
@@ -138,6 +139,17 @@ async function removerFotoPerfil(req, res) {
   }
 }
 
+async function exportarMeusDados(req, res) {
+  try {
+    const usuarioId = req.usuario.id_usuario || req.usuario.id
+    const data = await privacyService.exportUserData(usuarioId)
+    res.setHeader('Content-Disposition', `attachment; filename="planejai-dados-${usuarioId}.json"`)
+    return res.status(200).json(data)
+  } catch (error) {
+    return tratarErroUsuario(error, res)
+  }
+}
+
 async function alterarTipo(req, res) {
   try {
     const usuarioId = req.params.id
@@ -248,6 +260,7 @@ async function definirSenha(req, res) {
 module.exports = {
   listar,
   obterPerfilLogado,
+  exportarMeusDados,
   obterPorId,
   atualizar,
   uploadFotoPerfil,

@@ -29,6 +29,12 @@ router.get(
   usuarioController.obterPerfilLogado
 )
 
+router.get(
+  '/me/exportar',
+  authMiddleware,
+  usuarioController.exportarMeusDados
+)
+
 /**
  * Upload foto perfil
  */

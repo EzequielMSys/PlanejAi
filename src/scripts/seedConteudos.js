@@ -89,7 +89,7 @@ const conteudos = [
   { area: 'Humanas', disciplina: 'Sociologia', titulo: 'Movimentos sociais', tipo: 'PDF', link: 'https://www.google.com/search?q=movimentos+sociais+enem+pdf', nivel: 'INTERMEDIARIO' }
 ];
 
-async function run() {
+async function seedConteudos() {
   // Busca títulos já existentes para evitar duplicatas ao re-seedar
   const [existentes] = await pool.query(
     'SELECT titulo FROM conteudos'
@@ -120,10 +120,16 @@ async function run() {
   }
 
   console.log(`Seed concluído. ${inseridos} inseridos, ${ignorados} já existiam.`);
-  process.exit(0);
+  return { inseridos, ignorados };
 }
 
-run().catch((error) => {
-  console.error('Erro:', error.message);
-  process.exit(1);
-});
+module.exports = { conteudos, seedConteudos };
+
+if (require.main === module) {
+  seedConteudos()
+    .then(() => pool.end())
+    .catch((error) => {
+      console.error('Erro:', error.message);
+      process.exitCode = 1;
+    });
+}

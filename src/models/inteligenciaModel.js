@@ -23,8 +23,20 @@ async function salvarDiagnostico(idUsuario, respostas) {
   return resultado
 }
 
-async function metas(idUsuario) { const [rows] = await pool.execute('SELECT disciplina, tipo, alvo FROM metas_por_materia WHERE id_usuario = ? AND inicio_semana = ?', [idUsuario, inicioSemana()]); return rows }
-async function salvarMeta(idUsuario, { disciplina, tipo, alvo }) { if (!disciplina || !['QUESTOES','REDACOES','MINUTOS'].includes(tipo)) throw new Error('Meta inválida.'); const valor = Math.max(1, Math.min(1000, Number(alvo) || 1)); await pool.execute('INSERT INTO metas_por_materia (id_usuario, disciplina, tipo, alvo, inicio_semana) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE alvo = VALUES(alvo)', [idUsuario, disciplina, tipo, valor, inicioSemana()]); return metas(idUsuario) }
+async function metas(idUsuario) {
+  const [rows] = await pool.execute('SELECT disciplina, tipo, alvo, flexivel FROM metas_por_materia WHERE id_usuario = ? AND inicio_semana = ?', [idUsuario, inicioSemana()])
+  const dia = new Date().getDay(); const diasRestantes = Math.max(1, dia === 0 ? 1 : 8 - dia)
+  for (const meta of rows) {
+    let sql; let params
+    if (meta.tipo === 'QUESTOES') { sql = `SELECT COUNT(*) AS total FROM tentativas_questoes t JOIN questoes_estudo q ON q.id_questao=t.id_questao WHERE t.id_usuario=? AND q.disciplina=? AND t.criado_em>=?`; params = [idUsuario, meta.disciplina, inicioSemana()] }
+    else if (meta.tipo === 'MINUTOS') { sql = `SELECT COALESCE(SUM(s.duracao_minutos),0) AS total FROM sessoes_estudo s LEFT JOIN conteudos c ON c.id_conteudo=s.id_conteudo WHERE s.id_usuario=? AND (c.disciplina=? OR s.id_conteudo IS NULL) AND s.concluida_em>=?`; params = [idUsuario, meta.disciplina, inicioSemana()] }
+    else { sql = `SELECT COUNT(*) AS total FROM redacoes WHERE id_usuario=? AND enviada_em>=?`; params = [idUsuario, inicioSemana()] }
+    const [[progresso]] = await pool.execute(sql, params)
+    meta.progresso = Number(progresso.total || 0); meta.restante = Math.max(0, Number(meta.alvo) - meta.progresso); meta.sugestaoDiaria = Math.ceil(meta.restante / diasRestantes)
+  }
+  return rows
+}
+async function salvarMeta(idUsuario, { disciplina, tipo, alvo, flexivel = true }) { if (!disciplina || !['QUESTOES','REDACOES','MINUTOS'].includes(tipo)) throw new Error('Meta inválida.'); const valor = Math.max(1, Math.min(1000, Number(alvo) || 1)); await pool.execute('INSERT INTO metas_por_materia (id_usuario, disciplina, tipo, alvo, inicio_semana, flexivel) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE alvo = VALUES(alvo), flexivel = VALUES(flexivel), ajustada_em = CURRENT_TIMESTAMP', [idUsuario, disciplina, tipo, valor, inicioSemana(), flexivel ? 1 : 0]); return metas(idUsuario) }
 async function privacidade(idUsuario, visibilidade) { if (visibilidade) { if (!['RESUMO','DETALHADO','PRIVADO'].includes(visibilidade)) throw new Error('Nível de privacidade inválido.'); await pool.execute('INSERT INTO privacidade_aprendizagem (id_usuario, visibilidade) VALUES (?, ?) ON DUPLICATE KEY UPDATE visibilidade = VALUES(visibilidade)', [idUsuario, visibilidade]) }; const [rows] = await pool.execute('SELECT visibilidade FROM privacidade_aprendizagem WHERE id_usuario = ?', [idUsuario]); return { visibilidade: rows[0]?.visibilidade || 'RESUMO' } }
 
 async function listarFlashcards(idUsuario) { const [rows] = await pool.execute('SELECT * FROM flashcards_estudo WHERE id_usuario = ? ORDER BY proxima_revisao ASC, criado_em DESC LIMIT 100', [idUsuario]); return rows }
@@ -34,4 +46,20 @@ async function buscar(idUsuario, termo) { const texto = String(termo || '').trim
 async function provas(idUsuario) { const [rows] = await pool.execute('SELECT * FROM provas_planejadas WHERE id_usuario = ? ORDER BY data_prova ASC', [idUsuario]); return rows.map((r) => ({ ...r, materias: typeof r.materias === 'string' ? JSON.parse(r.materias) : r.materias })) }
 async function criarProva(idUsuario, { titulo, dataProva, materias }) { if (!titulo || !dataProva || !Array.isArray(materias) || !materias.length) throw new Error('Preencha título, data e ao menos uma matéria.'); await pool.execute('INSERT INTO provas_planejadas (id_usuario, titulo, data_prova, materias) VALUES (?, ?, ?, ?)', [idUsuario, titulo, dataProva, JSON.stringify(materias)]); return provas(idUsuario) }
 
-module.exports = { diagnostico, salvarDiagnostico, metas, salvarMeta, privacidade, listarFlashcards, criarFlashcard, avaliarFlashcard, buscar, provas, criarProva }
+async function trilhas(idUsuario) {
+  await pool.query(`INSERT IGNORE INTO competencias_estudo (disciplina, nome)
+    SELECT DISTINCT disciplina, competencia FROM questoes_estudo WHERE ativo=1 AND competencia IS NOT NULL AND competencia<>''`)
+  const [disciplinas] = await pool.execute(`SELECT DISTINCT c.disciplina FROM competencias_estudo c
+    LEFT JOIN dominio_competencias d ON d.id_competencia=c.id_competencia AND d.id_usuario=?
+    WHERE c.ativo=1 AND (d.id_usuario IS NOT NULL OR EXISTS(SELECT 1 FROM diagnosticos_estudo dx WHERE dx.id_usuario=? AND dx.disciplina=c.disciplina))`, [idUsuario,idUsuario])
+  for (const { disciplina } of disciplinas) {
+    await pool.execute(`INSERT INTO trilhas_aprendizagem(id_usuario,disciplina) VALUES(?,?) ON DUPLICATE KEY UPDATE atualizado_em=CURRENT_TIMESTAMP`,[idUsuario,disciplina])
+    const [[trilha]]=await pool.execute('SELECT id_trilha FROM trilhas_aprendizagem WHERE id_usuario=? AND disciplina=?',[idUsuario,disciplina])
+    const [competencias]=await pool.execute(`SELECT c.id_competencia,COALESCE(d.dominio,0) dominio FROM competencias_estudo c LEFT JOIN dominio_competencias d ON d.id_competencia=c.id_competencia AND d.id_usuario=? WHERE c.disciplina=? AND c.ativo=1 ORDER BY c.id_competencia`,[idUsuario,disciplina])
+    let ordem=0; for(const item of competencias){ordem+=1;const [[bloqueio]]=await pool.execute(`SELECT COUNT(*) total FROM competencia_prerequisitos cp LEFT JOIN dominio_competencias d ON d.id_competencia=cp.id_prerequisito AND d.id_usuario=? WHERE cp.id_competencia=? AND COALESCE(d.dominio,0)<cp.dominio_minimo`,[idUsuario,item.id_competencia]);const status=Number(item.dominio)>=80?'DOMINADA':Number(bloqueio.total)>0?'BLOQUEADA':Number(item.dominio)>0?'EM_PROGRESSO':'DISPONIVEL';await pool.execute(`INSERT INTO trilha_etapas(id_trilha,id_competencia,ordem,status) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE ordem=VALUES(ordem),status=VALUES(status)`,[trilha.id_trilha,item.id_competencia,ordem,status])}
+  }
+  const [rows]=await pool.execute(`SELECT t.id_trilha,t.disciplina,t.status AS trilha_status,e.id_etapa,e.ordem,e.status,c.id_competencia,c.nome,c.descricao,COALESCE(d.dominio,0) dominio,COALESCE(d.evidencias,0) evidencias FROM trilhas_aprendizagem t JOIN trilha_etapas e ON e.id_trilha=t.id_trilha JOIN competencias_estudo c ON c.id_competencia=e.id_competencia LEFT JOIN dominio_competencias d ON d.id_competencia=c.id_competencia AND d.id_usuario=t.id_usuario WHERE t.id_usuario=? ORDER BY t.disciplina,e.ordem`,[idUsuario])
+  const grouped=new Map();for(const row of rows){if(!grouped.has(row.id_trilha))grouped.set(row.id_trilha,{idTrilha:row.id_trilha,disciplina:row.disciplina,status:row.trilha_status,etapas:[]});grouped.get(row.id_trilha).etapas.push(row)}return [...grouped.values()]
+}
+
+module.exports = { diagnostico, salvarDiagnostico, metas, salvarMeta, privacidade, listarFlashcards, criarFlashcard, avaliarFlashcard, buscar, provas, criarProva, trilhas }
