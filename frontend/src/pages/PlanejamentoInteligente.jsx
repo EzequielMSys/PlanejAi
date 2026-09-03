@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import inteligencia from "../services/inteligenciaService";
 import perfil from "../services/perfilService";
 import AdaptiveLearningHub from "../components/AdaptiveLearningHub";
 import LearningPaths from "../components/LearningPaths";
-import ExamArena from "../components/ExamArena";
 
 export default function PlanejamentoInteligente() {
   const [materias, setMaterias] = useState([]);
@@ -153,7 +153,14 @@ export default function PlanejamentoInteligente() {
         </header>
         <AdaptiveLearningHub />
         <LearningPaths />
-        <ExamArena />
+        <section className="mt-5 flex flex-col items-start justify-between gap-4 rounded-[2rem] border border-[#E2D7EB] bg-white p-6 dark:border-[#4B385A] dark:bg-[#211A2D] sm:flex-row sm:items-center">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[.18em] text-[#6D3EC5]">Modo Prova Real</p>
+            <h2 className="mt-1 text-2xl font-black">Simulados agora têm um espaço próprio.</h2>
+            <p className="mt-1 text-sm opacity-65">Monte, retome e corrija provas sem misturar o treino com a configuração do seu plano.</p>
+          </div>
+          <Link to="/provas" className="shrink-0 rounded-xl bg-[#6D3EC5] px-5 py-3 text-sm font-black text-white">Abrir provas →</Link>
+        </section>
         <section className="mt-5 grid gap-5 lg:grid-cols-2">
           <article className="rounded-[2rem] bg-white p-6 dark:bg-[#211A2D]">
             <h2 className="text-xl font-black">Diagnóstico inicial</h2>

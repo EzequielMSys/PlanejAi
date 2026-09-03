@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import atividadeService from '../services/atividadeService'
 import MaterialViewer from '../components/MaterialViewer'
+import './Atividades.css'
 
 const FILTROS = [
   { key: 'TODOS', label: 'Todas' },
@@ -13,7 +14,7 @@ const FILTROS = [
 
 const statusLabel = (item) => item.minha_resposta_status === 'CORRIGIDA'
   ? 'Corrigida'
-  : item.minha_resposta_status === 'ENTREGUE' ? 'Em correção' : 'Pendente'
+  : item.minha_resposta_status === 'ENTREGUE' ? 'Em correção' : item.minha_resposta_status === 'RASCUNHO' ? 'Em andamento' : 'Pendente'
 
 export default function MinhasAtividades() {
   const [itens, setItens] = useState([])
@@ -23,6 +24,7 @@ export default function MinhasAtividades() {
   const [respostas, setRespostas] = useState({})
   const [enviando, setEnviando] = useState(false)
   const [material, setMaterial] = useState(null)
+  const [saveStatus, setSaveStatus] = useState('salvo')
 
   async function carregar() {
     try {
@@ -39,7 +41,7 @@ export default function MinhasAtividades() {
 
   const filtradas = useMemo(() => itens.filter((item) => {
     if (filtro === 'TODOS') return true
-    if (filtro === 'PENDENTE') return !item.minha_resposta_status
+    if (filtro === 'PENDENTE') return !item.minha_resposta_status || item.minha_resposta_status === 'RASCUNHO'
     return item.minha_resposta_status === filtro
   }), [itens, filtro])
 
@@ -47,11 +49,26 @@ export default function MinhasAtividades() {
     try {
       const data = await atividadeService.obter(item.id_atividade)
       setSelecionada({ ...data.atividade, minhaResposta: data.minhaResposta })
-      setRespostas(data.minhaResposta?.resposta || {})
+      const salvas = data.minhaResposta?.resposta || {}
+      for (const questao of data.atividade.questoes) {
+        if (questao.tipo === 'ORDENACAO' && !Array.isArray(salvas[questao.id])) salvas[questao.id] = questao.opcoes || []
+      }
+      setRespostas(salvas)
+      setSaveStatus('salvo')
     } catch (error) {
       toast.error(error.response?.data?.message || 'Não foi possível abrir a atividade.')
     }
   }
+
+  useEffect(() => {
+    if (!selecionada || (selecionada.minhaResposta && selecionada.minhaResposta.status !== 'RASCUNHO')) return undefined
+    setSaveStatus('salvando')
+    const timer = window.setTimeout(async () => {
+      try { await atividadeService.salvarRespostas(selecionada.id_atividade, respostas); setSaveStatus('salvo') }
+      catch { setSaveStatus('erro') }
+    }, 700)
+    return () => window.clearTimeout(timer)
+  }, [respostas, selecionada])
 
   const atualizarCheckbox = (id, opcao) => {
     setRespostas((atual) => {
@@ -63,6 +80,8 @@ export default function MinhasAtividades() {
   const enviar = async () => {
     const incompletas = selecionada.questoes.some((questao) => {
       const valor = respostas[questao.id]
+      if (questao.tipo === 'ASSOCIACAO') return !valor || Object.keys(valor).length !== (questao.itensEsquerda || []).length
+      if (questao.tipo === 'ARQUIVO') return !valor?.url
       return Array.isArray(valor) ? !valor.length : !String(valor ?? '').trim()
     })
     if (incompletas) return toast.error('Responda todas as questões antes de entregar.')
@@ -77,6 +96,22 @@ export default function MinhasAtividades() {
     } finally {
       setEnviando(false)
     }
+  }
+
+  const moverOrdenacao = (id, indice, direcao) => {
+    setRespostas((atual) => {
+      const lista = [...(atual[id] || [])]
+      const destino = indice + direcao
+      if (destino < 0 || destino >= lista.length) return atual
+      ;[lista[indice], lista[destino]] = [lista[destino], lista[indice]]
+      return { ...atual, [id]: lista }
+    })
+  }
+
+  const enviarArquivo = async (id, file) => {
+    if (!file) return
+    try { const data = await atividadeService.uploadResposta(file); setRespostas((atual) => ({ ...atual, [id]: data })); toast.success('Arquivo anexado à resposta.') }
+    catch { toast.error('Não foi possível anexar o arquivo.') }
   }
 
   if (loading) return <div className="app-page-loading"><span />Carregando suas atividades…</div>
@@ -115,16 +150,21 @@ export default function MinhasAtividades() {
             <motion.section className="activity-player" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 30, opacity: 0 }} onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
               <header><div><p>ATIVIDADE</p><h2>{selecionada.titulo}</h2><span>{selecionada.descricao}</span></div><button type="button" onClick={() => setSelecionada(null)} aria-label="Fechar">×</button></header>
               {selecionada.anexos?.length > 0 && <div className="activity-materials">{selecionada.anexos.map((anexo, index) => <button type="button" key={`${anexo.url}-${index}`} onClick={() => setMaterial({ ...anexo, titulo: anexo.nome || 'Anexo da atividade', tipo: anexo.tipo || 'IMAGEM' })}>Abrir {anexo.nome || `anexo ${index + 1}`}</button>)}</div>}
-              {selecionada.minhaResposta && <div className="activity-result"><strong>{selecionada.minhaResposta.status === 'CORRIGIDA' ? `Nota: ${Number(selecionada.minhaResposta.nota || 0).toFixed(0)}%` : 'Entrega enviada para correção'}</strong>{selecionada.minhaResposta.feedback && <p>{selecionada.minhaResposta.feedback}</p>}</div>}
+              {selecionada.minhaResposta && selecionada.minhaResposta.status !== 'RASCUNHO' && <div className="activity-result"><strong>{selecionada.minhaResposta.status === 'CORRIGIDA' ? `Nota: ${Number(selecionada.minhaResposta.nota || 0).toFixed(0)}%` : 'Entrega enviada para correção'}</strong>{selecionada.minhaResposta.feedback && <p>{selecionada.minhaResposta.feedback}</p>}</div>}
+              {(!selecionada.minhaResposta || selecionada.minhaResposta.status === 'RASCUNHO') && <div className={`activity-draft-status is-${saveStatus}`}>{saveStatus === 'salvando' ? 'Salvando respostas…' : saveStatus === 'erro' ? 'Não foi possível salvar agora' : 'Respostas salvas na sua conta'}</div>}
               <div className="activity-questions">
                 {selecionada.questoes.map((questao, index) => (
-                  <fieldset key={questao.id} disabled={Boolean(selecionada.minhaResposta)}>
+                  <fieldset key={questao.id} disabled={Boolean(selecionada.minhaResposta && selecionada.minhaResposta.status !== 'RASCUNHO')}>
                     <legend><span>{String(index + 1).padStart(2, '0')}</span>{questao.enunciado}</legend>
-                    {questao.tipo === 'DISSERTATIVA' ? <textarea value={respostas[questao.id] || ''} onChange={(e) => setRespostas({ ...respostas, [questao.id]: e.target.value })} placeholder="Desenvolva sua resposta…" /> : <div className="activity-options">{questao.opcoes.map((opcao) => <label key={opcao}><input type={questao.tipo === 'CHECKBOX' ? 'checkbox' : 'radio'} name={questao.id} value={opcao} checked={questao.tipo === 'CHECKBOX' ? (respostas[questao.id] || []).includes(opcao) : respostas[questao.id] === opcao} onChange={() => questao.tipo === 'CHECKBOX' ? atualizarCheckbox(questao.id, opcao) : setRespostas({ ...respostas, [questao.id]: opcao })} /><span>{opcao}</span></label>)}</div>}
+                    {['DISSERTATIVA', 'RESPOSTA_CURTA'].includes(questao.tipo) && <textarea value={respostas[questao.id] || ''} onChange={(e) => setRespostas({ ...respostas, [questao.id]: e.target.value })} placeholder={questao.tipo === 'RESPOSTA_CURTA' ? 'Digite uma resposta objetiva…' : 'Desenvolva sua resposta…'} />}
+                    {['MULTIPLA_ESCOLHA', 'CHECKBOX'].includes(questao.tipo) && <div className="activity-options">{questao.opcoes.map((opcao) => <label key={opcao}><input type={questao.tipo === 'CHECKBOX' ? 'checkbox' : 'radio'} name={questao.id} value={opcao} checked={questao.tipo === 'CHECKBOX' ? (respostas[questao.id] || []).includes(opcao) : respostas[questao.id] === opcao} onChange={() => questao.tipo === 'CHECKBOX' ? atualizarCheckbox(questao.id, opcao) : setRespostas({ ...respostas, [questao.id]: opcao })} /><span>{opcao}</span></label>)}</div>}
+                    {questao.tipo === 'ORDENACAO' && <div className="activity-ordering">{(respostas[questao.id] || questao.opcoes || []).map((opcao, opcaoIndex, lista) => <div key={opcao}><span>{opcaoIndex + 1}</span><b>{opcao}</b><button type="button" disabled={opcaoIndex === 0} onClick={() => moverOrdenacao(questao.id, opcaoIndex, -1)}>↑</button><button type="button" disabled={opcaoIndex === lista.length - 1} onClick={() => moverOrdenacao(questao.id, opcaoIndex, 1)}>↓</button></div>)}</div>}
+                    {questao.tipo === 'ASSOCIACAO' && <div className="activity-association">{(questao.itensEsquerda || []).map((item) => <label key={item}><span>{item}</span><select value={respostas[questao.id]?.[item] || ''} onChange={(e) => setRespostas((atual) => ({ ...atual, [questao.id]: { ...(atual[questao.id] || {}), [item]: e.target.value } }))}><option value="">Selecione…</option>{(questao.itensDireita || []).map((opcao) => <option key={opcao}>{opcao}</option>)}</select></label>)}</div>}
+                    {questao.tipo === 'ARQUIVO' && <label className="activity-file-answer"><input type="file" onChange={(e) => enviarArquivo(questao.id, e.target.files?.[0])} /><span>{respostas[questao.id]?.nome || 'Selecionar arquivo da resposta'}</span></label>}
                   </fieldset>
                 ))}
               </div>
-              <footer>{!selecionada.minhaResposta && <button type="button" disabled={enviando} onClick={enviar}>{enviando ? 'Enviando…' : 'Entregar atividade'}</button>}</footer>
+              <footer>{(!selecionada.minhaResposta || selecionada.minhaResposta.status === 'RASCUNHO') && <button type="button" disabled={enviando} onClick={enviar}>{enviando ? 'Enviando…' : 'Entregar atividade'}</button>}</footer>
             </motion.section>
           </motion.div>
         )}

@@ -73,9 +73,50 @@ async function gerarSimulado(idUsuario, { idCatalogo, dificuldade = 'TODAS', qua
     [idUsuario, idCatalogo, nivel, JSON.stringify(ids), ids.length])
   return {
     idSimulado: result.insertId,
+    iniciadoEm: new Date().toISOString(),
     catalogo: { idCatalogo: catalogo.id_catalogo, titulo: catalogo.titulo, instituicao: catalogo.instituicao, duracaoMinutos: catalogo.duracao_minutos },
-    questoes: questoes.map((item) => ({ ...item, alternativas: typeof item.alternativas === 'string' ? JSON.parse(item.alternativas) : item.alternativas }))
+    questoes: questoes.map((item) => ({ ...item, alternativas: typeof item.alternativas === 'string' ? JSON.parse(item.alternativas) : item.alternativas })),
+    respostas: {}
   }
+}
+
+function normalizarRespostas(respostas, ids) {
+  const permitidas = new Set(ids.map(Number))
+  const lista = respostas && typeof respostas === 'object' && !Array.isArray(respostas) ? respostas : {}
+  return Object.fromEntries(Object.entries(lista)
+    .map(([id, resposta]) => [Number(id), Number(resposta)])
+    .filter(([id, resposta]) => permitidas.has(id) && Number.isInteger(resposta) && resposta >= 0 && resposta <= 3))
+}
+
+async function obterSimulado(idUsuario, idSimulado) {
+  const [[simulado]] = await pool.execute(`SELECT s.*,c.titulo,c.instituicao,c.duracao_minutos
+    FROM simulados_catalogo s JOIN catalogo_provas c ON c.id_catalogo=s.id_catalogo
+    WHERE s.id_simulado=? AND s.id_usuario=?`, [idSimulado, idUsuario])
+  if (!simulado) throw new Error('Simulado não encontrado.')
+  if (simulado.status !== 'EM_ANDAMENTO') throw new Error('Este simulado já foi concluído.')
+  const ids = typeof simulado.questoes === 'string' ? JSON.parse(simulado.questoes) : simulado.questoes
+  if (!Array.isArray(ids) || !ids.length) throw new Error('Este simulado não possui questões válidas.')
+  const [questoes] = await pool.execute(`SELECT id_questao,disciplina,competencia,enunciado,alternativas,dificuldade
+    FROM questoes_estudo WHERE id_questao IN (${ids.map(() => '?').join(',')})`, ids)
+  const porId = new Map(questoes.map((item) => [Number(item.id_questao), item]))
+  const ordenadas = ids.map((id) => porId.get(Number(id))).filter(Boolean)
+  return {
+    idSimulado: simulado.id_simulado,
+    iniciadoEm: simulado.iniciado_em,
+    catalogo: { idCatalogo: simulado.id_catalogo, titulo: simulado.titulo, instituicao: simulado.instituicao, duracaoMinutos: simulado.duracao_minutos },
+    questoes: ordenadas.map((item) => ({ ...item, alternativas: typeof item.alternativas === 'string' ? JSON.parse(item.alternativas) : item.alternativas })),
+    respostas: normalizarRespostas(typeof simulado.respostas === 'string' ? JSON.parse(simulado.respostas) : simulado.respostas, ids)
+  }
+}
+
+async function salvarProgressoSimulado(idUsuario, idSimulado, respostas) {
+  const [[simulado]] = await pool.execute('SELECT questoes,status FROM simulados_catalogo WHERE id_simulado=? AND id_usuario=?', [idSimulado, idUsuario])
+  if (!simulado) throw new Error('Simulado não encontrado.')
+  if (simulado.status !== 'EM_ANDAMENTO') throw new Error('Este simulado já foi concluído.')
+  const ids = typeof simulado.questoes === 'string' ? JSON.parse(simulado.questoes) : simulado.questoes
+  const lista = normalizarRespostas(respostas, ids)
+  await pool.execute('UPDATE simulados_catalogo SET respostas=? WHERE id_simulado=? AND id_usuario=? AND status=\'EM_ANDAMENTO\'', [JSON.stringify(lista), idSimulado, idUsuario])
+  return { salvo: true, respondidas: Object.keys(lista).length }
 }
 
 async function concluirSimulado(idUsuario, idSimulado, respostas) {
@@ -83,7 +124,7 @@ async function concluirSimulado(idUsuario, idSimulado, respostas) {
   if (!simulado) throw new Error('Simulado não encontrado.')
   if (simulado.status === 'CONCLUIDO') throw new Error('Este simulado já foi concluído.')
   const ids = typeof simulado.questoes === 'string' ? JSON.parse(simulado.questoes) : simulado.questoes
-  const lista = respostas && typeof respostas === 'object' ? respostas : {}
+  const lista = normalizarRespostas(respostas, ids)
   const [questoes] = await pool.execute(`SELECT id_questao,disciplina,resposta_correta,explicacao FROM questoes_estudo WHERE id_questao IN (${ids.map(() => '?').join(',')})`, ids)
   let acertos = 0
   const correcoes = questoes.map((questao) => {
@@ -120,4 +161,4 @@ async function trilhas(idUsuario) {
   const grouped=new Map();for(const row of rows){if(!grouped.has(row.id_trilha))grouped.set(row.id_trilha,{idTrilha:row.id_trilha,disciplina:row.disciplina,status:row.trilha_status,etapas:[]});grouped.get(row.id_trilha).etapas.push(row)}return [...grouped.values()]
 }
 
-module.exports = { diagnostico, salvarDiagnostico, metas, salvarMeta, privacidade, listarFlashcards, criarFlashcard, avaliarFlashcard, buscar, provas, criarProva, catalogoProvas, gerarSimulado, concluirSimulado, historicoSimulados, trilhas }
+module.exports = { diagnostico, salvarDiagnostico, metas, salvarMeta, privacidade, listarFlashcards, criarFlashcard, avaliarFlashcard, buscar, provas, criarProva, catalogoProvas, gerarSimulado, obterSimulado, salvarProgressoSimulado, concluirSimulado, historicoSimulados, trilhas }

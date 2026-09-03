@@ -17,6 +17,8 @@ router.post('/provas', controller.criarProva)
 router.get('/catalogo-provas', controller.catalogoProvas)
 router.get('/simulados', controller.historicoSimulados)
 router.post('/simulados', controller.gerarSimulado)
+router.get('/simulados/:idSimulado', controller.obterSimulado)
+router.patch('/simulados/:idSimulado', controller.salvarProgressoSimulado)
 router.post('/simulados/:idSimulado/concluir', controller.concluirSimulado)
 router.get('/trilhas', controller.trilhas)
 module.exports = router

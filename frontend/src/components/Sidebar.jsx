@@ -75,6 +75,14 @@ function BellIcon({ className }) {
   )
 }
 
+function ExamIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12h14V7a2 2 0 00-2-2h-2M9 5a3 3 0 006 0M9 5a3 3 0 016 0M8 11l2 2 5-5M8 17h8" />
+    </svg>
+  )
+}
+
 export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate()
   const { isAdmin, isDono, isGestor, user } = useAuth()
@@ -84,6 +92,7 @@ export default function Sidebar({ isOpen, onClose }) {
     ...(user?.tipo === 'aluno' ? [{ path: '/minha-jornada', label: 'Minha jornada', icon: DashboardIcon }] : []),
     { path: '/cronograma', label: 'Cronograma', icon: CalendarIcon },
     { path: '/aprendizagem', label: 'Aprendizagem', icon: DashboardIcon },
+    { path: '/provas', label: 'Provas', icon: ExamIcon },
     { path: '/planejamento-inteligente', label: 'Planejamento', icon: CalendarIcon },
     { path: '/redacoes', label: 'Redações', icon: RedacaoIcon },
     ...(isGestor ? [{ path: '/turmas', label: 'Turmas', icon: UsersIcon }] : []),

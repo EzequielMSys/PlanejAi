@@ -14,4 +14,6 @@ test('ordena todas as migrations e mantém dependências do motor de estudo', ()
   assert.ok(ordered.indexOf('add_learning_engine.sql') < ordered.indexOf('add_learning_progress.sql'));
   assert.ok(ordered.indexOf('add_learning_engine.sql') < ordered.indexOf('add_cronograma_progression.sql'));
   assert.ok(ordered.includes('add_study_intelligence.sql'));
+  assert.ok(ordered.indexOf('add_exam_catalog_v7.sql') < ordered.indexOf('activities_2_0_v8.sql'));
+  assert.ok(ordered.indexOf('activities_2_0_v8.sql') < ordered.indexOf('activities_2_0_drafts_v9.sql'));
 });

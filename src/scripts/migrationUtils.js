@@ -23,7 +23,9 @@ const migrationOrder = [
   'add_classes_v4.sql',
   'enhance_peer_review_v5.sql',
   'enhance_essay_portfolio_v6.sql',
-  'add_exam_catalog_v7.sql'
+  'add_exam_catalog_v7.sql',
+  'activities_2_0_v8.sql',
+  'activities_2_0_drafts_v9.sql'
 ];
 
 function sortMigrations(files) {

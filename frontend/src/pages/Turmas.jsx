@@ -1,2 +1,91 @@
-import{useEffect,useState}from'react';import{toast}from'react-hot-toast';import{useAuth}from'../context/AuthContext';import service from'../services/turmaService';
-export default function Turmas(){const{isGestor}=useAuth();const[turmas,setTurmas]=useState([]);const[selected,setSelected]=useState(null);const[candidatos,setCandidatos]=useState([]);const[form,setForm]=useState({nome:'',codigo:'',anoLetivo:new Date().getFullYear(),descricao:'',disciplinas:''});const load=()=>service.listar().then(setTurmas).catch(()=>toast.error('Não foi possível carregar as turmas.'));useEffect(()=>{load();if(isGestor)service.candidatos().then(setCandidatos).catch(()=>{})},[isGestor]);async function create(e){e.preventDefault();try{await service.criar({...form,disciplinas:form.disciplinas.split(',').map(x=>x.trim()).filter(Boolean)});setForm({...form,nome:'',codigo:'',descricao:'',disciplinas:''});await load();toast.success('Turma criada.')}catch(err){toast.error(err.response?.data?.message||'Não foi possível criar.')}}async function open(id){setSelected(await service.detalhes(id))}async function add(idUsuario,papel){try{setSelected(await service.adicionar(selected.id_turma,{idUsuario,papel}));toast.success('Vínculo atualizado.')}catch(err){toast.error(err.response?.data?.message||'Não foi possível vincular.')}}return <main className="pj-page"><div className="pj-wrap"><header className="pj-panel p-7"><span className="pj-eyebrow">Comunidade de aprendizagem</span><h1 className="mt-2 text-4xl font-black">Turmas</h1><p className="mt-2 opacity-65">Disciplinas, docentes e alunos reunidos em um espaço com acesso controlado.</p></header><section className="mt-5 grid gap-5 lg:grid-cols-[1fr_22rem]"><div className="grid content-start gap-3">{turmas.map(t=><button type="button" onClick={()=>open(t.id_turma)} key={t.id_turma} className="pj-panel flex items-center justify-between p-5 text-left"><span><small className="font-black uppercase tracking-wider opacity-50">{t.codigo} · {t.ano_letivo}</small><strong className="mt-1 block text-lg">{t.nome}</strong><em className="mt-1 block text-xs not-italic opacity-60">{t.disciplinas.map(d=>d.disciplina).join(' · ')||'Disciplinas ainda não definidas'}</em></span><b>{t.total_alunos} alunos →</b></button>)}{!turmas.length&&<div className="pj-panel p-6 opacity-65">Nenhuma turma vinculada à sua conta.</div>}{selected&&<article className="pj-panel p-6"><div className="flex justify-between"><div><span className="pj-eyebrow">{selected.codigo}</span><h2 className="text-2xl font-black">{selected.nome}</h2></div><button onClick={()=>setSelected(null)}>Fechar</button></div><h3 className="mt-5 font-black">Docentes</h3>{selected.docentes.map(x=><p className="mt-2 text-sm" key={x.id_usuario}>{x.nome} · {x.papel}</p>)}<h3 className="mt-5 font-black">Alunos</h3>{selected.alunos.map(x=><p className="mt-2 text-sm" key={x.id_usuario}>{x.nome} · {x.email}</p>)}{isGestor&&<div className="mt-5 border-t pt-4"><b>Adicionar participante</b><div className="mt-2 grid gap-2 sm:grid-cols-2">{candidatos.slice(0,40).map(x=><button type="button" onClick={()=>add(x.id_usuario,x.tipo==='aluno'?'ALUNO':'DOCENTE')} className="rounded-xl border p-2 text-left text-xs" key={x.id_usuario}>{x.nome}<small className="block opacity-55">{x.tipo}</small></button>)}</div></div>}</article>}</div>{isGestor&&<form onSubmit={create} className="pj-panel grid content-start gap-3 p-5"><h2 className="text-xl font-black">Nova turma</h2><input required placeholder="Nome da turma" value={form.nome} onChange={e=>setForm({...form,nome:e.target.value})}/><input placeholder="Código (opcional)" value={form.codigo} onChange={e=>setForm({...form,codigo:e.target.value})}/><input type="number" min="2020" max="2100" value={form.anoLetivo} onChange={e=>setForm({...form,anoLetivo:e.target.value})}/><textarea placeholder="Descrição" value={form.descricao} onChange={e=>setForm({...form,descricao:e.target.value})}/><input placeholder="Disciplinas separadas por vírgula" value={form.disciplinas} onChange={e=>setForm({...form,disciplinas:e.target.value})}/><button className="pj-button pj-button--primary">Criar turma</button></form>}</section></div></main>}
+import { useEffect, useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { useAuth } from '../context/AuthContext'
+import service from '../services/turmaService'
+import { Button, EmptyState, Field, PageHeader, Surface } from '../components/ui/PlanejUI'
+import './Turmas.css'
+
+const initialForm = () => ({ nome: '', codigo: '', anoLetivo: new Date().getFullYear(), descricao: '', disciplinas: '' })
+
+export default function Turmas() {
+  const { isGestor } = useAuth()
+  const [turmas, setTurmas] = useState([])
+  const [selected, setSelected] = useState(null)
+  const [candidatos, setCandidatos] = useState([])
+  const [form, setForm] = useState(initialForm)
+  const [loading, setLoading] = useState(true)
+
+  const load = async () => {
+    try { setTurmas(await service.listar()) }
+    catch { toast.error('Não foi possível carregar as turmas.') }
+    finally { setLoading(false) }
+  }
+
+  useEffect(() => {
+    load()
+    if (isGestor) service.candidatos().then(setCandidatos).catch(() => {})
+  }, [isGestor])
+
+  async function create(event) {
+    event.preventDefault()
+    try {
+      await service.criar({ ...form, disciplinas: form.disciplinas.split(',').map((item) => item.trim()).filter(Boolean) })
+      setForm(initialForm())
+      await load()
+      toast.success('Turma criada.')
+    } catch (error) { toast.error(error.response?.data?.message || 'Não foi possível criar.') }
+  }
+
+  async function open(id) {
+    try { setSelected(await service.detalhes(id)) }
+    catch { toast.error('Não foi possível abrir os detalhes da turma.') }
+  }
+
+  async function add(idUsuario, papel) {
+    try {
+      setSelected(await service.adicionar(selected.id_turma, { idUsuario, papel }))
+      toast.success('Participante adicionado.')
+    } catch (error) { toast.error(error.response?.data?.message || 'Não foi possível vincular.') }
+  }
+
+  return (
+    <main className="pj-page classes-page">
+      <div className="pj-wrap">
+        <PageHeader eyebrow="Comunidade de aprendizagem" title="Turmas com contexto, não só listas." description="Acompanhe disciplinas, docentes e alunos em um espaço com acesso controlado e pronto para receber atividades e avisos." icon="T+" />
+
+        <section className="classes-layout">
+          <div className="class-list">
+            {loading && <Surface className="class-loading">Carregando suas turmas…</Surface>}
+            {!loading && !turmas.length && <EmptyState eyebrow="Primeiro espaço" title="Nenhuma turma vinculada ainda." description="Crie a primeira turma para organizar alunos, professores, atividades e comunicação." icon="T" />}
+            {turmas.map((turma) => (
+              <button type="button" onClick={() => open(turma.id_turma)} key={turma.id_turma} className="class-card" data-selected={selected?.id_turma === turma.id_turma}>
+                <span className="class-card-code">{turma.codigo || 'SEM CÓDIGO'} · {turma.ano_letivo}</span>
+                <strong>{turma.nome}</strong>
+                <small>{turma.disciplinas?.map((item) => item.disciplina).join(' · ') || 'Disciplinas ainda não definidas'}</small>
+                <b>{turma.total_alunos || 0} alunos <i>→</i></b>
+              </button>
+            ))}
+
+            {selected && <Surface as="article" className="class-details">
+              <header><div><span className="ui-eyebrow">{selected.codigo || 'Turma'}</span><h2>{selected.nome}</h2></div><Button variant="quiet" onClick={() => setSelected(null)}>Fechar</Button></header>
+              <div className="class-people-grid">
+                <section><h3>Docentes <span>{selected.docentes?.length || 0}</span></h3>{selected.docentes?.map((item) => <p key={item.id_usuario}><i>{item.nome?.charAt(0)}</i><span><b>{item.nome}</b><small>{item.papel}</small></span></p>)}</section>
+                <section><h3>Alunos <span>{selected.alunos?.length || 0}</span></h3>{selected.alunos?.map((item) => <p key={item.id_usuario}><i>{item.nome?.charAt(0)}</i><span><b>{item.nome}</b><small>{item.email}</small></span></p>)}</section>
+              </div>
+              {isGestor && <section className="class-candidates"><h3>Adicionar participante</h3><p>Selecione uma pessoa para criar o vínculo com esta turma.</p><div>{candidatos.slice(0, 40).map((item) => <button type="button" onClick={() => add(item.id_usuario, item.tipo === 'aluno' ? 'ALUNO' : 'DOCENTE')} key={item.id_usuario}><i>{item.nome?.charAt(0)}</i><span><b>{item.nome}</b><small>{item.tipo}</small></span><strong>+</strong></button>)}</div></section>}
+            </Surface>}
+          </div>
+
+          {isGestor && <Surface as="form" onSubmit={create} className="class-form">
+            <div><span className="ui-eyebrow">Novo espaço</span><h2>Criar turma</h2><p>Você poderá adicionar participantes e atividades logo depois.</p></div>
+            <Field label="Nome da turma"><input required placeholder="Ex.: 3º ano A" value={form.nome} onChange={(event) => setForm({ ...form, nome: event.target.value })} /></Field>
+            <div className="class-form-row"><Field label="Código"><input placeholder="Ex.: 3A-2026" value={form.codigo} onChange={(event) => setForm({ ...form, codigo: event.target.value })} /></Field><Field label="Ano letivo"><input type="number" min="2020" max="2100" value={form.anoLetivo} onChange={(event) => setForm({ ...form, anoLetivo: event.target.value })} /></Field></div>
+            <Field label="Descrição"><textarea placeholder="Objetivo ou contexto da turma" value={form.descricao} onChange={(event) => setForm({ ...form, descricao: event.target.value })} /></Field>
+            <Field label="Disciplinas" hint="Separe os nomes por vírgulas."><input placeholder="Matemática, Física, Química" value={form.disciplinas} onChange={(event) => setForm({ ...form, disciplinas: event.target.value })} /></Field>
+            <Button type="submit">Criar turma <span>→</span></Button>
+          </Surface>}
+        </section>
+      </div>
+    </main>
+  )
+}

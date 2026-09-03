@@ -10,6 +10,8 @@ export default {
   catalogoProvas: () => api.get('/catalogo-provas').then((r) => r.data),
   historicoSimulados: () => api.get('/simulados').then((r) => r.data),
   gerarSimulado: (dados) => api.post('/simulados', dados).then((r) => r.data),
+  obterSimulado: (id) => api.get(`/simulados/${id}`).then((r) => r.data),
+  salvarProgressoSimulado: (id, respostas) => api.patch(`/simulados/${id}`, { respostas }).then((r) => r.data),
   concluirSimulado: (id, respostas) => api.post(`/simulados/${id}/concluir`, { respostas }).then((r) => r.data)
   ,trilhas: () => api.get('/trilhas').then((r) => r.data)
 }

@@ -11,6 +11,7 @@ const routeNames = {
   '/cronograma': ['Cronograma', 'Organize o que vem a seguir'],
   '/aprendizagem': ['Aprendizagem', 'Pratique e acompanhe seu domínio'],
   '/planejamento-inteligente': ['Planejamento', 'Estratégia guiada por dados'],
+  '/provas': ['Provas e simulados', 'Treino real com progresso salvo'],
   '/redacoes': ['Redações', 'Escreva, revise e evolua'],
   '/turmas': ['Turmas', 'Comunidade e acompanhamento'],
   '/atividades': ['Atividades', 'Criação e correção pedagógica'],

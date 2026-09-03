@@ -31,6 +31,7 @@ const SystemStatus = lazy(() => import('./pages/SystemStatus'))
 const PlanejamentoInteligente = lazy(() => import('./pages/PlanejamentoInteligente'))
 const MinhaJornada = lazy(() => import('./pages/MinhaJornada'))
 const Turmas = lazy(() => import('./pages/Turmas'))
+const Provas = lazy(() => import('./pages/Provas'))
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
             <Route path="/status" element={<SystemStatus />} />
             <Route path="/aprendizagem" element={<Aprendizagem />} />
             <Route path="/planejamento-inteligente" element={<PlanejamentoInteligente />} />
+            <Route path="/provas" element={<Provas />} />
             <Route path="/minha-jornada" element={<MinhaJornada />} />
             <Route path="/redacoes" element={<Redacoes />} />
             <Route path="/perfil" element={<Perfil />} />

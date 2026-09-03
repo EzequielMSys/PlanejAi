@@ -10,6 +10,7 @@ const titles = {
   "/dashboard": "Visão geral — PlanejAI",
   "/cronograma": "Meu cronograma — PlanejAI",
   "/aprendizagem": "Laboratório de aprendizagem — PlanejAI",
+  "/provas": "Provas e simulados — PlanejAI",
   "/redacoes": "Redações — PlanejAI",
   "/atividades": "Atividades — PlanejAI",
   "/minhas-atividades": "Minhas atividades — PlanejAI",

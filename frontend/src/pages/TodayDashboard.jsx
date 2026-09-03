@@ -80,7 +80,7 @@ export default function TodayDashboard() {
     <div className="dash-v2-wrap">
       <header className="dash-v2-heading">
         <div><span><i /> CENTRAL INTELIGENTE</span><h1>{greeting()}, {name}.</h1><p>{date}</p></div>
-        <div><button type="button" onClick={() => navigate('/planejamento-inteligente')}>Simulados</button><button type="button" onClick={() => navigate('/cronograma')}>Ver planejamento <b>→</b></button></div>
+        <div><button type="button" onClick={() => navigate('/provas')}>Simulados</button><button type="button" onClick={() => navigate('/cronograma')}>Ver planejamento <b>→</b></button></div>
       </header>
 
       <section className="dash-v2-spotlight">
