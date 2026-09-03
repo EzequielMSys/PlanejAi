@@ -48,25 +48,35 @@ async function criarProva(idUsuario, { titulo, dataProva, materias }) { if (!tit
 
 async function catalogoProvas() {
   const [rows] = await pool.execute(`SELECT c.*,
-    (SELECT COUNT(*) FROM catalogo_prova_questoes cp WHERE cp.id_catalogo=c.id_catalogo) AS questoes_disponiveis
+    (SELECT COUNT(*) FROM catalogo_prova_questoes cp JOIN questoes_estudo q ON q.id_questao=cp.id_questao WHERE cp.id_catalogo=c.id_catalogo AND q.ativo=1) AS questoes_disponiveis,
+    (SELECT COUNT(*) FROM catalogo_prova_questoes cp JOIN questoes_estudo q ON q.id_questao=cp.id_questao WHERE cp.id_catalogo=c.id_catalogo AND q.ativo=1 AND q.dificuldade='FACIL') AS questoes_faceis,
+    (SELECT COUNT(*) FROM catalogo_prova_questoes cp JOIN questoes_estudo q ON q.id_questao=cp.id_questao WHERE cp.id_catalogo=c.id_catalogo AND q.ativo=1 AND q.dificuldade='MEDIA') AS questoes_medias,
+    (SELECT COUNT(*) FROM catalogo_prova_questoes cp JOIN questoes_estudo q ON q.id_questao=cp.id_questao WHERE cp.id_catalogo=c.id_catalogo AND q.ativo=1 AND q.dificuldade='DIFICIL') AS questoes_dificeis
     FROM catalogo_provas c WHERE c.ativo=1 ORDER BY c.instituicao, c.referencia_ano DESC`)
   return rows
 }
 
-async function gerarSimulado(idUsuario, { idCatalogo, dificuldade = 'TODAS', quantidade = 10 }) {
+async function gerarSimulado(idUsuario, { idCatalogo, dificuldade = 'TODAS', quantidade = 45 }) {
   const nivel = String(dificuldade || 'TODAS').toUpperCase()
   if (!['TODAS', 'FACIL', 'MEDIA', 'DIFICIL'].includes(nivel)) throw new Error('Dificuldade inválida.')
-  const limite = Math.max(1, Math.min(40, Number(quantidade) || 10))
+  const limite = Math.max(1, Math.min(180, Number(quantidade) || 45))
   const [[catalogo]] = await pool.execute('SELECT * FROM catalogo_provas WHERE id_catalogo=? AND ativo=1', [idCatalogo])
   if (!catalogo) throw new Error('Prova não encontrada no catálogo.')
   const params = [idCatalogo]
   let filtro = ''
   if (nivel !== 'TODAS') { filtro = ' AND q.dificuldade=?'; params.push(nivel) }
+  const [disponiveis] = await pool.execute(`SELECT COUNT(*) AS total
+    FROM catalogo_prova_questoes cp JOIN questoes_estudo q ON q.id_questao=cp.id_questao
+    WHERE cp.id_catalogo=? AND q.ativo=1${filtro}`, params)
+  const totalDisponivel = Number(disponiveis[0]?.total || 0)
+  if (!totalDisponivel) throw new Error('Não há questões disponíveis para este nível.')
+  if (limite > totalDisponivel) {
+    throw new Error(`Esta coleção possui ${totalDisponivel} questão(ões) disponíveis para o nível escolhido. Ajuste a quantidade ou escolha outro nível.`)
+  }
   params.push(limite)
   const [questoes] = await pool.execute(`SELECT q.id_questao,q.disciplina,q.competencia,q.enunciado,q.alternativas,q.dificuldade
     FROM catalogo_prova_questoes cp JOIN questoes_estudo q ON q.id_questao=cp.id_questao
     WHERE cp.id_catalogo=? AND q.ativo=1${filtro} ORDER BY RAND() LIMIT ?`, params)
-  if (!questoes.length) throw new Error('Não há questões disponíveis para este nível.')
   const ids = questoes.map((item) => item.id_questao)
   const [result] = await pool.execute(`INSERT INTO simulados_catalogo
     (id_usuario,id_catalogo,dificuldade,questoes,total_questoes) VALUES(?,?,?,?,?)`,

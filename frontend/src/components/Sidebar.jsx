@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import Logo from './Logo'
+import { resolveBackendAsset } from '../config/api'
 
 function LayoutIcon({ className }) {
   return (
@@ -83,9 +84,15 @@ function ExamIcon({ className }) {
   )
 }
 
+function getFotoUrl(value) {
+  if (!value) return null
+  return value.startsWith('http') ? value : resolveBackendAsset(value)
+}
+
 export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate()
   const { isAdmin, isDono, isGestor, user } = useAuth()
+  const fotoUrl = getFotoUrl(user?.foto_url)
 
   const navItems = [
     { path: '/inicio', label: 'Visão geral', icon: LayoutIcon },
@@ -192,7 +199,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
         <div className="sidebar-footer">
           <div className="sidebar-account">
-            <span className="sidebar-avatar">{(user?.apelido || user?.nome || 'U').charAt(0).toUpperCase()}</span>
+            <span className="sidebar-avatar">{fotoUrl ? <img src={fotoUrl} alt="" /> : (user?.apelido || user?.nome || 'U').charAt(0).toUpperCase()}</span>
             <span><strong>{user?.apelido || user?.nome || 'Usuário'}</strong><small>{user?.tipo || 'aluno'} · online</small></span>
             <i aria-hidden="true">•••</i>
           </div>

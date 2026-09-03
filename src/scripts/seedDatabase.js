@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const questionBank = require('../data/questionBank');
 const { seedConteudos } = require('./seedConteudos');
+const syncExamCatalog = require('./syncExamCatalog');
 
 async function seedQuestoes() {
   const [rows] = await pool.query('SELECT enunciado FROM questoes_estudo');
@@ -35,7 +36,8 @@ async function seedQuestoes() {
 async function seedDatabase() {
   const conteudos = await seedConteudos();
   const questoes = await seedQuestoes();
-  return { conteudos, questoes };
+  const catalogo = await syncExamCatalog();
+  return { conteudos, questoes, catalogo };
 }
 
 module.exports = seedDatabase;

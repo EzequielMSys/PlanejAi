@@ -10,10 +10,16 @@ const formatarTempo = (totalSegundos) => {
   return [horas, minutos, segundos].map((item) => String(item).padStart(2, '0')).join(':')
 }
 
+const questoesNoNivel = (item, dificuldade) => {
+  if (!item) return 0
+  const campos = { FACIL: 'questoes_faceis', MEDIA: 'questoes_medias', DIFICIL: 'questoes_dificeis' }
+  return Number(item[dificuldade === 'TODAS' ? 'questoes_disponiveis' : campos[dificuldade]] || 0)
+}
+
 export default function ExamArena() {
   const [catalogo, setCatalogo] = useState([])
   const [historico, setHistorico] = useState([])
-  const [config, setConfig] = useState({ idCatalogo: '', dificuldade: 'TODAS', quantidade: 10 })
+  const [config, setConfig] = useState({ idCatalogo: '', dificuldade: 'TODAS', quantidade: 45 })
   const [simulado, setSimulado] = useState(null)
   const [respostas, setRespostas] = useState({})
   const [resultado, setResultado] = useState(null)
@@ -72,7 +78,10 @@ export default function ExamArena() {
   const gerar = async () => {
     try {
       setBusyId('novo')
-      iniciarSessao(await inteligencia.gerarSimulado(config))
+      const disponivel = Math.max(1, questoesNoNivel(catalogo.find((item) => String(item.id_catalogo) === String(config.idCatalogo)), config.dificuldade))
+      const quantidade = Math.min(disponivel, Math.max(1, Number(config.quantidade) || 45))
+      setConfig((atual) => ({ ...atual, quantidade }))
+      iniciarSessao(await inteligencia.gerarSimulado({ ...config, quantidade }))
     } catch (error) {
       toast.error(error.response?.data?.message || 'Não foi possível gerar o simulado.')
     } finally { setBusyId(null) }
@@ -103,6 +112,8 @@ export default function ExamArena() {
   }
 
   const respondidas = Object.keys(respostas).length
+  const catalogoSelecionado = catalogo.find((item) => String(item.id_catalogo) === String(config.idCatalogo))
+  const maximoSelecionado = Math.min(180, questoesNoNivel(catalogoSelecionado, config.dificuldade))
   const progresso = simulado?.questoes.length ? (respondidas / simulado.questoes.length) * 100 : 0
   const tempoDecorrido = useMemo(() => {
     if (!simulado?.iniciadoEm) return 0
@@ -117,11 +128,12 @@ export default function ExamArena() {
 
       {!simulado ? <>
         <div className="exam-catalog">
-          {catalogo.map((item) => <button type="button" key={item.id_catalogo} data-selected={String(item.id_catalogo) === String(config.idCatalogo)} onClick={() => setConfig({ ...config, idCatalogo: String(item.id_catalogo) })}><small>{item.instituicao} · {item.referencia_ano || 'Coleção'}</small><b>{item.titulo}</b><p>{item.descricao}</p><span>{item.questoes_disponiveis} questões disponíveis</span></button>)}
+          {catalogo.map((item) => <button type="button" key={item.id_catalogo} data-selected={String(item.id_catalogo) === String(config.idCatalogo)} onClick={() => setConfig((atual) => ({ ...atual, idCatalogo: String(item.id_catalogo), quantidade: Math.min(Number(atual.quantidade) || 1, Math.max(1, questoesNoNivel(item, atual.dificuldade))) }))}><small>{item.instituicao} · {item.referencia_ano || 'Coleção'}</small><b>{item.titulo}</b><p>{item.descricao}</p><span>{item.questoes_disponiveis} questões disponíveis</span></button>)}
         </div>
         <div className="exam-builder">
-          <label>Nível<select value={config.dificuldade} onChange={(event) => setConfig({ ...config, dificuldade: event.target.value })}><option value="TODAS">Misturado</option><option value="FACIL">Fundamentos</option><option value="MEDIA">Intermediário</option><option value="DIFICIL">Avançado</option></select></label>
-          <label>Questões<input type="number" min="1" max="40" value={config.quantidade} onChange={(event) => setConfig({ ...config, quantidade: event.target.value })} /></label>
+          <label>Nível<select value={config.dificuldade} onChange={(event) => { const dificuldade = event.target.value; setConfig((atual) => ({ ...atual, dificuldade, quantidade: Math.min(Number(atual.quantidade) || 1, Math.max(1, questoesNoNivel(catalogoSelecionado, dificuldade))) })) }}><option value="TODAS">Misturado</option><option value="FACIL">Fundamentos</option><option value="MEDIA">Intermediário</option><option value="DIFICIL">Avançado</option></select></label>
+          <label>Questões<input type="number" min="1" max={maximoSelecionado} value={config.quantidade} onChange={(event) => setConfig({ ...config, quantidade: event.target.value })} /><small>até {maximoSelecionado} nesta coleção</small></label>
+          <div className="exam-quantity-presets" aria-label="Quantidade de questões"><span>Formato</span>{[20, 45, 60, 90, 180].filter((quantidade) => quantidade <= maximoSelecionado).map((quantidade) => <button type="button" key={quantidade} data-selected={Number(config.quantidade) === quantidade} onClick={() => setConfig({ ...config, quantidade })}>{quantidade} questões</button>)}</div>
           <button type="button" disabled={!config.idCatalogo || busyId === 'novo'} onClick={gerar}>{busyId === 'novo' ? 'Montando…' : 'Gerar minha prova'} <span>→</span></button>
         </div>
         {historico.length > 0 && <div className="exam-history"><h3>Últimas tentativas</h3>{historico.slice(0, 5).map((item) => <div key={item.id_simulado}><span>{item.instituicao}</span><b>{item.titulo}</b><strong>{item.status === 'CONCLUIDO' ? `${Number(item.nota).toFixed(0)}%` : 'Em andamento'}</strong>{item.status === 'EM_ANDAMENTO' && <button type="button" disabled={busyId === item.id_simulado} onClick={() => retomar(item.id_simulado)}>{busyId === item.id_simulado ? 'Abrindo…' : 'Retomar'}</button>}</div>)}</div>}

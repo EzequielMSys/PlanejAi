@@ -50,7 +50,12 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
   const [title, subtitle] = routeNames[pathname] || ['PlanejAI', 'Seu ambiente de estudos']
   const displayName = user?.apelido || user?.nome || 'Usuário'
   const avatarUrl = getFotoUrl(user?.foto_url)
-  const today = useMemo(() => new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date()).replace('.', ''), [])
+  const today = useMemo(() => {
+    const now = new Date()
+    const day = new Intl.DateTimeFormat('pt-BR', { day: '2-digit' }).format(now)
+    const month = new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(now).replace('.', '')
+    return `${day} ${month}`
+  }, [])
 
   const go = (path) => { setDropdownOpen(false); setQuickOpen(false); navigate(path) }
   const signOut = () => { setDropdownOpen(false); logout(); navigate('/') }
@@ -59,7 +64,7 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
     <header className="app-topbar">
       <div className="topbar-left">
         <button type="button" onClick={onMenuClick} className="topbar-menu" aria-label={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}><Icon name={sidebarOpen ? 'close' : 'menu'} /></button>
-        <div className="topbar-route"><span>{today}</span><div><strong>{title}</strong><small>{subtitle}</small></div></div>
+        <div className="topbar-route"><span className="topbar-date">Hoje · {today}</span><div><strong>{title}</strong><small>{subtitle}</small></div></div>
       </div>
 
       <div className="topbar-actions">

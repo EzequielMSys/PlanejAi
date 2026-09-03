@@ -22,6 +22,25 @@
     "migrate:materiais": "node src/scripts/applyContentMaterialsMigration.js",
     "migrate:all": "node src/scripts/applyMigrations.js"
   },
+  "nodemonConfig": {
+    "watch": [
+      "src",
+      "migrations"
+    ],
+    "ext": "js,json,sql",
+    "ignore": [
+      "frontend/**",
+      "uploads/**",
+      "backups/**",
+      "docs/**",
+      "coverage/**",
+      "node_modules/**",
+      "frontend/node_modules/**",
+      "frontend/dist/**",
+      ".git/**"
+    ],
+    "delay": "750"
+  },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",

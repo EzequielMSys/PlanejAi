@@ -90,7 +90,8 @@ html body .app-sidebar .sidebar-link.is-active { border-color: color-mix(in srgb
 .sidebar-link:hover > i, .sidebar-link.is-active > i { opacity: .8; }
 .sidebar-footer { padding: .8rem; border-top: 1px solid var(--ui-line); }
 html body .app-sidebar .sidebar-account { display: grid; grid-template-columns: 2.25rem minmax(0,1fr) auto; align-items: center; gap: .65rem; border: 0 !important; border-radius: .8rem !important; background: var(--ui-surface-2) !important; padding: .62rem !important; box-shadow: none !important; }
-.sidebar-avatar { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border-radius: .65rem; background: var(--ui-purple); color: #fff; font-size: .8rem; font-weight: 900; }
+.sidebar-avatar { display: grid; width: 2.25rem; height: 2.25rem; overflow: hidden; place-items: center; border-radius: .65rem; background: var(--ui-purple); color: #fff; font-size: .8rem; font-weight: 900; }
+.sidebar-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .sidebar-account > span:nth-child(2) { min-width: 0; display: grid; }
 html body .app-sidebar .sidebar-account strong { overflow: hidden; color: var(--ui-ink) !important; font-size: .76rem !important; text-overflow: ellipsis; white-space: nowrap; }
 html body .app-sidebar .sidebar-account small { color: var(--ui-muted); font-size: .62rem; text-transform: capitalize; }
@@ -102,7 +103,7 @@ html body .app-sidebar .sidebar-account small { color: var(--ui-muted); font-siz
 .topbar-menu { display: none; width: 2.6rem; height: 2.6rem; place-items: center; border: 1px solid var(--ui-line); border-radius: .75rem; }
 .topbar-menu svg, .topbar-icon-button svg, .topbar-quick svg { width: 1.15rem; height: 1.15rem; }
 .topbar-route { display: flex; align-items: center; gap: .75rem; }
-.topbar-route > span { display: grid; width: 2.6rem; height: 2.6rem; place-items: center; border-radius: .75rem; background: var(--ui-purple-soft); color: var(--ui-purple-strong); font-size: .7rem; font-weight: 900; text-transform: uppercase; }
+.topbar-date { display: inline-flex; min-height: 2rem; align-items: center; border: 1px solid color-mix(in srgb, var(--ui-purple) 18%, var(--ui-line)); border-radius: 999px; background: var(--ui-purple-soft); color: var(--ui-purple-strong); padding: .35rem .65rem; font-size: .68rem; font-weight: 900; letter-spacing: .025em; text-transform: uppercase; white-space: nowrap; }
 .topbar-route > div { display: grid; }
 .topbar-route strong { font-size: .92rem; font-weight: 900; letter-spacing: -.015em; }
 .topbar-route small { margin-top: .12rem; color: var(--ui-muted); font-size: .67rem; }
@@ -280,7 +281,7 @@ html:not(.dark) body[data-page="landing"] .home-page { background: radial-gradie
 @media (max-width: 720px) {
   :root { --ui-topbar: 4.15rem; }
   .app-topbar { padding-inline: .75rem; }
-  .topbar-route > span, .topbar-route small, .topbar-quick span, .topbar-icon-button, .topbar-profile-copy { display: none !important; }
+  .topbar-date, .topbar-route small, .topbar-quick span, .topbar-icon-button, .topbar-profile-copy { display: none !important; }
   .topbar-route strong { font-size: .82rem; }
   .topbar-actions { gap: .4rem; }
   .topbar-profile { min-height: 2.6rem; padding: .2rem .35rem .2rem .2rem; }
