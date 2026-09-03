@@ -35,6 +35,9 @@ function validarAtividade(body) {
       if (!['MULTIPLA_ESCOLHA', 'CHECKBOX', 'DISSERTATIVA'].includes(tipo)) throw new Error('Tipo de questão inválido.');
       const opcoes = Array.isArray(questao.opcoes) ? questao.opcoes.map(String).filter(Boolean) : [];
       if (['MULTIPLA_ESCOLHA', 'CHECKBOX'].includes(tipo) && opcoes.length < 2) throw new Error(`A questão ${index + 1} precisa de pelo menos duas opções.`);
+      const gabarito = questao.resposta_correta;
+      if (tipo === 'MULTIPLA_ESCOLHA' && !opcoes.includes(String(gabarito ?? ''))) throw new Error(`Selecione uma opção válida como gabarito na questão ${index + 1}.`);
+      if (tipo === 'CHECKBOX' && (!Array.isArray(gabarito) || !gabarito.length || gabarito.some((valor) => !opcoes.includes(String(valor))))) throw new Error(`Selecione uma ou mais opções válidas como gabarito na questão ${index + 1}.`);
       return {
         id: questao.id || `q${index + 1}`,
         enunciado: questao.enunciado.trim(),
@@ -69,8 +72,8 @@ function corrigirAutomaticamente(questoes, respostas) {
 
 async function listar(req, res) {
   try {
-    if (eGestor(req)) return res.json(await atividadeModel.listarGestao());
-    const atividades = await atividadeModel.listarPublicadas();
+    if (eGestor(req)) return res.json(await atividadeModel.listarGestao(req.usuario.tipo === 'docente' ? usuarioId(req) : null));
+    const atividades = await atividadeModel.listarPublicadas(usuarioId(req));
     const filtradas = atividades.filter((a) => {
       if (!a.atribuicao || a.atribuicao === 'TODOS') return true;
       if (Array.isArray(a.destinatarios) && a.destinatarios.includes(String(req.usuario.id_usuario || req.usuario.id))) return true;

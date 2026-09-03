@@ -1,6 +1,7 @@
 const crypto = require('crypto')
 const path = require('path')
 const { getJwtSecret } = require('../config/jwtConfig')
+const pool = require('../config/db')
 
 const uploadsRoot = path.resolve(__dirname, '..', '..', 'uploads')
 
@@ -34,4 +35,55 @@ function verifyFileToken(token) {
   return resolveUploadPath(`/uploads/${data.path}`)
 }
 
-module.exports = { createFileToken, verifyFileToken, resolveUploadPath }
+function parseJson(value) {
+  if (Array.isArray(value)) return value
+  try { return JSON.parse(value || '[]') } catch { return [] }
+}
+
+function containsFile(items, relative) {
+  const expected = `/uploads/${relative}`.replaceAll('\\', '/')
+  return parseJson(items).some((item) => {
+    const value = typeof item === 'string' ? item : item?.url
+    return String(value || '').replaceAll('\\', '/') === expected
+  })
+}
+
+async function canAccessFile(value, user) {
+  const { relative } = resolveUploadPath(value)
+  const userId = user?.id_usuario || user?.id
+  const type = user?.tipo
+  if (!userId) return false
+
+  if (relative.startsWith('atividades/')) {
+    const [rows] = await pool.execute(
+      `SELECT id_atividade, criado_por, status, atribuicao, destinatarios, anexos
+       FROM atividades WHERE anexos IS NOT NULL`
+    )
+    const activity = rows.find((row) => containsFile(row.anexos, relative))
+    if (!activity) return false
+    if (['dono', 'admin', 'adm'].includes(type)) return true
+    if (type === 'docente') return Number(activity.criado_por) === Number(userId)
+    if (activity.status !== 'PUBLICADA') return false
+    if (!activity.atribuicao || activity.atribuicao === 'TODOS') return true
+    return parseJson(activity.destinatarios).map(String).includes(String(userId))
+  }
+
+  if (relative.startsWith('materiais/')) {
+    if (['dono', 'admin', 'adm', 'docente'].includes(type)) return true
+    const [rows] = await pool.execute(
+      `SELECT c.materiais
+       FROM conteudos c
+       INNER JOIN cronograma_conteudos cc ON cc.id_conteudo = c.id_conteudo
+       INNER JOIN cronograma_dias cd ON cd.id_dia = cc.id_dia
+       INNER JOIN cronogramas cr ON cr.id_cronograma = cd.id_cronograma
+       INNER JOIN perfil_estudo p ON p.id_perfil = cr.id_perfil
+       WHERE p.id_usuario = ? AND c.materiais IS NOT NULL`,
+      [userId]
+    )
+    return rows.some((row) => containsFile(row.materiais, relative))
+  }
+
+  return false
+}
+
+module.exports = { createFileToken, verifyFileToken, resolveUploadPath, canAccessFile }

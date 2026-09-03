@@ -14,10 +14,18 @@ async function obterPorId(idAviso) {
   return rows[0] || null;
 }
 
-async function listarAvisos(limit = 50) {
+async function listarAvisos(tipoUsuario, limit = 50) {
+  const grupos = tipoUsuario === 'aluno'
+    ? ['todos', 'alunos']
+    : tipoUsuario === 'docente'
+      ? ['todos', 'docentes']
+      : ['todos', 'alunos', 'docentes']
   const [rows] = await pool.execute(
-    `SELECT a.*, u.nome AS criador_nome FROM avisos a LEFT JOIN usuarios u ON u.id_usuario = a.criado_por ORDER BY a.criado_em DESC LIMIT ?`,
-    [limit]
+    `SELECT a.*, u.nome AS criador_nome FROM avisos a
+     LEFT JOIN usuarios u ON u.id_usuario = a.criado_por
+     WHERE a.destinatarios IN (${grupos.map(() => '?').join(',')})
+     ORDER BY a.criado_em DESC LIMIT ?`,
+    [...grupos, limit]
   );
   return rows;
 }

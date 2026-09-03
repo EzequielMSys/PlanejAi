@@ -119,6 +119,7 @@ const Login = () => {
               <button
                 type="button"
                 tabIndex={-1}
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                 onClick={() => setShowPassword(v => !v)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4B4C9D] dark:text-[#A9AAE8] hover:text-black dark:hover:text-white transition-colors"
               >

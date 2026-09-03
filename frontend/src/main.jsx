@@ -12,6 +12,8 @@ import "./DarkContrast.css";
 import "./ExperienceFoundation.css";
 import "./Accessibility.css";
 import "./VisualEvolution.css";
+import "./SolidIdentity.css";
+import "./UnifiedDesign.css";
 import App from "./App.jsx";
 import { HashRouter } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";

@@ -4,6 +4,7 @@ import inteligencia from "../services/inteligenciaService";
 import perfil from "../services/perfilService";
 import AdaptiveLearningHub from "../components/AdaptiveLearningHub";
 import LearningPaths from "../components/LearningPaths";
+import ExamArena from "../components/ExamArena";
 
 export default function PlanejamentoInteligente() {
   const [materias, setMaterias] = useState([]);
@@ -152,6 +153,7 @@ export default function PlanejamentoInteligente() {
         </header>
         <AdaptiveLearningHub />
         <LearningPaths />
+        <ExamArena />
         <section className="mt-5 grid gap-5 lg:grid-cols-2">
           <article className="rounded-[2rem] bg-white p-6 dark:bg-[#211A2D]">
             <h2 className="text-xl font-black">Diagnóstico inicial</h2>

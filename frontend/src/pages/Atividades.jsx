@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import atividadeService from '../services/atividadeService'
 import { motion, AnimatePresence } from 'framer-motion'
+import MaterialViewer from '../components/MaterialViewer'
 
 const novaQuestao = () => ({ id: `q-${Date.now()}`, enunciado: '', tipo: 'MULTIPLA_ESCOLHA', opcoes: ['', ''], resposta_correta: '' })
 
@@ -15,6 +16,10 @@ export default function Atividades() {
   const [uploadPreview, setUploadPreview] = useState(null)
   const [alunos, setAlunos] = useState([])
   const [carregandoAlunos, setCarregandoAlunos] = useState(false)
+  const [editandoId, setEditandoId] = useState(null)
+  const [entregas, setEntregas] = useState(null)
+  const [correcoes, setCorrecoes] = useState({})
+  const [material, setMaterial] = useState(null)
   const fileRef = useRef(null)
 
   const [form, setForm] = useState({
@@ -55,18 +60,14 @@ export default function Atividades() {
   const handleUploadImagem = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!file.type.startsWith('image/')) {
-      toast.error('Selecione uma imagem.')
-      return
-    }
     setEnviandoImagem(true)
     try {
       const data = await atividadeService.uploadImagem(file)
       setForm((f) => ({
         ...f,
-        anexos: [...f.anexos, { tipo: 'imagem', url: data.url, nome: file.name }]
+        anexos: [...f.anexos, { tipo: file.type, url: data.url, nome: file.name }]
       }))
-      setUploadPreview(data.url)
+      setUploadPreview(file.type.startsWith('image/') ? URL.createObjectURL(file) : null)
       toast.success('Imagem enviada.')
     } catch {
       toast.error('Erro ao enviar imagem.')
@@ -94,12 +95,15 @@ export default function Atividades() {
         atribuicao: form.atribuicao,
         destinatarios: form.atribuicao === 'SELECIONADOS' ? form.destinatarios : []
       }
-      const atividade = await atividadeService.criar(payload)
-      setItens((atual) => [atividade, ...atual])
+      const atividade = editandoId
+        ? await atividadeService.atualizar(editandoId, payload)
+        : await atividadeService.criar(payload)
+      setItens((atual) => editandoId ? atual.map((item) => item.id_atividade === editandoId ? atividade : item) : [atividade, ...atual])
       setAberto(false)
+      setEditandoId(null)
       setForm({ titulo: '', descricao: '', prazo: '', anexos: [], questoes: [novaQuestao()], atribuicao: 'TODOS', destinatarios: [] })
       setUploadPreview(null)
-      toast.success(status === 'PUBLICADA' ? 'Atividade publicada.' : 'Rascunho salvo.')
+      toast.success(editandoId ? 'Atividade atualizada.' : status === 'PUBLICADA' ? 'Atividade publicada.' : 'Rascunho salvo.')
     } catch (error) {
       toast.error(error.response?.data?.message || 'Revise os dados da atividade.')
     } finally {
@@ -133,6 +137,29 @@ export default function Atividades() {
     setForm((f) => ({ ...f, questoes: f.questoes.filter((_, i) => i !== index) }))
   }
 
+  const editar = (item) => {
+    setForm({
+      titulo: item.titulo || '', descricao: item.descricao || '', prazo: item.prazo ? String(item.prazo).slice(0, 16) : '',
+      anexos: item.anexos || [], questoes: item.questoes?.length ? item.questoes : [novaQuestao()],
+      atribuicao: item.atribuicao || 'TODOS', destinatarios: (item.destinatarios || []).map(String)
+    })
+    setEditandoId(item.id_atividade); setAberto(true); setUploadPreview(null); window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const abrirEntregas = async (item) => {
+    try { setEntregas({ atividade: item, itens: await atividadeService.entregas(item.id_atividade) }) }
+    catch { toast.error('Não foi possível carregar as entregas.') }
+  }
+
+  const corrigir = async (resposta) => {
+    const dados = correcoes[resposta.id_resposta] || { nota: resposta.nota ?? '', feedback: resposta.feedback || '' }
+    try {
+      const atualizada = await atividadeService.corrigir(resposta.id_resposta, dados)
+      setEntregas((atual) => ({ ...atual, itens: atual.itens.map((item) => item.id_resposta === atualizada.id_resposta ? atualizada : item) }))
+      toast.success('Correção salva e liberada ao aluno.')
+    } catch (error) { toast.error(error.response?.data?.message || 'Revise a nota informada.') }
+  }
+
   return (
     <div className="min-h-screen bg-[#F7F7FB] px-4 py-10 dark:bg-[#0F0E20] sm:px-8">
       <div className="mx-auto max-w-6xl">
@@ -163,7 +190,7 @@ export default function Atividades() {
               className="mb-10 space-y-6 rounded-[2.5rem] bg-white p-6 sm:p-8 shadow-2xl dark:bg-[#1E1D3A]"
             >
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-black">Nova atividade</h2>
+                <h2 className="text-2xl font-black">{editandoId ? 'Editar atividade' : 'Nova atividade'}</h2>
                 <span className="text-xs font-bold text-black/50 dark:text-white/50 bg-[#F7F7FB] dark:bg-white/10 px-3 py-1 rounded-full">
                   {isGestor ? 'Modo gestor' : 'Modo aluno'}
                 </span>
@@ -194,7 +221,7 @@ export default function Atividades() {
                   <input
                     ref={fileRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt,.mp4,.webm"
                     className="hidden"
                     onChange={handleUploadImagem}
                   />
@@ -204,7 +231,7 @@ export default function Atividades() {
                     disabled={enviandoImagem}
                     className="w-full rounded-2xl border border-dashed border-[#9394CF] bg-[#F7F7FB] px-5 py-3 font-bold text-[#4B4C9D] hover:bg-[#9394CF]/10 transition disabled:opacity-50"
                   >
-                    {enviandoImagem ? 'Enviando...' : 'Anexar imagem'}
+                    {enviandoImagem ? 'Enviando...' : 'Anexar arquivo'}
                   </button>
                 </div>
               </div>
@@ -259,7 +286,7 @@ export default function Atividades() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="relative inline-block"
                   >
-                    <img src={uploadPreview} alt="Preview" className="h-40 w-auto rounded-2xl border border-[#9394CF]/30 object-cover" />
+                    <img src={uploadPreview} alt="Prévia do anexo" className="h-40 w-auto rounded-2xl border border-[#9394CF]/30 object-cover" />
                     <button
                       type="button"
                       onClick={() => removerAnexo(0)}
@@ -301,7 +328,7 @@ export default function Atividades() {
 
                     <select
                       value={q.tipo}
-                      onChange={(e) => atualizarQuestao(i, { tipo: e.target.value })}
+                      onChange={(e) => atualizarQuestao(i, { tipo: e.target.value, resposta_correta: e.target.value === 'CHECKBOX' ? [] : '' })}
                       className="w-full rounded-xl border border-[#9394CF]/40 bg-white px-4 py-2 text-sm font-bold text-black dark:bg-[#1E1D3A] dark:text-white"
                     >
                       <option value="MULTIPLA_ESCOLHA">Múltipla escolha</option>
@@ -317,25 +344,10 @@ export default function Atividades() {
                     />
 
                     {q.tipo !== 'DISSERTATIVA' && (
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <input
-                          value={q.opcoes[0]}
-                          onChange={(e) => atualizarQuestao(i, { opcoes: [e.target.value, q.opcoes[1]] })}
-                          placeholder="Opção 1"
-                          className="rounded-xl border border-[#9394CF]/40 bg-white px-4 py-2 text-sm text-black dark:bg-[#1E1D3A] dark:text-white"
-                        />
-                        <input
-                          value={q.opcoes[1]}
-                          onChange={(e) => atualizarQuestao(i, { opcoes: [q.opcoes[0], e.target.value] })}
-                          placeholder="Opção 2"
-                          className="rounded-xl border border-[#9394CF]/40 bg-white px-4 py-2 text-sm text-black dark:bg-[#1E1D3A] dark:text-white"
-                        />
-                        <input
-                          value={q.resposta_correta}
-                          onChange={(e) => atualizarQuestao(i, { resposta_correta: e.target.value })}
-                          placeholder="Gabarito"
-                          className="sm:col-span-2 rounded-xl border border-[#9394CF]/40 bg-white px-4 py-2 text-sm text-black dark:bg-[#1E1D3A] dark:text-white"
-                        />
+                      <div className="grid gap-3">
+                        {(q.opcoes || []).map((opcao, opcaoIndex) => <div key={opcaoIndex} className="flex gap-2"><input value={opcao} onChange={(e) => { const opcoes = [...q.opcoes]; const anterior = opcoes[opcaoIndex]; opcoes[opcaoIndex] = e.target.value; const resposta_correta = Array.isArray(q.resposta_correta) ? q.resposta_correta.map((v) => v === anterior ? e.target.value : v) : q.resposta_correta === anterior ? e.target.value : q.resposta_correta; atualizarQuestao(i, { opcoes, resposta_correta }) }} placeholder={`Opção ${opcaoIndex + 1}`} className="flex-1 rounded-xl border border-[#9394CF]/40 bg-white px-4 py-2 text-sm text-black dark:bg-[#1E1D3A] dark:text-white" />{q.opcoes.length > 2 && <button type="button" onClick={() => atualizarQuestao(i, { opcoes: q.opcoes.filter((_, n) => n !== opcaoIndex) })}>×</button>}</div>)}
+                        <button type="button" onClick={() => atualizarQuestao(i, { opcoes: [...q.opcoes, ''] })} className="text-left text-xs font-bold text-[#4B4C9D]">+ Nova opção</button>
+                        {q.tipo === 'MULTIPLA_ESCOLHA' ? <select value={q.resposta_correta || ''} onChange={(e) => atualizarQuestao(i, { resposta_correta: e.target.value })} className="rounded-xl border p-2 text-black"><option value="">Selecione o gabarito</option>{q.opcoes.filter(Boolean).map((opcao) => <option key={opcao}>{opcao}</option>)}</select> : <div className="flex flex-wrap gap-2">{q.opcoes.filter(Boolean).map((opcao) => <label key={opcao} className="flex items-center gap-2 rounded-lg border p-2 text-xs"><input type="checkbox" checked={(q.resposta_correta || []).includes(opcao)} onChange={() => { const atual = q.resposta_correta || []; atualizarQuestao(i, { resposta_correta: atual.includes(opcao) ? atual.filter((v) => v !== opcao) : [...atual, opcao] }) }} />{opcao}</label>)}</div>}
                       </div>
                     )}
 
@@ -397,18 +409,30 @@ export default function Atividades() {
 
               {item.anexos?.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {item.anexos.map((anexo, idx) => (
-                    <img key={idx} src={anexo.url} alt={anexo.nome} className="h-20 w-20 rounded-xl object-cover border border-[#9394CF]/30" />
-                  ))}
+                  {item.anexos.map((anexo, idx) => <button type="button" key={`${anexo.url}-${idx}`} onClick={() => setMaterial({ ...anexo, titulo: anexo.nome || 'Anexo' })} className="rounded-full border px-3 py-2 text-xs font-bold text-[#3157d5]">Abrir {anexo.nome || `anexo ${idx + 1}`}</button>)}
                 </div>
               )}
 
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                 <span className="text-sm font-bold text-[#4B4C9D]">{isGestor ? `${item.entregas || 0} entregas` : 'Ver atividade'}</span>
+                <div className="flex gap-2"><button type="button" onClick={() => editar(item)} className="rounded-full border px-3 py-1 text-xs font-bold">Editar</button><button type="button" onClick={() => abrirEntregas(item)} className="rounded-full bg-[#4B4C9D] px-3 py-1 text-xs font-bold text-white">Corrigir</button></div>
               </div>
             </motion.article>
           ))}
         </section>
+        {!itens.length && !aberto && (
+          <section className="pj-panel activity-empty-state">
+            <span className="activity-empty-mark">+</span>
+            <div>
+              <p className="pj-eyebrow">Primeiro desafio</p>
+              <h2>Crie uma experiência de aprendizagem.</h2>
+              <p>Combine contexto, arquivos e questões. O PlanejAI organiza as entregas e deixa a correção automática ou manual no mesmo fluxo.</p>
+            </div>
+            {isGestor && <button type="button" className="pj-button pj-button--primary" onClick={() => setAberto(true)}>Criar primeira atividade</button>}
+          </section>
+        )}
+        {entregas && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 p-4" onMouseDown={() => setEntregas(null)}><section className="mx-auto my-8 max-w-3xl rounded-3xl bg-white p-6 text-black shadow-2xl" onMouseDown={(e) => e.stopPropagation()}><header className="flex justify-between gap-3"><div><p className="text-xs font-black text-[#4B4C9D]">ENTREGAS</p><h2 className="text-2xl font-black">{entregas.atividade.titulo}</h2></div><button onClick={() => setEntregas(null)} className="text-2xl">×</button></header>{!entregas.itens.length ? <p className="mt-8 rounded-xl bg-slate-50 p-6 text-center">Ainda não há entregas.</p> : <div className="mt-5 grid gap-4">{entregas.itens.map((resposta) => { const formCorrecao = correcoes[resposta.id_resposta] || { nota: resposta.nota ?? '', feedback: resposta.feedback || '' }; return <article key={resposta.id_resposta} className="rounded-2xl border p-4"><div className="flex justify-between"><div><b>{resposta.nome}</b><p className="text-xs opacity-60">{resposta.email}</p></div><span className="text-xs font-bold">{resposta.status}</span></div><pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs">{JSON.stringify(resposta.resposta, null, 2)}</pre><div className="mt-3 grid gap-2 sm:grid-cols-[100px_1fr_auto]"><input type="number" min="0" max="100" value={formCorrecao.nota} onChange={(e) => setCorrecoes({ ...correcoes, [resposta.id_resposta]: { ...formCorrecao, nota: e.target.value } })} placeholder="Nota" className="rounded-lg border p-2" /><input value={formCorrecao.feedback} onChange={(e) => setCorrecoes({ ...correcoes, [resposta.id_resposta]: { ...formCorrecao, feedback: e.target.value } })} placeholder="Feedback ao aluno" className="rounded-lg border p-2" /><button onClick={() => corrigir(resposta)} className="rounded-lg bg-[#3157d5] px-4 py-2 font-bold text-white">Salvar</button></div></article>})}</div>}</section></div>}
+        {material && <MaterialViewer material={material} onClose={() => setMaterial(null)} />}
       </div>
     </div>
   )

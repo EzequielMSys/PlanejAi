@@ -280,7 +280,9 @@ class CronogramaService {
     }
   }
 
-  async marcarPendente(idDia) {
+  async marcarPendente(idDia, idUsuario) {
+    const dia = await avaliacaoModel.obterDiaDoUsuario(idDia, idUsuario)
+    if (!dia) throw new Error('Dia não encontrado no cronograma deste usuário.')
     await cronogramaConteudoModel.marcarTodosPendentes(idDia)
     await cronogramaDiaModel.marcarDiaPendente(idDia)
 
@@ -298,7 +300,11 @@ class CronogramaService {
     return cronogramaConteudoModel.marcarConcluido(idConteudoCronograma)
   }
 
-  async reabrirConteudo(idConteudoCronograma) {
+  async reabrirConteudo(idConteudoCronograma, idUsuario) {
+    const conteudo = await cronogramaConteudoModel.obterConteudoCronogramaPorId(idConteudoCronograma)
+    if (!conteudo) throw new Error('Conteúdo do cronograma não encontrado.')
+    const dia = await avaliacaoModel.obterDiaDoUsuario(conteudo.id_dia, idUsuario)
+    if (!dia) throw new Error('Conteúdo não encontrado no cronograma deste usuário.')
     return cronogramaConteudoModel.marcarNaoConcluido(idConteudoCronograma)
   }
 

@@ -77,17 +77,17 @@ function BellIcon({ className }) {
 
 export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate()
-  const { isAdmin, isDono, user } = useAuth()
+  const { isAdmin, isDono, isGestor, user } = useAuth()
 
-const navItems = [
-    { path: '/inicio', label: 'Dashboard', icon: LayoutIcon },
+  const navItems = [
+    { path: '/inicio', label: 'Visão geral', icon: LayoutIcon },
     ...(user?.tipo === 'aluno' ? [{ path: '/minha-jornada', label: 'Minha jornada', icon: DashboardIcon }] : []),
     { path: '/cronograma', label: 'Cronograma', icon: CalendarIcon },
     { path: '/aprendizagem', label: 'Aprendizagem', icon: DashboardIcon },
     { path: '/planejamento-inteligente', label: 'Planejamento', icon: CalendarIcon },
-    { path: '/turmas', label: 'Turmas', icon: UsersIcon },
     { path: '/redacoes', label: 'Redações', icon: RedacaoIcon },
-    { path: '/atividades', label: 'Atividades', icon: RedacaoIcon },
+    ...(isGestor ? [{ path: '/turmas', label: 'Turmas', icon: UsersIcon }] : []),
+    ...(isGestor ? [{ path: '/atividades', label: 'Atividades', icon: RedacaoIcon }] : []),
     ...(user?.tipo === 'aluno' ? [{ path: '/minhas-atividades', label: 'Minhas atividades', icon: RedacaoIcon }] : []),
     ...(user?.tipo === 'aluno' ? [{ path: '/avisos', label: 'Avisos', icon: BellIcon }] : []),
     { path: '/perfil', label: 'Perfil', icon: UserIcon }
@@ -135,45 +135,36 @@ const navItems = [
           opacity: isOpen ? 1 : 0
         }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="
-          app-sidebar
-          fixed lg:fixed lg:!translate-x-0 lg:!opacity-100
-          top-0 left-0 h-full w-64 z-50
-          bg-[#202024]/98 text-white backdrop-blur-xl border-r border-white/5
-          shadow-[20px_0_60px_-35px_rgba(15,12,44,.8)] flex flex-col
-        "
+        className="app-sidebar"
       >
-        <div className="flex h-[4.5rem] items-center justify-between border-b border-white/10 px-5">
+        <div className="sidebar-brand-row">
           <button
             type="button"
-            className="flex items-center space-x-3"
+            className="sidebar-brand-button"
             onClick={handleNavigateHome}
           >
             <motion.div
-              whileHover={{ rotate: 15, scale: 1.1 }}
-              className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+              whileHover={{ rotate: -6, scale: 1.04 }}
+              className="sidebar-logo"
             >
-              <Logo className="w-9 h-9" />
+              <Logo className="h-10 w-10" />
             </motion.div>
-
-            <span className="sidebar-brand text-xl font-black tracking-[-0.03em] text-white">
-              PlanejAI
-            </span>
+            <span className="sidebar-brand-copy"><strong>PlanejAI</strong><small>aprenda com direção</small></span>
           </button>
 
           <button
             type="button"
             onClick={onClose}
-            className="sidebar-close text-white/70 transition-colors hover:text-white lg:hidden"
+            className="sidebar-close"
           >
             <CloseIcon className="w-6 h-6" />
           </button>
         </div>
 
-<nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          <p className="sidebar-section px-4 pb-2 pt-2 text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
-            Principal
-          </p>
+        <div className="sidebar-context"><span><i /> Espaço ativo</span><strong>{user?.tipo === 'aluno' ? 'Minha aprendizagem' : 'Central pedagógica'}</strong></div>
+
+        <nav className="sidebar-nav">
+          <p className="sidebar-section">Aprender</p>
 
           {navItems.map((item) => (
             <SidebarLink key={item.path} item={item} onClose={onClose} />
@@ -181,9 +172,7 @@ const navItems = [
 
           {adminItems.length > 0 && (
             <>
-              <p className="sidebar-section px-4 pb-2 pt-6 text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
-                Gestão
-              </p>
+              <p className="sidebar-section sidebar-section--spaced">Gerenciar</p>
 
               {adminItems.map((item) => (
                 <SidebarLink key={item.path} item={item} onClose={onClose} />
@@ -192,23 +181,11 @@ const navItems = [
           )}
         </nav>
 
-<div className="border-t border-white/10 p-4">
-          <div className="sidebar-account rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-            <p className="text-xs text-black/50 dark:text-white/50 mb-1 font-bold">
-              Conta
-            </p>
-
-            <strong className="block text-sm font-black text-[#4B4C9D] dark:text-[#A9AAE8] truncate">
-              {user?.tipo || 'aluno'}
-            </strong>
-
-            <p className="text-xs text-black/50 dark:text-white/50 mt-3 mb-1 font-bold">
-              Versão
-            </p>
-
-            <strong className="block text-sm font-black text-[#4B4C9D] dark:text-[#A9AAE8]">
-              1.0.0
-            </strong>
+        <div className="sidebar-footer">
+          <div className="sidebar-account">
+            <span className="sidebar-avatar">{(user?.apelido || user?.nome || 'U').charAt(0).toUpperCase()}</span>
+            <span><strong>{user?.apelido || user?.nome || 'Usuário'}</strong><small>{user?.tipo || 'aluno'} · online</small></span>
+            <i aria-hidden="true">•••</i>
           </div>
         </div>
       </motion.aside>
@@ -221,16 +198,11 @@ function SidebarLink({ item, onClose }) {
     <NavLink
       to={item.path}
       onClick={onClose}
-      className={({ isActive }) =>
-        `flex items-center space-x-3 px-4 py-3.5 rounded-full transition-all duration-200 group font-bold ${
-          isActive
-              ? 'sidebar-link is-active bg-[#6157D9] text-white shadow-lg shadow-black/20'
-            : 'sidebar-link text-white/58 hover:bg-white/[0.07] hover:text-white'
-        }`
-      }
+      className={({ isActive }) => `sidebar-link${isActive ? ' is-active' : ''}`}
     >
-      <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+      <span className="sidebar-link-icon"><item.icon className="h-5 w-5" /></span>
       <span>{item.label}</span>
+      <i aria-hidden="true">›</i>
     </NavLink>
   )
 }

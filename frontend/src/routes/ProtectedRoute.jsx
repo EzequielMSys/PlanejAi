@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false, gestorOnly = false }) => {
   const {
     isAuthenticated,
     isAdmin,
@@ -51,6 +51,10 @@ const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false }) => {
   }
 
   if (adminOnly && !isAdmin && !isDono) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  if (gestorOnly && !isGestor) {
     return <Navigate to="/dashboard" replace />
   }
 

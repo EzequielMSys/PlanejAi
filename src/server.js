@@ -139,6 +139,35 @@ if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   let server;
 
+  function listen(port) {
+    return new Promise((resolve, reject) => {
+      const candidate = app.listen(port, "0.0.0.0");
+      const onError = (error) => {
+        candidate.removeListener("listening", onListening);
+        reject(error);
+      };
+      const onListening = () => {
+        candidate.removeListener("error", onError);
+        resolve(candidate);
+      };
+      candidate.once("error", onError);
+      candidate.once("listening", onListening);
+    });
+  }
+
+  async function existingPlanejAiIsHealthy(port) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/api/health`, {
+        signal: AbortSignal.timeout(1500),
+      });
+      if (!response.ok) return false;
+      const payload = await response.json();
+      return payload?.status === "OK";
+    } catch {
+      return false;
+    }
+  }
+
   const shutdown = (signal) => {
     console.log(`[SERVER] ${signal} recebido. Encerrando com segurança...`);
     if (!server) {
@@ -171,9 +200,28 @@ if (require.main === module) {
         await seedDatabase();
       }
       await repairContentLinks();
-      server = app.listen(PORT, "0.0.0.0", () => {
-        console.log(`Servidor rodando na porta ${PORT}`);
-      });
+      try {
+        server = await listen(PORT);
+      } catch (error) {
+        if (error.code !== "EADDRINUSE") throw error;
+
+        const reusable = await existingPlanejAiIsHealthy(PORT);
+        if (reusable) {
+          console.log(
+            `[SERVER] A porta ${PORT} já possui uma instância saudável do PlanejAI. O servidor existente será reutilizado.`,
+          );
+          await pool.end();
+          return;
+        }
+
+        console.error(
+          `[SERVER] A porta ${PORT} está ocupada por outro programa. Encerre o processo que usa a porta ou configure PORT com outro valor.`,
+        );
+        await pool.end();
+        process.exitCode = 1;
+        return;
+      }
+      console.log(`Servidor rodando na porta ${PORT}`);
       startBackupScheduler();
     } catch (error) {
       console.error("[STARTUP] Banco de dados não pôde ser preparado:", error.message);

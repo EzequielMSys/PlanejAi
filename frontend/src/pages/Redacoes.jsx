@@ -48,8 +48,24 @@ function TextoComErros({ texto, erros = [] }) {
 
   // A API envia offsets do texto original. Usá-los evita destacar a ocorrência
   // errada quando uma palavra se repete ou começa com letra maiúscula.
+  const textoMinusculo = texto.toLocaleLowerCase()
+  const posicoesUsadas = new Set()
   const errosOrdenados = [...erros]
-    .filter((erro) => Number.isInteger(Number(erro.posicao)) && erro.palavra)
+    .filter((erro) => erro?.palavra)
+    .map((erro) => {
+      const posicaoInformada = Number(erro.posicao)
+      const palavra = String(erro.palavra)
+      const trecho = Number.isInteger(posicaoInformada) ? texto.slice(posicaoInformada, posicaoInformada + palavra.length) : ''
+      let posicao = trecho.toLocaleLowerCase() === palavra.toLocaleLowerCase()
+        ? posicaoInformada
+        : textoMinusculo.indexOf(palavra.toLocaleLowerCase())
+      while (posicao >= 0 && posicoesUsadas.has(posicao)) {
+        posicao = textoMinusculo.indexOf(palavra.toLocaleLowerCase(), posicao + palavra.length)
+      }
+      if (posicao >= 0) posicoesUsadas.add(posicao)
+      return { ...erro, posicao }
+    })
+    .filter((erro) => erro.posicao >= 0)
     .sort((a, b) => Number(a.posicao) - Number(b.posicao))
 
   for (const erro of errosOrdenados) {

@@ -18,19 +18,25 @@ async function criar({ titulo, descricao, prazo, status, anexos, questoes, criad
   return buscarPorId(result.insertId);
 }
 
-async function listarPublicadas() {
+async function listarPublicadas(idUsuario) {
   const [rows] = await pool.execute(
-    `SELECT a.*, u.nome AS criador_nome, (SELECT COUNT(*) FROM respostas_usuario r WHERE r.id_atividade = a.id_atividade AND r.status IN ('ENTREGUE','CORRIGIDA')) AS entregas
+    `SELECT a.*, u.nome AS criador_nome,
+       (SELECT COUNT(*) FROM respostas_usuario r WHERE r.id_atividade = a.id_atividade AND r.status IN ('ENTREGUE','CORRIGIDA')) AS entregas,
+       (SELECT r.status FROM respostas_usuario r WHERE r.id_atividade = a.id_atividade AND r.id_usuario = ? ORDER BY r.respondido_em DESC LIMIT 1) AS minha_resposta_status,
+       (SELECT r.nota FROM respostas_usuario r WHERE r.id_atividade = a.id_atividade AND r.id_usuario = ? ORDER BY r.respondido_em DESC LIMIT 1) AS minha_nota
      FROM atividades a LEFT JOIN usuarios u ON u.id_usuario = a.criado_por WHERE a.status = 'PUBLICADA'
-     ORDER BY a.prazo IS NULL, a.prazo ASC, a.id_atividade DESC`
+     ORDER BY a.prazo IS NULL, a.prazo ASC, a.id_atividade DESC`,
+    [idUsuario, idUsuario]
   );
   return rows.map(normalizar);
 }
 
-async function listarGestao() {
+async function listarGestao(criadoPor = null) {
+  const filtro = criadoPor ? ' WHERE a.criado_por = ?' : '';
   const [rows] = await pool.execute(
     `SELECT a.*, u.nome AS criador_nome, (SELECT COUNT(*) FROM respostas_usuario r WHERE r.id_atividade = a.id_atividade AND r.status IN ('ENTREGUE','CORRIGIDA')) AS entregas
-     FROM atividades a LEFT JOIN usuarios u ON u.id_usuario = a.criado_por ORDER BY a.atualizado_em DESC`
+     FROM atividades a LEFT JOIN usuarios u ON u.id_usuario = a.criado_por${filtro} ORDER BY a.atualizado_em DESC`,
+    criadoPor ? [criadoPor] : []
   );
   return rows.map(normalizar);
 }

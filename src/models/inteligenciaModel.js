@@ -46,6 +46,64 @@ async function buscar(idUsuario, termo) { const texto = String(termo || '').trim
 async function provas(idUsuario) { const [rows] = await pool.execute('SELECT * FROM provas_planejadas WHERE id_usuario = ? ORDER BY data_prova ASC', [idUsuario]); return rows.map((r) => ({ ...r, materias: typeof r.materias === 'string' ? JSON.parse(r.materias) : r.materias })) }
 async function criarProva(idUsuario, { titulo, dataProva, materias }) { if (!titulo || !dataProva || !Array.isArray(materias) || !materias.length) throw new Error('Preencha título, data e ao menos uma matéria.'); await pool.execute('INSERT INTO provas_planejadas (id_usuario, titulo, data_prova, materias) VALUES (?, ?, ?, ?)', [idUsuario, titulo, dataProva, JSON.stringify(materias)]); return provas(idUsuario) }
 
+async function catalogoProvas() {
+  const [rows] = await pool.execute(`SELECT c.*,
+    (SELECT COUNT(*) FROM catalogo_prova_questoes cp WHERE cp.id_catalogo=c.id_catalogo) AS questoes_disponiveis
+    FROM catalogo_provas c WHERE c.ativo=1 ORDER BY c.instituicao, c.referencia_ano DESC`)
+  return rows
+}
+
+async function gerarSimulado(idUsuario, { idCatalogo, dificuldade = 'TODAS', quantidade = 10 }) {
+  const nivel = String(dificuldade || 'TODAS').toUpperCase()
+  if (!['TODAS', 'FACIL', 'MEDIA', 'DIFICIL'].includes(nivel)) throw new Error('Dificuldade inválida.')
+  const limite = Math.max(1, Math.min(40, Number(quantidade) || 10))
+  const [[catalogo]] = await pool.execute('SELECT * FROM catalogo_provas WHERE id_catalogo=? AND ativo=1', [idCatalogo])
+  if (!catalogo) throw new Error('Prova não encontrada no catálogo.')
+  const params = [idCatalogo]
+  let filtro = ''
+  if (nivel !== 'TODAS') { filtro = ' AND q.dificuldade=?'; params.push(nivel) }
+  params.push(limite)
+  const [questoes] = await pool.execute(`SELECT q.id_questao,q.disciplina,q.competencia,q.enunciado,q.alternativas,q.dificuldade
+    FROM catalogo_prova_questoes cp JOIN questoes_estudo q ON q.id_questao=cp.id_questao
+    WHERE cp.id_catalogo=? AND q.ativo=1${filtro} ORDER BY RAND() LIMIT ?`, params)
+  if (!questoes.length) throw new Error('Não há questões disponíveis para este nível.')
+  const ids = questoes.map((item) => item.id_questao)
+  const [result] = await pool.execute(`INSERT INTO simulados_catalogo
+    (id_usuario,id_catalogo,dificuldade,questoes,total_questoes) VALUES(?,?,?,?,?)`,
+    [idUsuario, idCatalogo, nivel, JSON.stringify(ids), ids.length])
+  return {
+    idSimulado: result.insertId,
+    catalogo: { idCatalogo: catalogo.id_catalogo, titulo: catalogo.titulo, instituicao: catalogo.instituicao, duracaoMinutos: catalogo.duracao_minutos },
+    questoes: questoes.map((item) => ({ ...item, alternativas: typeof item.alternativas === 'string' ? JSON.parse(item.alternativas) : item.alternativas }))
+  }
+}
+
+async function concluirSimulado(idUsuario, idSimulado, respostas) {
+  const [[simulado]] = await pool.execute('SELECT * FROM simulados_catalogo WHERE id_simulado=? AND id_usuario=?', [idSimulado, idUsuario])
+  if (!simulado) throw new Error('Simulado não encontrado.')
+  if (simulado.status === 'CONCLUIDO') throw new Error('Este simulado já foi concluído.')
+  const ids = typeof simulado.questoes === 'string' ? JSON.parse(simulado.questoes) : simulado.questoes
+  const lista = respostas && typeof respostas === 'object' ? respostas : {}
+  const [questoes] = await pool.execute(`SELECT id_questao,disciplina,resposta_correta,explicacao FROM questoes_estudo WHERE id_questao IN (${ids.map(() => '?').join(',')})`, ids)
+  let acertos = 0
+  const correcoes = questoes.map((questao) => {
+    const resposta = Number(lista[questao.id_questao])
+    const acertou = resposta === Number(questao.resposta_correta)
+    if (acertou) acertos += 1
+    return { idQuestao: questao.id_questao, acertou, respostaCorreta: Number(questao.resposta_correta), explicacao: questao.explicacao }
+  })
+  const nota = questoes.length ? Number(((acertos / questoes.length) * 100).toFixed(2)) : 0
+  await pool.execute(`UPDATE simulados_catalogo SET respostas=?,acertos=?,nota=?,status='CONCLUIDO',concluido_em=CURRENT_TIMESTAMP WHERE id_simulado=? AND id_usuario=?`, [JSON.stringify(lista), acertos, nota, idSimulado, idUsuario])
+  return { idSimulado: Number(idSimulado), acertos, total: questoes.length, nota, correcoes }
+}
+
+async function historicoSimulados(idUsuario) {
+  const [rows] = await pool.execute(`SELECT s.id_simulado,s.dificuldade,s.total_questoes,s.acertos,s.nota,s.status,s.iniciado_em,s.concluido_em,c.titulo,c.instituicao
+    FROM simulados_catalogo s JOIN catalogo_provas c ON c.id_catalogo=s.id_catalogo
+    WHERE s.id_usuario=? ORDER BY s.iniciado_em DESC LIMIT 30`, [idUsuario])
+  return rows
+}
+
 async function trilhas(idUsuario) {
   await pool.query(`INSERT IGNORE INTO competencias_estudo (disciplina, nome)
     SELECT DISTINCT disciplina, competencia FROM questoes_estudo WHERE ativo=1 AND competencia IS NOT NULL AND competencia<>''`)
@@ -62,4 +120,4 @@ async function trilhas(idUsuario) {
   const grouped=new Map();for(const row of rows){if(!grouped.has(row.id_trilha))grouped.set(row.id_trilha,{idTrilha:row.id_trilha,disciplina:row.disciplina,status:row.trilha_status,etapas:[]});grouped.get(row.id_trilha).etapas.push(row)}return [...grouped.values()]
 }
 
-module.exports = { diagnostico, salvarDiagnostico, metas, salvarMeta, privacidade, listarFlashcards, criarFlashcard, avaliarFlashcard, buscar, provas, criarProva, trilhas }
+module.exports = { diagnostico, salvarDiagnostico, metas, salvarMeta, privacidade, listarFlashcards, criarFlashcard, avaliarFlashcard, buscar, provas, criarProva, catalogoProvas, gerarSimulado, concluirSimulado, historicoSimulados, trilhas }

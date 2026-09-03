@@ -49,21 +49,26 @@ function App() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/inicio" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard-gestor" element={<DashboardGestor />} />
-<Route path="/cronograma" element={<Cronograma />} />
+            <Route path="/cronograma" element={<Cronograma />} />
             <Route path="/estudar" element={<StudySession />} />
             <Route path="/status" element={<SystemStatus />} />
             <Route path="/aprendizagem" element={<Aprendizagem />} />
             <Route path="/planejamento-inteligente" element={<PlanejamentoInteligente />} />
             <Route path="/minha-jornada" element={<MinhaJornada />} />
-            <Route path="/turmas" element={<Turmas />} />
             <Route path="/redacoes" element={<Redacoes />} />
             <Route path="/perfil" element={<Perfil />} />
-            <Route path="/atividades" element={<Atividades />} />
-            <Route path="/materiais" element={<Materiais />} />
             <Route path="/minhas-atividades" element={<MinhasAtividades />} />
             <Route path="/avisos" element={<AvisosAluno />} />
             <Route path="/alterar-senha" element={<AlterarSenha />} />
+          </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute gestorOnly />}>
+          <Route element={<Layout />}>
+            <Route path="/dashboard-gestor" element={<DashboardGestor />} />
+            <Route path="/turmas" element={<Turmas />} />
+            <Route path="/atividades" element={<Atividades />} />
+            <Route path="/materiais" element={<Materiais />} />
           </Route>
         </Route>
 

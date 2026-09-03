@@ -1,8 +1,11 @@
 const fs = require('fs')
-const { createFileToken, verifyFileToken } = require('../services/fileAccessService')
+const { createFileToken, verifyFileToken, canAccessFile } = require('../services/fileAccessService')
 
-function sign(req, res) {
+async function sign(req, res) {
   try {
+    if (!await canAccessFile(req.query.path, req.usuario)) {
+      return res.status(403).json({ error: 'Você não tem acesso a este arquivo.' })
+    }
     const token = createFileToken(req.query.path)
     return res.json({ url: `/api/files/open/${token}`, expires_in: 300 })
   } catch (error) {

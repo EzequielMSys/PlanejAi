@@ -12,4 +12,8 @@ exports.avaliarFlashcard = (req, res) => responder(res, model.avaliarFlashcard(i
 exports.buscar = (req, res) => responder(res, model.buscar(idUsuario(req), req.query.q))
 exports.provas = (req, res) => responder(res, model.provas(idUsuario(req)))
 exports.criarProva = (req, res) => responder(res, model.criarProva(idUsuario(req), req.body))
+exports.catalogoProvas = (req, res) => responder(res, model.catalogoProvas())
+exports.gerarSimulado = (req, res) => responder(res, model.gerarSimulado(idUsuario(req), req.body))
+exports.concluirSimulado = (req, res) => responder(res, model.concluirSimulado(idUsuario(req), req.params.idSimulado, req.body.respostas))
+exports.historicoSimulados = (req, res) => responder(res, model.historicoSimulados(idUsuario(req)))
 exports.trilhas = (req, res) => responder(res, model.trilhas(idUsuario(req)))

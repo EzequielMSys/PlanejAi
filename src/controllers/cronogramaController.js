@@ -84,7 +84,7 @@ async function reabrirDia(req, res) {
   try {
     const { diaId } = req.params
 
-    const resultado = await cronogramaService.marcarPendente(diaId)
+    const resultado = await cronogramaService.marcarPendente(diaId, req.usuario.id_usuario || req.usuario.id)
 
     return res.status(200).json({
       message: 'Dia marcado como pendente!',
@@ -126,7 +126,7 @@ async function reabrirConteudo(req, res) {
     const { conteudoCronogramaId } = req.params
 
     const conteudo = await cronogramaService.reabrirConteudo(
-      conteudoCronogramaId
+      conteudoCronogramaId, req.usuario.id_usuario || req.usuario.id
     )
 
     return res.status(200).json({

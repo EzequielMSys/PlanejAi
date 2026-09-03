@@ -5,10 +5,8 @@ import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import ConnectionStatus from '../components/ConnectionStatus'
 import FocusTimer from '../components/FocusTimer'
-import '../components/ThemeCorrections.css'
 import InstallApp from '../components/InstallApp'
 import StudyAudioDockV2 from '../components/StudyAudioDockV2'
-import WorkspaceRail from '../components/WorkspaceRail'
 import AccessibilityToolbar from '../components/AccessibilityToolbar'
 
 function Layout() {
@@ -16,8 +14,7 @@ function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="app-shell min-h-screen text-black dark:text-white">
-      <a href="#conteudo-principal" className="fixed left-3 top-3 z-[100] -translate-y-24 rounded-full bg-white px-4 py-3 font-black text-black shadow-xl transition focus:translate-y-0">Pular para o conteúdo</a>
+    <div className="app-shell min-h-screen">
       {isAuthenticated && (
         <>
           <Sidebar
@@ -27,7 +24,7 @@ function Layout() {
         </>
       )}
 
-      <div className={isAuthenticated ? 'transition-[padding] duration-300 lg:pl-64' : ''}>
+      <div className={isAuthenticated ? 'app-workspace' : ''}>
         {isAuthenticated && (
           <Navbar
             onMenuClick={() => setSidebarOpen((value) => !value)}
@@ -35,10 +32,9 @@ function Layout() {
           />
         )}
 
-        {isAuthenticated && <WorkspaceRail />}
-        <main id="conteudo-principal" tabIndex="-1">
+        <main id="conteudo-principal" className="app-main" tabIndex="-1">
           <ConnectionStatus />
-          <div className="min-h-[calc(100vh-4rem)] w-full">
+          <div className="app-route-outlet">
             <Outlet />
           </div>
         </main>
