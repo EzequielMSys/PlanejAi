@@ -54,7 +54,7 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^5.0.4",
+    "@vitejs/plugin-react": "^6.1.1",
     "concurrently": "^9.2.1",
     "nodemon": "^3.0.2",
     "vite": "^6.3.5"
