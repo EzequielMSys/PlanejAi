@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import usuarioService from '../services/usuarioService'
 import { useAuth } from '../context/AuthContext'
 import { toast } from 'react-hot-toast'
@@ -17,6 +17,8 @@ const tipoBadge = {
   aluno: 'bg-[#F7F7FB] text-black border-[#9394CF]/40'
 }
 
+const USUARIOS_POR_PAGINA = 10
+
 function getId(usuario) {
   return usuario.id_usuario || usuario.id
 }
@@ -33,6 +35,10 @@ export default function UsuariosAdmin() {
   const [loading, setLoading] = useState(true)
   const [busca, setBusca] = useState('')
   const [tipoFiltro, setTipoFiltro] = useState('')
+  const [paginaAtual, setPaginaAtual] = useState(1)
+  const [totalPaginas, setTotalPaginas] = useState(1)
+  const [totalRegistros, setTotalRegistros] = useState(0)
+  const [stats, setStats] = useState({ total: 0, ativos: 0, alunos: 0, admins: 0 })
   const [acaoLoading, setAcaoLoading] = useState(null)
 
   const [modalSenha, setModalSenha] = useState(null)
@@ -40,41 +46,45 @@ export default function UsuariosAdmin() {
   const [confirmarSenha, setConfirmarSenha] = useState('')
   const [salvandoSenha, setSalvandoSenha] = useState(false)
 
-  async function carregarUsuarios() {
+  const carregarUsuarios = useCallback(async () => {
     setLoading(true)
 
     try {
-      const data = await usuarioService.listar()
-      setUsuarios(Array.isArray(data) ? data : data.usuarios || [])
+      const data = await usuarioService.listar({
+        page: paginaAtual,
+        limit: USUARIOS_POR_PAGINA,
+        search: busca,
+        tipo: tipoFiltro
+      })
+      setUsuarios(data.usuarios || [])
+      setTotalPaginas(data.total_paginas || 1)
+      setTotalRegistros(data.total_registros || 0)
+      setStats(data.stats || { total: 0, ativos: 0, alunos: 0, admins: 0 })
     } catch (error) {
       toast.error(error.response?.data?.error || 'Erro ao carregar usuários.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [paginaAtual, busca, tipoFiltro])
 
   useEffect(() => {
-    carregarUsuarios()
-  }, [])
+    const timer = setTimeout(carregarUsuarios, 250)
+    return () => clearTimeout(timer)
+  }, [carregarUsuarios])
 
-  const usuariosFiltrados = useMemo(() => {
-    return usuarios.filter((usuario) => {
-      const texto = `${usuario.nome || ''} ${usuario.email || ''}`.toLowerCase()
-      const buscaOk = texto.includes(busca.toLowerCase())
-      const tipoOk = !tipoFiltro || usuario.tipo === tipoFiltro
+  useEffect(() => {
+    setPaginaAtual((pagina) => Math.min(pagina, totalPaginas))
+  }, [totalPaginas])
 
-      return buscaOk && tipoOk
-    })
-  }, [usuarios, busca, tipoFiltro])
+  function atualizarBusca(valor) {
+    setBusca(valor)
+    setPaginaAtual(1)
+  }
 
-  const stats = useMemo(() => {
-    return {
-      total: usuarios.length,
-      ativos: usuarios.filter((u) => Number(u.ativo) === 1).length,
-      alunos: usuarios.filter((u) => u.tipo === 'aluno').length,
-      admins: usuarios.filter((u) => u.tipo === 'admin').length
-    }
-  }, [usuarios])
+  function atualizarTipoFiltro(valor) {
+    setTipoFiltro(valor)
+    setPaginaAtual(1)
+  }
 
   function podeMexer(usuario) {
     const usuarioLogadoId = user?.id_usuario || user?.id
@@ -276,14 +286,14 @@ export default function UsuariosAdmin() {
               <input
                 type="text"
                 value={busca}
-                onChange={(e) => setBusca(e.target.value)}
+                onChange={(e) => atualizarBusca(e.target.value)}
                 placeholder="Buscar por nome ou email..."
                 className="rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 outline-none focus:ring-2 focus:ring-[#9394CF]"
               />
 
               <select
                 value={tipoFiltro}
-                onChange={(e) => setTipoFiltro(e.target.value)}
+                onChange={(e) => atualizarTipoFiltro(e.target.value)}
                 className="rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 outline-none focus:ring-2 focus:ring-[#9394CF]"
               >
                 <option value="">Todos</option>
@@ -311,7 +321,7 @@ export default function UsuariosAdmin() {
               </thead>
 
               <tbody className="divide-y divide-[#9394CF]/20">
-                {usuariosFiltrados.map((usuario) => {
+                {usuarios.map((usuario) => {
                   const id = getId(usuario)
                   const podeAlterar = podeMexer(usuario)
 
@@ -363,7 +373,7 @@ export default function UsuariosAdmin() {
                       </td>
 
                       <td className="p-5 text-sm text-black/60">
-                        {formatarData(usuario.data_criacao || usuario.criado_em)}
+                        {formatarData(usuario.data_cadastro || usuario.data_criacao || usuario.criado_em)}
                       </td>
 
                       <td className="p-5">
@@ -403,7 +413,7 @@ export default function UsuariosAdmin() {
             </table>
           </div>
 
-          {usuariosFiltrados.length === 0 && (
+          {usuarios.length === 0 && (
             <div className="text-center py-16">
               <h3 className="text-2xl font-black text-black mb-2">
                 Nenhum usuário encontrado
@@ -413,6 +423,65 @@ export default function UsuariosAdmin() {
                 Tente ajustar a busca ou o filtro.
               </p>
             </div>
+          )}
+
+          {usuarios.length > 0 && (
+            <nav
+              aria-label="Paginação de usuários"
+              className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-[#9394CF]/20 px-5 py-5"
+            >
+              <p className="text-sm text-black/60">
+                Mostrando{' '}
+                <strong className="text-black">
+                  {(paginaAtual - 1) * USUARIOS_POR_PAGINA + 1}
+                </strong>{' '}
+                a{' '}
+                <strong className="text-black">
+                  {Math.min(
+                    paginaAtual * USUARIOS_POR_PAGINA,
+                    totalRegistros
+                  )}
+                </strong>{' '}
+                de <strong className="text-black">{totalRegistros}</strong>
+              </p>
+
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  disabled={paginaAtual === 1}
+                  onClick={() => setPaginaAtual((pagina) => pagina - 1)}
+                  className="px-4 py-2 rounded-full border border-[#9394CF]/40 font-bold text-sm hover:bg-[#9394CF]/15 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                >
+                  Anterior
+                </button>
+
+                {Array.from({ length: totalPaginas }, (_, indice) => indice + 1).map((pagina) => (
+                  <button
+                    key={pagina}
+                    type="button"
+                    aria-current={pagina === paginaAtual ? 'page' : undefined}
+                    aria-label={`Ir para página ${pagina}`}
+                    onClick={() => setPaginaAtual(pagina)}
+                    className={`h-10 min-w-10 px-3 rounded-full font-black text-sm transition ${
+                      pagina === paginaAtual
+                        ? 'bg-[#4B4C9D] text-white shadow-lg'
+                        : 'bg-[#F7F7FB] border border-[#9394CF]/30 text-black hover:bg-[#9394CF]/20'
+                    }`}
+                  >
+                    {pagina}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  disabled={paginaAtual === totalPaginas}
+                  onClick={() => setPaginaAtual((pagina) => pagina + 1)}
+                  className="px-4 py-2 rounded-full border border-[#9394CF]/40 font-bold text-sm hover:bg-[#9394CF]/15 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                >
+                  Próxima
+                </button>
+              </div>
+            </nav>
           )}
         </section>
       </div>

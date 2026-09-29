@@ -10,6 +10,7 @@ const {
 } = require('../middlewares/authMiddleware')
 
 const { uploadMaterial } = require('../middlewares/uploadMiddleware')
+const { idempotency } = require('../middlewares/idempotencyMiddleware')
 
 /**
  * Gerar novo cronograma
@@ -17,6 +18,7 @@ const { uploadMaterial } = require('../middlewares/uploadMiddleware')
 router.post(
   '/gerar',
   authMiddleware,
+  idempotency('GERAR_CRONOGRAMA'),
   cronogramaController.gerarCronograma
 )
 
@@ -46,6 +48,7 @@ router.get('/recuperacao', authMiddleware, cronogramaController.analisarAtrasos)
 router.post('/dias/:diaId/desafio', authMiddleware, cronogramaController.iniciarDesafio)
 router.post('/cronogramas/:cronogramaId/prova-final', authMiddleware, cronogramaController.iniciarProvaFinal)
 router.get('/avaliacoes/:avaliacaoId/retomar', authMiddleware, cronogramaController.retomarAvaliacao)
+router.put('/avaliacoes/:avaliacaoId/respostas/:questaoId', authMiddleware, cronogramaController.salvarRespostaAvaliacao)
 router.post('/avaliacoes/:avaliacaoId/abandonar', authMiddleware, cronogramaController.abandonarAvaliacao)
 router.post('/avaliacoes/:avaliacaoId/enviar', authMiddleware, cronogramaController.enviarAvaliacao)
 

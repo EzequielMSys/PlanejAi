@@ -1,7 +1,7 @@
 const pool = require('../config/db')
 
-async function criarCronograma(idPerfil, { data_inicio, data_fim, status = 'ATIVO' }) {
-  const [result] = await pool.execute(
+async function criarCronograma(idPerfil, { data_inicio, data_fim, status = 'ATIVO' }, db = pool) {
+  const [result] = await db.execute(
     `INSERT INTO cronogramas (id_perfil, data_inicio, data_fim, status)
      VALUES (?, ?, ?, ?)`,
     [idPerfil, data_inicio, data_fim, status.toUpperCase()]
@@ -55,8 +55,8 @@ async function obterCronogramaAtivoPorPerfil(idPerfil) {
   return rows[0] || null
 }
 
-async function desativarCronogramasAtivos(idPerfil) {
-  await pool.execute(
+async function desativarCronogramasAtivos(idPerfil, db = pool) {
+  await db.execute(
     `UPDATE cronogramas
      SET status = 'CANCELADO'
      WHERE id_perfil = ?

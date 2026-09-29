@@ -27,7 +27,8 @@ const Register = () => {
     email: '',
     tipo: 'aluno',
     senha: '',
-    confirmarSenha: ''
+    confirmarSenha: '',
+    website: ''
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -53,8 +54,8 @@ if (!formData.nome.trim()) {
     if (!formData.senha) {
       newErrors.senha = 'Senha é obrigatória'
     } else {
-      if (formData.senha.length < 8) {
-        newErrors.senha = 'Mínimo 8 caracteres'
+      if (formData.senha.length < 12) {
+        newErrors.senha = 'Mínimo 12 caracteres'
       }
       if (!/(?=.*[A-Z])/.test(formData.senha)) {
         newErrors.senha = newErrors.senha
@@ -65,6 +66,11 @@ if (!formData.nome.trim()) {
         newErrors.senha = newErrors.senha
           ? `${newErrors.senha} • 1 número`
           : 'Precisa 1 número'
+      }
+      if (!/(?=.*[a-z])/.test(formData.senha)) {
+        newErrors.senha = newErrors.senha
+          ? `${newErrors.senha} • 1 minúscula`
+          : 'Precisa 1 letra minúscula'
       }
     }
 
@@ -93,7 +99,8 @@ if (!formData.nome.trim()) {
         nome: formData.nome,
         email: formData.email,
         tipo: 'aluno',
-        senha: formData.senha
+        senha: formData.senha,
+        website: formData.website
       })
       toast.success('Conta criada com sucesso!')
       navigate('/login')
@@ -206,7 +213,7 @@ const inputClass = (field) =>
               <p className="mt-1 text-xs text-red-500">{errors.senha}</p>
             ) : (
               <p className="mt-1 text-xs text-black/50 dark:text-white/50">
-                Mín. 8 caracteres, 1 maiúscula e 1 número
+                Mín. 12 caracteres, maiúscula, minúscula e número
               </p>
             )}
           </div>
@@ -253,6 +260,10 @@ const inputClass = (field) =>
               'Criar Conta'
             )}
           </button>
+          <div aria-hidden="true" className="sr-only">
+            <label htmlFor="website">Não preencha este campo</label>
+            <input id="website" name="website" tabIndex={-1} autoComplete="off" value={formData.website} onChange={(e) => handleChange('website', e.target.value)} />
+          </div>
         </form>
 
         <div className="mt-6 text-center">

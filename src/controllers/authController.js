@@ -2,7 +2,7 @@ const authService = require("../services/authService");
 
 async function registrar(req, res) {
   try {
-    const { nome, email, senha } = req.body;
+    const { nome, email, senha, website } = req.body;
 
     if (!nome || !email) {
       return res.status(400).json({
@@ -10,10 +10,11 @@ async function registrar(req, res) {
       });
     }
 
-    const resultado = await authService.registrar({ nome, email, senha });
+    const resultado = await authService.registrar({ nome, email, senha, website });
 
     return res.status(201).json({
       message: "Usuário criado com sucesso.",
+      persistido_no_banco: true,
       usuario: resultado.usuario,
       senha_temporaria: resultado.senha_temporaria,
     });

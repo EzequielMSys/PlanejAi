@@ -116,6 +116,30 @@ async function enviar(idAvaliacao, idUsuario, respostas) {
   return { aprovada, acertos, total: Number(avaliacao.total_questoes), percentual, minimoAcertos: Number(avaliacao.minimo_acertos), tipo: avaliacao.tipo, correcoes }
 }
 
+async function salvarResposta(idAvaliacao, idUsuario, idQuestao, resposta) {
+  const [rows] = await pool.execute(
+    "SELECT questoes FROM cronograma_avaliacoes WHERE id_avaliacao = ? AND id_usuario = ? AND status = 'EM_ANDAMENTO'",
+    [idAvaliacao, idUsuario]
+  )
+  const avaliacao = rows[0]
+  if (!avaliacao) throw new Error('Esta avaliação não está disponível para salvar.')
+
+  const registros = typeof avaliacao.questoes === 'string' ? JSON.parse(avaliacao.questoes) : avaliacao.questoes
+  const pertenceAvaliacao = registros.some((item) => Number(typeof item === 'object' ? item.id_questao : item) === Number(idQuestao))
+  const alternativa = Number(resposta)
+  if (!pertenceAvaliacao || !Number.isInteger(alternativa) || alternativa < 0 || alternativa > 3) {
+    throw new Error('Resposta de avaliação inválida.')
+  }
+
+  await pool.execute(
+    `INSERT INTO cronograma_avaliacao_respostas (id_avaliacao, id_questao, resposta)
+     VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE resposta = VALUES(resposta), atualizado_em = CURRENT_TIMESTAMP`,
+    [idAvaliacao, idQuestao, alternativa]
+  )
+  return { idQuestao: Number(idQuestao), resposta: alternativa }
+}
+
 async function diaTemDesafioAprovado(idDia, idUsuario) {
   const [rows] = await pool.execute("SELECT id_avaliacao FROM cronograma_avaliacoes WHERE id_dia = ? AND id_usuario = ? AND tipo = 'ADIANTAMENTO' AND status = 'APROVADA' LIMIT 1", [idDia, idUsuario])
   return Boolean(rows[0])
@@ -142,7 +166,18 @@ async function retomar(idAvaliacao, idUsuario) {
   const [questoes] = await pool.execute(`SELECT * FROM questoes_estudo WHERE id_questao IN (${placeholders})`, ids)
   const porId = new Map(questoes.map((item) => [Number(item.id_questao), questaoPublica(item)]))
   if (porId.size !== ids.length) throw new Error('Uma questão desta avaliação não está mais disponível.')
-  return { id_avaliacao: avaliacao.id_avaliacao, tipo: avaliacao.tipo, total: Number(avaliacao.total_questoes), minimoAcertos: Number(avaliacao.minimo_acertos), questoes: montarQuestoes(registros.map((item) => porId.get(Number(item.id_questao))), registros.map((item) => item.ordem)) }
+  const [respostas] = await pool.execute(
+    'SELECT id_questao, resposta FROM cronograma_avaliacao_respostas WHERE id_avaliacao = ?',
+    [idAvaliacao]
+  )
+  return {
+    id_avaliacao: avaliacao.id_avaliacao,
+    tipo: avaliacao.tipo,
+    total: Number(avaliacao.total_questoes),
+    minimoAcertos: Number(avaliacao.minimo_acertos),
+    questoes: montarQuestoes(registros.map((item) => porId.get(Number(item.id_questao))), registros.map((item) => item.ordem)),
+    respostas: respostas.reduce((salvas, item) => ({ ...salvas, [item.id_questao]: Number(item.resposta) }), {})
+  }
 }
 
 async function abandonar(idAvaliacao, idUsuario) {
@@ -154,4 +189,4 @@ async function abandonar(idAvaliacao, idUsuario) {
   return { id_avaliacao: Number(idAvaliacao), status: 'EXPIRADA' }
 }
 
-module.exports = { obterCronogramaDoUsuario, obterDiaDoUsuario, iniciar, enviar, diaTemDesafioAprovado, obterProvaFinal, obterEmAndamento, retomar, abandonar }
+module.exports = { obterCronogramaDoUsuario, obterDiaDoUsuario, iniciar, enviar, salvarResposta, diaTemDesafioAprovado, obterProvaFinal, obterEmAndamento, retomar, abandonar }

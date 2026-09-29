@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
@@ -24,13 +24,15 @@ const Login = () => {
   const [formData, setFormData] = useState({ email: '', senha: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const submittingRef = useRef(false)
   const { login } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.email || !formData.senha) return
+    if (!formData.email || !formData.senha || submittingRef.current) return
 
+    submittingRef.current = true
     setLoading(true)
     try {
       await login(formData.email, formData.senha)
@@ -38,6 +40,7 @@ const Login = () => {
     } catch (error) {
       // Error toast handled by AuthContext
     } finally {
+      submittingRef.current = false
       setLoading(false)
     }
   }

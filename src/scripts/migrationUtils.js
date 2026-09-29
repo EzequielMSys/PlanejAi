@@ -25,7 +25,13 @@ const migrationOrder = [
   'enhance_essay_portfolio_v6.sql',
   'add_exam_catalog_v7.sql',
   'activities_2_0_v8.sql',
-  'activities_2_0_drafts_v9.sql'
+  'activities_2_0_drafts_v9.sql',
+  'operational_resilience_v10.sql',
+  'add_exam_session_features_v11.sql',
+  'security_session_version_v12.sql',
+  'persistent_rate_limits_v13.sql',
+  'persist_cronograma_assessment_answers_v14.sql',
+  'persist_study_notes_v15.sql'
 ];
 
 function sortMigrations(files) {

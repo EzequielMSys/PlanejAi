@@ -36,6 +36,10 @@ async function authMiddleware(req, res, next) {
       return res.status(403).json({ message: "Usuário desativado." });
     }
 
+    if (Number(decoded.sv || 0) !== Number(usuario.versao_sessao || 0)) {
+      return res.status(401).json({ message: "Sessão revogada. Entre novamente." });
+    }
+
     req.usuario = {
       id: usuario.id || usuario.id_usuario,
       id_usuario: usuario.id_usuario || usuario.id,

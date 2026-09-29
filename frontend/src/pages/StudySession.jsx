@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import cronogramaService from '../services/cronogramaService'
@@ -41,7 +41,7 @@ function StudyMaterial({ content }) {
   const video = type.includes('VIDEO') && /\.(mp4|webm|ogg)(?:$|[?#])/i.test(url)
 
   if (loadError) return <div className="session-no-material" role="alert"><span>ACESSO INDISPONÍVEL</span><h2>{loadError}</h2></div>
-  if (!source) return <div className="session-no-material"><span>SEM ANEXO</span><h2>Use esta sessão para estudar pelo seu próprio material.</h2><p>As anotações e o tempo ainda serão salvos neste navegador.</p></div>
+  if (!source) return <div className="session-no-material"><span>SEM ANEXO</span><h2>Use esta sessão para estudar pelo seu próprio material.</h2><p>Suas anotações e seu tempo ficam vinculados à sua conta.</p></div>
   if (!url) return <div className="session-no-material" role="status"><span>CARREGANDO</span><h2>Preparando material…</h2></div>
   if (externalSource) return <StudyGuide material={content} sourceUrl={url} />
   if (video) return <video className="session-frame" src={url} controls />
@@ -58,19 +58,41 @@ export default function StudySession() {
   const [tab, setTab] = useState('material')
   const [notes, setNotes] = useState('')
   const [saved, setSaved] = useState(null)
+  const [notesReady, setNotesReady] = useState(false)
+  const [notesStoredRemotely, setNotesStoredRemotely] = useState(false)
   const [seconds, setSeconds] = useState(25 * 60)
   const [running, setRunning] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [finishing, setFinishing] = useState(false)
   const [difficulty, setDifficulty] = useState('LEMBREI')
   const startedAt = useRef(Date.now())
-  const noteKey = useMemo(() => `planejai:study-note:${content?.id_conteudo || content?.id || 'free'}`, [content])
+  const noteFallbackKey = `planejai:study-note:${content?.id_conteudo || content?.id || 'free'}`
 
   useEffect(() => {
     if (!content) return
     window.sessionStorage.setItem(SESSION_CONTENT_KEY, JSON.stringify({ conteudo: content, dia: day }))
-    setNotes(localStorage.getItem(noteKey) || '')
-  }, [content, day, noteKey])
+    let active = true
+    setNotesReady(false)
+    setNotesStoredRemotely(false)
+    if (!content.id_conteudo) {
+      setNotes(localStorage.getItem(noteFallbackKey) || '')
+      setNotesReady(true)
+      return () => { active = false }
+    }
+    aprendizagemService.anotacao(content.id_conteudo)
+      .then((anotacao) => {
+        if (!active) return
+        setNotes(anotacao.texto || '')
+        setSaved(anotacao.atualizadoEm ? new Date(anotacao.atualizadoEm) : null)
+        setNotesStoredRemotely(true)
+      })
+      .catch(() => {
+        if (!active) return
+        setNotes(localStorage.getItem(noteFallbackKey) || '')
+      })
+      .finally(() => active && setNotesReady(true))
+    return () => { active = false }
+  }, [content, day, noteFallbackKey])
 
   useEffect(() => {
     if (!running) return undefined
@@ -87,12 +109,25 @@ export default function StudySession() {
   }, [running])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      localStorage.setItem(noteKey, notes)
-      setSaved(new Date())
-    }, 500)
+    if (!notesReady) return undefined
+    if (!notes && !saved) return undefined
+    const timer = window.setTimeout(async () => {
+      if (!content?.id_conteudo) {
+        localStorage.setItem(noteFallbackKey, notes)
+        setSaved(new Date())
+        return
+      }
+      try {
+        const anotacao = await aprendizagemService.salvarAnotacao(content.id_conteudo, notes)
+        setSaved(anotacao.atualizadoEm ? new Date(anotacao.atualizadoEm) : new Date())
+        setNotesStoredRemotely(true)
+      } catch {
+        localStorage.setItem(noteFallbackKey, notes)
+        setNotesStoredRemotely(false)
+      }
+    }, 650)
     return () => window.clearTimeout(timer)
-  }, [notes, noteKey])
+  }, [content?.id_conteudo, noteFallbackKey, notes, notesReady])
 
   function selectCycle(minutes) { setRunning(false); setSeconds(minutes * 60) }
 
@@ -130,7 +165,7 @@ export default function StudySession() {
         <div className="session-workspace pj-panel">
           <nav className="session-tabs" aria-label="Ferramentas da sessão"><button className={tab === 'material' ? 'is-active' : ''} onClick={() => setTab('material')}>Material</button><button className={tab === 'notes' ? 'is-active' : ''} onClick={() => setTab('notes')}>Anotações <span>{saved ? 'salvas' : ''}</span></button></nav>
           <div className="session-canvas">
-            {tab === 'material' ? <StudyMaterial content={content} /> : <div className="session-notes"><header><div><span className="pj-eyebrow">Caderno da sessão</span><h2>Escreva para entender.</h2><DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? ' ' : ''}${texto}`)}/></div><small>{saved ? `Salvo às ${saved.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Salvamento automático'}</small></header><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={'Ideia principal:\n\nO que ainda não entendi:\n\nComo eu explicaria isso para alguém:'} /></div>}
+            {tab === 'material' ? <StudyMaterial content={content} /> : <div className="session-notes"><header><div><span className="pj-eyebrow">Caderno da sessão</span><h2>Escreva para entender.</h2><DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? ' ' : ''}${texto}`)}/></div><small>{saved ? `${notesStoredRemotely ? 'Sincronizado' : 'Salvo neste aparelho'} às ${saved.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Salvamento automático'}</small></header><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={'Ideia principal:\n\nO que ainda não entendi:\n\nComo eu explicaria isso para alguém:'} /></div>}
           </div>
         </div>
 

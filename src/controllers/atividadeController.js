@@ -1,7 +1,7 @@
 const atividadeModel = require('../models/atividadeModel');
 const respostaModel = require('../models/respostaModel');
 const usuarioModel = require('../models/usuarioModel');
-const { uploadAtividade } = require('../middlewares/uploadMiddleware');
+const { validarArquivoEnviado } = require('../services/uploadSecurity');
 
 const tiposGestao = new Set(['dono', 'admin', 'adm', 'docente']);
 const usuarioId = (req) => req.usuario.id_usuario || req.usuario.id;
@@ -140,16 +140,18 @@ async function atualizar(req, res) {
 async function uploadImagem(req, res) {
   try {
     if (!req.file) return res.status(400).json({ message: 'Nenhum arquivo enviado.' });
+    await validarArquivoEnviado(req.file);
     const url = `/uploads/atividades/${req.file.filename}`;
     return res.status(201).json({ url, filename: req.file.filename });
-  } catch (error) { console.error('[UPLOAD ATIVIDADE]', error); return res.status(500).json({ message: 'Erro ao enviar imagem.' }); }
+  } catch (error) { console.error('[UPLOAD ATIVIDADE]', error); return res.status(error.status || 500).json({ message: error.status ? error.message : 'Erro ao enviar imagem.' }); }
 }
 
 async function uploadResposta(req, res) {
   try {
     if (!req.file) return res.status(400).json({ message: 'Nenhum arquivo enviado.' });
+    await validarArquivoEnviado(req.file);
     return res.status(201).json({ url: `/uploads/atividades/${req.file.filename}`, nome: req.file.originalname, tipo: req.file.mimetype });
-  } catch (error) { console.error('[UPLOAD RESPOSTA]', error); return res.status(500).json({ message: 'Erro ao enviar o arquivo da resposta.' }); }
+  } catch (error) { console.error('[UPLOAD RESPOSTA]', error); return res.status(error.status || 500).json({ message: error.status ? error.message : 'Erro ao enviar o arquivo da resposta.' }); }
 }
 
 async function responderAtividade(req, res) {

@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt')
 
 const usuarioModel = require('../models/usuarioModel')
-const { gerarSenhaTemporaria } = require('../utils/authUtils')
+const { gerarSenhaTemporaria, validarSenhaForte, getBcryptRounds } = require('../utils/authUtils')
 
 const TIPOS_PERMITIDOS = ['dono', 'admin', 'docente', 'aluno']
 
@@ -10,8 +10,8 @@ function obterIdUsuario(usuario) {
 }
 
 class UsuarioService {
-  async listar() {
-    return await usuarioModel.listarUsuarios()
+  async listar(options) {
+    return await usuarioModel.listarUsuarios(options)
   }
 
   async obterPorId(id) {
@@ -153,8 +153,7 @@ if (dados.nome !== undefined && dados.nome !== null && dados.nome !== '') {
     }
 
     const senhaTemporaria = gerarSenhaTemporaria()
-    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10)
-    const senhaHash = await bcrypt.hash(senhaTemporaria, saltRounds)
+    const senhaHash = await bcrypt.hash(senhaTemporaria, getBcryptRounds())
 
     await usuarioModel.resetarSenhaTemporaria(id, senhaHash)
 
@@ -168,8 +167,8 @@ if (dados.nome !== undefined && dados.nome !== null && dados.nome !== '') {
       throw new Error('Apenas o dono pode definir senha de usuários.')
     }
 
-    if (!novaSenha || novaSenha.length < 8) {
-      throw new Error('A nova senha deve ter no mínimo 8 caracteres.')
+    if (!validarSenhaForte(novaSenha)) {
+      throw new Error('A nova senha deve ter ao menos 12 caracteres, com maiúscula, minúscula e número.')
     }
 
     const usuarioAlvo = await usuarioModel.buscarPorId(id)
@@ -180,8 +179,7 @@ if (dados.nome !== undefined && dados.nome !== null && dados.nome !== '') {
       throw new Error('Não é permitido alterar a senha de outro dono.')
     }
 
-    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10)
-    const senhaHash = await bcrypt.hash(novaSenha, saltRounds)
+    const senhaHash = await bcrypt.hash(novaSenha, getBcryptRounds())
 
     await usuarioModel.definirSenhaUsuario(id, senhaHash)
 

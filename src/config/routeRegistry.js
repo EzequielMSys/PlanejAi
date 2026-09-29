@@ -1,0 +1,18 @@
+module.exports = [
+  { basePath: "/api/auth", tag: "Autenticação", router: require("../routes/authRoutes") },
+  { basePath: "/api/files", tag: "Arquivos", router: require("../routes/fileRoutes") },
+  { basePath: "/api/usuarios", tag: "Usuários", router: require("../routes/usuarioRoutes") },
+  { basePath: "/api/perfil", tag: "Perfil", router: require("../routes/perfilRoutes") },
+  { basePath: "/api/cronograma", tag: "Cronograma", router: require("../routes/cronogramaRoutes") },
+  { basePath: "/api/atividade", tag: "Atividades", router: require("../routes/atividadeRoutes") },
+  { basePath: "/api/redacao", tag: "Redações", router: require("../routes/redacaoRoutes") },
+  { basePath: "/api/conteudos", tag: "Conteúdos", router: require("../routes/conteudoRoutes") },
+  { basePath: "/api/dashboard", tag: "Dashboard", router: require("../routes/dashboardRoutes") },
+  { basePath: "/api/avisos", tag: "Avisos", router: require("../routes/avisoRoutes") },
+  { basePath: "/api/aprendizagem", tag: "Aprendizagem", router: require("../routes/aprendizagemRoutes") },
+  { basePath: "/api/inteligencia", tag: "Inteligência", router: require("../routes/inteligenciaRoutes") },
+  { basePath: "/api/adaptativo", tag: "Aprendizado adaptativo", router: require("../routes/adaptiveLearningRoutes") },
+  { basePath: "/api/colaborativo", tag: "Aprendizado colaborativo", router: require("../routes/collaborativeLearningRoutes") },
+  { basePath: "/api/turmas", tag: "Turmas", router: require("../routes/turmaRoutes") },
+  { basePath: "/api/operacoes", tag: "Operações", router: require("../routes/operationsRoutes") },
+];

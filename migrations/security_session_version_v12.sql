@@ -1,0 +1,2 @@
+ALTER TABLE usuarios
+  ADD COLUMN versao_sessao INT UNSIGNED NOT NULL DEFAULT 0 AFTER ativo;

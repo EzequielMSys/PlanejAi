@@ -2,27 +2,22 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const os = require("os");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./config/swagger");
 const pool = require("./config/db");
 const { platformHeaders, requestLogger } = require("./middlewares/platformMiddleware");
-const fileRoutes = require("./routes/fileRoutes");
-
-const authRoutes = require("./routes/authRoutes");
-const usuarioRoutes = require("./routes/usuarioRoutes");
-const perfilRoutes = require("./routes/perfilRoutes");
-const cronogramaRoutes = require("./routes/cronogramaRoutes");
-const atividadeRoutes = require("./routes/atividadeRoutes");
-const redacaoRoutes = require("./routes/redacaoRoutes");
-const conteudoRoutes = require("./routes/conteudoRoutes");
-const dashboardRoutes = require("./routes/dashboardRoutes");
-const avisoRoutes = require("./routes/avisoRoutes");
-const aprendizagemRoutes = require("./routes/aprendizagemRoutes");
-const inteligenciaRoutes = require("./routes/inteligenciaRoutes");
-const adaptiveLearningRoutes = require("./routes/adaptiveLearningRoutes");
-const collaborativeLearningRoutes = require("./routes/collaborativeLearningRoutes");
-const turmaRoutes = require("./routes/turmaRoutes");
+const routeRegistry = require("./config/routeRegistry");
+const helmet = require("helmet");
+const { operationsMonitor } = require("./middlewares/operationsMiddleware");
 
 const app = express();
 app.disable("x-powered-by");
+// Evita o parser "extended" (qs) para a query string; a API não depende de
+// objetos aninhados na URL e passa a aceitar apenas parâmetros simples.
+app.set("query parser", "simple");
+app.set("trust proxy", process.env.TRUST_PROXY === "true" ? 1 : false);
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 
 const garantirTabelas = require("./scripts/garantirTabelas");
 const repairContentLinks = require("./scripts/repairContentLinks");
@@ -36,30 +31,54 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "")
   .map((origin) => origin.trim().replace(/\/$/, ""))
   .filter(Boolean);
 
-const corsOptions = {
-  origin(origin, callback) {
-    if (!origin) {
-      return callback(null, true);
-    }
-    if (allowedOrigins.length === 0) {
-      return callback(
-        new Error(
-          "CORS_ORIGIN não configurado. Defina as origens permitidas no .env.",
-        ),
-      );
-    }
-    if (allowedOrigins.includes(origin.replace(/\/$/, ""))) {
-      return callback(null, true);
-    }
-    return callback(new Error("Origem não permitida pelo CORS."));
-  },
-};
+function corsOptionsForRequest(req, callback) {
+  callback(null, {
+    origin(origin, originCallback) {
+      if (!origin) {
+        return originCallback(null, true);
+      }
+
+      const normalizedOrigin = origin.replace(/\/$/, "");
+      let isApiSameOrigin = false;
+      try {
+        // Permite que o Swagger servido pela própria API use o IP/porta pelos
+        // quais o cliente a acessou, inclusive em outros computadores da LAN.
+        const originUrl = new URL(normalizedOrigin);
+        isApiSameOrigin = originUrl.host === req.get("host");
+      } catch {
+        isApiSameOrigin = false;
+      }
+
+      if (isApiSameOrigin || allowedOrigins.includes(normalizedOrigin)) {
+        return originCallback(null, true);
+      }
+
+      return originCallback(new Error("Origem não permitida pelo CORS."));
+    },
+  });
+}
 
 app.use(platformHeaders);
 app.use(requestLogger);
-app.use(cors(corsOptions));
+app.use(operationsMonitor);
+app.use(cors(corsOptionsForRequest));
 app.use(express.json({ limit: "2mb", strict: true }));
 app.use(express.urlencoded({ extended: false, limit: "256kb" }));
+
+app.get("/api-docs.json", (req, res) => res.json(swaggerSpec));
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: "PlanejAI API - Swagger",
+    swaggerOptions: {
+      tryItOutEnabled: true,
+      displayRequestDuration: true,
+      docExpansion: "full",
+      persistAuthorization: process.env.NODE_ENV !== "production",
+    },
+  }),
+);
 
 app.use(
   "/uploads/perfis",
@@ -70,21 +89,9 @@ app.use(
   }),
 );
 
-app.use("/api/auth", authRoutes);
-app.use("/api/files", fileRoutes);
-app.use("/api/usuarios", usuarioRoutes);
-app.use("/api/perfil", perfilRoutes);
-app.use("/api/cronograma", cronogramaRoutes);
-app.use("/api/atividade", atividadeRoutes);
-app.use("/api/redacao", redacaoRoutes);
-app.use("/api/conteudos", conteudoRoutes);
-app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/avisos", avisoRoutes);
-app.use("/api/aprendizagem", aprendizagemRoutes);
-app.use("/api/inteligencia", inteligenciaRoutes);
-app.use("/api/adaptativo", adaptiveLearningRoutes);
-app.use("/api/colaborativo", collaborativeLearningRoutes);
-app.use("/api/turmas", turmaRoutes);
+for (const { basePath, router } of routeRegistry) {
+  app.use(basePath, router);
+}
 
 app.use(uploadErrorHandler);
 
@@ -221,7 +228,13 @@ if (require.main === module) {
         process.exitCode = 1;
         return;
       }
-      console.log(`Servidor rodando na porta ${PORT}`);
+      const networkAddresses = Object.values(os.networkInterfaces())
+        .flat()
+        .filter((address) => address && address.family === "IPv4" && !address.internal)
+        .map((address) => `http://${address.address}:${PORT}/api-docs`);
+      console.log(`Servidor rodando em http://localhost:${PORT}`);
+      console.log(`Swagger: http://localhost:${PORT}/api-docs`);
+      networkAddresses.forEach((url) => console.log(`Swagger na rede: ${url}`));
       startBackupScheduler();
     } catch (error) {
       console.error("[STARTUP] Banco de dados não pôde ser preparado:", error.message);

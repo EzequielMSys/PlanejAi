@@ -98,6 +98,20 @@ function normalizarRespostas(respostas, ids) {
     .filter(([id, resposta]) => permitidas.has(id) && Number.isInteger(resposta) && resposta >= 0 && resposta <= 3))
 }
 
+function normalizarRevisao(revisao, ids) {
+  const permitidas = new Set(ids.map(Number))
+  const lista = Array.isArray(revisao) ? revisao : []
+  return [...new Set(lista.map(Number).filter((id) => permitidas.has(id)))]
+}
+
+function dadosDoProgresso(payload, ids) {
+  const estruturado = payload && typeof payload === 'object' && !Array.isArray(payload) && Object.hasOwn(payload, 'respostas')
+  return {
+    respostas: normalizarRespostas(estruturado ? payload.respostas : payload, ids),
+    revisao: normalizarRevisao(estruturado ? payload.revisao : [], ids)
+  }
+}
+
 async function obterSimulado(idUsuario, idSimulado) {
   const [[simulado]] = await pool.execute(`SELECT s.*,c.titulo,c.instituicao,c.duracao_minutos
     FROM simulados_catalogo s JOIN catalogo_provas c ON c.id_catalogo=s.id_catalogo
@@ -115,37 +129,45 @@ async function obterSimulado(idUsuario, idSimulado) {
     iniciadoEm: simulado.iniciado_em,
     catalogo: { idCatalogo: simulado.id_catalogo, titulo: simulado.titulo, instituicao: simulado.instituicao, duracaoMinutos: simulado.duracao_minutos },
     questoes: ordenadas.map((item) => ({ ...item, alternativas: typeof item.alternativas === 'string' ? JSON.parse(item.alternativas) : item.alternativas })),
-    respostas: normalizarRespostas(typeof simulado.respostas === 'string' ? JSON.parse(simulado.respostas) : simulado.respostas, ids)
+    respostas: normalizarRespostas(typeof simulado.respostas === 'string' ? JSON.parse(simulado.respostas) : simulado.respostas, ids),
+    revisao: normalizarRevisao(typeof simulado.questoes_revisao === 'string' ? JSON.parse(simulado.questoes_revisao) : simulado.questoes_revisao, ids)
   }
 }
 
-async function salvarProgressoSimulado(idUsuario, idSimulado, respostas) {
+async function salvarProgressoSimulado(idUsuario, idSimulado, payload) {
   const [[simulado]] = await pool.execute('SELECT questoes,status FROM simulados_catalogo WHERE id_simulado=? AND id_usuario=?', [idSimulado, idUsuario])
   if (!simulado) throw new Error('Simulado não encontrado.')
   if (simulado.status !== 'EM_ANDAMENTO') throw new Error('Este simulado já foi concluído.')
   const ids = typeof simulado.questoes === 'string' ? JSON.parse(simulado.questoes) : simulado.questoes
-  const lista = normalizarRespostas(respostas, ids)
-  await pool.execute('UPDATE simulados_catalogo SET respostas=? WHERE id_simulado=? AND id_usuario=? AND status=\'EM_ANDAMENTO\'', [JSON.stringify(lista), idSimulado, idUsuario])
-  return { salvo: true, respondidas: Object.keys(lista).length }
+  const { respostas, revisao } = dadosDoProgresso(payload, ids)
+  await pool.execute('UPDATE simulados_catalogo SET respostas=?,questoes_revisao=? WHERE id_simulado=? AND id_usuario=? AND status=\'EM_ANDAMENTO\'', [JSON.stringify(respostas), JSON.stringify(revisao), idSimulado, idUsuario])
+  return { salvo: true, respondidas: Object.keys(respostas).length, marcadasParaRevisao: revisao.length }
 }
 
-async function concluirSimulado(idUsuario, idSimulado, respostas) {
+async function concluirSimulado(idUsuario, idSimulado, payload) {
   const [[simulado]] = await pool.execute('SELECT * FROM simulados_catalogo WHERE id_simulado=? AND id_usuario=?', [idSimulado, idUsuario])
   if (!simulado) throw new Error('Simulado não encontrado.')
   if (simulado.status === 'CONCLUIDO') throw new Error('Este simulado já foi concluído.')
   const ids = typeof simulado.questoes === 'string' ? JSON.parse(simulado.questoes) : simulado.questoes
-  const lista = normalizarRespostas(respostas, ids)
-  const [questoes] = await pool.execute(`SELECT id_questao,disciplina,resposta_correta,explicacao FROM questoes_estudo WHERE id_questao IN (${ids.map(() => '?').join(',')})`, ids)
+  const { respostas, revisao } = dadosDoProgresso(payload, ids)
+  const [questoes] = await pool.execute(`SELECT id_questao,disciplina,dificuldade,resposta_correta,explicacao FROM questoes_estudo WHERE id_questao IN (${ids.map(() => '?').join(',')})`, ids)
   let acertos = 0
   const correcoes = questoes.map((questao) => {
-    const resposta = Number(lista[questao.id_questao])
+    const resposta = Number(respostas[questao.id_questao])
     const acertou = resposta === Number(questao.resposta_correta)
     if (acertou) acertos += 1
     return { idQuestao: questao.id_questao, acertou, respostaCorreta: Number(questao.resposta_correta), explicacao: questao.explicacao }
   })
   const nota = questoes.length ? Number(((acertos / questoes.length) * 100).toFixed(2)) : 0
-  await pool.execute(`UPDATE simulados_catalogo SET respostas=?,acertos=?,nota=?,status='CONCLUIDO',concluido_em=CURRENT_TIMESTAMP WHERE id_simulado=? AND id_usuario=?`, [JSON.stringify(lista), acertos, nota, idSimulado, idUsuario])
-  return { idSimulado: Number(idSimulado), acertos, total: questoes.length, nota, correcoes }
+  const resumoPorDisciplina = Object.values(questoes.reduce((grupos, questao) => {
+    const atual = grupos[questao.disciplina] || { disciplina: questao.disciplina, acertos: 0, total: 0 }
+    atual.total += 1
+    if (Number(respostas[questao.id_questao]) === Number(questao.resposta_correta)) atual.acertos += 1
+    grupos[questao.disciplina] = atual
+    return grupos
+  }, {})).map((item) => ({ ...item, percentual: Number(((item.acertos / item.total) * 100).toFixed(1)) })).sort((a, b) => a.percentual - b.percentual)
+  await pool.execute(`UPDATE simulados_catalogo SET respostas=?,questoes_revisao=?,acertos=?,nota=?,status='CONCLUIDO',concluido_em=CURRENT_TIMESTAMP WHERE id_simulado=? AND id_usuario=?`, [JSON.stringify(respostas), JSON.stringify(revisao), acertos, nota, idSimulado, idUsuario])
+  return { idSimulado: Number(idSimulado), acertos, total: questoes.length, nota, correcoes, resumoPorDisciplina, marcadasParaRevisao: revisao.length }
 }
 
 async function historicoSimulados(idUsuario) {

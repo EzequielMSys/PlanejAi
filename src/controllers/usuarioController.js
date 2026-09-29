@@ -1,4 +1,5 @@
 const usuarioService = require('../services/usuarioService')
+const { validarArquivoEnviado } = require('../services/uploadSecurity')
 const privacyService = require('../services/privacyService')
 
 function tratarErroUsuario(error, res) {
@@ -31,11 +32,14 @@ function tratarErroUsuario(error, res) {
 
 async function listar(req, res) {
   try {
-    const usuarios = await usuarioService.listar()
-
-    return res.status(200).json({
-      usuarios
+    const resultado = await usuarioService.listar({
+      page: req.query.page,
+      limit: req.query.limit,
+      search: req.query.search,
+      tipo: req.query.tipo
     })
+
+    return res.status(200).json(resultado)
   } catch (error) {
     return tratarErroUsuario(error, res)
   }
@@ -106,6 +110,7 @@ async function uploadFotoPerfil(req, res) {
         error: 'Nenhuma imagem enviada.'
       })
     }
+    await validarArquivoEnviado(req.file)
 
     const usuarioId = req.usuario.id_usuario || req.usuario.id
     const fotoUrl = `/uploads/perfis/${req.file.filename}`
@@ -123,8 +128,8 @@ async function uploadFotoPerfil(req, res) {
   } catch (error) {
     console.error('[UPLOAD FOTO ERROR]', error)
 
-    return res.status(500).json({
-      error: 'Erro ao atualizar foto.'
+    return res.status(error.status || 500).json({
+      error: error.status ? error.message : 'Erro ao atualizar foto.'
     })
   }
 }

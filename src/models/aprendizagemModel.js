@@ -169,6 +169,27 @@ async function atualizarMetaSemanal(idUsuario, minutosMeta) {
   return { minutosMeta: minutos };
 }
 
+async function obterAnotacao(idUsuario, idConteudo) {
+  const [rows] = await pool.execute(
+    'SELECT texto, atualizado_em FROM anotacoes_estudo WHERE id_usuario = ? AND id_conteudo = ?',
+    [idUsuario, idConteudo]
+  );
+  return { texto: rows[0]?.texto || '', atualizadoEm: rows[0]?.atualizado_em || null };
+}
+
+async function salvarAnotacao(idUsuario, idConteudo, texto) {
+  const conteudo = Number(idConteudo);
+  const textoSeguro = String(texto || '').slice(0, 30000);
+  if (!Number.isInteger(conteudo) || conteudo <= 0) throw new Error('Conteúdo inválido para anotação.');
+  await pool.execute(
+    `INSERT INTO anotacoes_estudo (id_usuario, id_conteudo, texto)
+     VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE texto = VALUES(texto), atualizado_em = CURRENT_TIMESTAMP`,
+    [idUsuario, conteudo, textoSeguro]
+  );
+  return obterAnotacao(idUsuario, conteudo);
+}
+
 async function obterResumo(idUsuario) {
   const [[revisoes], [questoes], [erros], [dominio], [sessoes], [diasConcluidos], [meta]] = await Promise.all([
     pool.execute('SELECT COUNT(*) AS hoje FROM revisoes_estudo WHERE id_usuario = ? AND proxima_revisao <= CURRENT_DATE', [idUsuario]),
@@ -299,4 +320,4 @@ async function listarVersoesRedacao(idUsuario, idRedacao) {
   return rows.map((row) => ({ ...row, competencias_enem: typeof row.competencias_enem === 'string' ? JSON.parse(row.competencias_enem || 'null') : row.competencias_enem }));
 }
 
-module.exports = { garantirBancoQuestoes, gerarSimulado, responderQuestao, listarCadernoErros, atualizarErro, listarRevisoes, adicionarRevisao, avaliarRevisao, registrarSessao, obterMetaSemanal, atualizarMetaSemanal, obterResumo, obterEvolucao, obterJornada, criarVersaoRedacao, listarVersoesRedacao };
+module.exports = { garantirBancoQuestoes, gerarSimulado, responderQuestao, listarCadernoErros, atualizarErro, listarRevisoes, adicionarRevisao, avaliarRevisao, registrarSessao, obterMetaSemanal, atualizarMetaSemanal, obterAnotacao, salvarAnotacao, obterResumo, obterEvolucao, obterJornada, criarVersaoRedacao, listarVersoesRedacao };

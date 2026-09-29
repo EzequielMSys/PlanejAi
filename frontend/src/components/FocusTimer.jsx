@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
+import aprendizagemService from '../services/aprendizagemService'
 
 const DEFAULT_SECONDS = 25 * 60
 
@@ -7,6 +8,13 @@ function formatTime(total) {
   const minutes = Math.floor(total / 60).toString().padStart(2, '0')
   const seconds = (total % 60).toString().padStart(2, '0')
   return `${minutes}:${seconds}`
+}
+
+function salvarSessaoLocal(minutes) {
+  try {
+    const anteriores = JSON.parse(window.localStorage.getItem('planejai:study-sessions') || '[]')
+    window.localStorage.setItem('planejai:study-sessions', JSON.stringify([...anteriores.slice(-199), { finishedAt: new Date().toISOString(), minutes, source: 'focus-timer' }]))
+  } catch { /* cache offline opcional */ }
 }
 
 export default function FocusTimer() {
@@ -33,15 +41,14 @@ export default function FocusTimer() {
         window.clearInterval(interval)
         window.localStorage.removeItem('focus-end')
         const minutes = Math.max(1, Math.round(cycleSeconds / 60))
-        const anteriores = JSON.parse(window.localStorage.getItem('planejai:study-sessions') || '[]')
-        window.localStorage.setItem('planejai:study-sessions', JSON.stringify([...anteriores.slice(-199), { finishedAt: new Date().toISOString(), minutes, source: 'focus-timer' }]))
+        aprendizagemService.registrarSessao({ minutos: minutes, resultado: 'LEMBREI' }).catch(() => salvarSessaoLocal(minutes))
         setRunning(false)
         if (window.Notification?.permission === 'granted') new window.Notification('PlanejAI', { body: 'Ciclo concluído. Hora de respirar um pouco!' })
         toast.success('Ciclo concluído. Hora de respirar um pouco!')
       }
     }, 1000)
     return () => window.clearInterval(interval)
-  }, [running])
+  }, [cycleSeconds, running])
 
   const pause = () => {
     window.localStorage.removeItem('focus-end')

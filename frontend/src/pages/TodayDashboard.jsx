@@ -37,7 +37,9 @@ export default function TodayDashboard() {
   const navigate = useNavigate()
   const [data, setData] = useState({ schedules: [], learning: null, reviews: [], errors: [] })
   const [loading, setLoading] = useState(true)
-  const [weeklyGoal, setWeeklyGoal] = useState(() => Math.max(30, Number(localStorage.getItem('planejai:weekly-goal')) || 180))
+  // A meta é uma preferência da conta, não do dispositivo. O resumo inicial a
+  // hidrata a partir do banco para manter a mesma experiência em qualquer PC.
+  const [weeklyGoal, setWeeklyGoal] = useState(180)
 
   useEffect(() => {
     let active = true
@@ -72,6 +74,18 @@ export default function TodayDashboard() {
   const name = user?.apelido || user?.nome?.split(' ')[0] || 'estudante'
 
   const start = (content = nextContent, day = nextDay) => content ? navigate('/estudar', { state: { conteudo: content, dia: day } }) : navigate('/cronograma')
+  const updateWeeklyGoal = async (event) => {
+    const nextGoal = Math.max(30, Math.min(1680, Number(event.target.value) || 30))
+    const previousGoal = weeklyGoal
+    setWeeklyGoal(nextGoal)
+    try {
+      const saved = await aprendizagemService.atualizarMetaSemanal(nextGoal)
+      setWeeklyGoal(Number(saved?.minutosMeta) || nextGoal)
+    } catch {
+      setWeeklyGoal(previousGoal)
+      toast.error('Não foi possível salvar a meta semanal. Tente novamente.')
+    }
+  }
   const date = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date())
 
   if (loading) return <main className="dash-v2-loading"><span />Preparando sua central…</main>
@@ -93,7 +107,7 @@ export default function TodayDashboard() {
         <aside className="dash-v2-score">
           <div className="dash-v2-ring" style={{ '--score': `${weeklyProgress * 3.6}deg` }}><span><strong>{weeklyProgress}%</strong><small>meta semanal</small></span></div>
           <h2>{weeklyMinutes} de {weeklyGoal} min</h2><p>Consistência vale mais do que intensidade isolada.</p>
-          <label>AJUSTAR META <input type="number" min="30" step="30" value={weeklyGoal} onChange={(event) => { const value = Math.max(30, Number(event.target.value) || 30); setWeeklyGoal(value); localStorage.setItem('planejai:weekly-goal', String(value)); aprendizagemService.atualizarMetaSemanal(value).catch(() => {}) }} /></label>
+          <label>AJUSTAR META <input type="number" min="30" max="1680" step="30" value={weeklyGoal} onChange={updateWeeklyGoal} /></label>
         </aside>
       </section>
 

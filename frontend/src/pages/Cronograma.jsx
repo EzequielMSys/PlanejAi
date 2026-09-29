@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext'
 import MaterialViewer from '../components/MaterialViewer'
 import CronogramaAssessment from '../components/CronogramaAssessment'
 import { exportarCronograma } from '../utils/calendarExport'
+import './Cronograma.css'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -85,10 +86,9 @@ export default function Cronograma() {
   }
 
   async function abandonarAvaliacao(idAvaliacao) {
-    if (!window.confirm('Descartar esta avaliação? As respostas escolhidas neste aparelho serão apagadas e será possível iniciar outra.')) return
+    if (!window.confirm('Descartar esta avaliação? As respostas salvas na sua conta serão apagadas e será possível iniciar outra.')) return
     try {
       await cronogramaService.abandonarAvaliacao(idAvaliacao)
-      localStorage.removeItem(`planejai:avaliacao:${idAvaliacao}`)
       await carregarCronogramas()
       toast.success('Avaliação descartada. Você já pode iniciar uma nova.')
     } catch (error) { toast.error(error.response?.data?.message || 'Não foi possível descartar a avaliação.') }
@@ -98,6 +98,10 @@ export default function Cronograma() {
     const resultado = await cronogramaService.enviarAvaliacao(idAvaliacao, respostas)
     await carregarCronogramas()
     return resultado
+  }
+
+  async function salvarRespostaAvaliacao(idAvaliacao, idQuestao, resposta) {
+    return cronogramaService.salvarRespostaAvaliacao(idAvaliacao, idQuestao, resposta)
   }
 
   useEffect(() => {
@@ -137,7 +141,7 @@ const proximoDia = dias.find((dia) => {
     ) {
       celebradoRef.current = true
 
-      const cores = ['#4B4C9D', '#9394CF', '#FFD700', '#FF6B6B', '#4ECB71', '#FFA500']
+      const cores = ['#6B43BB', '#A98AE6', '#F2C66D', '#D9697B', '#65B79D', '#E7A55B']
 
       // Explosão inicial no centro
       confetti({
@@ -651,7 +655,7 @@ async function concluirDia(idDia) {
       {materialAberto && (
         <MaterialViewer material={materialAberto} onClose={() => setMaterialAberto(null)} />
       )}
-      {avaliacao && <CronogramaAssessment assessment={avaliacao} onSubmit={enviarAvaliacao} onClose={() => { setAvaliacao(null); carregarCronogramas() }} />}
+      {avaliacao && <CronogramaAssessment key={avaliacao.id_avaliacao} assessment={avaliacao} onSubmit={enviarAvaliacao} onSaveAnswer={salvarRespostaAvaliacao} onClose={() => { setAvaliacao(null); carregarCronogramas() }} />}
       {recuperacao && <div className="fixed inset-0 z-[130] grid place-items-center bg-black/60 p-4"><section className="max-w-lg rounded-[2rem] bg-white p-6 text-[#21162F] dark:bg-[#211A2D] dark:text-white"><h2 className="text-2xl font-black">Plano de recuperação</h2><p className="mt-2 text-sm opacity-70">Há {recuperacao.dias_atrasados} dia(s) atrasado(s) e {recuperacao.conteudos_pendentes} conteúdo(s) pendente(s).</p><div className="mt-5 grid gap-3">{recuperacao.opcoes.map((opcao) => <button key={opcao.id} onClick={async () => { if (opcao.id === 'REDISTRIBUIR' || opcao.id === 'REDUZIR') await replanejar(); setRecuperacao(null); if (opcao.id === 'MANTER') toast('O cronograma foi mantido como está.'); }} className="rounded-2xl border p-4 text-left"><b>{opcao.titulo}</b><span className="mt-1 block text-sm opacity-65">{opcao.impacto}</span></button>)}</div><button onClick={() => setRecuperacao(null)} className="mt-5 text-sm font-bold underline">Fechar</button></section></div>}
     </div>
   )

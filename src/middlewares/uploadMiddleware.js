@@ -69,6 +69,11 @@ const uploadGeral = multer({
   fileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024,
+    files: 1,
+    fields: 20,
+    parts: 25,
+    fieldNameSize: 100,
+    fieldSize: 256 * 1024,
   },
 });
 
@@ -89,7 +94,7 @@ const uploadAtividade = multer({
     },
   }),
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 20, parts: 25, fieldNameSize: 100, fieldSize: 256 * 1024 },
 });
 
 const uploadMaterial = multer({
@@ -108,7 +113,7 @@ const uploadMaterial = multer({
     },
   }),
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 20, parts: 25, fieldNameSize: 100, fieldSize: 256 * 1024 },
 });
 
 module.exports = {
@@ -125,7 +130,7 @@ module.exports = {
       },
     }),
     fileFilter: imageFilter,
-    limits: { fileSize: 2 * 1024 * 1024, files: 1 },
+    limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 10, parts: 12, fieldNameSize: 100, fieldSize: 64 * 1024 },
   }),
   uploadAtividade,
   uploadMaterial,

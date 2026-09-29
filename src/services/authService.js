@@ -4,12 +4,13 @@ const crypto = require("crypto");
 
 const usuarioModel = require("../models/usuarioModel");
 const {
-  gerarSenhaTemporaria,
   validarSenhaForte,
   sanitizeUser,
+  getBcryptRounds,
 } = require("../utils/authUtils");
 const { getJwtSecret } = require("../config/jwtConfig");
 const { enviarRecuperacaoSenha } = require("./emailService");
+const jobQueue = require("./jobQueue");
 
 class AuthService {
   async registrar(dados) {
@@ -17,11 +18,13 @@ class AuthService {
     const email = String(dados.email || "")
       .trim()
       .toLowerCase();
-    const { senha } = dados;
+    const { senha, website } = dados;
 
-    if (!nome || !email) {
-      throw new Error("Nome e email são obrigatórios.");
+    if (!nome || !email || !senha) {
+      throw new Error("Nome, email e senha são obrigatórios.");
     }
+
+    if (String(website || '').trim()) throw new Error('Cadastro inválido.');
 
     if (!/^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ ][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(nome.trim())) {
       throw new Error("O nome deve conter apenas letras.");
@@ -37,38 +40,25 @@ class AuthService {
       throw new Error("Email já cadastrado.");
     }
 
-    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || "10", 10);
-
-    let senhaHash;
-    let senhaTemporariaRetorno = null;
-    let senhaTemporariaFlag = 0;
-
-    if (senha) {
-      if (!validarSenhaForte(senha)) {
-        throw new Error(
-          "Senha deve ter no mínimo 8 caracteres, 1 letra maiúscula e 1 número.",
-        );
-      }
-
-      senhaHash = await bcrypt.hash(senha, saltRounds);
-    } else {
-      senhaTemporariaRetorno = gerarSenhaTemporaria();
-      senhaHash = await bcrypt.hash(senhaTemporariaRetorno, saltRounds);
-      senhaTemporariaFlag = 1;
+    if (!validarSenhaForte(senha)) {
+      throw new Error(
+        "Senha deve ter ao menos 12 caracteres, com maiúscula, minúscula e número.",
+      );
     }
+    const senhaHash = await bcrypt.hash(senha, getBcryptRounds());
 
     const novoUsuario = await usuarioModel.criarUsuario({
       nome,
       email,
       senhaHash,
       tipo: "aluno",
-      senha_temporaria: senhaTemporariaFlag,
+      senha_temporaria: 0,
       ativo: 1,
     });
 
     return {
       usuario: sanitizeUser(novoUsuario),
-      senha_temporaria: senhaTemporariaRetorno,
+      senha_temporaria: null,
     };
   }
 
@@ -104,7 +94,13 @@ class AuthService {
 
     const usuarioId = usuario.id_usuario || usuario.id;
 
-    await usuarioModel.atualizarUltimoLogin(usuarioId);
+    // O carimbo de auditoria é secundário: uma falha transitória nesta atualização
+    // não deve invalidar credenciais que já foram verificadas com sucesso.
+    try {
+      await usuarioModel.atualizarUltimoLogin(usuarioId);
+    } catch (error) {
+      console.warn("[LOGIN AUDIT WARNING] Não foi possível atualizar ultimo_login:", error.message);
+    }
 
     const jwtSecret = getJwtSecret();
     const token = jwt.sign(
@@ -112,6 +108,7 @@ class AuthService {
         id: usuarioId,
         id_usuario: usuarioId,
         tipo: usuario.tipo,
+        sv: Number(usuario.versao_sessao || 0),
       },
       jwtSecret,
       { expiresIn: process.env.JWT_EXPIRATION || "8h" },
@@ -143,11 +140,13 @@ class AuthService {
     await usuarioModel.salvarTokenRecuperacao(usuarioId, tokenHash, expiracao);
 
     const appUrl = String(process.env.APP_URL || "http://localhost:5173").replace(/\/$/, "");
-    await enviarRecuperacaoSenha({
-      email: usuario.email,
-      nome: usuario.nome,
-      resetUrl: `${appUrl}/redefinir-senha?token=${encodeURIComponent(token)}`,
-    });
+    jobQueue.enqueue("PASSWORD_RECOVERY_EMAIL", () =>
+      enviarRecuperacaoSenha({
+        email: usuario.email,
+        nome: usuario.nome,
+        resetUrl: `${appUrl}/redefinir-senha?token=${encodeURIComponent(token)}`,
+      }),
+    );
   }
 
   async redefinirSenha(token, novaSenha) {
@@ -162,8 +161,7 @@ class AuthService {
     const usuario = await usuarioModel.buscarPorTokenRecuperacao(tokenHash);
     if (!usuario || usuario.ativo === 0) throw new Error("Token inválido ou expirado.");
 
-    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || "10", 10);
-    const senhaHash = await bcrypt.hash(novaSenha, saltRounds);
+    const senhaHash = await bcrypt.hash(novaSenha, getBcryptRounds());
     const updated = await usuarioModel.redefinirSenhaComToken(usuario.id_usuario, tokenHash, senhaHash);
     if (!updated) throw new Error("Token inválido ou expirado.");
     return { message: "Senha redefinida com sucesso." };
@@ -191,8 +189,7 @@ class AuthService {
       throw new Error("A nova senha deve ser diferente da senha atual.");
     }
 
-    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || "10", 10);
-    const novaSenhaHash = await bcrypt.hash(novaSenha, saltRounds);
+    const novaSenhaHash = await bcrypt.hash(novaSenha, getBcryptRounds());
 
     await usuarioModel.trocarSenha(usuarioId, novaSenhaHash);
 
@@ -221,8 +218,7 @@ class AuthService {
       );
     }
 
-    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || "10", 10);
-    const novaSenhaHash = await bcrypt.hash(novaSenha, saltRounds);
+    const novaSenhaHash = await bcrypt.hash(novaSenha, getBcryptRounds());
 
     await usuarioModel.alterarSenha(usuarioId, novaSenhaHash);
 

@@ -12,12 +12,12 @@ function extrairMensagem(error, fallback = 'Erro na operação.') {
 }
 
 const usuarioService = {
-  async listar() {
-    const response = await api.get('/')
+  async listar({ page = 1, limit = 10, search = '', tipo = '' } = {}) {
+    const response = await api.get('/', {
+      params: { page, limit, search: search || undefined, tipo: tipo || undefined }
+    })
 
-    return Array.isArray(response.data)
-      ? response.data
-      : response.data.usuarios || []
+    return response.data
   },
 
   async me() {

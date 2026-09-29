@@ -15,6 +15,8 @@ export default {
   registrarSessao: (dados) => api.post('/sessoes', dados, { offlineQueue: true }).then((r) => r.data),
   metaSemanal: () => api.get('/meta-semanal').then((r) => r.data),
   atualizarMetaSemanal: (minutosMeta) => api.put('/meta-semanal', { minutosMeta }).then((r) => r.data),
+  anotacao: (idConteudo) => api.get(`/conteudos/${idConteudo}/anotacao`).then((r) => r.data),
+  salvarAnotacao: (idConteudo, texto) => api.put(`/conteudos/${idConteudo}/anotacao`, { texto }).then((r) => r.data),
   versoesRedacao: (id) => api.get(`/redacoes/${id}/versoes`).then((r) => r.data),
   criarVersaoRedacao: (id, dados) => api.post(`/redacoes/${id}/versoes`, dados).then((r) => r.data)
 }

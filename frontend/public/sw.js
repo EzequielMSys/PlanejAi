@@ -1,4 +1,4 @@
-const CACHE_NAME = 'planejai-shell-v5'
+const CACHE_NAME = 'planejai-shell-v6'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.add('./')).then(() => self.skipWaiting()))

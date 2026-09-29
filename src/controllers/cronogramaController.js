@@ -1,8 +1,12 @@
 const cronogramaService = require('../services/cronogramaService')
+const { validarArquivoEnviado } = require('../services/uploadSecurity')
 const adaptiveScheduleModel = require('../models/adaptiveScheduleModel')
 const aprendizagemModel = require('../models/aprendizagemModel')
 
 function tratarErroCronograma(error, res) {
+  if (error.status === 409) {
+    return res.status(409).json({ error: error.message })
+  }
   const mensagensUsuario = [
     'Perfil de estudo não configurado',
     'Disponibilidade semanal não configurada',
@@ -155,6 +159,7 @@ async function atualizarConteudoCronograma(req, res) {
 async function uploadMaterial(req, res) {
   try {
     if (!req.file) return res.status(400).json({ message: 'Nenhum arquivo enviado.' })
+    await validarArquivoEnviado(req.file)
     const url = `/uploads/materiais/${req.file.filename}`
     const conteudoCronogramaId = req.params.conteudoCronogramaId
     const atual = await cronogramaService.obterConteudoCronogramaPorId(conteudoCronogramaId)
@@ -164,7 +169,7 @@ async function uploadMaterial(req, res) {
     return res.status(201).json({ url, filename: req.file.filename, materiais })
   } catch (error) {
     console.error('[CRONOGRAMA UPLOAD]', error)
-    return res.status(500).json({ message: 'Erro ao enviar material.' })
+    return res.status(error.status || 500).json({ message: error.status ? error.message : 'Erro ao enviar material.' })
   }
 }
 
@@ -212,6 +217,17 @@ async function enviarAvaliacao(req, res) {
   catch (error) { return res.status(400).json({ message: error.message }) }
 }
 
+async function salvarRespostaAvaliacao(req, res) {
+  try {
+    return res.json(await cronogramaService.salvarRespostaAvaliacao(
+      req.params.avaliacaoId,
+      req.usuario.id_usuario || req.usuario.id,
+      req.params.questaoId,
+      req.body?.resposta
+    ))
+  } catch (error) { return res.status(400).json({ message: error.message }) }
+}
+
 async function retomarAvaliacao(req, res) {
   try { return res.json(await cronogramaService.retomarAvaliacao(req.params.avaliacaoId, req.usuario.id_usuario || req.usuario.id)) }
   catch (error) { return res.status(400).json({ message: error.message }) }
@@ -238,6 +254,7 @@ module.exports = {
   iniciarDesafio,
   iniciarProvaFinal,
   enviarAvaliacao,
+  salvarRespostaAvaliacao,
   retomarAvaliacao,
   abandonarAvaliacao
 }

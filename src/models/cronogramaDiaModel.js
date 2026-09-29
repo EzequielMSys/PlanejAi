@@ -1,7 +1,7 @@
 const pool = require('../config/db')
 
-async function criarDia(idCronograma, { data_estudo, tempo_previsto = null }) {
-  const [result] = await pool.execute(
+async function criarDia(idCronograma, { data_estudo, tempo_previsto = null }, db = pool) {
+  const [result] = await db.execute(
     `INSERT INTO cronograma_dias
       (id_cronograma, data_estudo, tempo_previsto)
      VALUES (?, ?, ?)`,

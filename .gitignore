@@ -11,6 +11,14 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+*.env
+!*.env.example
+
+# Frontend configuration is machine/deployment-specific.
+frontend/.env
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
 
 # Build outputs
 dist/
@@ -50,6 +58,18 @@ Thumbs.db
 frontend/node_modules/
 frontend/dist/
 frontend/build/
+frontend/.vite/
+
+# User-generated files and local database exports must stay outside Git.
+uploads/
+backups/
+db/*.sql
+!db/*.schema.sql
+
+# Certificates and local keys
+*.pem
+*.key
+*.crt
 
 # Migrations
 migrations/*.sql.backup

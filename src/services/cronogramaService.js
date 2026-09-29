@@ -5,6 +5,7 @@ const cronogramaDiaModel = require('../models/cronogramaDiaModel')
 const cronogramaConteudoModel = require('../models/cronogramaConteudoModel')
 const conteudoModel = require('../models/conteudoModel')
 const avaliacaoModel = require('../models/cronogramaAvaliacaoModel')
+const pool = require('../config/db')
 const inteligenciaModel = require('../models/inteligenciaModel')
 
 const DIAS_SEMANA = {
@@ -98,6 +99,10 @@ class CronogramaService {
     return avaliacaoModel.enviar(idAvaliacao, idUsuario, respostas)
   }
 
+  async salvarRespostaAvaliacao(idAvaliacao, idUsuario, idQuestao, resposta) {
+    return avaliacaoModel.salvarResposta(idAvaliacao, idUsuario, idQuestao, resposta)
+  }
+
   async retomarAvaliacao(idAvaliacao, idUsuario) {
     return avaliacaoModel.retomar(idAvaliacao, idUsuario)
   }
@@ -153,58 +158,66 @@ class CronogramaService {
       conteudos.sort((a, b) => (pesos.get(String(b.disciplina).toLowerCase()) || 0) - (pesos.get(String(a.disciplina).toLowerCase()) || 0))
     }
 
-    await cronogramaModel.desativarCronogramasAtivos(perfil.id_perfil)
-
     const hoje = new Date()
     const prazoDias = Number(perfil.prazo_estimado || 30)
 
     const dataFim = new Date(hoje)
     dataFim.setDate(dataFim.getDate() + prazoDias)
 
-    const cronograma = await cronogramaModel.criarCronograma(perfil.id_perfil, {
-      data_inicio: formatarDataISO(hoje),
-      data_fim: formatarDataISO(dataFim),
-      status: 'ativo'
-    })
-
-    let dataAtual = new Date(hoje)
-    let indiceConteudo = 0
-
-    for (let i = 0; i < prazoDias; i++) {
-      const codigoDia = obterCodigoDia(dataAtual)
-
-      if (diasDisponiveis.includes(codigoDia)) {
-        const dia = await cronogramaDiaModel.criarDia(
-          cronograma.id_cronograma,
-          {
-            data_estudo: formatarDataISO(dataAtual),
-            tempo_previsto: Number(perfil.tempo_diario_min || 120)
-          }
-        )
-
-        const quantidadeSlots = Math.max(
-          1,
-          Math.floor(Number(perfil.tempo_diario_min || 120) / 30)
-        )
-
-        for (let slot = 0; slot < quantidadeSlots; slot++) {
-          const conteudo = conteudos[indiceConteudo % conteudos.length]
-
-          await cronogramaConteudoModel.atribuirConteudoAoDia(
-            dia.id_dia,
-            conteudo.id_conteudo
-          )
-
-          indiceConteudo++
-        }
+    const connection = await pool.getConnection()
+    const lockName = `planejai_cronograma_${usuarioId}`
+    let locked = false
+    try {
+      const [[lock]] = await connection.query('SELECT GET_LOCK(?, 0) AS acquired', [lockName])
+      locked = Number(lock.acquired) === 1
+      if (!locked) {
+        const error = new Error('Já existe uma geração de cronograma em andamento para este usuário.')
+        error.status = 409
+        throw error
       }
 
-      dataAtual.setDate(dataAtual.getDate() + 1)
-    }
+      await connection.beginTransaction()
+      await cronogramaModel.desativarCronogramasAtivos(perfil.id_perfil, connection)
+      const cronograma = await cronogramaModel.criarCronograma(perfil.id_perfil, {
+        data_inicio: formatarDataISO(hoje),
+        data_fim: formatarDataISO(dataFim),
+        status: 'ativo'
+      }, connection)
 
-    return cronogramaModel.obterCronogramaCompleto(
-      cronograma.id_cronograma
-    )
+      let dataAtual = new Date(hoje)
+      let indiceConteudo = 0
+      for (let i = 0; i < prazoDias; i++) {
+        const codigoDia = obterCodigoDia(dataAtual)
+        if (diasDisponiveis.includes(codigoDia)) {
+          const dia = await cronogramaDiaModel.criarDia(cronograma.id_cronograma, {
+            data_estudo: formatarDataISO(dataAtual),
+            tempo_previsto: Number(perfil.tempo_diario_min || 120)
+          }, connection)
+          const quantidadeSlots = Math.max(1, Math.floor(Number(perfil.tempo_diario_min || 120) / 30))
+          for (let slot = 0; slot < quantidadeSlots; slot++) {
+            const conteudo = conteudos[indiceConteudo % conteudos.length]
+            await cronogramaConteudoModel.atribuirConteudoAoDia(
+              dia.id_dia,
+              conteudo.id_conteudo,
+              connection
+            )
+            indiceConteudo++
+          }
+        }
+        dataAtual.setDate(dataAtual.getDate() + 1)
+      }
+
+      await connection.commit()
+      return cronogramaModel.obterCronogramaCompleto(cronograma.id_cronograma)
+    } catch (error) {
+      try { await connection.rollback() } catch { /* conexão pode ter falhado */ }
+      throw error
+    } finally {
+      if (locked) {
+        try { await connection.query('SELECT RELEASE_LOCK(?)', [lockName]) } catch { /* liberação ocorre ao fechar */ }
+      }
+      connection.release()
+    }
   }
 
   async listar(usuarioId) {

@@ -178,7 +178,11 @@ export const AuthProvider = ({ children }) => {
       return response;
     } catch (error) {
       toast.error(
-        error.response?.data?.error || error.message || "Erro ao fazer login",
+        error.response?.data?.error ||
+          error.response?.data?.message ||
+          (error.response
+            ? `Não foi possível entrar (HTTP ${error.response.status}).`
+            : "Não foi possível conectar à API. Verifique se o servidor está ativo."),
       );
 
       throw error;

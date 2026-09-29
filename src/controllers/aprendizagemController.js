@@ -16,7 +16,9 @@ async function avaliarRevisao(req, res) { try { return res.json(await model.aval
 async function registrarSessao(req, res) { try { return res.status(201).json(await model.registrarSessao(idUsuario(req), req.body)); } catch (error) { return res.status(400).json({ message: error.message }); } }
 async function metaSemanal(req, res) { try { return res.json(await model.obterMetaSemanal(idUsuario(req))); } catch (error) { return erro(res, error); } }
 async function atualizarMetaSemanal(req, res) { try { return res.json(await model.atualizarMetaSemanal(idUsuario(req), req.body.minutosMeta)); } catch (error) { return res.status(400).json({ message: error.message }); } }
+async function obterAnotacao(req, res) { try { return res.json(await model.obterAnotacao(idUsuario(req), req.params.idConteudo)); } catch (error) { return erro(res, error); } }
+async function salvarAnotacao(req, res) { try { return res.json(await model.salvarAnotacao(idUsuario(req), req.params.idConteudo, req.body?.texto)); } catch (error) { return res.status(400).json({ message: error.message }); } }
 async function versoes(req, res) { try { return res.json(await model.listarVersoesRedacao(idUsuario(req), req.params.idRedacao)); } catch (error) { return erro(res, error); } }
 async function criarVersao(req, res) { try { const resultado = await model.criarVersaoRedacao(idUsuario(req), req.params.idRedacao, req.body); return resultado ? res.status(201).json(resultado) : res.status(404).json({ message: 'Redação não encontrada.' }); } catch (error) { return erro(res, error); } }
 
-module.exports = { resumo, evolucao, jornada, simulado, responder, erros, atualizarErro, revisoes, adicionarRevisao, avaliarRevisao, registrarSessao, metaSemanal, atualizarMetaSemanal, versoes, criarVersao };
+module.exports = { resumo, evolucao, jornada, simulado, responder, erros, atualizarErro, revisoes, adicionarRevisao, avaliarRevisao, registrarSessao, metaSemanal, atualizarMetaSemanal, obterAnotacao, salvarAnotacao, versoes, criarVersao };

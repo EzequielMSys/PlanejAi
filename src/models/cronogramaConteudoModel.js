@@ -1,7 +1,7 @@
 const pool = require('../config/db')
 
-async function atribuirConteudoAoDia(idDia, idConteudo = null) {
-  const [result] = await pool.execute(
+async function atribuirConteudoAoDia(idDia, idConteudo = null, db = pool) {
+  const [result] = await db.execute(
     `INSERT INTO cronograma_conteudos
       (id_dia, id_conteudo, concluido)
      VALUES (?, ?, 0)`,

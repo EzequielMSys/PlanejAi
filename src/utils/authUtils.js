@@ -1,22 +1,24 @@
 const crypto = require('crypto');
 
 /**
- * Gera senha temporária aleatória de 8 caracteres (maiúsculas + números)
+ * Gera senha temporária aleatória para fluxos administrativos controlados.
  */
 function gerarSenhaTemporaria() {
-  return crypto.randomBytes(4)
-    .toString('hex')
-    .toUpperCase()
-    .slice(0, 8);
+  return crypto.randomBytes(18).toString('base64url');
 }
 
 /**
  * Valida se senha atende critérios de força
- * Mín 8 chars, 1 maiúscula, 1 número
+ * Mín. 12 caracteres, com maiúscula, minúscula e número.
  */
 function validarSenhaForte(senha) {
-  const regex = /^(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/;
+  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,128}$/;
   return regex.test(senha);
+}
+
+function getBcryptRounds() {
+  const requested = Number(process.env.BCRYPT_SALT_ROUNDS || 12);
+  return Math.min(15, Math.max(12, Number.isFinite(requested) ? requested : 12));
 }
 
 /**
@@ -30,6 +32,7 @@ function sanitizeUser(usuario) {
 module.exports = {
   gerarSenhaTemporaria,
   validarSenhaForte,
-  sanitizeUser
+  sanitizeUser,
+  getBcryptRounds
 };
 
