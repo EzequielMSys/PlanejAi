@@ -1,8 +1,12 @@
 import { defineConfig } from 'vite' 
 import react from '@vitejs/plugin-react'
+
+// O GitHub Pages usa /PlanejAi/, enquanto a Vercel publica o frontend na
+// raiz do domínio. A variável é provida pela Vercel apenas no ambiente dela.
+const isVercelBuild = process.env.VERCEL === '1'
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/PlanejAi/',
+  base: isVercelBuild ? '/' : '/PlanejAi/',
   plugins: [react()],
   build: {
     rollupOptions: {

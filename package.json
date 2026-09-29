@@ -14,13 +14,14 @@
     "repair:conteudos": "node src/scripts/repairContentLinks.js",
     "test:redacao": "node src/scripts/testEssayAnalysis.js",
     "test": "node --test test/*.test.js",
-    "check:backend": "node --check src/server.js && node --check src/controllers/authController.js && node --check src/controllers/aprendizagemController.js && node --check src/controllers/cronogramaController.js && node --check src/models/aprendizagemModel.js && node --check src/models/cronogramaConteudoModel.js && node --check src/services/cronogramaService.js && node --check src/services/authService.js && node --check src/middlewares/authMiddleware.js && node --check src/middlewares/platformMiddleware.js && node --check src/middlewares/uploadMiddleware.js",
+    "check:backend": "node --check src/server.js && node --check src/controllers/authController.js && node --check src/controllers/aprendizagemController.js && node --check src/controllers/cronogramaController.js && node --check src/models/aprendizagemModel.js && node --check src/models/cronogramaConteudoModel.js && node --check src/services/cronogramaService.js && node --check src/services/authService.js && node --check src/services/uploadStorageService.js && node --check src/middlewares/authMiddleware.js && node --check src/middlewares/platformMiddleware.js && node --check src/middlewares/uploadMiddleware.js",
     "check": "npm test && npm run check:backend && npm run check:frontend",
     "check:frontend": "npm run lint --prefix frontend && npm run build --prefix frontend",
     "migrate:areas_foco": "node src/scripts/applyAreasFocoMigration.js",
     "migrate:atividades": "node src/scripts/applyPedagogicalActivitiesMigration.js",
     "migrate:materiais": "node src/scripts/applyContentMaterialsMigration.js",
-    "migrate:all": "node src/scripts/applyMigrations.js"
+    "migrate:all": "node src/scripts/applyMigrations.js",
+    "vercel:prepare-api": "npm run migrate:all && node src/scripts/seedDatabase.js && node src/scripts/repairContentLinks.js"
   },
   "nodemonConfig": {
     "watch": [
@@ -42,6 +43,7 @@
     "delay": "750"
   },
   "dependencies": {
+    "@vercel/blob": "^2.8.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",

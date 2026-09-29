@@ -22,3 +22,9 @@ test('toda questão possui quatro alternativas e resposta válida', () => {
     assert.ok(questao.explicacao.length > 20);
   }
 });
+
+test('banco avançado oferece volume suficiente para simulados difíceis', () => {
+  const avancadas = questoes.filter((questao) => questao.dificuldade === 'DIFICIL');
+  assert.ok(avancadas.length >= 70, `Esperadas ao menos 70 questões difíceis; recebidas ${avancadas.length}`);
+  assert.ok(new Set(avancadas.map((questao) => questao.disciplina)).size >= 4);
+});

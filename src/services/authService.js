@@ -139,7 +139,10 @@ class AuthService {
     const usuarioId = usuario.id_usuario || usuario.id;
     await usuarioModel.salvarTokenRecuperacao(usuarioId, tokenHash, expiracao);
 
-    const appUrl = String(process.env.APP_URL || "http://localhost:5173").replace(/\/$/, "");
+    // APP_URL é a fonte de verdade para domínio próprio. VERCEL_URL permite
+    // que links de recuperação também funcionem nos deployments de preview.
+    const hostedUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "";
+    const appUrl = String(process.env.APP_URL || hostedUrl || "http://localhost:5173").replace(/\/$/, "");
     jobQueue.enqueue("PASSWORD_RECOVERY_EMAIL", () =>
       enviarRecuperacaoSenha({
         email: usuario.email,

@@ -69,7 +69,7 @@ export default function UsuariosAdmin() {
 
   useEffect(() => {
     const timer = setTimeout(carregarUsuarios, 250)
-    return () => clearTimeout(timer)
+    return () => window.clearTimeout(timer)
   }, [carregarUsuarios])
 
   useEffect(() => {

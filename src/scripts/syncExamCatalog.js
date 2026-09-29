@@ -10,7 +10,12 @@ const catalogos = [
   ['UFRGS', 'UFRGS Conexões 2025', 2025, 'Simulado autoral de múltiplas áreas para prática de conceitos e conexões. Não reproduz prova oficial.', 300],
   ['PUC-SP', 'PUC-SP Humanidades & Exatas 2025', 2025, 'Treino autoral de raciocínio, leitura e repertório interdisciplinar. Não reproduz prova oficial.', 240],
   ['MACKENZIE', 'Mackenzie Multidisciplinar 2025', 2025, 'Coleção autoral para consolidar conteúdos de vestibular em uma sessão extensa. Não reproduz prova oficial.', 240],
-  ['IME', 'IME Sprint 2025', 2025, 'Treino autoral avançado de Matemática, Física e Química. Não reproduz prova oficial.', 300]
+  ['IME', 'IME Sprint 2025', 2025, 'Treino autoral avançado de Matemática, Física e Química. Não reproduz prova oficial.', 300],
+  ['UERJ', 'UERJ Argumentos & Contextos 2025', 2025, 'Coleção autoral de leitura, ciências humanas e resolução contextualizada. Não reproduz prova oficial.', 300],
+  ['UFPR', 'UFPR Conexões 2025', 2025, 'Treino autoral interdisciplinar com problemas de análise e aplicação de conceitos. Não reproduz prova oficial.', 300],
+  ['FAMERP', 'FAMERP Ciências em Foco 2025', 2025, 'Coleção autoral para prática de Ciências da Natureza e raciocínio quantitativo. Não reproduz prova oficial.', 300],
+  ['EINSTEIN', 'Einstein Raciocínio Aplicado 2025', 2025, 'Treino autoral de leitura crítica, lógica e resolução de situações-problema. Não reproduz prova oficial.', 300],
+  ['INSPER', 'Insper Decisão & Dados 2025', 2025, 'Coleção autoral voltada a argumentação, dados e modelagem matemática. Não reproduz prova oficial.', 300]
 ]
 
 async function syncExamCatalog() {

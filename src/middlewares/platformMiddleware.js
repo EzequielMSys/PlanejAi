@@ -137,10 +137,15 @@ function cleanupRateLimits() {
   }
 }
 
-const cleanupTimer = setInterval(cleanupRateLimits, 10 * 60 * 1000);
-cleanupTimer.unref();
-const persistentCleanupTimer = setInterval(() => rateLimitStore.cleanup().catch(() => {}), 6 * 60 * 60 * 1000);
-persistentCleanupTimer.unref();
+// Funções serverless podem congelar entre requisições. Timers globais não são
+// um mecanismo confiável de manutenção nelas e também mantêm recursos vivos
+// desnecessariamente. A limpeza persistente continua sendo feita pelo banco.
+if (!process.env.VERCEL) {
+  const cleanupTimer = setInterval(cleanupRateLimits, 10 * 60 * 1000);
+  cleanupTimer.unref();
+  const persistentCleanupTimer = setInterval(() => rateLimitStore.cleanup().catch(() => {}), 6 * 60 * 60 * 1000);
+  persistentCleanupTimer.unref();
+}
 
 module.exports = {
   authRateLimit,

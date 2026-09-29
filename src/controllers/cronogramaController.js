@@ -1,5 +1,6 @@
 const cronogramaService = require('../services/cronogramaService')
 const { validarArquivoEnviado } = require('../services/uploadSecurity')
+const { armazenarArquivo } = require('../services/uploadStorageService')
 const adaptiveScheduleModel = require('../models/adaptiveScheduleModel')
 const aprendizagemModel = require('../models/aprendizagemModel')
 
@@ -160,13 +161,14 @@ async function uploadMaterial(req, res) {
   try {
     if (!req.file) return res.status(400).json({ message: 'Nenhum arquivo enviado.' })
     await validarArquivoEnviado(req.file)
-    const url = `/uploads/materiais/${req.file.filename}`
+    const arquivo = await armazenarArquivo(req.file, 'materiais', req.usuario.id_usuario || req.usuario.id)
+    const url = arquivo.url
     const conteudoCronogramaId = req.params.conteudoCronogramaId
     const atual = await cronogramaService.obterConteudoCronogramaPorId(conteudoCronogramaId)
     const materiais = Array.isArray(atual?.materiais) ? atual.materiais : []
     materiais.push({ url, nome: req.file.originalname, tipo: req.file.mimetype })
     await cronogramaService.atualizarConteudoCronograma(conteudoCronogramaId, { materiais })
-    return res.status(201).json({ url, filename: req.file.filename, materiais })
+    return res.status(201).json({ url, filename: arquivo.filename, materiais })
   } catch (error) {
     console.error('[CRONOGRAMA UPLOAD]', error)
     return res.status(error.status || 500).json({ message: error.status ? error.message : 'Erro ao enviar material.' })

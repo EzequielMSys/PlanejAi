@@ -1,5 +1,6 @@
 const usuarioService = require('../services/usuarioService')
 const { validarArquivoEnviado } = require('../services/uploadSecurity')
+const { armazenarArquivo } = require('../services/uploadStorageService')
 const privacyService = require('../services/privacyService')
 
 function tratarErroUsuario(error, res) {
@@ -113,7 +114,8 @@ async function uploadFotoPerfil(req, res) {
     await validarArquivoEnviado(req.file)
 
     const usuarioId = req.usuario.id_usuario || req.usuario.id
-    const fotoUrl = `/uploads/perfis/${req.file.filename}`
+    const arquivo = await armazenarArquivo(req.file, 'perfis', usuarioId)
+    const fotoUrl = arquivo.url
 
     const usuarioAtualizado = await usuarioService.atualizar(
       usuarioId,

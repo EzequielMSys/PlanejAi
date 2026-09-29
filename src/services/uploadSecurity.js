@@ -25,26 +25,32 @@ function isAcceptedSignature(extension, bytes) {
 }
 
 async function removerArquivo(file) {
+  // Arquivos recebidos para Blob ainda não foram persistidos; basta descartá-los.
+  if (file?.buffer) return
   if (!file?.path) return
   await fs.unlink(file.path).catch(() => undefined)
 }
 
 async function validarArquivoEnviado(file) {
-  if (!file?.path) {
+  if (!file?.path && !file?.buffer) {
     const error = new Error('Arquivo enviado não encontrado.')
     error.status = 400
     throw error
   }
 
   const extension = path.extname(file.filename || file.originalname || '').toLowerCase()
-  const handle = await fs.open(file.path, 'r')
   let bytes
-  try {
+  if (file.buffer) {
+    bytes = file.buffer.subarray(0, 32)
+  } else {
+    const handle = await fs.open(file.path, 'r')
+    try {
     bytes = Buffer.alloc(32)
     const { bytesRead } = await handle.read(bytes, 0, bytes.length, 0)
     bytes = bytes.subarray(0, bytesRead)
-  } finally {
-    await handle.close()
+    } finally {
+      await handle.close()
+    }
   }
 
   if (isAcceptedSignature(extension, bytes)) return true

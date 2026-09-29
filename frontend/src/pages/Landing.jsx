@@ -2,77 +2,66 @@ import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import ThemeToggle from '../components/ThemeToggle'
+import './Landing.css'
 
-const reveal = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: .55 } } }
+const reveal = { hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0, transition: { duration: .48 } } }
 
-const recursos = [
-  { tag: '01', titulo: 'Plano que se adapta', texto: 'Seu cronograma considera rotina, domínio e atrasos. Mudou o dia? O plano se reorganiza sem apagar seu progresso.', cor: 'blue' },
-  { tag: '02', titulo: 'Aprender fazendo', texto: 'Atividades, simulados, redações e revisões deixam de ser ferramentas separadas e alimentam o mesmo mapa de aprendizagem.', cor: 'cyan' },
-  { tag: '03', titulo: 'Professor mais próximo', texto: 'Docentes publicam desafios, materiais e feedback. O aluno entende o próximo passo sem depender de planilhas ou grupos dispersos.', cor: 'lime' }
+const pillars = [
+  { icon: '◎', label: 'Mapa de estudo', title: 'Você sempre sabe o próximo passo.', text: 'A rotina vira um plano praticável, com tempo, matéria e motivo para cada sessão.' },
+  { icon: '↗', label: 'Evidências reais', title: 'Prática que melhora o plano.', text: 'Questões, provas, redações e atividades mostram o que já está firme e o que merece atenção.' },
+  { icon: '✦', label: 'Apoio humano', title: 'Sua turma no mesmo compasso.', text: 'Professores publicam materiais, acompanham entregas e dão feedback no espaço certo.' }
 ]
 
 function Brand() {
-  return <Link to="/" className="home-brand"><Logo className="h-10 w-10" /><span>Planej<strong>AI</strong></span></Link>
+  return <Link to="/" className="landing-brand" aria-label="Página inicial PlanejAI"><Logo className="h-10 w-10" /><span>Planej<strong>AI</strong><small>aprenda com direção</small></span></Link>
 }
 
-function ProductPreview() {
-  return (
-    <div className="home-product">
-      <div className="home-product-bar"><span><i /><i /><i /></span><small>HOJE · 3 MISSÕES</small><b>72%</b></div>
-      <div className="home-product-grid">
-        <aside><Logo className="h-8 w-8" />{['Visão geral', 'Meu plano', 'Atividades', 'Simulados'].map((item, index) => <span key={item} data-active={index === 1}>{item}</span>)}</aside>
-        <main>
-          <header><div><small>QUARTA-FEIRA</small><h3>Seu ritmo de hoje</h3></div><em>1h 45min</em></header>
-          <div className="home-progress"><span style={{ width: '72%' }} /></div>
-          <div className="home-missions">
-            <article className="is-done"><i>✓</i><div><b>Funções exponenciais</b><small>Matemática · 35 min</small></div><span>Concluído</span></article>
-            <article className="is-next"><i>02</i><div><b>Cinemática vetorial</b><small>Física · vídeo + prática</small></div><span>Começar →</span></article>
-            <article><i>03</i><div><b>Revisão inteligente</b><small>8 cartões vencendo hoje</small></div><span>20 min</span></article>
-          </div>
-        </main>
-      </div>
-      <div className="home-float-card"><span>↑ 18%</span><b>Evolução semanal</b><small>Você encontrou um ritmo consistente.</small></div>
-    </div>
-  )
+function JourneyBoard() {
+  return <section className="landing-board" aria-label="Exemplo de uma jornada de estudos">
+    <header><div><span>JORNADA DE HOJE</span><strong>Quarta-feira, 03</strong></div><b>02/03</b></header>
+    <div className="landing-board-focus"><span>EM FOCO</span><h2>Funções<br />exponenciais</h2><p>Matemática · 35 min</p><button type="button">Começar sessão <i>→</i></button><em>01</em></div>
+    <div className="landing-board-next"><span>DEPOIS</span><strong>Revisão ativa</strong><small>8 cartões para consolidar</small><i>02</i></div>
+    <footer><div><span>RITMO DA SEMANA</span><strong><i /> 4 dias de sequência</strong></div><div><b>68%</b><span>meta concluída</span></div></footer>
+  </section>
 }
 
 export default function Landing() {
-  return (
-    <div className="home-page">
-      <nav className="home-nav"><Brand /><div><a href="#como-funciona">Como funciona</a><a href="#recursos">Recursos</a><Link to="/login">Entrar</Link><Link to="/register" className="home-nav-cta">Criar meu plano</Link><ThemeToggle /></div></nav>
+  return <div className="landing-shell">
+    <nav className="landing-nav"><Brand /><div className="landing-nav-links"><a href="#como-funciona">Como funciona</a><a href="#recursos">Recursos</a><Link to="/login">Entrar</Link><Link to="/register" className="landing-nav-cta">Criar meu plano <span>→</span></Link><ThemeToggle /></div></nav>
 
-      <section id="conteudo-principal" tabIndex="-1" className="home-hero">
-        <div className="home-hero-copy">
-          <motion.p variants={reveal} initial="hidden" animate="visible" className="home-eyebrow"><span>●</span> UMA PLATAFORMA. TODO O SEU APRENDIZADO.</motion.p>
-          <motion.h1 variants={reveal} initial="hidden" animate="visible">Estudar deixa de ser uma dúvida. <em>Vira direção.</em></motion.h1>
-          <motion.p variants={reveal} initial="hidden" animate="visible" className="home-lead">O PlanejAI conecta sua rotina, seus professores e seus resultados para dizer o que estudar agora — e mostrar por que esse é o próximo passo.</motion.p>
-          <motion.div variants={reveal} initial="hidden" animate="visible" className="home-actions"><Link to="/register">Montar meu plano <span>→</span></Link><a href="#como-funciona">Conhecer a plataforma</a></motion.div>
-          <motion.div variants={reveal} initial="hidden" animate="visible" className="home-trust"><div><strong>100+</strong><span>questões no motor adaptativo</span></div><div><strong>4</strong><span>áreas conectadas</span></div><div><strong>1</strong><span>jornada contínua</span></div></motion.div>
+    <main id="conteudo-principal" tabIndex="-1">
+      <section className="landing-hero">
+        <motion.div initial="hidden" animate="visible" className="landing-hero-copy">
+          <motion.p variants={reveal} className="landing-kicker"><i /> UM ESPAÇO PARA APRENDER COM CALMA</motion.p>
+          <motion.h1 variants={reveal}>Sua rotina de estudos,<br /><em>com um norte.</em></motion.h1>
+          <motion.p variants={reveal} className="landing-lead">PlanejAI organiza o que importa agora e transforma cada tentativa em um próximo passo mais inteligente.</motion.p>
+          <motion.div variants={reveal} className="landing-actions"><Link to="/register">Começar minha jornada <span>→</span></Link><a href="#como-funciona">Ver como funciona <i>↓</i></a></motion.div>
+          <motion.div variants={reveal} className="landing-hero-note"><span>✦</span><p><b>Seu caminho é seu.</b> Uma plataforma para alunos, docentes e turmas aprenderem juntos.</p></motion.div>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, scale: .96, y: 18 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: .65, delay: .08 }} className="landing-board-wrap"><JourneyBoard /><div className="landing-orbit landing-orbit-one" /><div className="landing-orbit landing-orbit-two" /></motion.div>
+      </section>
+
+      <section className="landing-signal" aria-label="Áreas da plataforma"><span>PLANEJAR</span><i>✦</i><span>ESTUDAR</span><i>✦</i><span>PRATICAR</span><i>✦</i><span>EVOLUIR</span></section>
+
+      <section id="como-funciona" className="landing-way">
+        <div className="landing-section-intro"><p>UMA JORNADA, NÃO UMA PILHA DE TAREFAS</p><h2>O estudo volta a fazer sentido quando tudo conversa.</h2><span>Do primeiro plano ao resultado da prova, cada parte deixa uma pista útil para a próxima.</span></div>
+        <div className="landing-path">{pillars.map((pillar, index) => <article key={pillar.label}><div><i>{pillar.icon}</i><span>0{index + 1}</span></div><small>{pillar.label}</small><h3>{pillar.title}</h3><p>{pillar.text}</p></article>)}</div>
+      </section>
+
+      <section id="recursos" className="landing-lab">
+        <div className="landing-lab-copy"><p>LABORATÓRIO PLANEJAI</p><h2>Uma plataforma viva para quem aprende e para quem orienta.</h2><Link to="/register">Montar meu espaço <span>→</span></Link></div>
+        <div className="landing-lab-grid">
+          <article className="is-large"><span>01 · CRONOGRAMA</span><h3>Planos que cabem<br />na semana real.</h3><div className="landing-mini-calendar"><b>SEG</b><i /><b>QUA</b><i /><b>SEX</b><i /></div></article>
+          <article><span>02 · PROVAS</span><h3>Simulados por objetivo e nível.</h3><strong>ITA <i>+</i> ENEM</strong></article>
+          <article><span>03 · ATIVIDADES</span><h3>Feedback que chega onde ele ajuda.</h3><div className="landing-mini-feedback"><i>✓</i><b>Comentário do docente</b></div></article>
         </div>
-        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: .7, delay: .15 }}><ProductPreview /></motion.div>
       </section>
 
-      <section className="home-proof"><span>PLANEJAMENTO</span><i /> <span>PRÁTICA</span><i /> <span>FEEDBACK</span><i /> <span>EVOLUÇÃO</span></section>
+      <section className="landing-exams"><div className="landing-exams-score"><span>SEU RITMO</span><strong>84<small>%</small></strong><p>resultado de uma jornada que aprende com você</p></div><div><p>PROVAS SEM APOSTAR NO ESCURO</p><h2>Treine o que você quer conquistar.</h2><span>Escolha vestibular, dificuldade e quantidade. O sistema preserva suas tentativas e usa o resultado para recalibrar sua rota.</span><Link to="/register">Conhecer o laboratório <b>→</b></Link></div><ol><li><b>01</b><span>Escolha uma coleção</span></li><li><b>02</b><span>Faça no seu ritmo</span></li><li><b>03</b><span>Receba o próximo passo</span></li></ol></section>
 
-      <section id="como-funciona" className="home-story">
-        <div className="home-section-title"><p>DO CAOS AO PRÓXIMO PASSO</p><h2>Uma experiência que acompanha o jeito que você aprende.</h2></div>
-        <div className="home-steps">
-          <article><span>01</span><div><small>VOCÊ CONTA</small><h3>Objetivos e rotina</h3><p>Disponibilidade, matérias prioritárias e meta de prova entram em um perfil único.</p></div></article>
-          <article><span>02</span><div><small>O PLANEJAI ORGANIZA</small><h3>Trilha possível</h3><p>O conteúdo vira sessões claras, com tempo, materiais e uma ordem que faz sentido.</p></div></article>
-          <article><span>03</span><div><small>SEU RESULTADO ENSINA</small><h3>Plano mais inteligente</h3><p>Cada questão, redação e entrega melhora as próximas recomendações.</p></div></article>
-        </div>
-      </section>
+      <section className="landing-final"><div><Logo className="h-12 w-12" /><p>PLANEJAI É O SEU ESPAÇO DE APRENDER</p><h2>Estude com presença.<br /><em>Avance com clareza.</em></h2></div><Link to="/register">Criar minha conta <span>→</span></Link></section>
+    </main>
 
-      <section id="recursos" className="home-features">
-        <div className="home-section-title is-light"><p>FEITO PARA QUEM APRENDE E QUEM ENSINA</p><h2>Profundo por dentro.<br />Simples na hora de usar.</h2></div>
-        <div className="home-feature-grid">{recursos.map((item) => <article key={item.tag} data-color={item.cor}><span>{item.tag}</span><h3>{item.titulo}</h3><p>{item.texto}</p><i>↗</i></article>)}</div>
-      </section>
-
-      <section className="home-exams"><div><p>LABORATÓRIO DE PROVAS</p><h2>Treine para o desafio que está mirando.</h2><span>Monte simulados por instituição, dificuldade e quantidade. O resultado fica salvo e ajuda a orientar seu próximo ciclo de estudo.</span><Link to="/register">Explorar simulados <b>→</b></Link></div><div className="home-exam-stack"><article><small>ITA · PERFIL 2025</small><strong>Matemática + Física + Química</strong><span>Dificuldade avançada</span></article><article><small>ENEM · ESSENCIAL</small><strong>Treino interdisciplinar</strong><span>Ritmo e tomada de decisão</span></article><div><b>84%</b><span>melhor resultado</span></div></div></section>
-
-      <section className="home-final"><Logo className="h-14 w-14" /><p>SEU PRÓXIMO PASSO COMEÇA AQUI</p><h2>Menos tempo planejando.<br />Mais clareza para avançar.</h2><Link to="/register">Criar minha conta grátis <span>→</span></Link></section>
-
-      <footer className="home-footer"><Brand /><p>Planejamento inteligente para uma aprendizagem que continua.</p><div><Link to="/login">Entrar</Link><Link to="/register">Criar conta</Link></div><small>© {new Date().getFullYear()} PlanejAI</small></footer>
-    </div>
-  )
+    <footer className="landing-footer"><Brand /><p>Planejamento inteligente para uma aprendizagem que continua.</p><div><Link to="/login">Entrar</Link><Link to="/register">Criar conta</Link></div><small>© {new Date().getFullYear()} PlanejAI</small></footer>
+  </div>
 }

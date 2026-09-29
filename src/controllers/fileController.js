@@ -1,5 +1,5 @@
-const fs = require('fs')
 const { createFileToken, verifyFileToken, canAccessFile } = require('../services/fileAccessService')
+const { enviarArquivoArmazenado } = require('../services/uploadStorageService')
 
 async function sign(req, res) {
   try {
@@ -13,12 +13,10 @@ async function sign(req, res) {
   }
 }
 
-function open(req, res) {
+async function open(req, res) {
   try {
-    const { absolute } = verifyFileToken(req.params.token)
-    if (!fs.existsSync(absolute)) return res.status(404).json({ error: 'Arquivo não encontrado.' })
-    res.setHeader('Cache-Control', 'private, max-age=240')
-    return res.sendFile(absolute)
+    const { relative } = verifyFileToken(req.params.token)
+    return await enviarArquivoArmazenado(req, res, relative)
   } catch (error) {
     return res.status(401).json({ error: error.message })
   }

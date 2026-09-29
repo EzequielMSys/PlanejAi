@@ -1,5 +1,6 @@
 const questoesExpandidas = require('./questionBankExpanded')
 const questoesVestibulares = require('./vestibularQuestionBank')
+const questoesAvancadas = require('./advancedQuestionBank')
 
 const questoesBase = [
   { disciplina: 'Matemática', competencia: 'Razão e proporção', enunciado: 'Uma turma arrecadou 240 livros. Se 35% são de literatura brasileira, quantos livros pertencem a essa categoria?', alternativas: ['84', '72', '96', '108'], resposta: 0, explicacao: '35% de 240 = 0,35 × 240 = 84.', dificuldade: 'FACIL' },
@@ -16,4 +17,4 @@ const questoesBase = [
   { disciplina: 'Inglês', competencia: 'Leitura', enunciado: 'Na frase “Students should verify sources before sharing them”, “them” retoma:', alternativas: ['Students', 'Sources', 'Before', 'Sharing'], resposta: 1, explicacao: 'O pronome objeto “them” retoma o substantivo plural “sources”.', dificuldade: 'FACIL' }
 ];
 
-module.exports = [...questoesBase, ...questoesExpandidas, ...questoesVestibulares]
+module.exports = [...questoesBase, ...questoesExpandidas, ...questoesVestibulares, ...questoesAvancadas]

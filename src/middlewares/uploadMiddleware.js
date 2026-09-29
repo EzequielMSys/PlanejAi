@@ -2,6 +2,11 @@ const multer = require("multer");
 const path = require("path");
 const crypto = require("crypto");
 
+// O disco de funções serverless não é persistente. Quando um Blob privado foi
+// conectado ao projeto, o Multer mantém o arquivo em memória para que o
+// controlador valide a assinatura e o envie ao armazenamento durável.
+const useMemoryStorage = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const tipo = req.baseUrl?.includes("atividade") ? "atividades" : "perfis";
@@ -65,7 +70,7 @@ const imageFilter = (req, file, cb) => {
 };
 
 const uploadGeral = multer({
-  storage,
+  storage: useMemoryStorage ? multer.memoryStorage() : storage,
   fileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024,
@@ -78,7 +83,7 @@ const uploadGeral = multer({
 });
 
 const uploadAtividade = multer({
-  storage: multer.diskStorage({
+  storage: useMemoryStorage ? multer.memoryStorage() : multer.diskStorage({
     destination: (req, file, cb) =>
       cb(null, path.join("uploads", "atividades")),
     filename: (req, file, cb) => {
@@ -98,7 +103,7 @@ const uploadAtividade = multer({
 });
 
 const uploadMaterial = multer({
-  storage: multer.diskStorage({
+  storage: useMemoryStorage ? multer.memoryStorage() : multer.diskStorage({
     destination: (req, file, cb) => cb(null, path.join("uploads", "materiais")),
     filename: (req, file, cb) => {
       const usuarioId = req.usuario?.id_usuario || req.usuario?.id || "user";
@@ -118,7 +123,7 @@ const uploadMaterial = multer({
 
 module.exports = {
   uploadPerfil: multer({
-    storage: multer.diskStorage({
+    storage: useMemoryStorage ? multer.memoryStorage() : multer.diskStorage({
       destination: (req, file, cb) => cb(null, path.join("uploads", "perfis")),
       filename: (req, file, cb) => {
         const usuarioId = req.usuario?.id_usuario || req.usuario?.id || "user";

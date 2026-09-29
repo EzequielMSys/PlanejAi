@@ -1,7 +1,6 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
 const os = require("os");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
@@ -23,6 +22,7 @@ const garantirTabelas = require("./scripts/garantirTabelas");
 const repairContentLinks = require("./scripts/repairContentLinks");
 const seedDatabase = require("./scripts/seedDatabase");
 const { startBackupScheduler, getBackupStatus } = require("./services/backupScheduler");
+const { enviarArquivoArmazenado } = require("./services/uploadStorageService");
 
 const uploadErrorHandler = require("./middlewares/uploadErrorHandler");
 
@@ -80,14 +80,17 @@ app.use(
   }),
 );
 
-app.use(
-  "/uploads/perfis",
-  express.static(path.join(__dirname, "..", "uploads", "perfis"), {
-    maxAge: "1d",
-    immutable: false,
-    fallthrough: false,
-  }),
-);
+// Perfis seguem a visibilidade já existente no produto, mas passam pelo mesmo
+// adaptador para funcionar tanto no disco local quanto no Blob privado.
+app.get("/uploads/perfis/*file", async (req, res, next) => {
+  try {
+    const file = Array.isArray(req.params.file) ? req.params.file.join("/") : req.params.file;
+    if (!file || file.includes("..") || file.includes("\\")) return res.status(400).json({ error: "Arquivo inválido." });
+    return await enviarArquivoArmazenado(req, res, `perfis/${file}`, { protegido: false });
+  } catch (error) {
+    return next(error);
+  }
+});
 
 for (const { basePath, router } of routeRegistry) {
   app.use(basePath, router);
@@ -120,7 +123,9 @@ app.get("/api/health", async (req, res, next) => {
   }
 });
 
-app.use("*", (req, res) => {
+// No Express 5, o curinga precisa ter nome. Sem caminho, este middleware
+// continua abrangendo qualquer rota que não tenha sido atendida antes.
+app.use((req, res) => {
   res.status(404).json({
     error: "Endpoint não encontrado.",
     method: req.method,

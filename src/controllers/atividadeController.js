@@ -2,6 +2,7 @@ const atividadeModel = require('../models/atividadeModel');
 const respostaModel = require('../models/respostaModel');
 const usuarioModel = require('../models/usuarioModel');
 const { validarArquivoEnviado } = require('../services/uploadSecurity');
+const { armazenarArquivo } = require('../services/uploadStorageService');
 
 const tiposGestao = new Set(['dono', 'admin', 'adm', 'docente']);
 const usuarioId = (req) => req.usuario.id_usuario || req.usuario.id;
@@ -141,8 +142,8 @@ async function uploadImagem(req, res) {
   try {
     if (!req.file) return res.status(400).json({ message: 'Nenhum arquivo enviado.' });
     await validarArquivoEnviado(req.file);
-    const url = `/uploads/atividades/${req.file.filename}`;
-    return res.status(201).json({ url, filename: req.file.filename });
+    const arquivo = await armazenarArquivo(req.file, 'atividades', usuarioId(req));
+    return res.status(201).json({ url: arquivo.url, filename: arquivo.filename });
   } catch (error) { console.error('[UPLOAD ATIVIDADE]', error); return res.status(error.status || 500).json({ message: error.status ? error.message : 'Erro ao enviar imagem.' }); }
 }
 
@@ -150,7 +151,8 @@ async function uploadResposta(req, res) {
   try {
     if (!req.file) return res.status(400).json({ message: 'Nenhum arquivo enviado.' });
     await validarArquivoEnviado(req.file);
-    return res.status(201).json({ url: `/uploads/atividades/${req.file.filename}`, nome: req.file.originalname, tipo: req.file.mimetype });
+    const arquivo = await armazenarArquivo(req.file, 'atividades', usuarioId(req));
+    return res.status(201).json({ url: arquivo.url, nome: req.file.originalname, tipo: req.file.mimetype });
   } catch (error) { console.error('[UPLOAD RESPOSTA]', error); return res.status(error.status || 500).json({ message: error.status ? error.message : 'Erro ao enviar o arquivo da resposta.' }); }
 }
 

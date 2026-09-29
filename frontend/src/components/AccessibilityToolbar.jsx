@@ -6,6 +6,8 @@ export default function AccessibilityToolbar() {
   const [open, setOpen] = useState(false)
   const panelRef = useRef(null)
   const triggerRef = useRef(null)
+  const hoverTimer = useRef(null)
+  const lastRead = useRef({ text: '', time: 0 })
   const { settings, update, reset } = useAccessibility()
 
   useEffect(() => {
@@ -24,6 +26,34 @@ export default function AccessibilityToolbar() {
     panelRef.current?.focus()
     return () => window.removeEventListener('keydown', close)
   }, [open])
+
+  useEffect(() => {
+    if (!settings.hoverReader || !('speechSynthesis' in window)) return undefined
+    const isIgnored = (element) => element.closest('input, textarea, select, [data-a11y-reader-ignore], .a11y-toolbar, [aria-hidden="true"]')
+    const textTarget = (element) => element.closest('[data-a11y-read], h1, h2, h3, h4, p, li, button, label, figcaption')
+    const speakTarget = (event) => {
+      if (event.pointerType === 'touch') return
+      const target = textTarget(event.target)
+      if (!target || isIgnored(target)) return
+      const text = (target.getAttribute('data-a11y-read') || target.innerText || target.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 520)
+      if (text.length < 2) return
+      const now = Date.now()
+      if (lastRead.current.text === text && now - lastRead.current.time < 1800) return
+      window.clearTimeout(hoverTimer.current)
+      hoverTimer.current = window.setTimeout(() => {
+        lastRead.current = { text, time: Date.now() }
+        window.speechSynthesis.cancel()
+        const utterance = new window.SpeechSynthesisUtterance(text)
+        utterance.lang = 'pt-BR'
+        utterance.rate = 0.95
+        window.speechSynthesis.speak(utterance)
+      }, 420)
+    }
+    const cancelPending = () => window.clearTimeout(hoverTimer.current)
+    document.addEventListener('pointerover', speakTarget, true)
+    document.addEventListener('pointerout', cancelPending, true)
+    return () => { document.removeEventListener('pointerover', speakTarget, true); document.removeEventListener('pointerout', cancelPending, true); window.clearTimeout(hoverTimer.current); window.speechSynthesis.cancel() }
+  }, [settings.hoverReader])
 
   function closePanel() {
     setOpen(false)
@@ -48,7 +78,7 @@ export default function AccessibilityToolbar() {
           <label>Tamanho do texto <output>{settings.fontScale}%</output><input type="range" min="90" max="140" step="10" value={settings.fontScale} onChange={(e) => update('fontScale', Number(e.target.value))} /></label>
           <label>Espaçamento <output>{settings.lineHeight}</output><input type="range" min="1.3" max="2" step="0.1" value={settings.lineHeight} onChange={(e) => update('lineHeight', Number(e.target.value))} /></label>
           <div className="a11y-options">
-            {[['highContrast', 'Alto contraste'], ['reducedMotion', 'Reduzir animações'], ['dyslexicFont', 'Fonte de alta legibilidade'], ['focusMode', 'Modo com menos estímulos']].map(([key, label]) => <label key={key}><input type="checkbox" checked={settings[key]} onChange={(e) => update(key, e.target.checked)} /><span>{label}</span></label>)}
+            {[['highContrast', 'Alto contraste'], ['reducedMotion', 'Reduzir animações'], ['dyslexicFont', 'Fonte de alta legibilidade'], ['focusMode', 'Modo com menos estímulos'], ['hoverReader', 'Narrar item sob o mouse']].map(([key, label]) => <label key={key}><input type="checkbox" checked={settings[key]} onChange={(e) => update(key, e.target.checked)} /><span>{label}</span></label>)}
           </div>
           <div className="a11y-actions"><button type="button" onClick={read}>Ler página ou seleção</button><button type="button" onClick={() => window.speechSynthesis.cancel()}>Parar</button><button type="button" onClick={reset}>Restaurar</button></div>
         </section>
