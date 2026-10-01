@@ -1,5 +1,12 @@
 const pool = require('../config/db');
 
+function serializarMateriais(materiais) {
+  if (typeof materiais === 'string') {
+    try { return JSON.stringify(JSON.parse(materiais)); } catch { return JSON.stringify([]); }
+  }
+  return JSON.stringify(Array.isArray(materiais) ? materiais : []);
+}
+
 /**
  * Cria um novo conteúdo
  */
@@ -67,19 +74,28 @@ async function listarPorNivel(nivel) {
 /**
  * Busca conteúdos por disciplina e nível (para gerador de cronograma)
  */
-async function buscarRelevantes(disciplina, nivel = null) {
-  let query = 'SELECT * FROM conteudos WHERE disciplina LIKE ?';
-  const params = [`%${disciplina}%`];
+async function buscarRelevantes(termo, nivel = null) {
+  let query = `
+    SELECT * FROM conteudos
+    WHERE (
+      disciplina LIKE ?
+      OR area LIKE ?
+      OR titulo LIKE ?
+    )
+  `
+
+  const termoBusca = `%${termo}%`
+  const params = [termoBusca, termoBusca, termoBusca]
 
   if (nivel) {
-    query += ' AND nivel = ?';
-    params.push(nivel);
+    query += ' AND nivel = ?'
+    params.push(nivel)
   }
 
-  query += ' ORDER BY id_conteudo ASC';
+  query += ' ORDER BY id_conteudo ASC'
 
-  const [rows] = await pool.execute(query, params);
-  return rows;
+  const [rows] = await pool.execute(query, params)
+  return rows
 }
 
 /**
@@ -96,12 +112,12 @@ async function listarTodos() {
  * Atualiza conteúdo
  */
 async function atualizarConteudo(idConteudo, dados) {
-  const { area, disciplina, titulo, tipo, link, nivel } = dados;
+  const { area = null, disciplina = null, titulo = null, tipo = null, link, nivel = null, materiais = [], atualizado_por = null } = dados;
   await pool.execute(
     `UPDATE conteudos 
-     SET area = ?, disciplina = ?, titulo = ?, tipo = ?, link = ?, nivel = ?
+     SET area = ?, disciplina = ?, titulo = ?, tipo = ?, link = ?, nivel = ?, materiais = ?, atualizado_por = ?
      WHERE id_conteudo = ?`,
-    [area, disciplina, titulo, tipo, link || null, nivel, idConteudo]
+    [area, disciplina, titulo, tipo, link || null, nivel, serializarMateriais(materiais), atualizado_por, idConteudo]
   );
   return { id_conteudo: idConteudo, ...dados };
 }

@@ -1,33 +1,692 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { toast } from 'react-hot-toast'
+import confetti from 'canvas-confetti'
+import cronogramaService from '../services/cronogramaService'
+import { useAuth } from '../context/AuthContext'
+import MaterialViewer from '../components/MaterialViewer'
+import CronogramaAssessment from '../components/CronogramaAssessment'
+import { exportarCronograma } from '../utils/calendarExport'
+import './Cronograma.css'
 
-const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } } }
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
+}
+
+function formatarData(data) {
+  if (!data) return '-'
+
+  return new Date(data).toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit'
+  })
+}
 
 export default function Cronograma() {
-  return (
-    <div className="min-h-screen px-4 sm:px-6 lg:px-8 py-6">
-      <div className="max-w-7xl mx-auto">
-        <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <h1 className="text-4xl font-black bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-transparent mb-4">
-            Cronograma de Estudos
-          </h1>
-          <p className="text-lg text-textSecondary mb-8">
-            Organize seus estudos de forma inteligente.
-          </p>
+  const navigate = useNavigate()
+  const { isGestor } = useAuth()
+  const [cronogramas, setCronogramas] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [gerando, setGerando] = useState(false)
+  const [concluindo, setConcluindo] = useState(null)
+  const [concluindoConteudo, setConcluindoConteudo] = useState(null)
+  const [diasExpandidos, setDiasExpandidos] = useState({})
+  const [editando, setEditando] = useState(null)
+  const [editLink, setEditLink] = useState('')
+  const [enviandoMaterial, setEnviandoMaterial] = useState(null)
+  const [materialAberto, setMaterialAberto] = useState(null)
+  const [conteudoArrastado, setConteudoArrastado] = useState(null)
+  const [diaAlvo, setDiaAlvo] = useState(null)
+  const [avaliacao, setAvaliacao] = useState(null)
+  const [recuperacao, setRecuperacao] = useState(null)
+  const celebradoRef = useRef(false)
 
-          <div className="glass-card p-12 text-center">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-indigo-500 mx-auto flex items-center justify-center text-white shadow-xl mb-6">
-              <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+  async function carregarCronogramas() {
+    try {
+      const data = await cronogramaService.listarCronogramas()
+      setCronogramas(Array.isArray(data) ? data : [])
+    } catch (error) {
+      toast.error('Erro ao carregar cronograma.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function replanejar() {
+    try {
+      await cronogramaService.replanejar()
+      setLoading(true)
+      await carregarCronogramas()
+    } catch {
+      // O serviço já exibe a mensagem adequada.
+    }
+  }
+
+  async function abrirRecuperacao() {
+    try { setRecuperacao(await cronogramaService.recuperacao()) }
+    catch { toast.error('Não foi possível analisar seus atrasos.') }
+  }
+
+  async function iniciarDesafio(idDia) {
+    try { setAvaliacao(await cronogramaService.desafioAdiantamento(idDia)) }
+    catch (error) { toast.error(error.response?.data?.message || 'Não foi possível iniciar o desafio.') }
+  }
+
+  async function iniciarProvaFinal() {
+    try { setAvaliacao(await cronogramaService.provaFinal(cronogramaAtual.id_cronograma)) }
+    catch (error) { toast.error(error.response?.data?.message || 'Não foi possível iniciar a prova final.') }
+  }
+
+  async function retomarAvaliacao(idAvaliacao) {
+    try { setAvaliacao(await cronogramaService.retomarAvaliacao(idAvaliacao)) }
+    catch (error) { toast.error(error.response?.data?.message || 'Não foi possível retomar a avaliação.') }
+  }
+
+  async function abandonarAvaliacao(idAvaliacao) {
+    if (!window.confirm('Descartar esta avaliação? As respostas salvas na sua conta serão apagadas e será possível iniciar outra.')) return
+    try {
+      await cronogramaService.abandonarAvaliacao(idAvaliacao)
+      await carregarCronogramas()
+      toast.success('Avaliação descartada. Você já pode iniciar uma nova.')
+    } catch (error) { toast.error(error.response?.data?.message || 'Não foi possível descartar a avaliação.') }
+  }
+
+  async function enviarAvaliacao(idAvaliacao, respostas) {
+    const resultado = await cronogramaService.enviarAvaliacao(idAvaliacao, respostas)
+    await carregarCronogramas()
+    return resultado
+  }
+
+  async function salvarRespostaAvaliacao(idAvaliacao, idQuestao, resposta) {
+    return cronogramaService.salvarRespostaAvaliacao(idAvaliacao, idQuestao, resposta)
+  }
+
+  useEffect(() => {
+    carregarCronogramas()
+  }, [])
+
+  const cronogramaAtual = cronogramas[0]
+
+  const dias = useMemo(() => {
+    return cronogramaAtual?.dias || []
+  }, [cronogramaAtual])
+
+  const totalDias = dias.length
+
+  const diasConcluidos = dias.filter((dia) => {
+    return Number(dia.concluido) === 1 || dia.status === 'concluído'
+  }).length
+
+  const progresso = totalDias
+    ? Math.round((diasConcluidos / totalDias) * 100)
+    : 0
+
+  const tempoTotal = dias.reduce((acc, dia) => {
+    return acc + Number(dia.tempo_previsto || 0)
+  }, 0)
+
+const proximoDia = dias.find((dia) => {
+    return Number(dia.concluido) !== 1 && dia.status !== 'concluído'
+  })
+
+  // Dispara confetes quando o cronograma atinge 100% de conclusão
+  useEffect(() => {
+    if (
+      progresso === 100 &&
+      totalDias > 0 &&
+      !celebradoRef.current
+    ) {
+      celebradoRef.current = true
+
+      const cores = ['#6B43BB', '#A98AE6', '#F2C66D', '#D9697B', '#65B79D', '#E7A55B']
+
+      // Explosão inicial no centro
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: cores,
+        zIndex: 9999
+      })
+
+      // Confetes laterais
+      setTimeout(() => {
+        confetti({
+          particleCount: 80,
+          angle: 60,
+          spread: 70,
+          origin: { x: 0 },
+          colors: cores,
+          zIndex: 9999
+        })
+      }, 250)
+
+      setTimeout(() => {
+        confetti({
+          particleCount: 80,
+          angle: 120,
+          spread: 70,
+          origin: { x: 1 },
+          colors: cores,
+          zIndex: 9999
+        })
+      }, 400)
+
+      // Terceira onda
+      setTimeout(() => {
+        confetti({
+          particleCount: 120,
+          spread: 120,
+          origin: { y: 0.4 },
+          colors: cores,
+          zIndex: 9999
+        })
+      }, 800)
+
+      toast.success(
+        '🎉 Parabéns! Você concluiu 100% do cronograma!',
+        { duration: 5000 }
+      )
+    }
+  }, [progresso, totalDias])
+
+  async function gerarNovoCronograma() {
+    setGerando(true)
+
+    try {
+      await cronogramaService.gerarCronograma()
+      await carregarCronogramas()
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erro ao gerar cronograma.')
+    } finally {
+      setGerando(false)
+    }
+  }
+
+async function concluirDia(idDia) {
+    if (!idDia) return
+
+    setConcluindo(idDia)
+
+    try {
+      await cronogramaService.concluirDia(idDia)
+      await carregarCronogramas()
+    } catch (error) {
+      toast.error('Erro ao concluir dia.')
+    } finally {
+      setConcluindo(null)
+    }
+  }
+
+  async function alternarConteudo(conteudoCronograma, concluido) {
+    const idConteudo = conteudoCronograma?.id
+
+    if (!idConteudo) return
+
+    setConcluindoConteudo(idConteudo)
+
+    try {
+      if (concluido) {
+        await cronogramaService.reabrirConteudo(idConteudo)
+      } else {
+        await cronogramaService.concluirConteudo(idConteudo)
+      }
+
+      await carregarCronogramas()
+    } catch (error) {
+      toast.error('Erro ao atualizar conteúdo.')
+    } finally {
+      setConcluindoConteudo(null)
+    }
+  }
+  async function moverConteudo(idConteudo, idDiaDestino) {
+    if (!idConteudo || !idDiaDestino) return
+    try {
+      await cronogramaService.moverConteudo(idConteudo, idDiaDestino)
+      setDiasExpandidos((current) => ({ ...current, [idDiaDestino]: true }))
+      await carregarCronogramas()
+    } catch { /* o serviço já exibe a mensagem contextual */
+    } finally {
+      setConteudoArrastado(null)
+      setDiaAlvo(null)
+    }
+  }
+
+  function soltarConteudo(event, idDiaDestino) {
+    event.preventDefault()
+    const id = conteudoArrastado || Number(event.dataTransfer.getData('text/plain'))
+    if (id) moverConteudo(id, idDiaDestino)
+  }
+
+
+  function alternarExpansaoDia(idDia) {
+    setDiasExpandidos((prev) => ({
+      ...prev,
+      [idDia]: !prev[idDia]
+    }))
+  }
+
+  const iniciarEdicao = (conteudo) => {
+    setEditando(conteudo.id)
+    setEditLink(conteudo.link || '')
+  }
+
+  const salvarEdicao = async (idConteudo) => {
+    try {
+      await cronogramaService.atualizarConteudoCronograma(idConteudo, { link: editLink })
+      toast.success('Link atualizado.')
+      setEditando(null)
+      await carregarCronogramas()
+    } catch {
+      toast.error('Erro ao atualizar link.')
+    }
+  }
+
+  const handleUploadMaterial = async (e, idConteudo) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setEnviandoMaterial(idConteudo)
+    try {
+      const data = await cronogramaService.uploadMaterial(idConteudo, file)
+      toast.success('Material enviado.')
+      await carregarCronogramas()
+    } catch {
+      toast.error('Erro ao enviar material.')
+    } finally {
+      setEnviandoMaterial(null)
+      e.target.value = ''
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F7F7FB] flex items-center justify-center">
+        <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-[#9394CF]/20 text-center">
+          <div className="h-14 w-14 border-b-4 border-[#4B4C9D] rounded-full animate-spin mx-auto mb-4" />
+          <p className="font-bold text-black/60">Carregando cronograma...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="schedule-page min-h-screen bg-[#F7F7FB] text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-72 h-72 bg-[#9394CF]/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#4B4C9D]/10 rounded-full blur-3xl" />
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        <motion.div variants={fadeUp} initial="hidden" animate="visible">
+          <section className="workspace-hero bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+            <div className="absolute inset-0 bg-black/20" />
+            <div className="absolute top-8 left-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
+            <div className="absolute bottom-8 right-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
+
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div>
+                <p className="uppercase tracking-[0.35em] text-xs font-black text-white/80 mb-3">
+                  PlanejAI
+                </p>
+
+                <h1 className="text-4xl md:text-5xl font-black text-white mb-3 tracking-tight">
+                  Cronograma de Estudos
+                </h1>
+
+                <p className="text-lg text-white/85 max-w-2xl">
+                  Acompanhe seu plano personalizado, veja seu progresso e marque os estudos concluídos.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={gerarNovoCronograma}
+                disabled={gerando}
+                className="bg-white text-[#4B4C9D] px-7 py-3 rounded-full font-black shadow-xl hover:bg-black hover:text-white transition disabled:opacity-60"
+              >
+                {gerando
+                  ? 'Gerando...'
+                  : cronogramaAtual
+                    ? 'Regenerar cronograma'
+                    : 'Gerar cronograma'}
+              </button>
             </div>
-            <h2 className="text-2xl font-bold text-textPrimary mb-2">Em breve</h2>
-            <p className="text-textSecondary max-w-md mx-auto">
-              O cronograma inteligente está sendo desenvolvido. Em breve você poderá criar e gerenciar seu plano de estudos personalizado.
-            </p>
-          </div>
+          </section>
+
+          {cronogramaAtual && <div className="mb-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={abrirRecuperacao} className="rounded-full border border-[#7C3AED]/25 bg-white px-5 py-3 text-sm font-black text-[#6D28D9] dark:bg-[#211A2D] dark:text-[#CBB3FF]">Plano de recuperação</button><button type="button" onClick={() => exportarCronograma(cronogramaAtual)} className="rounded-full bg-[#6D3EC5] px-5 py-3 text-sm font-black text-white">Exportar calendário</button></div>}
+
+          {!cronogramaAtual ? (
+            <section className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.9fr] lg:items-center">
+              <div>
+                <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#DDD0EF] bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-[#6D28D9] dark:border-white/10 dark:bg-white/5 dark:text-[#C4B5FD]">
+                  Comece por aqui
+                </span>
+                <h2 className="max-w-xl text-3xl font-black tracking-[-.04em] text-[#2C1A3D] dark:text-white sm:text-4xl">
+                  Sua semana ainda está em branco.
+                </h2>
+                <p className="mt-4 max-w-lg leading-relaxed text-[#74627F] dark:text-[#B7A9C1]">
+                  Monte uma rotina possível de cumprir. O PlanejAI distribui matérias, pausas e revisões usando seu perfil e sua disponibilidade.
+                </p>
+                <button
+                  type="button"
+                  onClick={gerarNovoCronograma}
+                  disabled={gerando}
+                  className="mt-7 rounded-xl bg-[#7C3AED] px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-[#6D28D9] disabled:opacity-60"
+                >
+                  {gerando ? 'Montando sua semana...' : 'Montar meu cronograma'}
+                </button>
+              </div>
+              <div className="planner-preview" aria-hidden="true">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[.18em] text-[#8B5CF6]">Prévia</p>
+                    <p className="mt-1 font-black text-[#2C1A3D] dark:text-white">Sua próxima semana</p>
+                  </div>
+                  <svg className="h-6 w-6 text-[#7C3AED]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                {[['SEG', 'Matemática', '45 min'], ['QUA', 'Redação', '1 tema'], ['SEX', 'Revisão', '30 min']].map(([dia, materia, tempo]) => (
+                  <div key={dia} className="planner-preview-row">
+                    <span>{dia}</span><strong>{materia}</strong><small>{tempo}</small>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <>
+              <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <CardStat titulo="Progresso" valor={`${progresso}%`} />
+                <CardStat titulo="Dias planejados" valor={totalDias} />
+                <CardStat titulo="Dias concluídos" valor={diasConcluidos} />
+                <CardStat titulo="Tempo previsto" valor={`${tempoTotal} min`} />
+              </section>
+
+              <section className="grid lg:grid-cols-3 gap-6 mb-8">
+                <div className="schedule-surface lg:col-span-2 bg-white rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
+                  <div className="flex justify-between text-sm font-bold mb-2">
+                    <span>Progresso geral</span>
+                    <span>{progresso}%</span>
+                  </div>
+
+                  <div className="h-4 bg-[#F7F7FB] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#4B4C9D] rounded-full transition-all"
+                      style={{ width: `${progresso}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="schedule-surface bg-white rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
+                  <p className="text-sm font-bold text-black/50 mb-1">
+                    Próximo estudo
+                  </p>
+
+                  <p className="text-lg font-black text-black capitalize">
+                    {proximoDia ? formatarData(proximoDia.data_estudo) : 'Tudo concluído'}
+                  </p>
+
+                  <p className="text-sm text-black/60 mt-1">
+                    {proximoDia
+                      ? `${proximoDia.tempo_previsto || 0} minutos previstos`
+                      : 'Parabéns pelo progresso!'}
+                  </p>
+                </div>
+              </section>
+
+              {cronogramaAtual.avaliacao_em_andamento && <section className="schedule-surface mb-8 rounded-[2rem] border border-[#7C3AED]/30 bg-[#F3ECFC] p-6 dark:bg-[#291D38]"><p className="text-xs font-black uppercase tracking-[.18em] text-[#7C3AED]">Avaliação em andamento</p><h2 className="mt-1 text-2xl font-black">{cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'Sua prova final está pronta para continuar.' : 'Seu desafio de avanço está pronto para continuar.'}</h2><p className="mt-2 text-sm text-black/65 dark:text-white/65">Você pode fechar a tela e voltar quando quiser. As questões permanecem as mesmas; neste aparelho, as escolhas também são preservadas.</p><div className="mt-4 flex flex-wrap gap-3"><button type="button" onClick={() => retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)} className="rounded-full bg-[#4B4C9D] px-5 py-3 font-black text-white">Retomar {cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'prova final' : 'desafio'}</button><button type="button" onClick={() => abandonarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)} className="rounded-full border border-[#7C3AED] px-5 py-3 font-bold text-[#6D28D9]">Descartar e iniciar outra</button></div></section>}
+              {cronogramaAtual.prova_final?.disponivel && !cronogramaAtual.avaliacao_em_andamento && <section className="schedule-surface mb-8 rounded-[2rem] border border-[#7C3AED]/30 bg-[#F3ECFC] p-6 dark:bg-[#291D38]"><p className="text-xs font-black uppercase tracking-[.18em] text-[#7C3AED]">Etapa final</p><h2 className="mt-1 text-2xl font-black">Seu cronograma foi concluído. Agora comprove seu domínio.</h2><p className="mt-2 text-sm text-black/65 dark:text-white/65">A prova final tem 20 questões das matérias estudadas. É necessário acertar ao menos 14 para concluir a trilha.</p><button type="button" onClick={iniciarProvaFinal} className="mt-4 rounded-full bg-[#4B4C9D] px-5 py-3 font-black text-white">Iniciar prova final</button></section>}
+              {cronogramaAtual.prova_final?.concluida && <section className="schedule-surface mb-8 rounded-[2rem] border border-emerald-400/30 bg-emerald-50 p-6 text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-100"><b>Trilha certificada.</b> Você concluiu o cronograma e foi aprovado na prova final.</section>}
+
+<section className="grid gap-4">
+                {dias.map((dia, index) => {
+                  const idDia = dia.id_dia || dia.id
+                  const concluido =
+                    Number(dia.concluido) === 1 ||
+                    dia.status === 'concluído'
+                  const bloqueado = Boolean(dia.bloqueado)
+
+                  const conteudos = dia.conteudos || []
+                  const expandido = Boolean(diasExpandidos[idDia])
+
+                  const conteudosConcluidos = conteudos.filter(
+                    (c) => Number(c.concluido) === 1
+                  ).length
+
+                  return (
+                    <div
+                      key={idDia || index}
+                      onDragOver={(event) => { event.preventDefault(); if (conteudoArrastado) setDiaAlvo(idDia) }}
+                      onDragLeave={() => setDiaAlvo((current) => current === idDia ? null : current)}
+                      onDrop={(event) => soltarConteudo(event, idDia)}
+                      className={`schedule-day group relative overflow-hidden rounded-[2rem] p-5 shadow-xl border before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 transition ${bloqueado ? 'border-[#9394CF]/15 bg-black/[.03] opacity-75 before:bg-[#8A769F]' : diaAlvo === idDia ? 'border-[#7C3AED] bg-[#F3ECFC] ring-4 ring-[#7C3AED]/10 before:bg-[#7C3AED]' : 'border-[#9394CF]/20 bg-white before:bg-[#C4B5FD] hover:before:bg-[#7C3AED]'}`}
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-1">
+                            Dia {index + 1}
+                          </p>
+
+                          <h3 className="text-xl font-black text-black capitalize">
+                            {formatarData(dia.data_estudo)}
+                          </h3>
+
+                          <p className="text-black/60 text-sm">
+                            Tempo previsto: {dia.tempo_previsto || 0} minutos
+                            {conteudos.length > 0 &&
+                              ` • ${conteudosConcluidos}/${conteudos.length} conteúdos`}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`px-4 py-2 rounded-full text-sm font-bold border ${
+                              concluido
+                                ? 'bg-green-100 text-green-700 border-green-300'
+                                : bloqueado ? 'bg-slate-100 text-slate-700 border-slate-300' : 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                            }`}
+                          >
+                            {concluido ? 'Concluído' : bloqueado ? 'Bloqueado' : 'Pendente'}
+                          </span>
+
+                          {dia.requer_desafio && <button type="button" onClick={() => cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao) : iniciarDesafio(idDia)} className="rounded-full border border-[#7C3AED] px-4 py-2.5 text-sm font-bold text-[#6D28D9]">{cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? 'Retomar desafio' : 'Desafio para liberar'}</button>}
+
+                          {!concluido && !bloqueado && (
+                            <button
+                              type="button"
+                              onClick={() => concluirDia(idDia)}
+                              disabled={concluindo === idDia}
+                              className="bg-[#4B4C9D] text-white px-5 py-2.5 rounded-full font-bold hover:bg-black transition disabled:opacity-60"
+                            >
+                              {concluindo === idDia ? 'Salvando...' : 'Concluir'}
+                            </button>
+                          )}
+
+                          {conteudos.length > 0 && !bloqueado && (
+                            <button
+                              type="button"
+                              onClick={() => alternarExpansaoDia(idDia)}
+                              className="bg-[#F7F7FB] border border-[#9394CF]/40 text-black px-4 py-2.5 rounded-full font-bold hover:bg-[#9394CF]/20 transition"
+                            >
+                              {expandido ? 'Ocultar' : 'Ver conteúdos'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {expandido && conteudos.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-[#9394CF]/20 space-y-2">
+                          <p className="text-xs uppercase tracking-[0.25em] font-black text-black/40 mb-2">
+                            Materiais / Conteúdos do dia
+                          </p>
+
+                          {conteudos.map((conteudo) => {
+                            const idConteudo = conteudo.id
+                            const conteudoConcluido =
+                              Number(conteudo.concluido) === 1
+
+                            return (
+                              <div
+                                key={idConteudo}
+                                className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-[1.5rem] border ${
+                                  conteudoConcluido
+                                    ? 'bg-green-50 border-green-200'
+                                    : 'bg-[#F7F7FB] border-[#9394CF]/20'
+                                }`}
+                                draggable={isGestor && !conteudoConcluido}
+                                onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(idConteudo)); setConteudoArrastado(idConteudo) }}
+                                onDragEnd={() => { setConteudoArrastado(null); setDiaAlvo(null) }}
+                                title={conteudoConcluido ? undefined : 'Arraste para outro dia'}
+                              >
+                                <div className="flex-1">
+                                  <p
+                                    className={`font-bold ${
+                                      conteudoConcluido
+                                        ? 'text-green-700 line-through'
+                                        : 'text-black'
+                                    }`}
+                                  >
+                                    {conteudo.titulo || 'Conteúdo sem título'}
+                                  </p>
+
+                                  <p className="text-sm text-black/60">
+                                    {conteudo.disciplina || conteudo.area || 'Geral'}
+                                    {conteudo.nivel && ` • ${conteudo.nivel}`}
+                                    {conteudo.tipo && ` • ${conteudo.tipo}`}
+                                  </p>
+                                </div>
+
+                                {conteudo.link && (
+                                  <button
+                                    type="button"
+                                    onClick={() => navigate('/estudar', { state: { conteudo, dia } })}
+                                    className="text-[#4B4C9D] text-sm font-bold hover:underline"
+                                  >
+                                    Começar sessão
+                                  </button>
+                                )}
+
+                                {isGestor && editando === idConteudo ? (
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <input
+                                      value={editLink}
+                                      onChange={(e) => setEditLink(e.target.value)}
+                                      placeholder="https://..."
+                                      className="rounded-full border border-[#9394CF]/40 bg-white px-3 py-1 text-xs text-black dark:bg-[#1E1D3A] dark:text-white"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => salvarEdicao(idConteudo)}
+                                      className="rounded-full bg-[#4B4C9D] text-white px-3 py-1 text-xs font-bold"
+                                    >
+                                      Salvar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditando(null)}
+                                      className="rounded-full border border-[#9394CF] px-3 py-1 text-xs font-bold text-[#4B4C9D]"
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                ) : isGestor ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => iniciarEdicao(conteudo)}
+                                    className="text-xs font-bold text-[#4B4C9D] hover:underline"
+                                  >
+                                    Editar link
+                                  </button>
+                                ) : null}
+
+                                {isGestor && (
+                                  <label className="text-xs font-bold text-[#4B4C9D] cursor-pointer">
+                                    {enviandoMaterial === idConteudo ? 'Enviando...' : 'Anexar material'}
+                                    <input
+                                      type="file"
+                                      accept="image/*,video/*,.pdf"
+                                      className="hidden"
+                                      onChange={(e) => handleUploadMaterial(e, idConteudo)}
+                                    />
+                                  </label>
+                                )}
+
+                                <MateriaisComplementares materiais={conteudo.materiais} onOpen={setMaterialAberto} />
+
+                                {isGestor && !conteudoConcluido && <select
+                                  aria-label={`Mover ${conteudo.titulo || 'conteúdo'} para outro dia`}
+                                  value=""
+                                  onChange={(event) => { if (event.target.value) moverConteudo(idConteudo, Number(event.target.value)) }}
+                                  className="rounded-full border border-[#9394CF]/30 bg-white px-3 py-2 text-xs font-bold text-[#4B4C9D]"
+                                ><option value="">Mover para…</option>{dias.filter((item) => (item.id_dia || item.id) !== idDia).map((item) => <option key={item.id_dia || item.id} value={item.id_dia || item.id}>{formatarData(item.data_estudo)}</option>)}</select>}
+
+                                <button
+                                  onClick={() =>
+                                    alternarConteudo(conteudo, conteudoConcluido)
+                                  }
+                                  disabled={concluindoConteudo === idConteudo}
+                                  className={`px-4 py-2 rounded-full text-sm font-bold transition disabled:opacity-60 ${
+                                    conteudoConcluido
+                                      ? 'bg-white border border-[#4B4C9D] text-[#4B4C9D] hover:bg-[#4B4C9D] hover:text-white'
+                                      : 'bg-[#4B4C9D] text-white hover:bg-black'
+                                  }`}
+                                >
+                                  {concluindoConteudo === idConteudo
+                                    ? 'Salvando...'
+                                    : conteudoConcluido
+                                      ? 'Reabrir'
+                                      : 'Concluir'}
+                                </button>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                      {bloqueado && <p className="mt-4 border-t border-[#9394CF]/20 pt-4 text-sm font-semibold text-black/55 dark:text-white/55">{dia.requer_desafio ? 'Conclua o desafio de 5 questões (4 acertos) para estudar este dia antes da data prevista.' : 'Conclua os dias anteriores para liberar esta etapa.'}</p>}
+                    </div>
+                  )
+                })}
+              </section>
+            </>
+          )}
         </motion.div>
       </div>
+      {materialAberto && (
+        <MaterialViewer material={materialAberto} onClose={() => setMaterialAberto(null)} />
+      )}
+      {avaliacao && <CronogramaAssessment key={avaliacao.id_avaliacao} assessment={avaliacao} onSubmit={enviarAvaliacao} onSaveAnswer={salvarRespostaAvaliacao} onClose={() => { setAvaliacao(null); carregarCronogramas() }} />}
+      {recuperacao && <div className="fixed inset-0 z-[130] grid place-items-center bg-black/60 p-4"><section className="max-w-lg rounded-[2rem] bg-white p-6 text-[#21162F] dark:bg-[#211A2D] dark:text-white"><h2 className="text-2xl font-black">Plano de recuperação</h2><p className="mt-2 text-sm opacity-70">Há {recuperacao.dias_atrasados} dia(s) atrasado(s) e {recuperacao.conteudos_pendentes} conteúdo(s) pendente(s).</p><div className="mt-5 grid gap-3">{recuperacao.opcoes.map((opcao) => <button key={opcao.id} onClick={async () => { if (opcao.id === 'REDISTRIBUIR' || opcao.id === 'REDUZIR') await replanejar(); setRecuperacao(null); if (opcao.id === 'MANTER') toast('O cronograma foi mantido como está.'); }} className="rounded-2xl border p-4 text-left"><b>{opcao.titulo}</b><span className="mt-1 block text-sm opacity-65">{opcao.impacto}</span></button>)}</div><button onClick={() => setRecuperacao(null)} className="mt-5 text-sm font-bold underline">Fechar</button></section></div>}
     </div>
   )
 }
 
+function CardStat({ titulo, valor }) {
+  return (
+    <div className="schedule-surface bg-white rounded-[2rem] p-6 shadow-xl border border-[#9394CF]/20">
+      <p className="text-sm font-bold text-black/50 mb-1">
+        {titulo}
+      </p>
+
+      <p className="text-3xl font-black text-[#4B4C9D]">
+        {valor}
+      </p>
+    </div>
+  )
+}
+
+function MateriaisComplementares({ materiais, onOpen }) {
+  let lista = []
+  try { lista = Array.isArray(materiais) ? materiais : JSON.parse(materiais || '[]') } catch { lista = [] }
+  if (!lista.length) return null
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {lista.map((material, index) => (
+        <button type="button" key={`${material.url}-${index}`} onClick={() => onOpen({ titulo: material.titulo || 'Material complementar', tipo: material.tipo, url: material.url })} className="rounded-full border border-[#9394CF]/40 px-3 py-1 text-xs font-bold text-[#4B4C9D] hover:bg-[#9394CF]/15">
+          {material.tipo === 'VIDEO' ? '▶ ' : material.tipo === 'PDF' ? 'PDF ' : ''}{material.titulo || 'Material'}
+        </button>
+      ))}
+    </div>
+  )
+}

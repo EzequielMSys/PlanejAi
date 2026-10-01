@@ -20,9 +20,9 @@ async function criarOuAtualizarPerfil(usuarioId, perfil) {
 
   if (rows.length > 0) {
     const id_perfil = rows[0].id_perfil;
-    await pool.execute(
+await pool.execute(
       `UPDATE perfil_estudo
-       SET ano_escolar = ?, objetivo = ?, areas_foco = ?, tempo_diario_min = ?, prazo_estimado = ?, atualizado_em = CURRENT_TIMESTAMP
+       SET ano_escolar = ?, objetivo = ?, areas_foco = ?, tempo_diario_min = ?, prazo_estimado = ?
        WHERE id_perfil = ?`,
       [ano_escolar, objetivo, areas_foco, tempo_diario_min, prazo_estimado, id_perfil]
     );

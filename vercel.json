@@ -1,0 +1,51 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "frontend": {
+      "root": "frontend",
+      "framework": "vite"
+    },
+    "api": {
+      "root": ".",
+      "framework": "express",
+      "entrypoint": "src/server.js",
+      "buildCommand": "npm run vercel:prepare-api",
+      "includeFiles": [
+        "src/**",
+        "migrations/**"
+      ]
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/api-docs/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/api-docs.json",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    }
+  ]
+}

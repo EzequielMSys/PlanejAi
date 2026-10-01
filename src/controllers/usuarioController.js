@@ -1,4 +1,7 @@
 const usuarioService = require('../services/usuarioService')
+const { validarArquivoEnviado } = require('../services/uploadSecurity')
+const { armazenarArquivo } = require('../services/uploadStorageService')
+const privacyService = require('../services/privacyService')
 
 function tratarErroUsuario(error, res) {
   if (error.message.includes('não encontrado')) {
@@ -18,7 +21,8 @@ function tratarErroUsuario(error, res) {
     error.message.includes('Email') ||
     error.message.includes('Tipo') ||
     error.message.includes('obrigatório') ||
-    error.message.includes('inválido')
+    error.message.includes('inválido') ||
+    error.message.includes('mínimo')
   ) {
     return res.status(400).json({ error: error.message })
   }
@@ -29,11 +33,14 @@ function tratarErroUsuario(error, res) {
 
 async function listar(req, res) {
   try {
-    const usuarios = await usuarioService.listar()
-
-    return res.status(200).json({
-      usuarios
+    const resultado = await usuarioService.listar({
+      page: req.query.page,
+      limit: req.query.limit,
+      search: req.query.search,
+      tipo: req.query.tipo
     })
+
+    return res.status(200).json(resultado)
   } catch (error) {
     return tratarErroUsuario(error, res)
   }
@@ -104,9 +111,11 @@ async function uploadFotoPerfil(req, res) {
         error: 'Nenhuma imagem enviada.'
       })
     }
+    await validarArquivoEnviado(req.file)
 
     const usuarioId = req.usuario.id_usuario || req.usuario.id
-    const fotoUrl = `/uploads/perfis/${req.file.filename}`
+    const arquivo = await armazenarArquivo(req.file, 'perfis', usuarioId)
+    const fotoUrl = arquivo.url
 
     const usuarioAtualizado = await usuarioService.atualizar(
       usuarioId,
@@ -121,9 +130,30 @@ async function uploadFotoPerfil(req, res) {
   } catch (error) {
     console.error('[UPLOAD FOTO ERROR]', error)
 
-    return res.status(500).json({
-      error: 'Erro ao atualizar foto.'
+    return res.status(error.status || 500).json({
+      error: error.status ? error.message : 'Erro ao atualizar foto.'
     })
+  }
+}
+
+async function removerFotoPerfil(req, res) {
+  try {
+    const usuarioId = req.usuario.id_usuario || req.usuario.id
+    const usuarioAtualizado = await usuarioService.removerFotoPerfil(usuarioId, req.usuario)
+    return res.status(200).json({ message: 'Foto de perfil removida.', usuario: usuarioAtualizado })
+  } catch (error) {
+    return tratarErroUsuario(error, res)
+  }
+}
+
+async function exportarMeusDados(req, res) {
+  try {
+    const usuarioId = req.usuario.id_usuario || req.usuario.id
+    const data = await privacyService.exportUserData(usuarioId)
+    res.setHeader('Content-Disposition', `attachment; filename="planejai-dados-${usuarioId}.json"`)
+    return res.status(200).json(data)
+  } catch (error) {
+    return tratarErroUsuario(error, res)
   }
 }
 
@@ -202,13 +232,48 @@ async function resetarSenha(req, res) {
   }
 }
 
+async function definirSenha(req, res) {
+  try {
+    const usuarioId = req.params.id
+    const { novaSenha, confirmarSenha } = req.body
+    const usuarioLogado = req.usuario
+
+    if (!novaSenha) {
+      return res.status(400).json({
+        error: 'Campo novaSenha é obrigatório.'
+      })
+    }
+
+    if (novaSenha !== confirmarSenha) {
+      return res.status(400).json({
+        error: 'As senhas não coincidem.'
+      })
+    }
+
+    const resultado = await usuarioService.definirSenha(
+      usuarioId,
+      novaSenha,
+      usuarioLogado
+    )
+
+    return res.status(200).json({
+      message: resultado.message || 'Senha definida com sucesso.'
+    })
+  } catch (error) {
+    return tratarErroUsuario(error, res)
+  }
+}
+
 module.exports = {
   listar,
   obterPerfilLogado,
+  exportarMeusDados,
   obterPorId,
   atualizar,
   uploadFotoPerfil,
+  removerFotoPerfil,
   alterarTipo,
   alterarStatus,
-  resetarSenha
+  resetarSenha,
+  definirSenha
 }

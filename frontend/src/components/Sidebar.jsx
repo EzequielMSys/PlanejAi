@@ -1,17 +1,21 @@
-import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-
-const navItems = [
-  { path: '/inicio', label: 'Dashboard', icon: LayoutIcon },
-  { path: '/cronograma', label: 'Cronograma', icon: CalendarIcon },
-  { path: '/perfil', label: 'Perfil', icon: UserIcon },
-]
+import { useAuth } from '../context/AuthContext'
+import Logo from './Logo'
+import { resolveBackendAsset } from '../config/api'
 
 function LayoutIcon({ className }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+    </svg>
+  )
+}
+
+function DashboardIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
     </svg>
   )
 }
@@ -32,6 +36,30 @@ function UserIcon({ className }) {
   )
 }
 
+function RedacaoIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+    </svg>
+  )
+}
+
+function UsersIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m8-4a4 4 0 100-8 4 4 0 000 8zM9 10a4 4 0 100-8 4 4 0 000 8z" />
+    </svg>
+  )
+}
+
+function CrownIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 16l-2-9 5 4 4-7 4 7 5-4-2 9H5zm0 0h14v3H5v-3z" />
+    </svg>
+  )
+}
+
 function CloseIcon({ className }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,12 +68,70 @@ function CloseIcon({ className }) {
   )
 }
 
+function BellIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+    </svg>
+  )
+}
+
+function ExamIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12h14V7a2 2 0 00-2-2h-2M9 5a3 3 0 006 0M9 5a3 3 0 016 0M8 11l2 2 5-5M8 17h8" />
+    </svg>
+  )
+}
+
+function getFotoUrl(value) {
+  if (!value) return null
+  return value.startsWith('http') ? value : resolveBackendAsset(value)
+}
+
 export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate()
+  const { isAdmin, isDono, isGestor, user } = useAuth()
+  const fotoUrl = getFotoUrl(user?.foto_url)
+
+  const navItems = [
+    { path: '/inicio', label: 'Visão geral', icon: LayoutIcon },
+    ...(user?.tipo === 'aluno' ? [{ path: '/minha-jornada', label: 'Minha jornada', icon: DashboardIcon }] : []),
+    { path: '/cronograma', label: 'Cronograma', icon: CalendarIcon },
+    { path: '/aprendizagem', label: 'Aprendizagem', icon: DashboardIcon },
+    { path: '/provas', label: 'Provas', icon: ExamIcon },
+    { path: '/planejamento-inteligente', label: 'Planejamento', icon: CalendarIcon },
+    { path: '/redacoes', label: 'Redações', icon: RedacaoIcon },
+    ...(isGestor ? [{ path: '/turmas', label: 'Turmas', icon: UsersIcon }] : []),
+    ...(isGestor ? [{ path: '/atividades', label: 'Atividades', icon: RedacaoIcon }] : []),
+    ...(user?.tipo === 'aluno' ? [{ path: '/minhas-atividades', label: 'Minhas atividades', icon: RedacaoIcon }] : []),
+    ...(user?.tipo === 'aluno' ? [{ path: '/avisos', label: 'Avisos', icon: BellIcon }] : []),
+    { path: '/perfil', label: 'Perfil', icon: UserIcon }
+  ]
+
+  const adminItems = [
+    ...(isAdmin || isDono || user?.tipo === 'docente'
+      ? [{ path: '/dashboard-gestor', label: 'Painel Gestor', icon: DashboardIcon }]
+      : []),
+    ...(isAdmin
+      ? [{ path: '/usuarios', label: 'Painel Admin', icon: UsersIcon }]
+      : []),
+    ...(isDono
+      ? [{ path: '/dono/usuarios', label: 'Painel Dono', icon: CrownIcon }]
+      : [])
+  ]
+
+  if (['dono', 'admin', 'adm', 'docente'].includes(user?.tipo)) {
+    adminItems.unshift({ path: '/materiais', label: 'Materiais', icon: RedacaoIcon })
+  }
+
+  const handleNavigateHome = () => {
+    navigate('/inicio')
+    onClose()
+  }
 
   return (
     <>
-      {/* Mobile overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -53,12 +139,11 @@ export default function Sidebar({ isOpen, onClose }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
       <motion.aside
         initial={false}
         animate={{
@@ -66,60 +151,57 @@ export default function Sidebar({ isOpen, onClose }) {
           opacity: isOpen ? 1 : 0
         }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className={`
-          fixed lg:static lg:translate-x-0 lg:opacity-100
-          top-0 left-0 h-full w-64 z-50
-          bg-white/10 backdrop-blur-xl border-r border-white/20
-          flex flex-col
-        `}
+        className="app-sidebar"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <div
-            className="flex items-center space-x-2 cursor-pointer"
-            onClick={() => navigate('/inicio')}
-          >
-            <div className="w-9 h-9 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">P</span>
-            </div>
-            <span className="text-xl font-bold text-white">PlanejAI</span>
-          </div>
+        <div className="sidebar-brand-row">
           <button
+            type="button"
+            className="sidebar-brand-button"
+            onClick={handleNavigateHome}
+          >
+            <motion.div
+              whileHover={{ rotate: -6, scale: 1.04 }}
+              className="sidebar-logo"
+            >
+              <Logo className="h-10 w-10" />
+            </motion.div>
+            <span className="sidebar-brand-copy"><strong>PlanejAI</strong><small>aprenda com direção</small></span>
+          </button>
+
+          <button
+            type="button"
             onClick={onClose}
-            className="lg:hidden text-gray-300 hover:text-white transition-colors"
+            className="sidebar-close"
           >
             <CloseIcon className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
+        <div className="sidebar-context"><span><i /> Espaço ativo</span><strong>{user?.tipo === 'aluno' ? 'Minha aprendizagem' : 'Central pedagógica'}</strong></div>
+
+        <nav className="sidebar-nav">
+          <p className="sidebar-section">Aprender</p>
+
           {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={() => onClose()}
-              className={({ isActive }) =>
-                `flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 group ${
-                  isActive
-                    ? 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-300 border border-purple-500/30'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                }`
-              }
-            >
-              <item.icon className={`w-5 h-5 ${
-                item.path === '/inicio' ? '' : 'group-hover:scale-110 transition-transform'
-              }`} />
-              <span className="font-medium">{item.label}</span>
-            </NavLink>
+            <SidebarLink key={item.path} item={item} onClose={onClose} />
           ))}
+
+          {adminItems.length > 0 && (
+            <>
+              <p className="sidebar-section sidebar-section--spaced">Gerenciar</p>
+
+              {adminItems.map((item) => (
+                <SidebarLink key={item.path} item={item} onClose={onClose} />
+              ))}
+            </>
+          )}
         </nav>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-white/10">
-          <div className="bg-white/5 rounded-xl p-4">
-            <p className="text-xs text-gray-400 mb-1">Versão</p>
-            <p className="text-sm font-semibold text-white">1.0.0</p>
+        <div className="sidebar-footer">
+          <div className="sidebar-account">
+            <span className="sidebar-avatar">{fotoUrl ? <img src={fotoUrl} alt="" /> : (user?.apelido || user?.nome || 'U').charAt(0).toUpperCase()}</span>
+            <span><strong>{user?.apelido || user?.nome || 'Usuário'}</strong><small>{user?.tipo || 'aluno'} · online</small></span>
+            <i aria-hidden="true">•••</i>
           </div>
         </div>
       </motion.aside>
@@ -127,3 +209,16 @@ export default function Sidebar({ isOpen, onClose }) {
   )
 }
 
+function SidebarLink({ item, onClose }) {
+  return (
+    <NavLink
+      to={item.path}
+      onClick={onClose}
+      className={({ isActive }) => `sidebar-link${isActive ? ' is-active' : ''}`}
+    >
+      <span className="sidebar-link-icon"><item.icon className="h-5 w-5" /></span>
+      <span>{item.label}</span>
+      <i aria-hidden="true">›</i>
+    </NavLink>
+  )
+}

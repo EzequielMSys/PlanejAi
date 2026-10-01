@@ -36,70 +36,83 @@ const AlterarSenha = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-900 via-bgDark to-slate-900">
-      <div className="max-w-md w-full space-y-8 card animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] relative overflow-hidden">
+      <div className="absolute inset-0 bg-black/20" />
+
+      <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
+      <div className="absolute bottom-20 right-16 w-48 h-48 bg-black/10 rounded-full blur-2xl" />
+      <div className="absolute top-40 right-1/4 w-20 h-20 border border-white/30 rounded-full" />
+
+      <div className="relative z-10 max-w-md w-full rounded-[3rem] bg-white/85 backdrop-blur-md border border-white/60 shadow-2xl p-8 animate-fade-in">
         <div className="text-center">
-          <div className="w-20 h-20 bg-gradient-to-r from-secondary to-green-500 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-2xl">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-20 h-20 bg-[#9394CF] rounded-full mx-auto mb-6 flex items-center justify-center shadow-2xl">
+            <svg className="w-10 h-10 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17l-1 1h2v1a2 2 0 01-2 2H7a2 2 0 01-2-2v-1h2l1-1L5 14.743A6 6 0 012 12a6 6 0 0112-3z" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-textPrimary mb-2">
+
+          <h2 className="text-3xl font-black text-black mb-2">
             Alterar Senha
           </h2>
-          <p className="text-textSecondary">
+
+          <p className="text-black/65 font-semibold">
             Digite sua senha atual e crie uma nova senha segura
           </p>
         </div>
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
           <div>
-            <label className="block text-sm font-medium text-textSecondary mb-2">
+            <label className="block text-sm font-bold text-black mb-2">
               Senha Atual
             </label>
+
             <input
               type="password"
               required
-              className="input-field"
+              className="w-full rounded-full px-5 py-3 bg-white border border-[#9394CF]/40 text-black placeholder-gray-400 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
               placeholder="Senha atual"
               value={formData.senha_atual}
-              onChange={(e) => setFormData({...formData, senha_atual: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, senha_atual: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-textSecondary mb-2">
+            <label className="block text-sm font-bold text-black mb-2">
               Nova Senha
-              <span className="text-xs text-accent ml-1">(mín 8 chars, 1 maiúscula, 1 número)</span>
+              <span className="text-xs text-[#4B4C9D] ml-1">
+                (mín 8 chars, 1 maiúscula, 1 número)
+              </span>
             </label>
+
             <input
               type="password"
               required
-              className="input-field"
+              className="w-full rounded-full px-5 py-3 bg-white border border-[#9394CF]/40 text-black placeholder-gray-400 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
               placeholder="Nova senha segura"
               value={formData.nova_senha}
-              onChange={(e) => setFormData({...formData, nova_senha: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, nova_senha: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-textSecondary mb-2">
+            <label className="block text-sm font-bold text-black mb-2">
               Confirmar Nova Senha
             </label>
+
             <input
               type="password"
               required
-              className="input-field"
+              className="w-full rounded-full px-5 py-3 bg-white border border-[#9394CF]/40 text-black placeholder-gray-400 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
               placeholder="Confirme a nova senha"
               value={formData.confirmar_senha}
-              onChange={(e) => setFormData({...formData, confirmar_senha: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, confirmar_senha: e.target.value })}
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary w-full text-lg py-4 font-semibold shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 disabled:opacity-50"
+            className="w-full bg-[#4B4C9D] text-white py-4 rounded-full font-bold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
@@ -115,10 +128,10 @@ const AlterarSenha = () => {
           </button>
         </form>
 
-        <div className="text-center pt-8 border-t border-white/10">
+        <div className="text-center pt-8 mt-8 border-t border-[#9394CF]/20">
           <Link 
             to="/perfil"
-            className="text-textSecondary hover:text-textPrimary font-semibold inline-flex items-center"
+            className="text-black/65 hover:text-[#4B4C9D] font-bold inline-flex items-center transition-colors"
           >
             ← Voltar ao Perfil
           </Link>
@@ -129,4 +142,3 @@ const AlterarSenha = () => {
 }
 
 export default AlterarSenha
-

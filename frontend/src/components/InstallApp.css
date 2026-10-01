@@ -1,0 +1,4 @@
+.install-app { position:fixed; right:1rem; bottom:4.4rem; z-index:55; display:flex; align-items:center; gap:.6rem; border:1px solid rgb(124 58 237 / .22); border-radius:.8rem; background:#fdfbff; padding:.65rem .75rem; color:#6d28d9; box-shadow:0 14px 36px -22px #000; font-size:.72rem; font-weight:900; }
+.install-app span { display:grid; width:1.25rem; height:1.25rem; place-items:center; border-radius:.4rem; background:#ede9fe; }
+.dark .install-app { border-color:rgb(196 181 253 / .18); background:#21172d; color:#ddd6fe; }
+@media (max-width:640px) { .install-app { right:.75rem; bottom:4rem; } }

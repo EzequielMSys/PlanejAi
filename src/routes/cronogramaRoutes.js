@@ -1,11 +1,118 @@
-const express = require('express');
-const router = express.Router();
-const cronogramaController = require('../controllers/cronogramaController');
-const { authMiddleware } = require('../middlewares/authMiddleware');
+const express = require('express')
 
-router.post('/gerar', authMiddleware, cronogramaController.gerarCronograma);
-router.get('/', authMiddleware, cronogramaController.listarCronogramas);
-router.patch('/:diaId/concluir', authMiddleware, cronogramaController.concluirDia);
+const router = express.Router()
 
-module.exports = router;
+const cronogramaController = require('../controllers/cronogramaController')
 
+const {
+  authMiddleware,
+  isGestorPedagogico
+} = require('../middlewares/authMiddleware')
+
+const { uploadMaterial } = require('../middlewares/uploadMiddleware')
+const { idempotency } = require('../middlewares/idempotencyMiddleware')
+
+/**
+ * Gerar novo cronograma
+ */
+router.post(
+  '/gerar',
+  authMiddleware,
+  idempotency('GERAR_CRONOGRAMA'),
+  cronogramaController.gerarCronograma
+)
+
+/**
+ * Listar cronogramas do usuário
+ */
+router.get(
+  '/',
+  authMiddleware,
+  cronogramaController.listarCronogramas
+)
+
+/**
+ * Obter cronograma ativo
+ */
+router.get(
+  '/ativo',
+  authMiddleware,
+  cronogramaController.obterCronogramaAtivo
+)
+router.post(
+  '/replanejar',
+  authMiddleware,
+  cronogramaController.replanejarAtrasados
+)
+router.get('/recuperacao', authMiddleware, cronogramaController.analisarAtrasos)
+router.post('/dias/:diaId/desafio', authMiddleware, cronogramaController.iniciarDesafio)
+router.post('/cronogramas/:cronogramaId/prova-final', authMiddleware, cronogramaController.iniciarProvaFinal)
+router.get('/avaliacoes/:avaliacaoId/retomar', authMiddleware, cronogramaController.retomarAvaliacao)
+router.put('/avaliacoes/:avaliacaoId/respostas/:questaoId', authMiddleware, cronogramaController.salvarRespostaAvaliacao)
+router.post('/avaliacoes/:avaliacaoId/abandonar', authMiddleware, cronogramaController.abandonarAvaliacao)
+router.post('/avaliacoes/:avaliacaoId/enviar', authMiddleware, cronogramaController.enviarAvaliacao)
+
+/**
+ * Concluir dia do cronograma
+ */
+router.patch(
+  '/dias/:diaId/concluir',
+  authMiddleware,
+  cronogramaController.concluirDia
+)
+
+/**
+ * Reabrir dia do cronograma
+ */
+router.patch(
+  '/dias/:diaId/reabrir',
+  authMiddleware,
+  cronogramaController.reabrirDia
+)
+
+/**
+ * Concluir conteúdo específico
+ */
+router.patch(
+  '/conteudos/:conteudoCronogramaId/concluir',
+  authMiddleware,
+  cronogramaController.concluirConteudo
+)
+
+/**
+ * Reabrir conteúdo específico
+ */
+router.patch(
+  '/conteudos/:conteudoCronogramaId/mover',
+  authMiddleware, isGestorPedagogico,
+  cronogramaController.moverConteudo
+)
+
+router.patch(
+  '/conteudos/:conteudoCronogramaId/reabrir',
+  authMiddleware,
+  cronogramaController.reabrirConteudo
+)
+
+/**
+ * Atualizar conteúdo do cronograma (gestor)
+ */
+router.patch(
+  '/conteudos/:conteudoCronogramaId',
+  authMiddleware,
+  isGestorPedagogico,
+  cronogramaController.atualizarConteudoCronograma
+)
+
+/**
+ * Upload de material para conteúdo do cronograma
+ */
+router.post(
+  '/conteudos/:conteudoCronogramaId/upload',
+  authMiddleware,
+  isGestorPedagogico,
+  uploadMaterial.single('file'),
+  cronogramaController.uploadMaterial
+)
+
+module.exports = router

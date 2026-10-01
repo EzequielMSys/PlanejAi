@@ -1,129 +1,67 @@
-﻿import { Link } from 'react-router-dom'
-import logo from '../assets/images/logo.png'
+import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
+import Logo from '../components/Logo'
+import ThemeToggle from '../components/ThemeToggle'
+import './Landing.css'
 
-const Landing = () => {
-  return (
-    <div className="min-h-screen bg-white text-black">
+const reveal = { hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0, transition: { duration: .48 } } }
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] pt-32 pb-20">
-        <div className="absolute inset-0 bg-black/20" />
+const pillars = [
+  { icon: '◎', label: 'Mapa de estudo', title: 'Você sempre sabe o próximo passo.', text: 'A rotina vira um plano praticável, com tempo, matéria e motivo para cada sessão.' },
+  { icon: '↗', label: 'Evidências reais', title: 'Prática que melhora o plano.', text: 'Questões, provas, redações e atividades mostram o que já está firme e o que merece atenção.' },
+  { icon: '✦', label: 'Apoio humano', title: 'Sua turma no mesmo compasso.', text: 'Professores publicam materiais, acompanham entregas e dão feedback no espaço certo.' }
+]
 
-        <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
-        <div className="absolute bottom-20 right-16 w-48 h-48 bg-black/10 rounded-full blur-2xl" />
-        <div className="absolute top-40 right-1/4 w-20 h-20 border border-white/30 rounded-full" />
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-white/85 backdrop-blur-md rounded-[3rem] p-10 md:p-14 shadow-2xl border border-white/60">
-            
-            {/*logo da Planejai*/}
-            <div className="mb-8 flex justify-center">
-              <img 
-                src={logo}
-                alt="PlanejAI"
-                className="h-100 md:h-80 w-auto drop-shadow-xl hover:scale-105 transition-all duration-300"
-              />
-            </div>
-            
-            <h1 className="text-5xl md:text-7xl font-black text-black mb-6 leading-tight tracking-tight">
-              Estude com{' '}
-              <span className="text-[#4B4C9D]">
-                inteligência
-              </span>
-            </h1>
-
-            <p className="text-lg md:text-2xl text-black/75 max-w-3xl mx-auto mb-12 leading-relaxed">
-              Organize sua rotina com cronogramas personalizados, metas claras e acompanhamento inteligente.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-2xl mx-auto">
-              <Link 
-                to="/login"
-                className="bg-black text-white text-lg font-bold py-4 px-12 w-full sm:w-auto rounded-full shadow-xl hover:bg-[#4B4C9D] transform hover:-translate-y-1 transition-all duration-300"
-              >
-                Acessar sistema
-              </Link>
-
-              <Link 
-                to="/register" 
-                className="bg-[#4B4C9D] text-white text-lg font-bold py-4 px-12 w-full sm:w-auto rounded-full shadow-xl hover:bg-black transform hover:-translate-y-1 transition-all duration-300"
-              >
-                Começar agora
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-32 bg-[#F7F7FB]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          <div className="text-center mb-24">
-            <p className="uppercase tracking-[0.35em] text-sm font-black text-[#4B4C9D] mb-4">
-              planejamento inteligente
-            </p>
-
-            <h2 className="text-4xl md:text-5xl font-black text-black mb-6 tracking-tight">
-              Tudo para estudar com{' '}
-              <span className="text-[#4B4C9D]">mais organização</span>
-            </h2>
-
-            <p className="text-xl text-black/65 max-w-2xl mx-auto">
-              O PlanejAI entende seu perfil e transforma sua rotina em um plano de estudos mais claro.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-
-            <div className="bg-white text-center group hover:scale-[1.02] transition-all duration-300 p-8 rounded-[2rem] shadow-xl border border-[#9394CF]/30">
-              <div className="w-20 h-20 bg-[#9394CF] rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-3xl">📓</span>
-              </div>
-
-              <h3 className="text-2xl font-extrabold text-black mb-4">
-                Cronogramas Inteligentes
-              </h3>
-
-              <p className="text-black/65 leading-relaxed">
-                Organização automática com base no seu tempo disponível e nos seus objetivos.
-              </p>
-            </div>
-
-            <div className="bg-white text-center group hover:scale-[1.02] transition-all duration-300 p-8 rounded-[2rem] shadow-xl border border-[#9394CF]/30">
-              <div className="w-20 h-20 bg-[#9394CF] rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-3xl">🗓️</span>
-              </div>
-
-              <h3 className="text-2xl font-extrabold text-black mb-4">
-                Personalização Total
-              </h3>
-
-              <p className="text-black/65 leading-relaxed">
-                Você informa sua rotina, dificuldades, prioridades e metas de estudo.
-              </p>
-            </div>
-
-            <div className="bg-white text-center group hover:scale-[1.02] transition-all duration-300 p-8 rounded-[2rem] shadow-xl border border-[#9394CF]/30">
-              <div className="w-20 h-20 bg-[#9394CF]  rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-3xl">📈</span>
-              </div>
-
-              <h3 className="text-2xl font-extrabold text-black mb-4">
-                Evolução Contínua
-              </h3>
-
-              <p className="text-black/65 leading-relaxed">
-                Acompanhe seu progresso e ajuste seus estudos conforme seu desempenho.
-              </p>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-    </div>
-  )
+function Brand() {
+  return <Link to="/" className="landing-brand" aria-label="Página inicial PlanejAI"><Logo className="h-10 w-10" /><span>Planej<strong>AI</strong><small>aprenda com direção</small></span></Link>
 }
 
-export default Landing
+function JourneyBoard() {
+  return <section className="landing-board" aria-label="Exemplo de uma jornada de estudos">
+    <header><div><span>JORNADA DE HOJE</span><strong>Quarta-feira, 03</strong></div><b>02/03</b></header>
+    <div className="landing-board-focus"><span>EM FOCO</span><h2>Funções<br />exponenciais</h2><p>Matemática · 35 min</p><button type="button">Começar sessão <i>→</i></button><em>01</em></div>
+    <div className="landing-board-next"><span>DEPOIS</span><strong>Revisão ativa</strong><small>8 cartões para consolidar</small><i>02</i></div>
+    <footer><div><span>RITMO DA SEMANA</span><strong><i /> 4 dias de sequência</strong></div><div><b>68%</b><span>meta concluída</span></div></footer>
+  </section>
+}
+
+export default function Landing() {
+  return <div className="landing-shell">
+    <nav className="landing-nav"><Brand /><div className="landing-nav-links"><a href="#como-funciona">Como funciona</a><a href="#recursos">Recursos</a><Link to="/login">Entrar</Link><Link to="/register" className="landing-nav-cta">Criar meu plano <span>→</span></Link><ThemeToggle /></div></nav>
+
+    <main id="conteudo-principal" tabIndex="-1">
+      <section className="landing-hero">
+        <motion.div initial="hidden" animate="visible" className="landing-hero-copy">
+          <motion.p variants={reveal} className="landing-kicker"><i /> UM ESPAÇO PARA APRENDER COM CALMA</motion.p>
+          <motion.h1 variants={reveal}>Sua rotina de estudos,<br /><em>com um norte.</em></motion.h1>
+          <motion.p variants={reveal} className="landing-lead">PlanejAI organiza o que importa agora e transforma cada tentativa em um próximo passo mais inteligente.</motion.p>
+          <motion.div variants={reveal} className="landing-actions"><Link to="/register">Começar minha jornada <span>→</span></Link><a href="#como-funciona">Ver como funciona <i>↓</i></a></motion.div>
+          <motion.div variants={reveal} className="landing-hero-note"><span>✦</span><p><b>Seu caminho é seu.</b> Uma plataforma para alunos, docentes e turmas aprenderem juntos.</p></motion.div>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, scale: .96, y: 18 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: .65, delay: .08 }} className="landing-board-wrap"><JourneyBoard /><div className="landing-orbit landing-orbit-one" /><div className="landing-orbit landing-orbit-two" /></motion.div>
+      </section>
+
+      <section className="landing-signal" aria-label="Áreas da plataforma"><span>PLANEJAR</span><i>✦</i><span>ESTUDAR</span><i>✦</i><span>PRATICAR</span><i>✦</i><span>EVOLUIR</span></section>
+
+      <section id="como-funciona" className="landing-way">
+        <div className="landing-section-intro"><p>UMA JORNADA, NÃO UMA PILHA DE TAREFAS</p><h2>O estudo volta a fazer sentido quando tudo conversa.</h2><span>Do primeiro plano ao resultado da prova, cada parte deixa uma pista útil para a próxima.</span></div>
+        <div className="landing-path">{pillars.map((pillar, index) => <article key={pillar.label}><div><i>{pillar.icon}</i><span>0{index + 1}</span></div><small>{pillar.label}</small><h3>{pillar.title}</h3><p>{pillar.text}</p></article>)}</div>
+      </section>
+
+      <section id="recursos" className="landing-lab">
+        <div className="landing-lab-copy"><p>LABORATÓRIO PLANEJAI</p><h2>Uma plataforma viva para quem aprende e para quem orienta.</h2><Link to="/register">Montar meu espaço <span>→</span></Link></div>
+        <div className="landing-lab-grid">
+          <article className="is-large"><span>01 · CRONOGRAMA</span><h3>Planos que cabem<br />na semana real.</h3><div className="landing-mini-calendar"><b>SEG</b><i /><b>QUA</b><i /><b>SEX</b><i /></div></article>
+          <article><span>02 · PROVAS</span><h3>Simulados por objetivo e nível.</h3><strong>ITA <i>+</i> ENEM</strong></article>
+          <article><span>03 · ATIVIDADES</span><h3>Feedback que chega onde ele ajuda.</h3><div className="landing-mini-feedback"><i>✓</i><b>Comentário do docente</b></div></article>
+        </div>
+      </section>
+
+      <section className="landing-exams"><div className="landing-exams-score"><span>SEU RITMO</span><strong>84<small>%</small></strong><p>resultado de uma jornada que aprende com você</p></div><div><p>PROVAS SEM APOSTAR NO ESCURO</p><h2>Treine o que você quer conquistar.</h2><span>Escolha vestibular, dificuldade e quantidade. O sistema preserva suas tentativas e usa o resultado para recalibrar sua rota.</span><Link to="/register">Conhecer o laboratório <b>→</b></Link></div><ol><li><b>01</b><span>Escolha uma coleção</span></li><li><b>02</b><span>Faça no seu ritmo</span></li><li><b>03</b><span>Receba o próximo passo</span></li></ol></section>
+
+      <section className="landing-final"><div><Logo className="h-12 w-12" /><p>PLANEJAI É O SEU ESPAÇO DE APRENDER</p><h2>Estude com presença.<br /><em>Avance com clareza.</em></h2></div><Link to="/register">Criar minha conta <span>→</span></Link></section>
+    </main>
+
+    <footer className="landing-footer"><Brand /><p>Planejamento inteligente para uma aprendizagem que continua.</p><div><Link to="/login">Entrar</Link><Link to="/register">Criar conta</Link></div><small>© {new Date().getFullYear()} PlanejAI</small></footer>
+  </div>
+}

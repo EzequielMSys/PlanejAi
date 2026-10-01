@@ -1,134 +1,88 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { Link, useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import ThemeToggle from './ThemeToggle'
+import { resolveBackendAsset } from '../config/api'
 
-const MenuIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-  </svg>
-)
-
-const XIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-  </svg>
-)
-
-const ChevronDownIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-  </svg>
-)
-
-export default function Navbar({ onMenuClick, sidebarOpen }) {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-
-  const API_URL = 'http://localhost:3000'
-
-  const getFotoUrl = (fotoUrl) => {
-    if (!fotoUrl) return null
-    if (fotoUrl.startsWith('http')) return fotoUrl
-    return `${API_URL}${fotoUrl}`
-  }
-  
-  const avatarUrl = getFotoUrl(user?.foto_url)
-  const displayName = user?.apelido || user?.nome || 'Usuário'
-  const initials = (displayName?.charAt(0) || 'U').toUpperCase()
-
-  const handleLogout = () => {
-    logout()
-    navigate('/')
-  }
-
-  return (
-    <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/5 backdrop-blur-xl border-b border-white/10">
-      <div className="h-full flex items-center justify-between px-4 lg:px-6">
-        {/* Left: hamburger + logo */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onMenuClick}
-            className="lg:hidden p-2 rounded-xl text-textSecondary hover:text-textPrimary hover:bg-white/10 transition-all"
-            aria-label="Toggle menu"
-          >
-            {sidebarOpen ? <XIcon className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
-          </button>
-
-          <Link to="/inicio" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-indigo-500 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-              <span className="text-white font-bold text-lg">P</span>
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-transparent hidden sm:block">
-              PlanejAI
-            </span>
-          </Link>
-        </div>
-
-        {/* Right: avatar dropdown */}
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <button
-              onClick={() => setDropdownOpen(v => !v)}
-              className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-2xl hover:bg-white/10 transition-all border border-transparent hover:border-white/10"
-            >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-indigo-500 flex items-center justify-center shadow-md overflow-hidden">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-white font-bold text-sm">{initials}</span>
-                )}
-              </div>
-              <span className="text-sm font-medium text-textPrimary hidden md:block max-w-[120px] truncate">
-                {displayName}
-              </span>
-              <ChevronDownIcon className={`w-4 h-4 text-textSecondary transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            <AnimatePresence>
-              {dropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-48 bg-[#1E293B]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
-                  >
-                    <div className="px-4 py-3 border-b border-white/10">
-                      <p className="text-sm font-semibold text-textPrimary truncate">{displayName}</p>
-                      <p className="text-xs text-textSecondary truncate">{user?.email}</p>
-                    </div>
-                    <div className="p-1.5">
-                      <button
-                        onClick={() => { setDropdownOpen(false); navigate('/perfil') }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-textPrimary hover:bg-white/10 transition-colors text-left"
-                      >
-                        <svg className="w-4 h-4 text-textSecondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        Perfil
-                      </button>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors text-left"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        Sair
-                      </button>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-    </nav>
-  )
+const routeNames = {
+  '/inicio': ['Visão geral', 'Seu centro de aprendizagem'],
+  '/dashboard': ['Visão geral', 'Seu centro de aprendizagem'],
+  '/cronograma': ['Cronograma', 'Organize o que vem a seguir'],
+  '/aprendizagem': ['Aprendizagem', 'Pratique e acompanhe seu domínio'],
+  '/planejamento-inteligente': ['Planejamento', 'Estratégia guiada por dados'],
+  '/provas': ['Provas e simulados', 'Treino real com progresso salvo'],
+  '/redacoes': ['Redações', 'Escreva, revise e evolua'],
+  '/turmas': ['Turmas', 'Comunidade e acompanhamento'],
+  '/atividades': ['Atividades', 'Criação e correção pedagógica'],
+  '/minhas-atividades': ['Minhas atividades', 'Entregas e resultados'],
+  '/avisos': ['Avisos', 'Atualizações da sua comunidade'],
+  '/perfil': ['Perfil', 'Preferências e dados pessoais'],
+  '/materiais': ['Materiais', 'Biblioteca do cronograma'],
+  '/dashboard-gestor': ['Painel gestor', 'Visão pedagógica da comunidade'],
+  '/usuarios': ['Administração', 'Pessoas e permissões'],
+  '/dono': ['Central do proprietário', 'Saúde e operação da plataforma'],
+  '/dono/usuarios': ['Administração', 'Pessoas e permissões']
 }
 
+function Icon({ name, className = '' }) {
+  const paths = {
+    menu: 'M4 7h16M4 12h16M4 17h16',
+    close: 'M6 6l12 12M18 6L6 18',
+    chevron: 'M8 10l4 4 4-4',
+    spark: 'M12 3l1.8 4.7L19 10l-5.2 2.3L12 18l-1.8-5.7L5 10l5.2-2.3L12 3z',
+    bell: 'M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4'
+  }
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={paths[name]} /></svg>
+}
+
+function getFotoUrl(value) {
+  if (!value) return null
+  return value.startsWith('http') ? value : resolveBackendAsset(value)
+}
+
+export default function Navbar({ onMenuClick, sidebarOpen }) {
+  const { user, logout, isAdmin, isDono } = useAuth()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [quickOpen, setQuickOpen] = useState(false)
+  const [title, subtitle] = routeNames[pathname] || ['PlanejAI', 'Seu ambiente de estudos']
+  const displayName = user?.apelido || user?.nome || 'Usuário'
+  const avatarUrl = getFotoUrl(user?.foto_url)
+  const today = useMemo(() => {
+    const now = new Date()
+    const day = new Intl.DateTimeFormat('pt-BR', { day: '2-digit' }).format(now)
+    const month = new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(now).replace('.', '')
+    return `${day} ${month}`
+  }, [])
+
+  const go = (path) => { setDropdownOpen(false); setQuickOpen(false); navigate(path) }
+  const signOut = () => { setDropdownOpen(false); logout(); navigate('/') }
+
+  return (
+    <header className="app-topbar">
+      <div className="topbar-left">
+        <button type="button" onClick={onMenuClick} className="topbar-menu" aria-label={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}><Icon name={sidebarOpen ? 'close' : 'menu'} /></button>
+        <div className="topbar-route"><span className="topbar-date">Hoje · {today}</span><div><strong>{title}</strong><small>{subtitle}</small></div></div>
+      </div>
+
+      <div className="topbar-actions">
+        <div className="topbar-quick-wrap">
+          <button type="button" className="topbar-quick" onClick={() => setQuickOpen((value) => !value)} aria-expanded={quickOpen}><Icon name="spark" /> <span>Criar</span></button>
+          <AnimatePresence>{quickOpen && <><button className="topbar-dismiss" type="button" aria-label="Fechar" onClick={() => setQuickOpen(false)} /><motion.div className="topbar-popover topbar-create-menu" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}><small>AÇÃO RÁPIDA</small><button onClick={() => go('/planejamento-inteligente')}>Montar planejamento <b>→</b></button><button onClick={() => go('/redacoes')}>Começar redação <b>→</b></button><button onClick={() => go(user?.tipo === 'aluno' ? '/minhas-atividades' : '/atividades')}>Abrir atividades <b>→</b></button></motion.div></>}</AnimatePresence>
+        </div>
+        <button type="button" className="topbar-icon-button" onClick={() => go('/avisos')} aria-label="Abrir avisos"><Icon name="bell" /></button>
+        <ThemeToggle className="topbar-theme" />
+        <div className="topbar-profile-wrap">
+          <button type="button" className="topbar-profile" onClick={() => setDropdownOpen((value) => !value)} aria-expanded={dropdownOpen}>
+            <span className="topbar-avatar">{avatarUrl ? <img src={avatarUrl} alt="" /> : displayName.charAt(0).toUpperCase()}</span>
+            <span className="topbar-profile-copy"><strong>{displayName}</strong><small>{user?.tipo || 'aluno'}</small></span>
+            <Icon name="chevron" className={dropdownOpen ? 'is-open' : ''} />
+          </button>
+          <AnimatePresence>{dropdownOpen && <><button className="topbar-dismiss" type="button" aria-label="Fechar" onClick={() => setDropdownOpen(false)} /><motion.div className="topbar-popover topbar-profile-menu" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}><div><strong>{displayName}</strong><small>{user?.email}</small></div><button onClick={() => go('/perfil')}>Meu perfil</button><button onClick={() => go('/alterar-senha')}>Segurança</button>{isAdmin && <button onClick={() => go('/usuarios')}>Administração</button>}{isDono && <button onClick={() => go('/dono')}>Central do proprietário</button>}<button className="is-danger" onClick={signOut}>Sair da conta</button></motion.div></>}</AnimatePresence>
+        </div>
+      </div>
+    </header>
+  )
+}

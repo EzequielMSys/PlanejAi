@@ -1,11 +1,13 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false, gestorOnly = false }) => {
   const {
     isAuthenticated,
     isAdmin,
     isDono,
+    isDocente,
+    isGestor,
     isPrimeiroAcesso,
     perfilCompleto,
     loading
@@ -32,7 +34,7 @@ const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false }) => {
     return <Navigate to="/primeiro-acesso" replace />
   }
 
-  if (!isPrimeiroAcesso && !perfilCompleto && !isOnboardingRoute && !isPrimeiroAcessoRoute) {
+  if (!isPrimeiroAcesso && !perfilCompleto && !isOnboardingRoute && !isPrimeiroAcessoRoute && !isGestor) {
     return <Navigate to="/onboarding" replace />
   }
 
@@ -48,7 +50,11 @@ const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false }) => {
     return <Navigate to="/dashboard" replace />
   }
 
-  if (adminOnly && !isAdmin) {
+  if (adminOnly && !isAdmin && !isDono) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  if (gestorOnly && !isGestor) {
     return <Navigate to="/dashboard" replace />
   }
 

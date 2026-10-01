@@ -1,211 +1,346 @@
-import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { toast } from 'react-hot-toast'
+import { useAuth } from '../context/AuthContext'
+import cronogramaService from '../services/cronogramaService'
 
-const IconBook = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-const IconChart = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-const IconBolt = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-const IconUser = () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-const IconLock = () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-const IconCheck = () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-const IconClock = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
+}
 
-const Dashboard = () => {
-  const { user } = useAuth()
+function formatarData(data) {
+  if (!data) return '-'
+
+  return new Date(data).toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit'
+  })
+}
+
+export default function Dashboard() {
+  const { user, isAdmin, isDono } = useAuth()
+  const navigate = useNavigate()
+  const isGestor = isAdmin || isDono || user?.tipo === 'docente'
+
+  const [cronogramas, setCronogramas] = useState([])
   const [loading, setLoading] = useState(true)
-  const [atividades, setAtividades] = useState(null)
-  const [cronograma, setCronograma] = useState(null)
+  const [gerando, setGerando] = useState(false)
 
   useEffect(() => {
-    const carregarDados = async () => {
-      try {
-        // TODO: Integrar com APIs reais quando disponiveis
-        // const atividadesRes = await atividadeService.listar()
-        // const cronogramaRes = await cronogramaService.listar()
-        // setAtividades(atividadesRes)
-        // setCronograma(cronogramaRes)
-      } catch (error) {
-        console.error('Erro ao carregar dashboard:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
     carregarDados()
   }, [])
 
+  async function carregarDados() {
+    try {
+      const data = await cronogramaService.listarCronogramas()
+      setCronogramas(Array.isArray(data) ? data : [])
+    } catch (error) {
+      // Se for gestor e der erro no cronograma, não bloquear a página inteira
+      if (!isGestor) {
+        toast.error('Erro ao carregar dados do dashboard.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const cronogramaAtual = cronogramas[0]
+  const dias = cronogramaAtual?.dias || []
+
+  const stats = useMemo(() => {
+    const totalDias = dias.length
+
+    const diasConcluidos = dias.filter((dia) => {
+      return Number(dia.concluido) === 1 || dia.status === 'concluído'
+    }).length
+
+    const progresso = totalDias
+      ? Math.round((diasConcluidos / totalDias) * 100)
+      : 0
+
+    const tempoTotal = dias.reduce((acc, dia) => {
+      return acc + Number(dia.tempo_previsto || 0)
+    }, 0)
+
+    const proximoDia = dias.find((dia) => {
+      return Number(dia.concluido) !== 1 && dia.status !== 'concluído'
+    })
+
+    return {
+      totalDias,
+      diasConcluidos,
+      progresso,
+      tempoTotal,
+      proximoDia
+    }
+  }, [dias])
+
+  async function gerarCronograma() {
+    setGerando(true)
+
+    try {
+      await cronogramaService.gerarCronograma()
+      await carregarDados()
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erro ao gerar cronograma.')
+    } finally {
+      setGerando(false)
+    }
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-[#F7F7FB] dark:bg-[#0F0E20] flex items-center justify-center">
+        <div className="bg-white dark:bg-[#1E1D3A] rounded-[3rem] p-10 shadow-2xl border border-[#9394CF]/20 text-center">
+          <div className="h-14 w-14 border-b-4 border-[#4B4C9D] rounded-full animate-spin mx-auto mb-4" />
+          <p className="font-bold text-black/60 dark:text-white/60">Carregando dashboard...</p>
+        </div>
       </div>
     )
   }
 
-  const displayName = user?.apelido || user?.nome || 'Estudante'
-  const tipoLabelMap = {
-    dono: 'Dono',
-    admin: 'Administrador',
-    docente: 'Docente',
-    aluno: 'Aluno'
-  }
-  const tipoLabel = tipoLabelMap[user?.tipo] || 'Aluno'
-
-  const stats = {
-    concluidas: atividades?.filter(a => a.status === 'concluida')?.length || 0,
-    pendentes: atividades?.filter(a => a.status === 'pendente')?.length || 0,
-    progresso: atividades?.length ? Math.round((atividades.filter(a => a.status === 'concluida').length / atividades.length) * 100) : 0,
-    horas: 0 // TODO: Calculate from cronograma when implemented
-  }
+  const nome = user?.apelido || user?.nome || 'estudante'
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-black text-textPrimary">
-              Ola, {displayName} <span className="inline-block animate-bounce">👋</span>
-            </h1>
-            <p className="text-textSecondary mt-2 text-lg">
-              {tipoLabel} • Pronto para seus estudos de hoje?
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link to="/cronograma" className="btn-primary px-6 py-3 rounded-2xl font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2">
-              <IconBook />
-              <span>Montar cronograma</span>
-            </Link>
-          </div>
-        </div>
+    <div className="min-h-screen px-4 pb-10 pt-6 text-[#202027] dark:text-white sm:px-6 lg:px-8">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-secondary to-green-400 flex items-center justify-center text-white shadow-lg">
-                <IconCheck />
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <motion.div variants={fadeUp} initial="hidden" animate="visible">
+          <section className="workspace-hero compact-workspace-hero relative mb-5 overflow-hidden rounded-3xl border border-[#E6E5E9] bg-white p-6 shadow-[0_18px_55px_-45px_rgba(28,25,65,.55)] dark:border-white/10 dark:bg-[#1B1B1F] sm:p-7">
+            <div className="absolute bottom-0 left-0 top-0 w-1.5 bg-[#6157D9]" />
+
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <p className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#77727F] dark:text-white/40">
+                  Visão geral
+                </p>
+
+                <h1 className="mb-1 text-2xl font-black tracking-[-0.035em] text-[#202027] dark:text-white md:text-3xl">
+                  Olá, {nome}
+                </h1>
+
+                <p className="max-w-2xl text-sm text-[#6F6D78] dark:text-white/55">
+                  Acompanhe seu progresso, próximos estudos e evolução no cronograma.
+                </p>
               </div>
-              <span className="text-3xl font-black text-textPrimary">{stats.concluidas}</span>
-            </div>
-            <p className="text-textSecondary font-medium">Atividades concluidas</p>
-          </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white shadow-lg">
-                <IconClock />
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/cronograma')}
+                  className="rounded-xl border border-[#DEDBE8] bg-[#F7F6FA] px-5 py-2.5 font-bold text-[#484252] transition hover:border-[#BDB7D3] hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-white"
+                >
+                  Ver cronograma
+                </button>
+
+                {isGestor && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/dashboard-gestor')}
+                    className="bg-black text-white px-5 py-2 rounded-full font-bold shadow-lg hover:bg-white hover:text-[#4B4C9D] transition"
+                  >
+                    Painel Gestor
+                  </button>
+                )}
+
+                {isDono && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/dono')}
+                    className="bg-black text-white px-5 py-2 rounded-full font-bold shadow-lg hover:bg-white hover:text-[#4B4C9D] transition"
+                  >
+                    Painel Dono
+                  </button>
+                )}
+
+                {isAdmin && !isDono && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/usuarios')}
+                    className="bg-black text-white px-5 py-2 rounded-full font-bold shadow-lg hover:bg-white hover:text-[#4B4C9D] transition"
+                  >
+                    Painel Admin
+                  </button>
+                )}
               </div>
-              <span className="text-3xl font-black text-textPrimary">{stats.pendentes}</span>
             </div>
-            <p className="text-textSecondary font-medium">Atividades pendentes</p>
-          </motion.div>
+          </section>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-indigo-400 flex items-center justify-center text-white shadow-lg">
-                <IconChart />
+{!cronogramaAtual ? (
+            <section className="grid overflow-hidden rounded-3xl border border-[#E5E3E8] bg-white shadow-[0_24px_70px_-50px_rgba(28,25,65,.5)] dark:border-white/10 dark:bg-[#1B1B1F] md:grid-cols-[1.25fr_.75fr]">
+              <div className="flex flex-col items-start justify-center p-8 sm:p-10 lg:p-12">
+              <div className="mb-7 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#ECEAFB] text-[#6157D9] dark:bg-white/10 dark:text-[#B8B2FF]">
+                <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
               </div>
-              <span className="text-3xl font-black text-textPrimary">{stats.progresso}%</span>
-            </div>
-            <p className="text-textSecondary font-medium">Progresso geral</p>
-            <div className="w-full bg-white/10 rounded-full h-2 mt-3 overflow-hidden">
-              <div className="bg-gradient-to-r from-primary to-indigo-400 h-full rounded-full transition-all duration-500" style={{ width: `${stats.progresso}%` }} />
-            </div>
-          </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white shadow-lg">
-                <IconBolt />
+              <p className="mb-3 text-[11px] font-black uppercase tracking-[.18em] text-[#77727F] dark:text-white/40">Primeiro passo</p>
+              <h2 className="mb-3 max-w-lg text-3xl font-black tracking-[-0.04em] text-[#202027] dark:text-white sm:text-4xl">
+                Transforme sua rotina em um plano possível.
+              </h2>
+
+              <p className="mb-8 max-w-lg leading-relaxed text-[#6F6D78] dark:text-white/55">
+                O cronograma usa seu objetivo, matérias e horários disponíveis para distribuir os estudos sem sobrecarregar seus dias.
+              </p>
+
+              <button
+                type="button"
+                onClick={gerarCronograma}
+                disabled={gerando}
+                className="rounded-xl bg-[#6157D9] px-7 py-3.5 font-extrabold text-white shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-[#5147C4] dark:shadow-none disabled:opacity-60"
+              >
+                {gerando ? 'Gerando...' : 'Gerar cronograma'}
+              </button>
               </div>
-              <span className="text-3xl font-black text-textPrimary">{stats.horas}h</span>
-            </div>
-            <p className="text-textSecondary font-medium">Horas estudadas</p>
-          </motion.div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="lg:col-span-2 glass-card p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-black text-textPrimary">Proximas atividades</h2>
-              <Link to="/atividades" className="text-primary hover:text-primary-light font-semibold transition-colors">Ver todas</Link>
-            </div>
-            
-            {!atividades || atividades.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-20 h-20 bg-white/5 rounded-2xl mx-auto mb-4 flex items-center justify-center text-textSecondary">
-                  <IconBook />
+              <aside className="border-t border-[#E8E6EC] bg-[#F5F4F1] p-8 dark:border-white/10 dark:bg-[#232327] md:border-l md:border-t-0 sm:p-10">
+                <p className="text-sm font-black text-[#2F2D35] dark:text-white">O que será considerado</p>
+                <div className="mt-6 space-y-5">
+                  {[
+                    ['01', 'Seu objetivo', 'ENEM, vestibular ou curso'],
+                    ['02', 'Tempo disponível', 'Dias e horários reais'],
+                    ['03', 'Matérias prioritárias', 'Foco no que mais importa']
+                  ].map(([number, title, text]) => (
+                    <div key={number} className="flex gap-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-black text-[#6157D9] shadow-sm dark:bg-white/10 dark:text-[#B8B2FF]">{number}</span>
+                      <span><strong className="block text-sm text-[#34323A] dark:text-white">{title}</strong><small className="text-[#817E88] dark:text-white/45">{text}</small></span>
+                    </div>
+                  ))}
                 </div>
-                <h3 className="text-xl font-bold text-textPrimary mb-2">Nenhuma atividade disponivel ainda</h3>
-                <p className="text-textSecondary mb-6">Voce ainda nao montou seu cronograma.</p>
-                <Link to="/cronograma" className="btn-primary px-6 py-3 rounded-2xl font-bold text-white inline-flex items-center gap-2">
-                  Montar cronograma
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {atividades.slice(0, 5).map((a) => (
-                  <div key={a.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
-                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-                      <IconBook />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-textPrimary">{a.titulo || a.materia}</p>
-                      <p className="text-sm text-textSecondary">{a.descricao || a.topico}</p>
-                    </div>
-                    <span className="text-sm text-textSecondary">{a.tempo_estimado} min</span>
+              </aside>
+            </section>
+          ) : (
+            <>
+              <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <CardStat titulo="Progresso geral" valor={`${stats.progresso}%`} />
+                <CardStat titulo="Dias planejados" valor={stats.totalDias} />
+                <CardStat titulo="Dias concluídos" valor={stats.diasConcluidos} />
+                <CardStat titulo="Tempo previsto" valor={`${stats.tempoTotal} min`} />
+              </section>
+
+<section className="grid lg:grid-cols-3 gap-6 mb-8">
+                <div className="lg:col-span-2 bg-white dark:bg-[#1E1D3A] rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
+                  <div className="flex justify-between text-sm font-bold mb-2">
+                    <span>Progresso do cronograma</span>
+                    <span>{stats.progresso}%</span>
                   </div>
-                ))}
-              </div>
-            )}
-          </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="space-y-6">
-            <div className="glass-card p-6 text-center relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-white/10" />
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 mx-auto flex items-center justify-center shadow-xl ring-4 ring-violet-500/20 mb-3">
-                <IconBolt />
-              </div>
-              <p className="text-3xl font-black bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-transparent">0 XP</p>
-              <p className="text-sm text-textSecondary mt-1">Nivel 1</p>
-              <div className="w-full bg-white/10 rounded-full h-2 mt-4 overflow-hidden">
-                <div className="bg-gradient-to-r from-primary to-indigo-400 h-full rounded-full" style={{ width: '0%' }} />
-              </div>
-              <p className="text-xs text-textSecondary mt-2">100 XP ate o proximo nivel</p>
-            </div>
+                  <div className="h-4 bg-[#F7F7FB] dark:bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#4B4C9D] dark:bg-[#A9AAE8] rounded-full transition-all"
+                      style={{ width: `${stats.progresso}%` }}
+                    />
+                  </div>
 
-            <div className="glass-card p-6 text-center">
-              <div className="text-4xl mb-2">🔥</div>
-              <p className="text-3xl font-black text-orange-400">0 dias</p>
-              <p className="text-sm text-textSecondary mt-1">Sequencia de estudos</p>
-              <div className="flex justify-center gap-1.5 mt-3">
-                {[1,2,3,4,5].map(d => (
-                  <div key={d} className="w-3 h-3 rounded-full bg-white/10" />
-                ))}
-              </div>
-            </div>
+                  <p className="text-black/60 dark:text-white/60 text-sm mt-4">
+                    {stats.diasConcluidos} de {stats.totalDias} dias concluídos.
+                  </p>
+                </div>
 
-            <div className="glass-card p-6">
-              <h3 className="font-bold text-textPrimary mb-4">Acoes rapidas</h3>
-              <div className="space-y-3">
-                <Link to="/cronograma" className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary"><IconBook /></div>
-                  <span className="font-medium text-textPrimary">Montar cronograma</span>
-                </Link>
-                <Link to="/perfil" className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-400"><IconUser /></div>
-                  <span className="font-medium text-textPrimary">Editar perfil</span>
-                </Link>
-                <Link to="/alterar-senha" className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400"><IconLock /></div>
-                  <span className="font-medium text-textPrimary">Alterar senha</span>
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+                <div className="dashboard-next-card bg-white dark:bg-[#1E1D3A] rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
+                  <p className="dashboard-next-label text-sm font-bold text-black/50 dark:text-white/50 mb-1">
+                    Próximo estudo
+                  </p>
+
+                  <p className="dashboard-next-title text-lg font-black text-black dark:text-white capitalize">
+                    {stats.proximoDia
+                      ? formatarData(stats.proximoDia.data_estudo)
+                      : 'Tudo concluído'}
+                  </p>
+
+                  <p className="dashboard-next-detail text-sm text-black/60 dark:text-white/60 mt-1">
+                    {stats.proximoDia
+                      ? `${stats.proximoDia.tempo_previsto || 0} minutos previstos`
+                      : 'Parabéns pelo progresso!'}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate('/cronograma')}
+                    className="dashboard-next-action mt-5 w-full bg-[#4B4C9D] text-white px-5 py-3 rounded-full font-bold transition"
+                  >
+                    Abrir cronograma
+                  </button>
+                </div>
+              </section>
+
+              <section className="bg-white dark:bg-[#1E1D3A] rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+                  <div>
+                    <h2 className="text-2xl font-black text-black dark:text-white">
+                      Próximos estudos
+                    </h2>
+
+                    <p className="text-black/60 dark:text-white/60">
+                      Veja os próximos dias pendentes do seu plano.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate('/cronograma')}
+                    className="bg-[#F7F7FB] dark:bg-white/10 dark:text-white border border-[#9394CF]/40 text-black px-5 py-3 rounded-full font-bold hover:bg-[#9394CF]/20 transition"
+                  >
+                    Ver todos
+                  </button>
+                </div>
+
+                <div className="grid gap-3">
+                  {dias
+                    .filter((dia) => Number(dia.concluido) !== 1 && dia.status !== 'concluído')
+                    .slice(0, 5)
+                    .map((dia, index) => (
+                      <div
+                        key={dia.id_dia || dia.id || index}
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-[#F7F7FB] dark:bg-white/5 rounded-[2rem] p-4 border border-[#9394CF]/20"
+                      >
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] dark:text-[#A9AAE8] mb-1">
+                            Próximo estudo
+                          </p>
+
+                          <p className="font-black text-black dark:text-white capitalize">
+                            {formatarData(dia.data_estudo)}
+                          </p>
+                        </div>
+
+                        <span className="px-4 py-2 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300 text-sm font-bold w-fit">
+                          {dia.tempo_previsto || 0} min
+                        </span>
+                      </div>
+                    ))}
+
+                  {dias.filter((dia) => Number(dia.concluido) !== 1 && dia.status !== 'concluído').length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-black/60 dark:text-white/60 font-bold">
+                        Todos os estudos foram concluídos.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </>
+          )}
+        </motion.div>
       </div>
     </div>
   )
 }
 
-export default Dashboard
+function CardStat({ titulo, valor }) {
+  return (
+    <div className="bg-white dark:bg-[#1E1D3A] rounded-[2rem] p-6 shadow-xl border border-[#9394CF]/20">
+      <p className="text-sm font-bold text-black/50 dark:text-white/50 mb-1">
+        {titulo}
+      </p>
+
+      <p className="text-3xl font-black text-[#4B4C9D] dark:text-[#A9AAE8]">
+        {valor}
+      </p>
+    </div>
+  )
+}

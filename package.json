@@ -1,29 +1,66 @@
 {
-    "name": "plataforma-estudos-inteligente",
-    "version": "1.0.0",
-    "description": "Plataforma educacional inteligente para organização de estudos (TCC).",
-    "main": "src/server.js",
-    "scripts": {
-        "start": "node src/server.js",
-        "dev": "nodemon src/server.js",
-        "dev:backend": "nodemon src/server.js",
-        "dev:frontend": "npm run dev --prefix frontend",
-        "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-        "seed:owner": "node src/scripts/seedOwner.js"
-    },
-    "dependencies": {
-        "bcrypt": "^5.1.0",
-        "cors": "^2.8.5",
-        "dotenv": "^16.4.0",
-        "express": "^4.18.2",
-        "jsonwebtoken": "^9.0.2",
-        "multer": "^2.1.1",
-        "mysql2": "^3.9.0",
-        "swagger-jsdoc": "^6.2.8",
-        "swagger-ui-express": "^5.0.1"
-    },
-    "devDependencies": {
-        "concurrently": "^9.2.1",
-        "nodemon": "^3.0.2"
-    }
+  "name": "plataforma-estudos-inteligente",
+  "version": "1.0.0",
+  "description": "Plataforma educacional inteligente para organização de estudos (TCC).",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "dev:backend": "nodemon src/server.js",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "seed:owner": "node src/scripts/seedOwner.js",
+    "seed:conteudos": "node src/scripts/seedConteudos.js",
+    "repair:conteudos": "node src/scripts/repairContentLinks.js",
+    "test:redacao": "node src/scripts/testEssayAnalysis.js",
+    "test": "node --test test/*.test.js",
+    "check:backend": "node --check src/server.js && node --check src/controllers/authController.js && node --check src/controllers/aprendizagemController.js && node --check src/controllers/cronogramaController.js && node --check src/models/aprendizagemModel.js && node --check src/models/cronogramaConteudoModel.js && node --check src/services/cronogramaService.js && node --check src/services/authService.js && node --check src/services/uploadStorageService.js && node --check src/middlewares/authMiddleware.js && node --check src/middlewares/platformMiddleware.js && node --check src/middlewares/uploadMiddleware.js",
+    "check": "npm test && npm run check:backend && npm run check:frontend",
+    "check:frontend": "npm run lint --prefix frontend && npm run build --prefix frontend",
+    "migrate:areas_foco": "node src/scripts/applyAreasFocoMigration.js",
+    "migrate:atividades": "node src/scripts/applyPedagogicalActivitiesMigration.js",
+    "migrate:materiais": "node src/scripts/applyContentMaterialsMigration.js",
+    "migrate:all": "node src/scripts/applyMigrations.js",
+    "vercel:prepare-api": "npm run migrate:all && node src/scripts/seedDatabase.js && node src/scripts/repairContentLinks.js"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "src",
+      "migrations"
+    ],
+    "ext": "js,json,sql",
+    "ignore": [
+      "frontend/**",
+      "uploads/**",
+      "backups/**",
+      "docs/**",
+      "coverage/**",
+      "node_modules/**",
+      "frontend/node_modules/**",
+      "frontend/dist/**",
+      ".git/**"
+    ],
+    "delay": "750"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.8.0",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "5.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.1.1",
+    "mysql2": "^3.9.0",
+    "nodemailer": "10.0.12",
+    "qs": "6.16.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.0.2",
+    "vite": "^6.3.5"
+  }
 }
