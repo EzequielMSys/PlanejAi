@@ -1,13 +1,16 @@
+/* Cores espelham os tokens --pn-* (design system Atlas), com valor de reserva
+   para o primeiro paint antes do JS rodar. Sem isso, o --pl-* era um terceiro
+   sistema de cor independente, e o modo escuro divergia entre telas. */
 :root {
-  --pl-navy: #241333;
-  --pl-blue: #6d3bd1;
-  --pl-cyan: #a878ef;
-  --pl-lime: #eee5ff;
-  --pl-paper: #ffffff;
-  --pl-canvas: #f7f4fb;
-  --pl-line: #e2d9ec;
-  --pl-muted: #746780;
-  --pl-shadow: 0 22px 55px -38px rgba(63, 31, 91, .42);
+  --pl-navy: var(--pn-primaria, #241333);
+  --pl-blue: var(--pn-primaria, #6d3bd1);
+  --pl-cyan: var(--pn-primaria-hover, #a878ef);
+  --pl-lime: var(--pn-primaria-suave, #eee5ff);
+  --pl-paper: var(--pn-superficie, #ffffff);
+  --pl-canvas: var(--pn-fundo, #f7f4fb);
+  --pl-line: var(--pn-borda, #e2d9ec);
+  --pl-muted: var(--pn-texto-suave, #746780);
+  --pl-shadow: var(--pn-sombra-alta, 0 22px 55px -38px rgba(63, 31, 91, .42));
 }
 .skip-link{position:fixed;z-index:200;left:1rem;top:1rem;transform:translateY(-150%);border-radius:.65rem;background:#fff;padding:.75rem 1rem;color:#101d35;font-size:.75rem;font-weight:900;box-shadow:0 12px 30px rgba(0,0,0,.2);transition:transform .18s}.skip-link:focus{transform:translateY(0)}
 .sr-route{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important}
@@ -75,7 +78,8 @@ body[data-page="landing"] [class*="bg-[#6157D9]"],body[data-page="landing"] [cla
 .exam-history{margin-top:1.2rem}.exam-history h3{font-size:.75rem;font-weight:950}.exam-history>div{display:grid;grid-template-columns:4rem 1fr auto;gap:1rem;border-top:1px solid var(--pl-line);padding:.75rem 0;font-size:.7rem}.exam-history>div span{color:var(--pl-blue);font-weight:900}.exam-history>div strong{color:#168060}
 .exam-session{margin-top:1.5rem}.exam-session-title{display:flex;justify-content:space-between;gap:1rem;border-radius:1rem;background:var(--pl-navy);padding:1rem 1.2rem;color:#fff}.exam-session-title small{color:var(--pl-cyan);font-size:.58rem;font-weight:900}.exam-session-title h3{font-size:1.15rem;font-weight:950}.exam-session-title>span{color:#b9c5d5;font-size:.65rem}.exam-session fieldset{margin-top:.8rem;border:1px solid var(--pl-line);border-radius:1rem;padding:1rem}.exam-session legend{display:flex;gap:.75rem;font-weight:850}.exam-session legend>span{display:grid;width:2rem;height:2rem;flex:none;place-items:center;border-radius:50%;background:var(--pl-blue);color:#fff;font-size:.7rem}.exam-session legend small{display:block;margin-bottom:.2rem;color:var(--pl-muted);font-size:.55rem}.exam-session fieldset>div{display:grid;gap:.45rem;margin-top:.8rem}.exam-session fieldset label input{position:absolute;opacity:0}.exam-session fieldset label>span{display:flex;align-items:center;gap:.7rem;border:1px solid var(--pl-line);border-radius:.7rem;padding:.65rem;font-size:.72rem}.exam-session fieldset label i{display:grid;width:1.6rem;height:1.6rem;place-items:center;border-radius:.45rem;background:#edf2f7;font-style:normal;font-weight:900}.exam-session fieldset input:checked+span{border-color:var(--pl-blue);background:#eff4ff}.exam-session fieldset>p{margin-top:.8rem;border-radius:.65rem;background:#f0f5f9;padding:.75rem;color:#4e6077;font-size:.68rem}.exam-session fieldset[data-correct="true"]{border-color:#78d9b4}.exam-session fieldset[data-correct="false"]{border-color:#f0aa9f}.exam-session>footer{display:flex;justify-content:flex-end;align-items:center;gap:1rem;margin-top:1rem}.exam-session>footer button{border-radius:.75rem;background:var(--pl-blue);padding:.8rem 1rem;color:#fff;font-weight:900}.exam-session>footer div{display:grid;margin-right:auto}.exam-session>footer strong{font-size:2rem}.exam-session>footer span{color:var(--pl-muted);font-size:.65rem}
 
-.dark { --pl-paper:#17243a;--pl-canvas:#0c1627;--pl-line:#31415a;--pl-muted:#a5b4c8; }
+/* Modo escuro também espelha --pn-*, em vez de usar cores fixas. */
+.dark { --pl-paper:var(--pn-superficie,#17243a);--pl-canvas:var(--pn-fundo,#0c1627);--pl-line:var(--pn-borda,#31415a);--pl-muted:var(--pn-texto-suave,#a5b4c8); }
 .dark .app-shell,.dark .learning-page{background-color:var(--pl-canvas)!important}.dark .learning-card,.dark .learning-empty,.dark .activity-player,.dark .activity-questions fieldset,.dark .exam-arena{background:#17243a;color:#f4f8ff}.dark .learning-card>p,.dark .learning-card-meta,.dark .exam-arena>header p{color:var(--pl-muted)}.dark .learning-filters button{border-color:var(--pl-line);background:#17243a;color:#b8c6d8}.dark .activity-player{background:#101d31}.dark .activity-options label>span,.dark .activity-questions textarea{border-color:var(--pl-line);background:#17243a;color:#eef5ff}.dark .exam-catalog>button{border-color:var(--pl-line)}.dark .exam-catalog>button[data-selected="true"]{background:#1b3154}.dark .exam-session fieldset{border-color:var(--pl-line)}
 
 @keyframes spin{to{transform:rotate(360deg)}}

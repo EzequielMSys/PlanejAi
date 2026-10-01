@@ -31,6 +31,8 @@ const SystemStatus = lazy(() => import('./pages/SystemStatus'))
 const PlanejamentoInteligente = lazy(() => import('./pages/PlanejamentoInteligente'))
 const MinhaJornada = lazy(() => import('./pages/MinhaJornada'))
 const Turmas = lazy(() => import('./pages/Turmas'))
+const MinhasTurmas = lazy(() => import('./pages/MinhasTurmas'))
+const MinhasTurmasDetalhe = lazy(() => import('./pages/MinhasTurmasDetalhe'))
 const Provas = lazy(() => import('./pages/Provas'))
 
 function App() {
@@ -61,6 +63,11 @@ function App() {
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/minhas-atividades" element={<MinhasAtividades />} />
             <Route path="/avisos" element={<AvisosAluno />} />
+            {/* Visão do aluno no formato Classroom. Fica no grupo autenticado
+                comum, e não em gestorOnly: /turmas é a tela de gestão, esta é a
+                de participação. */}
+            <Route path="/minhas-turmas" element={<MinhasTurmas />} />
+            <Route path="/minhas-turmas/:id" element={<MinhasTurmasDetalhe />} />
             <Route path="/alterar-senha" element={<AlterarSenha />} />
           </Route>
         </Route>

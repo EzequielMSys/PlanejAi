@@ -7,6 +7,7 @@ const {
   validarSenhaForte,
   sanitizeUser,
   getBcryptRounds,
+  REQUISITOS_SENHA,
 } = require("../utils/authUtils");
 const { getJwtSecret } = require("../config/jwtConfig");
 const { enviarRecuperacaoSenha } = require("./emailService");
@@ -41,9 +42,7 @@ class AuthService {
     }
 
     if (!validarSenhaForte(senha)) {
-      throw new Error(
-        "Senha deve ter ao menos 12 caracteres, com maiúscula, minúscula e número.",
-      );
+      throw new Error(`Senha deve ter ${REQUISITOS_SENHA.toLowerCase()}.`);
     }
     const senhaHash = await bcrypt.hash(senha, getBcryptRounds());
 
@@ -157,7 +156,7 @@ class AuthService {
       throw new Error("Token inválido ou expirado.");
     }
     if (!validarSenhaForte(novaSenha)) {
-      throw new Error("Senha deve ter no mínimo 8 caracteres, 1 letra maiúscula e 1 número.");
+      throw new Error(`A nova senha deve ter ${REQUISITOS_SENHA.toLowerCase()}.`);
     }
 
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
@@ -184,9 +183,7 @@ class AuthService {
     }
 
     if (!validarSenhaForte(novaSenha)) {
-      throw new Error(
-        "Senha deve ter no mínimo 8 caracteres, 1 letra maiúscula e 1 número.",
-      );
+      throw new Error(`A nova senha deve ter ${REQUISITOS_SENHA.toLowerCase()}.`);
     }
     if (senhaAtual === novaSenha) {
       throw new Error("A nova senha deve ser diferente da senha atual.");
@@ -216,9 +213,7 @@ class AuthService {
     }
 
     if (!validarSenhaForte(novaSenha)) {
-      throw new Error(
-        "Senha deve ter no mínimo 8 caracteres, 1 letra maiúscula e 1 número.",
-      );
+      throw new Error(`A nova senha deve ter ${REQUISITOS_SENHA.toLowerCase()}.`);
     }
 
     const novaSenhaHash = await bcrypt.hash(novaSenha, getBcryptRounds());

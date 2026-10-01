@@ -3,7 +3,7 @@ const { isGestorPedagogico } = require('../middlewares/authMiddleware');
 
 async function listar(req, res) {
   try {
-    const avisos = await avisoModel.listarAvisos(req.usuario.tipo);
+    const avisos = await avisoModel.listarAvisos(req.usuario.tipo, 50, req.usuario.id_usuario || req.usuario.id);
     return res.json(avisos);
   } catch (error) {
     console.error('[AVISOS]', error);
@@ -13,7 +13,7 @@ async function listar(req, res) {
 
 async function criar(req, res) {
   try {
-    const { titulo, mensagem, destinatarios } = req.body;
+    const { titulo, mensagem, destinatarios, idTurma } = req.body;
     if (!titulo?.trim() || !mensagem?.trim()) {
       return res.status(400).json({ message: 'Título e mensagem são obrigatórios.' });
     }
@@ -24,7 +24,8 @@ async function criar(req, res) {
       titulo: titulo.trim(),
       mensagem: mensagem.trim(),
       criadoPor: req.usuario.id_usuario || req.usuario.id,
-      destinatarios: destinatarios || 'todos'
+      destinatarios: destinatarios || 'todos',
+      idTurma: idTurma || null
     });
     return res.status(201).json({ aviso });
   } catch (error) {

@@ -22,46 +22,77 @@ const garantirTabelas = require("./scripts/garantirTabelas");
 const repairContentLinks = require("./scripts/repairContentLinks");
 const seedDatabase = require("./scripts/seedDatabase");
 const { startBackupScheduler, getBackupStatus } = require("./services/backupScheduler");
-const { enviarArquivoArmazenado } = require("./services/uploadStorageService");
+const { enviarArquivoArmazenado, garantirPastas, usarBlobPrivado } = require("./services/uploadStorageService");
+
+// Cria uploads/ e suas subpastas antes de qualquer requisição. Sem isso, uma
+// instalação nova não tem onde gravar fotos e toda imagem responde 404 sem
+// explicar o motivo. A pasta é ignorada pelo Git, então isso acontece sempre.
+if (!usarBlobPrivado()) {
+  try {
+    const criadas = garantirPastas();
+    if (criadas.length) console.log(`[UPLOADS] Pastas criadas: ${criadas.join(", ")}`);
+  } catch (error) {
+    console.error("[UPLOADS] Não foi possível preparar a pasta de uploads:", error.message);
+  }
+}
 
 const uploadErrorHandler = require("./middlewares/uploadErrorHandler");
 
-const allowedOrigins = (process.env.CORS_ORIGIN || "")
-  .split(",")
-  .map((origin) => origin.trim().replace(/\/$/, ""))
-  .filter(Boolean);
+const { isOriginAllowed, parsearOrigensPermitidas } = require("./config/corsConfig");
 
-function corsOptionsForRequest(req, callback) {
-  callback(null, {
-    origin(origin, originCallback) {
-      if (!origin) {
-        return originCallback(null, true);
-      }
+const { permitidas: origensPermitidas, invalidas: origensInvalidas } = parsearOrigensPermitidas();
+// Libera qualquer IP privado em http, o que resolve o IP da LAN mudar a cada
+// boot sem precisar editar o .env. Desligado por padrão: em produção as
+// origens devem continuar explícitas.
+const permitirRedePrivada = process.env.CORS_ALLOW_PRIVATE_NETWORK === "true";
 
-      const normalizedOrigin = origin.replace(/\/$/, "");
-      let isApiSameOrigin = false;
-      try {
-        // Permite que o Swagger servido pela própria API use o IP/porta pelos
-        // quais o cliente a acessou, inclusive em outros computadores da LAN.
-        const originUrl = new URL(normalizedOrigin);
-        isApiSameOrigin = originUrl.host === req.get("host");
-      } catch {
-        isApiSameOrigin = false;
-      }
+if (permitirRedePrivada) {
+  console.log("[CORS] CORS_ALLOW_PRIVATE_NETWORK=true: origens http em IP privado serão aceitas.");
+}
+if (origensInvalidas.length) {
+  console.warn(
+    `[CORS] Ignorando origens inválidas em CORS_ORIGIN: ${origensInvalidas.join(", ")}`,
+  );
+}
+if (!origensPermitidas.length && !permitirRedePrivada) {
+  console.warn(
+    "[CORS] CORS_ORIGIN está vazio. Só requisições sem cabeçalho Origin (curl, apps nativos) e a própria API serão atendidas.",
+  );
+}
 
-      if (isApiSameOrigin || allowedOrigins.includes(normalizedOrigin)) {
-        return originCallback(null, true);
-      }
+// Rejeitar a origem aqui, antes do `cors`, permite responder 403 com uma
+// mensagem que diz o que ajustar. Lançar um Error faria o `cors` chamar
+// next(err) e o resultado seria um 500 genérico, que sugere falha do servidor
+// e ainda polui auditoria e métricas de erro.
+function corsGate(req, res, next) {
+  const origin = req.get("origin");
+  if (isOriginAllowed(origin, { permitidas: origensPermitidas, hostDaRequisicao: req.get("host"), permitirRedePrivada })) {
+    return next();
+  }
 
-      return originCallback(new Error("Origem não permitida pelo CORS."));
-    },
+  console.warn(
+    JSON.stringify({
+      event: "cors_origin_bloqueada",
+      request_id: req.requestId,
+      origin,
+      path: req.path,
+      dica: "Adicione a origem em CORS_ORIGIN no .env e reinicie a API, ou defina CORS_ALLOW_PRIVATE_NETWORK=true para aceitar qualquer IP privado.",
+    }),
+  );
+  return res.status(403).json({
+    error: "Origem não permitida pelo CORS.",
+    origin,
+    allowed_origins: origensPermitidas.map((regra) => `${regra.protocolo}//${regra.host}${regra.porta ? `:${regra.porta}` : ""}`),
+    request_id: req.requestId,
   });
 }
 
 app.use(platformHeaders);
 app.use(requestLogger);
 app.use(operationsMonitor);
-app.use(cors(corsOptionsForRequest));
+app.use(corsGate);
+// `origin` reflexivo é seguro aqui: a lista já foi validada pelo corsGate acima.
+app.use(cors({ origin: true, maxAge: 600 }));
 app.use(express.json({ limit: "2mb", strict: true }));
 app.use(express.urlencoded({ extended: false, limit: "256kb" }));
 

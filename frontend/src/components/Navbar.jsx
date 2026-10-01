@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import ThemeToggle from './ThemeToggle'
-import { resolveBackendAsset } from '../config/api'
+import Avatar from './Avatar'
 
 const routeNames = {
   '/inicio': ['Visão geral', 'Seu centro de aprendizagem'],
@@ -36,11 +36,6 @@ function Icon({ name, className = '' }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={paths[name]} /></svg>
 }
 
-function getFotoUrl(value) {
-  if (!value) return null
-  return value.startsWith('http') ? value : resolveBackendAsset(value)
-}
-
 export default function Navbar({ onMenuClick, sidebarOpen }) {
   const { user, logout, isAdmin, isDono } = useAuth()
   const { pathname } = useLocation()
@@ -49,7 +44,6 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
   const [quickOpen, setQuickOpen] = useState(false)
   const [title, subtitle] = routeNames[pathname] || ['PlanejAI', 'Seu ambiente de estudos']
   const displayName = user?.apelido || user?.nome || 'Usuário'
-  const avatarUrl = getFotoUrl(user?.foto_url)
   const today = useMemo(() => {
     const now = new Date()
     const day = new Intl.DateTimeFormat('pt-BR', { day: '2-digit' }).format(now)
@@ -76,7 +70,7 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
         <ThemeToggle className="topbar-theme" />
         <div className="topbar-profile-wrap">
           <button type="button" className="topbar-profile" onClick={() => setDropdownOpen((value) => !value)} aria-expanded={dropdownOpen}>
-            <span className="topbar-avatar">{avatarUrl ? <img src={avatarUrl} alt="" /> : displayName.charAt(0).toUpperCase()}</span>
+            <Avatar src={user?.foto_url} nome={displayName} tamanho={34} className="topbar-avatar" />
             <span className="topbar-profile-copy"><strong>{displayName}</strong><small>{user?.tipo || 'aluno'}</small></span>
             <Icon name="chevron" className={dropdownOpen ? 'is-open' : ''} />
           </button>

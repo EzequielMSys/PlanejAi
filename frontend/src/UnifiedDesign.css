@@ -1,36 +1,51 @@
-/* PlanejAI 2026 — uma única camada para escala, identidade e temas. */
+/* PlanejAI 2026 — escala, identidade e temas.
+   Os papéis de cor apontam para os tokens --pn-* do design system (Atlas), que
+   já são validados por contraste em claro e escuro. Antes estas cores eram
+   fixas aqui, o que criava um terceiro sistema competindo com o --pn-* e fazia o
+   modo escuro divergir entre telas. Agora as duas camadas falam a mesma língua. */
 :root {
-  --ui-bg: #f7f7fc;
-  --ui-surface: #ffffff;
-  --ui-surface-2: #f1eff8;
-  --ui-ink: #241c34;
-  --ui-muted: #6e667c;
-  --ui-line: #e3deeb;
-  --ui-purple: #6b43bb;
-  --ui-purple-strong: #4d2d92;
-  --ui-purple-soft: #ede8fa;
-  --ui-plum: #302047;
-  --ui-success: #277f69;
-  --ui-warning: #a96518;
-  --ui-danger: #ba4961;
+  /* Medidas e raios continuam aqui: não têm relação com a paleta. */
   --ui-sidebar: 16.25rem;
   --ui-topbar: 4.75rem;
   --ui-radius: 1.25rem;
-  --ui-shadow: 0 20px 52px -38px rgba(43, 30, 69, .42);
+  --ui-shadow: var(--pn-sombra-alta, 0 20px 52px -38px rgba(43, 30, 69, .42));
   color-scheme: light;
 }
 
 .dark {
-  --ui-bg: #13111b;
-  --ui-surface: #201c2b;
-  --ui-surface-2: #292334;
-  --ui-ink: #f7f3fc;
-  --ui-muted: #c1b8cc;
-  --ui-line: #433a51;
-  --ui-purple: #c1a3ff;
-  --ui-purple-strong: #a980f0;
-  --ui-purple-soft: #342b47;
-  --ui-plum: #372653;
+  color-scheme: dark;
+}
+
+/* Estado claro: espelha os tokens --pn-*.
+   Usa var() com valor de reserva para o caso de o JS ainda não ter rodado —
+   sem isso a primeira pintura ficaria sem cor nenhuma. */
+:root {
+  --ui-bg: var(--pn-fundo, #f7f7fc);
+  --ui-surface: var(--pn-superficie, #ffffff);
+  --ui-surface-2: var(--pn-superficie-alt, #f1eff8);
+  --ui-ink: var(--pn-texto, #241c34);
+  --ui-muted: var(--pn-texto-suave, #6e667c);
+  --ui-line: var(--pn-borda, #e3deeb);
+  --ui-purple: var(--pn-primaria, #6b43bb);
+  --ui-purple-strong: var(--pn-primaria-hover, #4d2d92);
+  --ui-purple-soft: var(--pn-primaria-suave, #ede8fa);
+  --ui-plum: var(--pn-primaria-borda, #302047);
+  --ui-success: #277f69;
+  --ui-warning: #a96518;
+  --ui-danger: #ba4961;
+}
+
+.dark {
+  --ui-bg: var(--pn-fundo, #13111b);
+  --ui-surface: var(--pn-superficie, #201c2b);
+  --ui-surface-2: var(--pn-superficie-alt, #292334);
+  --ui-ink: var(--pn-texto, #f7f3fc);
+  --ui-muted: var(--pn-texto-suave, #c1b8cc);
+  --ui-line: var(--pn-borda, #433a51);
+  --ui-purple: var(--pn-primaria, #c1a3ff);
+  --ui-purple-strong: var(--pn-primaria-hover, #a980f0);
+  --ui-purple-soft: var(--pn-primaria-suave, #342b47);
+  --ui-plum: var(--pn-primaria-borda, #372653);
   --ui-success: #75d1af;
   --ui-warning: #efbd79;
   --ui-danger: #ff9daf;

@@ -1,4 +1,5 @@
 import './PlanejUI.css'
+import { Link } from 'react-router-dom'
 
 export function PageHeader({ eyebrow, title, description, actions, icon, className = '' }) {
   return (
@@ -38,4 +39,18 @@ export function StatCard({ label, value, detail, tone = 'default' }) {
 
 export function Field({ label, hint, children }) {
   return <label className="ui-field"><span>{label}</span>{children}{hint && <small>{hint}</small>}</label>
+}
+
+// Acrescentados com a lista de turmas do aluno. Antes não havia uma classe
+// para link nem para a grade de estatísticas, e cada tela criava a sua.
+export function StatGrid({ children }) {
+  return <div className="ui-stats">{children}</div>
+}
+
+export function Loading({ children = 'Carregando…' }) {
+  return <p className="ui-loading" role="status">{children}</p>
+}
+
+export function TextLink({ to, children, className = '' }) {
+  return <Link to={to} className={`ui-link ${className}`.trim()}>{children}</Link>
 }

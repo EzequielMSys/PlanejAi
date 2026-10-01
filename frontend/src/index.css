@@ -46,35 +46,143 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   PLANEJAI — identidade "caderno inteligente"
+   --------------------------------------------------------------------------
+   Tokens --pn-* injetados pelo ThemeContext a partir da paleta ativa:
+     --pn-primaria      -> "#7c3aed"  (hex, para bordas e gradientes)
+     --pn-primaria-rgb  -> "124 58 237" (para rgb(var(...) / 0.4))
+   Os valores fixos abaixo cobrem só a primeira renderização, evitando um flash
+   de cor errada antes do JavaScript rodar.
+
+   Paletas (src/theme/palettes.js): amethyst (padrão, roxo), lagoon, forest,
+   ember, rose e slate. Todas passam WCAG AA em claro e escuro, validado por
+   test/theme.test.js. A troca de paleta e a cor livre persistem em
+   localStorage e não exigem reiniciar nada — o React re-renderiza.
+
+   Ao criar telas novas, prefira os utilitários abaixo (pn-*) aos hex fixes:
+   é o que faz a personalização de cor funcionar em toda a interface.
+   ========================================================================== */
+
 @layer base {
   :root {
-    --color-primary: 124 58 237;
-    --color-bg: 250 248 253;
-    --color-surface: 255 255 255;
-    --color-border: 196 181 253;
-    --color-text: 37 22 56;
-    --color-muted: 111 96 126;
+    /* Fallback: paleta Amétis, modo claro. */
+    --pn-fundo: #fbfaff;
+    --pn-fundo-alt: #f4f2fb;
+    --pn-superficie: #ffffff;
+    --pn-superficie-alt: #f8f6fd;
+    --pn-borda: #e4e0f0;
+    --pn-borda-forte: #8d86a8;
+    --pn-texto: #2b2438;
+    --pn-texto-suave: #6a6379;
+    --pn-primaria: #7c3aed;
+    --pn-primaria-hover: #6d28d9;
+    --pn-primaria-suave: #f3ecff;
+    --pn-primaria-borda: #c9b3f5;
+    --pn-on-primaria: #ffffff;
+    --pn-primaria-forte: #6d28d9;
+
+    /* Trilhas do caderno: a malha quadriculada que sugere papel pautado. */
+    --pn-grade: rgba(124, 58, 237, 0.055);
+    --pn-margem: rgba(124, 58, 237, 0.13);
+    --pn-sombra-suave: 0 1px 2px rgba(43, 36, 56, 0.05);
+    --pn-sombra-media: 0 12px 32px -18px rgba(43, 36, 56, 0.35);
+    --pn-sombra-alta: 0 30px 70px -32px rgba(43, 36, 56, 0.45);
+    --pn-raio: 1rem;
+    --pn-raio-p: .5rem;
+
+    /* Erro: vermelho fixo, com L ajustado por modo para bater 4.5:1 no texto e
+       3:1 na borda. Não segue o hue da paleta — um erro precisa continuar
+       legível como erro em qualquer tema. */
+    --pn-erro: #b3261e;
+    --pn-erro-borda: #c0342b;
   }
 
+  /* Modo escuro definido AQUI, e não só via JavaScript.
+     Antes, os tokens escuros vinham apenas do ThemeContext: o CSS aplicava a
+     classe .dark mas mantinha as cores claras, criando uma corrida em que a
+     tela ficava com cartão branco e título ilegível sempre que o JS demorava
+     ou falhava. Fixar os dois modos no CSS torna a página legível já no
+     primeiro pixel, e o JS passa a sobrescrever só a matiz escolhida.
+     Estes valores são os da paleta Amétis em modo escuro, conferidos por
+     test/theme.test.js. */
   .dark {
-    --color-primary: 196 181 253;
-    --color-bg: 18 14 26;
-    --color-surface: 28 21 40;
-    --color-border: 88 67 112;
-    --color-text: 248 250 252;
-    --color-muted: 161 161 170;
+    --pn-fundo: #17141f;
+    --pn-fundo-alt: #1f1b2b;
+    --pn-superficie: #221d30;
+    --pn-superficie-alt: #2a2439;
+    --pn-borda: #3a3350;
+    --pn-borda-forte: #6b6288;
+    --pn-texto: #f5f2fb;
+    --pn-texto-suave: #b3abc4;
+    --pn-primaria: #c4b5fd;
+    --pn-primaria-hover: #ddd6fe;
+    --pn-primaria-suave: #2e2545;
+    --pn-primaria-borda: #4b3f6b;
+    --pn-on-primaria: #1a1626;
+    /* No escuro a primária é clara, mas a forte continua escura: ela existe
+       para ser texto sobre branco e não depende do modo. */
+    --pn-primaria-forte: #6d28d9;
+    --pn-grade: rgba(196, 181, 253, 0.05);
+    --pn-margem: rgba(196, 181, 253, 0.12);
+    --pn-sombra-suave: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --pn-sombra-media: 0 12px 32px -18px rgba(0, 0, 0, 0.8);
+    --pn-sombra-alta: 0 30px 70px -32px rgba(0, 0, 0, 0.9);
+    --pn-erro: #f2b8b5;
+    --pn-erro-borda: #e5484d;
+  }
+
+  /* Contraste extra para leitura longa ou baixa visão: escurece/clareia o
+     fundo sem alterar a cor de marca, que já é validada por contraste. */
+  .pn-alto-contraste {
+    --pn-fundo: #ffffff;
+    --pn-fundo-alt: #f2f0f7;
+    --pn-texto: #14101c;
+    --pn-texto-suave: #4a4456;
+  }
+  .dark.pn-alto-contraste {
+    --pn-fundo: #0b0910;
+    --pn-fundo-alt: #15111d;
+    --pn-texto: #ffffff;
+    --pn-texto-suave: #d6d0e2;
   }
 
   html {
     scroll-behavior: smooth;
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
   }
 
+  /* Trava as folhas no escuro. Sem isto, um cartão com --pn-superficie clara
+     sobre fundo escuro deixa o texto principal invisível. Vale para os dois
+     tipos de cartão: o mapa e os territórios. */
+  .dark .pn-folha,
+  .dark .pn-folha-plana,
+  .dark .pn-mapa,
+  .dark .pn-territorio {
+    background: var(--pn-superficie);
+    color: var(--pn-texto);
+  }
+  .dark .pn-mapa-trilha li[data-estado="agora"] {
+    background: color-mix(in srgb, var(--pn-primaria) 16%, var(--pn-superficie));
+    border-color: var(--pn-primaria-borda);
+  }
+  .dark .pn-mapa-trilha b,
+  .dark .pn-mapa-topo strong,
+  .dark .pn-jornada h3,
+  .dark .pn-territorio h3 {
+    color: var(--pn-texto);
+  }
+  .dark .pn-titulo em { color: var(--pn-primaria); }
+
   body {
-    background-color: rgb(var(--color-bg));
-    color: rgb(var(--color-text));
+    background-color: var(--pn-fundo);
+    color: var(--pn-texto);
     font-family: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
     text-rendering: optimizeLegibility;
-    transition: background-color 0.4s ease, color 0.4s ease;
+    transition: background-color .4s ease, color .4s ease;
   }
 
   button, a, input, select, textarea {
@@ -86,27 +194,158 @@
   }
 
   :focus-visible {
-    outline: 3px solid rgb(var(--color-primary) / 0.45);
+    outline: 3px solid var(--pn-primaria);
     outline-offset: 3px;
+    border-radius: .4rem;
   }
 
   ::selection {
-    background: rgb(var(--color-primary) / 0.28);
+    background: color-mix(in srgb, var(--pn-primaria) 30%, transparent);
   }
 
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: rgb(var(--color-primary) / 0.35);
+    background: color-mix(in srgb, var(--pn-primaria) 35%, transparent);
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgb(var(--color-primary) / 0.6);
+    background: color-mix(in srgb, var(--pn-primaria) 60%, transparent);
+  }
+
+  /* Ponte de compatibilidade com o código já existente.
+     As telas antigas usam utilitários como `bg-primary`, `text-textBase` e
+     `border-cardBorder`, que apontam para --color-*. Sem este bloco, trocar os
+     tokens derrubaria o contraste delas. A migration é gradual: cada página
+     passa a usar `pn-*` e estas aliases podem ser removidas no fim. */
+  :root {
+    --color-primary: var(--pn-primaria-rgb);
+    --color-bg: var(--pn-fundo-rgb);
+    --color-surface: var(--pn-superficie-rgb);
+    --color-border: var(--pn-borda-rgb);
+    --color-text: var(--pn-texto-rgb);
+    --color-muted: var(--pn-texto-suave-rgb);
+  }
+}
+
+/* ==========================================================================
+   PLANEJAI — camada de componentes "caderno inteligente"
+   ========================================================================== */
+
+@layer components {
+  /* O papel: malha quadriculada como de caderno, mais a margem discreta. É a
+     assinatura visual do produto e usa só tokens, então acompanha
+     automaticamente a cor escolhida pelo usuário. */
+  .pn-papel {
+    position: relative;
+    background-color: var(--pn-fundo);
+    background-image:
+      linear-gradient(var(--pn-grade) 1px, transparent 1px),
+      linear-gradient(90deg, var(--pn-grade) 1px, transparent 1px);
+    background-size: 2.5rem 2.5rem;
+  }
+
+  .pn-papel::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 2px;
+    background: var(--pn-margem);
+    pointer-events: none;
+  }
+
+  /* Folha: o cartão que representa uma página do caderno. O raio é grande de
+     propósito — um retângulo pequeno demais é o que faz a interface "quadrada"
+     e dá a sensação de caixa em vez de papel. */
+  .pn-folha {
+    background: var(--pn-superficie);
+    border: 1px solid var(--pn-borda);
+    border-radius: 1.5rem;
+    box-shadow: var(--pn-sombra-media);
+  }
+
+  .pn-folha-plana {
+    background: var(--pn-superficie-alt);
+    border: 1px solid var(--pn-borda);
+    border-radius: 1.15rem;
+  }
+
+  .pn-folha-interativa {
+    transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, border-color .28s ease;
+  }
+  .pn-folha-interativa:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--pn-sombra-alta);
+    border-color: var(--pn-primaria-borda);
+  }
+
+  .pn-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    border-radius: calc(var(--pn-raio) * .8);
+    padding: .75rem 1.4rem;
+    font-weight: 650;
+    line-height: 1.2;
+    border: 1px solid transparent;
+    transition: background-color .2s ease, color .2s ease, transform .16s ease, box-shadow .2s ease;
+  }
+  .pn-btn:active { transform: translateY(1px) scale(.99); }
+
+  .pn-btn-primario {
+    background: var(--pn-primaria);
+    color: var(--pn-on-primaria);
+    box-shadow: 0 8px 22px -12px var(--pn-primaria);
+  }
+  .pn-btn-primario:hover { background: var(--pn-primaria-hover); }
+
+  .pn-btn-secundario {
+    background: var(--pn-primaria-suave);
+    color: var(--pn-primaria);
+    border-color: var(--pn-primaria-borda);
+  }
+  .pn-btn-secundario:hover { background: var(--pn-primaria-borda); }
+
+  .pn-btn-fantasma {
+    background: transparent;
+    color: var(--pn-texto);
+    border-color: var(--pn-borda);
+  }
+  .pn-btn-fantasma:hover { background: var(--pn-superficie-alt); }
+
+  /* Campos: borda com contraste validado em 3:1 (ver test/theme.test.js). */
+  .pn-campo {
+    width: 100%;
+    background: var(--pn-superficie);
+    border: 1px solid var(--pn-borda-forte);
+    border-radius: calc(var(--pn-raio) * .7);
+    padding: .8rem 1rem;
+    color: var(--pn-texto);
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .pn-campo::placeholder { color: var(--pn-texto-suave); }
+  .pn-campo:focus {
+    outline: none;
+    border-color: var(--pn-primaria);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--pn-primaria) 22%, transparent);
+  }
+
+  .pn-etiqueta {
+    display: block;
+    font-size: .8rem;
+    font-weight: 650;
+    color: var(--pn-texto-suave);
+    margin-bottom: .4rem;
+  }
+
+  .pn-titulo { font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.08; letter-spacing: -.025em; font-weight: 750; }
+  .pn-secao  { font-size: clamp(1.5rem, 3.2vw, 2.2rem); line-height: 1.18; letter-spacing: -.02em; font-weight: 700; }
+  .pn-corpo  { color: var(--pn-texto-suave); line-height: 1.65; }
+  .pn-sobrancelha {
+    display: inline-flex; align-items: center; gap: .5rem;
+    font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--pn-primaria);
   }
 }
 
@@ -602,3 +841,633 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ==========================================================================
+   PLANEJAI — animações do produto
+   --------------------------------------------------------------------------
+   Todas são declaradas aqui, em vez de inline, para que o bloco de
+   prefers-reduced-motion acima e o controle interno (AccessibilityContext)
+   consigam desligá-las de uma vez só.
+   ========================================================================== */
+
+@layer utilities {
+  /* Entrada: surge subindo, como quem vira a página. */
+  .pn-entrar { animation: pn-entrar .55s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes pn-entrar {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Respiração suave, para o que convida à permanência (sessão de foco,
+     indicador de progresso). Amplitude pequena de propósito: chama atenção
+     sem distrair. */
+  .pn-respirar { animation: pn-respirar 4.5s ease-in-out infinite; }
+  @keyframes pn-respirar {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.035); }
+  }
+
+  /* Halo girando devagar, usado no fundo da landing. */
+  .pn-halo { animation: pn-halo 24s linear infinite; }
+  @keyframes pn-halo {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  /* Traço que se escreve sozinho, remetendo à caneta no caderno. Aplicar em
+     um <path> ou <line> com stroke. */
+  .pn-tracar {
+    stroke-dasharray: 320;
+    stroke-dashoffset: 320;
+    animation: pn-tracar 1.5s ease-out .25s forwards;
+  }
+  @keyframes pn-tracar { to { stroke-dashoffset: 0; } }
+
+  /* Realce que percorre o cartão, indicando novidade. */
+  .pn-realce { position: relative; overflow: hidden; }
+  .pn-realce::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(105deg, transparent 40%, color-mix(in srgb, var(--pn-primaria) 18%, transparent) 50%, transparent 60%);
+    transform: translateX(-120%);
+    animation: pn-realce 3.6s ease-in-out infinite;
+  }
+  @keyframes pn-realce {
+    0%        { transform: translateX(-120%); }
+    60%, 100% { transform: translateX(120%); }
+  }
+
+  /* Sobe e volta devagar, para blocos decorativos. */
+  .pn-flutuar { animation: pn-flutuar 7s ease-in-out infinite; }
+  @keyframes pn-flutuar {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
+  }
+}
+
+/* Ponte com o controle interno de acessibilidade. O prefers-reduced-motion
+   acima só enxerga a preferência do sistema; esta classe permite desligar o
+   movimento por escolha do usuário dentro do app. */
+.a11y-reduced-motion .pn-entrar,
+.a11y-reduced-motion .pn-respirar,
+.a11y-reduced-motion .pn-halo,
+.a11y-reduced-motion .pn-realce::after,
+.a11y-reduced-motion .pn-flutuar {
+  animation: none !important;
+}
+.a11y-reduced-motion .pn-tracar {
+  stroke-dashoffset: 0 !important;
+  animation: none !important;
+}
+
+/* ==========================================================================
+   LANDING — conceito "Atlas": o conhecimento como território
+   ========================================================================== */
+
+/* O fundo sugere carta náutica: linhas finas de grade e um brilho difuso que
+   lembra luz sobre mapa. Usa só tokens, então muda junto com a paleta. */
+.pn-pagina {
+  min-height: 100vh;
+  background-color: var(--pn-fundo);
+  background-image:
+    radial-gradient(ellipse 80% 55% at 78% -8%, color-mix(in srgb, var(--pn-primaria) 13%, transparent), transparent 70%),
+    linear-gradient(var(--pn-grade) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pn-grade) 1px, transparent 1px);
+  background-size: auto, 3.5rem 3.5rem, 3.5rem 3.5rem;
+}
+
+/* Avatar com inicial. Fica sobre a superfície e usa a cor primária, então
+   acompanha a paleta escolhida. */
+.pn-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--pn-primaria-suave);
+  color: var(--pn-primaria);
+  border: 1px solid var(--pn-primaria-borda);
+  font-weight: 700;
+}
+.pn-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Link de pulo: fica fora da tela até receber foco, então teclado e leitor de
+   tela conseguem chegar ao conteúdo sem passar pelo menu. */
+.pn-saltar {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--pn-primaria);
+  color: var(--pn-on-primaria);
+  padding: .75rem 1.25rem;
+  border-radius: 0 0 var(--pn-raio) 0;
+  font-weight: 650;
+}
+.pn-saltar:focus { left: 0; }
+
+/* --- Topo --- */
+.pn-topo {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+}
+
+.pn-marca {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  color: var(--pn-texto);
+  text-decoration: none;
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: -.01em;
+}
+.pn-marca-texto strong { color: var(--pn-primaria); font-weight: 750; }
+/* Sem isto, quem navega por teclado não distingue onde está ao chegar na marca. */
+.pn-marca:focus-visible {
+  outline: 2px solid var(--pn-primaria);
+  outline-offset: 3px;
+  border-radius: var(--pn-raio-p);
+}
+
+.pn-nav { display: flex; gap: 1.5rem; margin-left: auto; }
+.pn-nav a {
+  color: var(--pn-texto-suave);
+  text-decoration: none;
+  font-size: .92rem;
+  font-weight: 550;
+  transition: color .2s ease;
+}
+.pn-nav a:hover { color: var(--pn-primaria); }
+
+.pn-acoes { display: flex; align-items: center; gap: .5rem; }
+
+/* --- Hero --- */
+.pn-hero {
+  display: grid;
+  grid-template-columns: 1.05fr .95fr;
+  gap: 3.5rem;
+  align-items: center;
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem 4.5rem;
+}
+
+.pn-ponto {
+  width: .5rem; height: .5rem; border-radius: 50%;
+  background: var(--pn-primaria);
+  animation: pn-respirar 3s ease-in-out infinite;
+}
+
+/* Coluna de texto do hero. O grid já define a coluna; esta regra existe para
+   fixar a medida da linha e o alinhamento do bloco de ações. */
+.pn-hero-texto { max-width: 34rem; }
+.pn-hero-texto h1 { margin-bottom: 0; }
+
+/* Coluna da prévia: dá a moldura e o respiro em volta do cartão do caderno. */
+.pn-hero-previa { position: relative; }
+/* Halo que gira devagar atrás do cartão, sugerindo algo "vivo" no fundo. */
+.pn-hero-previa::before {
+  content: '';
+  position: absolute;
+  inset: 8% -6% -6% 8%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--pn-primaria) 26%, transparent),
+    transparent 68%
+  );
+  animation: pn-halo 24s linear infinite;
+  pointer-events: none;
+}
+.pn-hero-previa > * { position: relative; }
+
+.pn-titulo em { font-style: normal; color: var(--pn-primaria); }
+
+.pn-hero-lead { font-size: 1.08rem; max-width: 34rem; margin-top: 1.25rem; }
+
+.pn-hero-acoes { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
+
+.pn-nota { margin-top: 1.75rem; font-size: .85rem; color: var(--pn-texto-suave); }
+
+/* --- Prévia: o mapa do aluno --- */
+.pn-mapa {
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-borda);
+  border-radius: 1.75rem;
+  box-shadow: var(--pn-sombra-alta);
+  padding: 1.75rem;
+}
+
+.pn-mapa-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+.pn-mapa-topo strong { font-size: .95rem; color: var(--pn-texto); }
+
+/* A trilha é a rota: passos ligados por uma linha contínua. O passo "agora" é
+   destacado e o "feito" fica atenuado, de modo que a hierarquia aparece sem
+   precisar de cor extra. */
+.pn-mapa-trilha { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; }
+.pn-mapa-trilha li {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: .85rem;
+  padding: .85rem .9rem;
+  border-radius: 1rem;
+  border: 1px solid transparent;
+}
+.pn-mapa-trilha li + li::before {
+  content: '';
+  position: absolute;
+  left: 1.55rem;
+  top: -.55rem;
+  width: 2px;
+  height: .75rem;
+  background: var(--pn-borda);
+}
+
+.pn-mapa-no {
+  display: grid;
+  place-items: center;
+  width: 1.7rem; height: 1.7rem;
+  flex: none;
+  border-radius: 50%;
+  font-size: .7rem;
+  font-weight: 750;
+  background: var(--pn-superficie-alt);
+  color: var(--pn-texto-suave);
+  border: 1px solid var(--pn-borda);
+}
+
+.pn-mapa-trilha b { display: block; font-size: .9rem; font-weight: 650; color: var(--pn-texto); }
+.pn-mapa-trilha small { display: block; font-size: .76rem; color: var(--pn-texto-suave); }
+
+.pn-mapa-trilha li[data-estado="feito"] { opacity: .55; }
+.pn-mapa-trilha li[data-estado="feito"] .pn-mapa-no {
+  background: var(--pn-primaria);
+  color: var(--pn-on-primaria);
+  border-color: var(--pn-primaria);
+}
+.pn-mapa-trilha li[data-estado="agora"] {
+  background: var(--pn-primaria-suave);
+  border-color: var(--pn-primaria-borda);
+}
+.pn-mapa-trilha li[data-estado="agora"] .pn-mapa-no {
+  background: var(--pn-primaria);
+  color: var(--pn-on-primaria);
+  border-color: var(--pn-primaria);
+}
+
+/* Barra de progresso: usada no passo "agora" da trilha do mapa. */
+.pn-progresso {
+  display: block;
+  height: .35rem;
+  margin-top: .6rem;
+  background: color-mix(in srgb, var(--pn-primaria) 20%, transparent);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.pn-progresso > span {
+  display: block;
+  height: 100%;
+  width: 40%;
+  border-radius: 999px;
+  background: var(--pn-primaria);
+}
+
+.pn-mapa-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--pn-borda);
+  font-size: .8rem;
+  color: var(--pn-texto-suave);
+}
+.pn-mapa-rodape b { color: var(--pn-primaria); font-weight: 750; }
+
+/* --- Territórios: os cards agora levam às telas reais --- */
+.pn-territorios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.25rem;
+}
+
+.pn-territorio {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: 1.75rem;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-borda);
+  border-radius: 1.5rem;
+  text-decoration: none;
+  box-shadow: var(--pn-sombra-media);
+}
+.pn-territorio-marca {
+  display: grid;
+  place-items: center;
+  width: 2.75rem; height: 2.75rem;
+  border-radius: .9rem;
+  margin-bottom: .5rem;
+  font-size: 1.25rem;
+  color: var(--pn-primaria);
+  background: var(--pn-primaria-suave);
+}
+.pn-territorio h3 { font-size: 1.1rem; font-weight: 700; color: var(--pn-texto); }
+.pn-territorio p { font-size: .9rem; flex: 1; }
+.pn-territorio-ir {
+  margin-top: .75rem;
+  font-size: .82rem;
+  font-weight: 650;
+  color: var(--pn-primaria);
+}
+
+/* --- Jornada: linha do tempo com o número à frente --- */
+.pn-jornada { list-style: none; margin: 0; padding: 0; display: grid; gap: 2.25rem; }
+.pn-jornada-passo {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 1.25rem;
+  align-items: start;
+  position: relative;
+}
+/* Fio que liga os passos, com um nó no ponto de origem. */
+.pn-jornada-passo::before {
+  content: '';
+  position: absolute;
+  left: 1.5rem;
+  top: 2.75rem;
+  bottom: -2.25rem;
+  width: 1px;
+  background: var(--pn-borda);
+}
+.pn-jornada-passo:last-child::before { display: none; }
+
+.pn-jornada-no {
+  display: grid;
+  place-items: center;
+  width: 3rem; height: 3rem;
+  border-radius: 50%;
+  font-size: .85rem;
+  font-weight: 750;
+  color: var(--pn-primaria);
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-primaria-borda);
+}
+.pn-jornada h3 { font-size: 1.2rem; font-weight: 700; margin: .4rem 0 .35rem; color: var(--pn-texto); }
+.pn-jornada p { font-size: .95rem; }
+
+/* --- Seções --- */
+.pn-secao-bloco {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 4.5rem 1.5rem;
+}
+
+.pn-secao-cabecalho { max-width: 42rem; margin-bottom: 2.5rem; }
+.pn-secao-cabecalho .pn-sobrancelha { margin-bottom: .75rem; }
+.pn-secao-cabecalho .pn-secao { margin-bottom: .75rem; }
+
+/* --- Fecho e rodapé --- */
+.pn-fecho {
+  max-width: 78rem;
+  margin: 0 auto 4rem;
+  padding: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.pn-rodape {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+  border-top: 1px solid var(--pn-borda);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: .85rem;
+  color: var(--pn-texto-suave);
+}
+.pn-rodape p { margin: 0; }
+.pn-rodape small { margin-left: auto; }
+
+/* --- Formulários e telas de autenticação ---
+   Estas classes substituem os utilitários hexadecimais que as telas de Login e
+   Register usavam. Enquanto elas existiam, trocar a paleta do tema não mudava
+   nada nessas telas: o gradiente e as bordas estavam fixos no JSX. */
+
+.pn-campo {
+  width: 100%;
+  padding: .8rem 1.1rem;
+  border-radius: var(--pn-raio);
+  background: var(--pn-superficie);
+  color: var(--pn-texto);
+  border: 1px solid var(--pn-borda);
+  transition: border-color .15s, box-shadow .15s;
+}
+.pn-campo::placeholder { color: var(--pn-texto-suave); opacity: .7; }
+.pn-campo:hover { border-color: var(--pn-borda-forte); }
+.pn-campo:focus-visible {
+  outline: 2px solid var(--pn-primaria);
+  outline-offset: 1px;
+  border-color: var(--pn-primaria);
+}
+.pn-campo-erro { border-color: var(--pn-erro-borda); }
+/* O foco em vermelho precisa continuar visível, senão o teclado perde a
+   posição do campo exatamente onde o usuário mais precisa enxergar. */
+.pn-campo-erro:focus-visible { outline-color: var(--pn-erro-borda); }
+
+.pn-etiqueta {
+  display: block;
+  margin-bottom: .4rem;
+  font-size: .875rem;
+  font-weight: 650;
+  color: var(--pn-texto);
+}
+
+.pn-erro {
+  margin-top: .35rem;
+  font-size: .8125rem;
+  color: var(--pn-erro);
+}
+
+.pn-dica {
+  margin-top: .35rem;
+  font-size: .8125rem;
+  color: var(--pn-texto-suave);
+}
+
+/* Campo com botão sobreposto (mostrar/ocultar senha). O botão é operável,
+   então precisa entrar na ordem de tabulação e mostrar foco; o `tabIndex={-1}`
+   que existia antes deixava o controle inalcançável pelo teclado. */
+.pn-com-botao { position: relative; }
+.pn-com-botao .pn-campo { padding-right: 3rem; }
+.pn-olho {
+  position: absolute;
+  right: .6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  padding: .35rem;
+  border-radius: .5rem;
+  color: var(--pn-texto-suave);
+  transition: color .15s;
+}
+.pn-olho:hover { color: var(--pn-texto); }
+.pn-olho:focus-visible {
+  outline: 2px solid var(--pn-primaria);
+  outline-offset: 1px;
+}
+
+.pn-form { display: grid; gap: 1.1rem; margin-top: 2rem; }
+
+.pn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .8rem 1.4rem;
+  border-radius: 999px;
+  font-weight: 650;
+  border: 1px solid transparent;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+.pn-btn:focus-visible {
+  outline: 2px solid var(--pn-primaria);
+  outline-offset: 2px;
+}
+.pn-btn:disabled { opacity: .6; cursor: not-allowed; }
+.pn-btn-largo { width: 100%; }
+.pn-btn-primario {
+  background: var(--pn-primaria);
+  color: var(--pn-on-primaria);
+}
+.pn-btn-primario:hover:not(:disabled) { background: var(--pn-primaria-hover); }
+
+/* --- Telas de autenticação --- */
+.pn-auth {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--pn-fundo);
+  color: var(--pn-texto);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Malha de fundo: mesma ideia da Landing, apenas com menos ruído. */
+.pn-auth-grade {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--pn-grade) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pn-grade) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 40%, transparent 100%);
+}
+
+.pn-auth-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.pn-auth-corpo {
+  flex: 1;
+  width: 100%;
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 1rem 1.5rem 4rem;
+  display: grid;
+  grid-template-columns: minmax(0, 26rem);
+  justify-content: center;
+  align-items: start;
+  gap: 3rem;
+}
+
+.pn-auth-painel { width: 100%; }
+.pn-auth-sub { margin-top: .5rem; }
+.pn-auth-rodape { margin-top: 1.75rem; text-align: center; }
+.pn-auth-esqueci { text-align: right; margin-top: -.35rem; }
+.pn-auth-esqueci a {
+  color: var(--pn-texto-suave);
+  font-size: .875rem;
+  text-underline-offset: 3px;
+}
+.pn-auth-esqueci a:hover { color: var(--pn-primaria); }
+.pn-auth-rodape a {
+  color: var(--pn-primaria);
+  font-weight: 650;
+  text-underline-offset: 3px;
+}
+.pn-auth-rodape a:hover { color: var(--pn-primaria-hover); }
+
+.pn-auth-destaque { display: none; }
+
+.pn-auth-lista {
+  display: grid;
+  gap: .75rem;
+  margin-top: 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+.pn-auth-lista li {
+  position: relative;
+  padding-left: 1.75rem;
+  color: var(--pn-texto-suave);
+}
+.pn-auth-lista li::before {
+  content: '';
+  position: absolute;
+  left: .35rem;
+  top: .55rem;
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: var(--pn-primaria);
+}
+
+@media (min-width: 62rem) {
+  .pn-auth-corpo {
+    grid-template-columns: minmax(0, 26rem) minmax(0, 24rem);
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 2rem;
+  }
+  .pn-auth-destaque { display: block; }
+}
+
+/* --- Responsivo: uma coluna quando a tela não comporta as duas --- */
+@media (max-width: 900px) {
+  .pn-hero { grid-template-columns: 1fr; gap: 2.5rem; padding-top: 2rem; }
+  .pn-nav { display: none; }
+  .pn-acoes { margin-left: auto; }
+  .pn-fecho { flex-direction: column; align-items: flex-start; }
+  .pn-rodape small { margin-left: 0; }
+}
+
+@media (max-width: 560px) {
+  .pn-topo { flex-wrap: wrap; gap: .75rem; }
+  .pn-acoes { width: 100%; justify-content: space-between; }
+  .pn-faixa { gap: 1.25rem; }
+  .pn-secao-bloco { padding: 3rem 1.25rem; }
+}
+
+

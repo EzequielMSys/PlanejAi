@@ -1,11 +1,9 @@
 import { useState } from 'react'
-
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import authService from '../services/authService'
-import ThemeToggle from '../components/ThemeToggle'
-import Logo from '../components/Logo'
+import AuthLayout from '../components/AuthLayout'
+import { SENHA_MINIMA, REQUISITOS_SENHA, validarSenha } from '../config/senha'
 
 const EyeIcon = ({ open }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -55,24 +53,8 @@ if (!formData.nome.trim()) {
     if (!formData.senha) {
       newErrors.senha = 'Senha é obrigatória'
     } else {
-      if (formData.senha.length < 12) {
-        newErrors.senha = 'Mínimo 12 caracteres'
-      }
-      if (!/(?=.*[A-Z])/.test(formData.senha)) {
-        newErrors.senha = newErrors.senha
-          ? `${newErrors.senha} • 1 maiúscula`
-          : 'Precisa 1 letra maiúscula'
-      }
-      if (!/(?=.*\d)/.test(formData.senha)) {
-        newErrors.senha = newErrors.senha
-          ? `${newErrors.senha} • 1 número`
-          : 'Precisa 1 número'
-      }
-      if (!/(?=.*[a-z])/.test(formData.senha)) {
-        newErrors.senha = newErrors.senha
-          ? `${newErrors.senha} • 1 minúscula`
-          : 'Precisa 1 letra minúscula'
-      }
+      const problema = validarSenha(formData.senha)
+      if (problema) newErrors.senha = problema
     }
 
     if (formData.confirmarSenha !== formData.senha) {
@@ -113,170 +95,129 @@ if (!formData.nome.trim()) {
     }
   }
 
-const inputClass = (field) =>
-    `w-full rounded-full px-5 py-3 bg-white dark:bg-white/10 border text-black dark:text-white placeholder-gray-400 dark:placeholder-white/40
-     focus:ring-2 focus:ring-[#9394CF] focus:outline-none
-     transition-all duration-300 hover:border-[#4B4C9D]/60
-     ${errors[field] ? 'border-red-400 focus:ring-red-300' : 'border-[#9394CF]/40 dark:border-white/20'}`
+const inputClass = (field) => `pn-campo${errors[field] ? ' pn-campo-erro' : ''}`
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] relative overflow-hidden bg-animated-grid">
-      <div className="absolute inset-0 bg-black/20 dark:bg-black/40" />
-
-      {/* Floating animated blobs */}
-      <div className="absolute top-20 left-10 w-40 h-40 bg-white/10 rounded-full blur-xl animate-float" />
-      <div className="absolute bottom-20 right-16 w-56 h-56 bg-black/10 rounded-full blur-2xl animate-float-slow" />
-      <div className="absolute top-40 right-1/4 w-24 h-24 border border-white/30 rounded-full animate-pulse-glow" />
-
-      {/* Theme toggle */}
-      <div className="absolute top-5 right-5 z-50">
-        <ThemeToggle />
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="relative z-10 max-w-md w-full rounded-[3rem] bg-white/85 dark:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/20 shadow-2xl p-8"
-      >
-        <div className="text-center mb-8">
-          <motion.div
-            whileHover={{ scale: 1.1, rotate: 10 }}
-            className="mx-auto h-16 w-16 rounded-full flex items-center justify-center shadow-xl mb-4"
-          >
-            <Logo className="h-12 w-12" />
-          </motion.div>
-
-          <h2 className="text-3xl font-black text-black dark:text-white tracking-tight">
-            Criar Conta
-          </h2>
-
-          <p className="mt-2 text-sm text-black/65 dark:text-white/70">
-            Preencha seus dados para começar
-          </p>
+    <AuthLayout
+      title="Criar sua conta"
+      subtitle="Em menos de um minuto o primeiro mapa de estudos fica pronto."
+      destaque={
+        <>
+          <p className="pn-sobrancelha">Comece por aqui</p>
+          <h2 className="pn-secao">Veja onde você está. Depois, para onde ir.</h2>
+          <ul className="pn-auth-lista">
+            <li>Seu cronograma se monta sozinho, semana por semana.</li>
+            <li>Provas e redações revelam o que já está firme.</li>
+            <li>Turma, docente e você no mesmo mapa.</li>
+          </ul>
+        </>
+      }
+      rodape={
+        <p className="pn-corpo">
+          Já tem conta? <Link to="/login">Entrar</Link>
+        </p>
+      }
+    >
+      <form className="pn-form" onSubmit={handleSubmit} noValidate>
+        <div>
+          <label htmlFor="nome" className="pn-etiqueta">Nome completo</label>
+          <input
+            id="nome"
+            type="text"
+            autoFocus
+            autoComplete="name"
+            placeholder="João Silva"
+            value={formData.nome}
+            onChange={(e) => handleChange('nome', e.target.value)}
+            aria-invalid={Boolean(errors.nome)}
+            className={inputClass('nome')}
+          />
+          {errors.nome && <p className="pn-erro" role="alert">{errors.nome}</p>}
         </div>
 
-        <form className="space-y-5" onSubmit={handleSubmit} noValidate>
           <div>
-            <label htmlFor="nome" className="block text-sm font-bold text-black dark:text-white mb-1.5">
-              Nome Completo
-            </label>
-            <input
-              id="nome"
-              type="text"
-              autoFocus
-              placeholder="João Silva"
-              value={formData.nome}
-              onChange={(e) => handleChange('nome', e.target.value)}
-              className={inputClass('nome')}
-            />
-            {errors.nome && <p className="mt-1 text-xs text-red-500">{errors.nome}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-bold text-black dark:text-white mb-1.5">
-              Email
-            </label>
+            <label htmlFor="email" className="pn-etiqueta">Email</label>
             <input
               id="email"
               type="email"
+              autoComplete="email"
               placeholder="joao@exemplo.com"
               value={formData.email}
               onChange={(e) => handleChange('email', e.target.value)}
+              aria-invalid={Boolean(errors.email)}
               className={inputClass('email')}
             />
-            {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
+            {errors.email && <p className="pn-erro" role="alert">{errors.email}</p>}
           </div>
 
           <div>
-            <label htmlFor="senha" className="block text-sm font-bold text-black dark:text-white mb-1.5">
-              Senha
-            </label>
-            <div className="relative">
+            <label htmlFor="senha" className="pn-etiqueta">Senha</label>
+            <div className="pn-com-botao">
               <input
                 id="senha"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={formData.senha}
                 onChange={(e) => handleChange('senha', e.target.value)}
-                className={`${inputClass('senha')} pr-12`}
+                minLength={SENHA_MINIMA}
+                autoComplete="new-password"
+                aria-invalid={Boolean(errors.senha)}
+                aria-describedby="senha-requisitos"
+                className={inputClass('senha')}
               />
               <button
                 type="button"
-                tabIndex={-1}
                 onClick={() => setShowPassword(v => !v)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4B4C9D] dark:text-[#A9AAE8] hover:text-black dark:hover:text-white transition-colors"
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                className="pn-olho"
               >
                 <EyeIcon open={showPassword} />
               </button>
             </div>
             {errors.senha ? (
-              <p className="mt-1 text-xs text-red-500">{errors.senha}</p>
+              <p className="pn-erro" role="alert">{errors.senha}</p>
             ) : (
-              <p className="mt-1 text-xs text-black/50 dark:text-white/50">
-                Mín. 12 caracteres, maiúscula, minúscula e número
-              </p>
+              <p id="senha-requisitos" className="pn-dica">{REQUISITOS_SENHA}</p>
             )}
           </div>
 
-          <div>
-            <label htmlFor="confirmarSenha" className="block text-sm font-bold text-black dark:text-white mb-1.5">
-              Confirmar Senha
-            </label>
-            <div className="relative">
-              <input
-                id="confirmarSenha"
-                type={showConfirm ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={formData.confirmarSenha}
-                onChange={(e) => handleChange('confirmarSenha', e.target.value)}
-                className={`${inputClass('confirmarSenha')} pr-12`}
-              />
-              <button
-                type="button"
-                tabIndex={-1}
-                onClick={() => setShowConfirm(v => !v)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4B4C9D] dark:text-[#A9AAE8] hover:text-black dark:hover:text-white transition-colors"
-              >
-                <EyeIcon open={showConfirm} />
-              </button>
-            </div>
-            {errors.confirmarSenha && <p className="mt-1 text-xs text-red-500">{errors.confirmarSenha}</p>}
+        <div>
+          <label htmlFor="confirmarSenha" className="pn-etiqueta">Confirmar senha</label>
+          <div className="pn-com-botao">
+            <input
+              id="confirmarSenha"
+              type={showConfirm ? 'text' : 'password'}
+              placeholder="••••••••"
+              autoComplete="new-password"
+              value={formData.confirmarSenha}
+              onChange={(e) => handleChange('confirmarSenha', e.target.value)}
+              aria-invalid={Boolean(errors.confirmarSenha)}
+              className={inputClass('confirmarSenha')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirm(v => !v)}
+              aria-label={showConfirm ? 'Ocultar confirmação' : 'Mostrar confirmação'}
+              className="pn-olho"
+            >
+              <EyeIcon open={showConfirm} />
+            </button>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#4B4C9D] dark:bg-[#A9AAE8] text-white dark:text-black py-3 rounded-full font-bold hover:bg-black dark:hover:bg-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl hover:shadow-2xl disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Criando conta...
-              </span>
-            ) : (
-              'Criar Conta'
-            )}
-          </button>
-          <div aria-hidden="true" className="sr-only">
-            <label htmlFor="website">Não preencha este campo</label>
-            <input id="website" name="website" tabIndex={-1} autoComplete="off" value={formData.website} onChange={(e) => handleChange('website', e.target.value)} />
-          </div>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-black/65 dark:text-white/70">
-            Já tem conta?{' '}
-            <Link to="/login" className="font-black text-[#4B4C9D] dark:text-[#A9AAE8] hover:text-black dark:hover:text-white transition-colors">
-              Entrar
-            </Link>
-          </p>
+          {errors.confirmarSenha && <p className="pn-erro" role="alert">{errors.confirmarSenha}</p>}
         </div>
-      </motion.div>
-    </div>
+
+        <button type="submit" disabled={loading} className="pn-btn pn-btn-primario pn-btn-largo">
+          {loading ? 'Criando conta…' : 'Criar conta'}
+        </button>
+
+        {/* Campo isca contra robô: invisível para quem usa teclado e leitor de
+            tela, mas preenchido por robô de cadastro em massa. */}
+        <div aria-hidden="true" className="sr-only">
+          <label htmlFor="website">Não preencha este campo</label>
+          <input id="website" name="website" tabIndex={-1} autoComplete="off" value={formData.website} onChange={(e) => handleChange('website', e.target.value)} />
+        </div>
+      </form>
+    </AuthLayout>
   )
 }
 

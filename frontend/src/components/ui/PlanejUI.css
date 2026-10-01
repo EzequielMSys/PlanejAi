@@ -8,3 +8,55 @@
 .ui-stat{position:relative;display:grid;min-height:7.5rem;align-content:space-between;overflow:hidden;padding:1.1rem}.ui-stat::before{content:"";position:absolute;inset:0 auto 0 0;width:.25rem;background:var(--ui-purple)}.ui-stat>span{color:var(--ui-muted);font-size:.72rem;font-weight:800}.ui-stat>strong{color:var(--ui-purple);font-size:2rem;font-weight:950;letter-spacing:-.05em}.ui-stat>small{color:var(--ui-muted);font-size:.66rem}.ui-stat[data-tone="strong"]{background:var(--ui-plum);color:#fff}.ui-stat[data-tone="strong"] :is(span,strong,small){color:#fff}
 .ui-field{display:grid;gap:.42rem;color:var(--ui-ink);font-size:.78rem;font-weight:850}.ui-field>small{color:var(--ui-muted);font-size:.65rem;font-weight:600}.ui-field :is(input,select,textarea){width:100%;min-height:2.8rem;border:1px solid var(--ui-line);border-radius:.78rem;background:var(--ui-surface);padding:.7rem .85rem;color:var(--ui-ink);outline:none}.ui-field textarea{min-height:7rem;resize:vertical}.ui-field :is(input,select,textarea):focus{border-color:var(--ui-purple);box-shadow:0 0 0 4px color-mix(in srgb,var(--ui-purple) 11%,transparent)}
 @media(max-width:720px){.ui-page-header{grid-template-columns:1fr;min-height:auto}.ui-page-header-icon{display:none}.ui-page-header-actions{justify-content:flex-start}.ui-empty-state{grid-template-columns:1fr}.ui-empty-state-icon{width:3.8rem;height:3.8rem}}
+
+/* --- Grade de estatísticas, link e carregamento (lista de turmas do aluno) --- */
+.ui-stats{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));margin:1.5rem 0}
+.ui-link{color:var(--ui-purple-strong);font-weight:850;text-decoration:none;white-space:nowrap}
+.ui-link:hover{text-decoration:underline}
+.ui-link:focus-visible{outline:2px solid var(--ui-purple);outline-offset:3px;border-radius:.4rem}
+.ui-loading{padding:2.5rem 0;color:var(--ui-muted);font-size:.85rem}
+
+/* Lista de turmas: cartões largos, como no Classroom, em vez de tabela. */
+.minhas-turmas-lista,.turma-atividades,.turma-avisos{display:grid;gap:1rem;margin:0;padding:0;list-style:none}
+.minha-turma{display:grid;gap:.9rem;padding:1.35rem}
+.minha-turma-topo{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+.minha-turma h2{font-size:1.25rem;font-weight:900;letter-spacing:-.03em}
+.minha-turma-docente,.minha-turma-descricao,.turma-aviso-meta{color:var(--ui-muted);font-size:.76rem}
+.minha-turma-resumo{color:var(--ui-muted);font-size:.78rem}
+
+/* A barra de progresso é decorativa: quem precisa saber o número lê o
+   resmo em texto logo abaixo. aria-hidden evita announced duplicado. */
+.minha-turma-progresso{height:.4rem;border-radius:999px;background:color-mix(in srgb,var(--ui-line) 70%,transparent);overflow:hidden}
+.minha-turma-progresso>span{display:block;height:100%;border-radius:999px;background:var(--ui-purple)}
+
+.minha-turma-meta{display:flex;flex-wrap:wrap;gap:1.25rem;margin:1.25rem 0 0}
+.minha-turma-meta dt{color:var(--ui-muted);font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em}
+.minha-turma-meta dd{margin:.2rem 0 0;font-size:.83rem;font-weight:750}
+
+/* --- Abas --- */
+.abas{display:flex;flex-wrap:wrap;gap:.4rem;margin:1.75rem 0 1.25rem;border-bottom:1px solid var(--ui-line)}
+.aba{display:inline-flex;align-items:center;gap:.45rem;padding:.65rem .95rem;border:0;border-bottom:2px solid transparent;background:none;color:var(--ui-muted);font-size:.82rem;font-weight:800;cursor:pointer}
+.aba-ativa{border-bottom-color:var(--ui-purple);color:var(--ui-purple-strong)}
+.aba:focus-visible{outline:2px solid var(--ui-purple);outline-offset:-2px;border-radius:.4rem}
+.aba-contagem{display:inline-grid;min-width:1.35rem;place-items:center;padding:.05rem .35rem;border-radius:999px;background:color-mix(in srgb,var(--ui-purple) 14%,transparent);font-size:.68rem}
+.painel-aba:focus-visible{outline:2px solid var(--ui-purple);outline-offset:4px;border-radius:.6rem}
+
+.turma-atividade{display:grid;gap:.5rem;padding:1.15rem}
+.turma-atividade-topo{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem}
+.turma-atividade h2,.turma-aviso h2{font-size:1.05rem;font-weight:850;letter-spacing:-.02em}
+.turma-atividade p{color:var(--ui-muted);font-size:.82rem}
+.turma-atividade-prazo{font-size:.72rem;font-weight:750}
+.turma-atividade-feedback{padding:.6rem .75rem;border-radius:.6rem;background:var(--ui-purple-soft);color:var(--ui-ink)}
+.turma-aviso{display:grid;gap:.4rem;padding:1.15rem}
+
+/* Selos de estado: cor sozinha não basta, cada um tem um texto. */
+.selo{padding:.18rem .55rem;border-radius:999px;background:color-mix(in srgb,var(--ui-purple) 12%,transparent);color:var(--ui-purple-strong);font-size:.66rem;font-weight:850}
+.selo-ok{background:color-mix(in srgb,#16a34a 14%,transparent);color:#15803d}
+.selo-alerta{background:color-mix(in srgb,var(--ui-danger) 14%,transparent);color:var(--ui-danger)}
+
+.entrar-codigo{display:grid;gap:1rem;margin:1.5rem 0;padding:1.35rem}
+.entrar-codigo-cabecalho h2{font-size:1.05rem;font-weight:900}
+.entrar-codigo-cabecalho p{margin-top:.3rem;color:var(--ui-muted);font-size:.8rem}
+/* Código digitado: maiúsculas e espaçamento largo, porque é lido do quadro e
+   copiado por dedo, não colado. */
+.entrar-codigo-input{text-transform:uppercase;letter-spacing:.22em;font-weight:800;text-align:center}

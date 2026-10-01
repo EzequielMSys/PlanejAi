@@ -1,60 +1,114 @@
-/* Correções semânticas de contraste: evitam depender de utilitários legados. */
-html:not(.dark) .app-sidebar {
-  background:
-    radial-gradient(circle at 12% 3%, rgba(211, 183, 255, .32), transparent 24%),
-    linear-gradient(160deg, #6d35c7 0%, #4a208f 52%, #2b154b 100%) !important;
-  color: #fff !important;
-  border-color: rgba(255,255,255,.14) !important;
-  box-shadow: 20px 0 55px -34px rgba(55, 21, 103, .72) !important;
+/* Superfícies do shell: sidebar, textura de fundo e cartões de destaque.
+   Tudo aqui é derivado de --pn-*, e não de hex. Antes these regras traziam um
+   gradiente roxo fixo (#6d35c7 → #2b154b), o que anulava o seletor de paleta:
+   o usuário escolhia Brasa e a barra continuava roxa. */
+
+/* Base escura com a MATIZ da paleta. Misturar a primária com quase-preto
+   resolve os dois modos de uma vez: no claro a primária já é escura e
+   aprofunda; no escuro ela é clara, e a mistura devolve uma superfície
+   escura o bastante para o texto branco continuar legível. */
+:root {
+  --pn-shell-fundo: color-mix(in oklab, var(--pn-primaria, #6b43bb) 38%, #14101c);
+  --pn-shell-fundo-2: color-mix(in oklab, var(--pn-primaria, #6b43bb) 20%, #0d0a13);
+  --pn-shell-texto: #fbf9ff;
+  --pn-shell-texto-suave: rgba(255, 255, 255, .68);
 }
-html:not(.dark) .app-sidebar .sidebar-brand,
-html:not(.dark) .app-sidebar .sidebar-close,
-html:not(.dark) .app-sidebar .sidebar-section { color: #fff !important; }
-html:not(.dark) .app-sidebar .sidebar-section { opacity: .46; }
-html:not(.dark) .app-sidebar .sidebar-link { color: rgba(255,255,255,.72) !important; }
-html:not(.dark) .app-sidebar .sidebar-link:hover { background: rgba(255,255,255,.1) !important; color: #fff !important; }
-html:not(.dark) .app-sidebar .sidebar-link.is-active {
+
+.app-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Textura: uma malha na cor da paleta, mais um brilho que respeita o modo.
+   A versão anterior usava rgba(255,255,255,.7) fixo, que clareava o fundo
+   escuro e não acompanhava a paleta escolhida. */
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--pn-grade) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pn-grade) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+
+/* --- Sidebar --- */
+.app-sidebar {
+  background: linear-gradient(165deg, var(--pn-shell-fundo), var(--pn-shell-fundo-2)) !important;
+  color: var(--pn-shell-texto) !important;
+  border-color: rgba(255, 255, 255, .12) !important;
+  box-shadow: 18px 0 50px -34px rgba(0, 0, 0, .6) !important;
+}
+.app-sidebar .sidebar-brand,
+.app-sidebar .sidebar-close { color: var(--pn-shell-texto) !important; }
+.app-sidebar .sidebar-section { color: var(--pn-shell-texto) !important; opacity: .5; }
+.app-sidebar .sidebar-link { color: var(--pn-shell-texto-suave) !important; }
+.app-sidebar .sidebar-link:hover { background: rgba(255, 255, 255, .1) !important; color: var(--pn-shell-texto) !important; }
+
+/* Item ativo: bloco claro com a cor da paleta no texto. Usa
+   `--pn-primaria-forte`, e não `--pn-primaria`: no modo escuro a primária é
+   clara de propósito e dava 3.89:1 sobre branco. A variante forte é sempre
+   escura o bastante para texto, nos dois modos. */
+.app-sidebar .sidebar-link.is-active {
   background: #fff !important;
-  color: #5a2aaf !important;
-  box-shadow: 0 16px 30px -20px rgba(10, 2, 24, .75) !important;
+  color: var(--pn-primaria-forte, #5a2aaf) !important;
+  box-shadow: 0 16px 30px -20px rgba(0, 0, 0, .7) !important;
 }
-html:not(.dark) .app-sidebar .sidebar-account { border-color: rgba(255,255,255,.15) !important; background: rgba(255,255,255,.08) !important; }
-html:not(.dark) .app-sidebar .sidebar-account p { color: rgba(255,255,255,.54) !important; }
-html:not(.dark) .app-sidebar .sidebar-account strong { color: #fff !important; }
+.app-sidebar .sidebar-account {
+  border-color: rgba(255, 255, 255, .16) !important;
+  background: rgba(255, 255, 255, .08) !important;
+}
+.app-sidebar .sidebar-account p { color: rgba(255, 255, 255, .58) !important; }
+.app-sidebar .sidebar-account strong { color: var(--pn-shell-texto) !important; }
 
-.dark .app-sidebar { background: linear-gradient(180deg, #1d1528, #15101e) !important; }
-
-/* Profundidade, textura e separação espacial sem depender apenas da paleta. */
-.app-shell{position:relative;isolation:isolate;background-image:radial-gradient(circle at 12% 8%,rgba(255,255,255,.7),transparent 28%),linear-gradient(135deg,rgba(255,255,255,.2),transparent 42%)}
-.app-shell::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(80,55,95,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(80,55,95,.025) 1px,transparent 1px);background-size:32px 32px;mask-image:linear-gradient(to bottom,black,transparent 75%)}
-.app-sidebar{box-shadow:12px 0 42px rgba(35,22,45,.09)}
-.sidebar-account{position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 10px 28px rgba(40,25,52,.08)}
-.sidebar-account::after{content:"";position:absolute;right:-2rem;bottom:-3rem;width:6rem;height:6rem;border:1px solid currentColor;border-radius:50%;opacity:.06;pointer-events:none}
-#conteudo-principal{position:relative}
-#conteudo-principal>div:last-child{animation:page-enter .28s ease-out both}
-@keyframes page-enter{from{opacity:.01;transform:translateY(5px)}to{opacity:1;transform:none}}
-
-html:not(.dark) .app-shell main .workspace-hero[class*="bg-gradient"] {
-  background: linear-gradient(90deg, rgba(124,58,237,.055) 1px, transparent 1px) 2.4rem 0 / 2.75rem 100%, #fdfbff !important;
+/* A sombra suave de antes vivia numa segunda regra que sobrescrevia a
+   profundidade da sidebar; foi removida junto com a duplicação. */
+.sidebar-account {
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 10px 28px rgba(40, 25, 52, .08);
+}
+.sidebar-account::after {
+  content: "";
+  position: absolute;
+  right: -2rem;
+  bottom: -3rem;
+  width: 6rem;
+  height: 6rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  opacity: .06;
+  pointer-events: none;
 }
 
+#conteudo-principal { position: relative; }
+#conteudo-principal > div:last-child { animation: page-enter .28s ease-out both; }
+@keyframes page-enter {
+  from { opacity: .01; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* --- Destaque do perfil: mesma superfície da sidebar, agora com a matiz --- */
 .app-shell main .profile-hero[class*="bg-gradient"] {
-  border-color: rgba(255,255,255,.14) !important;
-  background:
-    radial-gradient(circle at 18% 10%, rgba(196,181,253,.22), transparent 14rem),
-    linear-gradient(135deg, #4c2a91 0%, #2a1d52 55%, #1f183c 100%) !important;
+  border-color: rgba(255, 255, 255, .14) !important;
+  background: linear-gradient(135deg, var(--pn-shell-fundo) 0%, var(--pn-shell-fundo-2) 100%) !important;
 }
 .app-shell main .profile-hero [class*="text-white"] { color: #fff !important; }
-.app-shell main .profile-hero [class*="text-white/"] { color: rgba(255,255,255,.78) !important; }
+.app-shell main .profile-hero [class*="text-white/"] { color: rgba(255, 255, 255, .78) !important; }
 
+/* Campos de texto seguem os tokens, e não uma tinta fixa. */
 html:not(.dark) .app-shell main input,
 html:not(.dark) .app-shell main textarea,
-html:not(.dark) .app-shell main select { color: #281735; }
+html:not(.dark) .app-shell main select { color: var(--pn-texto); }
 html:not(.dark) .app-shell main input::placeholder,
-html:not(.dark) .app-shell main textarea::placeholder { color: #81718c; opacity: 1; }
+html:not(.dark) .app-shell main textarea::placeholder { color: var(--pn-texto-suave); opacity: 1; }
 
 @media (prefers-contrast: more) {
-  html:not(.dark) .app-sidebar .sidebar-link { color: #291637 !important; }
+  .app-sidebar .sidebar-link { color: #fff !important; }
   html:not(.dark) .app-shell main input,
-  html:not(.dark) .app-shell main textarea { border-color: #7b61a8 !important; }
+  html:not(.dark) .app-shell main textarea { border-color: var(--pn-primaria) !important; }
 }
+

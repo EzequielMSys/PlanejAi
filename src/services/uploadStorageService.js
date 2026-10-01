@@ -3,6 +3,30 @@ const crypto = require('crypto')
 const fs = require('fs')
 const { Readable } = require('stream')
 
+// Categorias que o servidor precisa ter em disco. A pasta `uploads/` está no
+// .gitignore, então numa instalação nova ela simplesmente não existe: o Multer
+// falha ao gravar e o leitor devolve 404 para toda foto, sem dizer o motivo.
+// Garantir as pastas na inicialização evita a falha silenciosa e faz o erro
+// aparecer cedo, no log, em vez de virar 404 semanas depois.
+const CATEGORIAS = ['perfis', 'atividades', 'materiais', 'respostas']
+
+function uploadsRoot() {
+  return path.resolve(__dirname, '..', '..', 'uploads')
+}
+
+function garantirPastas() {
+  if (usarBlobPrivado()) return []
+  const raiz = uploadsRoot()
+  const criadas = []
+  for (const categoria of ['', ...CATEGORIAS]) {
+    const destino = categoria ? path.join(raiz, categoria) : raiz
+    if (fs.existsSync(destino)) continue
+    fs.mkdirSync(destino, { recursive: true })
+    criadas.push(categoria || 'uploads')
+  }
+  return criadas
+}
+
 function usarBlobPrivado() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN)
 }
@@ -46,8 +70,22 @@ async function armazenarArquivo(file, categoria, userId) {
 
 async function enviarArquivoArmazenado(req, res, relative, { protegido = true } = {}) {
   if (!usarBlobPrivado()) {
-    const absolute = path.resolve(__dirname, '..', '..', 'uploads', relative)
-    if (!absolute.startsWith(`${path.resolve(__dirname, '..', '..', 'uploads')}${path.sep}`) || !fs.existsSync(absolute)) {
+    const raiz = uploadsRoot()
+    const absolute = path.resolve(raiz, relative)
+    // Travessia de diretório é rejeitada com 400: é uma tentativa, não um
+    // arquivo ausente.
+    if (!absolute.startsWith(`${raiz}${path.sep}`)) {
+      return res.status(400).json({ error: 'Caminho de arquivo inválido.' })
+    }
+    if (!fs.existsSync(absolute)) {
+      // Um 404 sem explicação é o mais difícil de diagnosticar. A pasta uploads/
+      // é ignorada pelo Git, então some em instalações novas e é a causa comum
+      // de todas as fotos desaparecerem de uma vez.
+      const existeRaiz = fs.existsSync(raiz)
+      console.warn(
+        `[UPLOADS] Arquivo ausente: ${relative}` +
+          (existeRaiz ? '' : ' — a pasta uploads/ não existe; ela é criada ao iniciar o servidor'),
+      )
       return res.status(404).json({ error: 'Arquivo não encontrado.' })
     }
     res.setHeader('Cache-Control', protegido ? 'private, max-age=240' : 'public, max-age=86400')
@@ -72,4 +110,12 @@ async function enviarArquivoArmazenado(req, res, relative, { protegido = true } 
   return undefined
 }
 
-module.exports = { usarBlobPrivado, nomeSeguro, armazenarArquivo, enviarArquivoArmazenado }
+module.exports = {
+  usarBlobPrivado,
+  nomeSeguro,
+  caminhoRelativo,
+  armazenarArquivo,
+  enviarArquivoArmazenado,
+  garantirPastas,
+  uploadsRoot,
+}

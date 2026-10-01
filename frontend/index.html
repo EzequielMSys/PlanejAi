@@ -37,6 +37,26 @@
     <noscript
       >O PlanejAI precisa do JavaScript ativado para funcionar.</noscript
     >
+    <script>
+      /* Aplica o tema ANTES da primeira pintura. Sem este script, a página
+         apareceria branca por um instante no modo escuro e com a paleta
+         errada, repetindo o que o ThemeContext faria logo depois. */
+      (function () {
+        try {
+          var raw = localStorage.getItem('planejai:tema') || '{}';
+          var ajustes = JSON.parse(raw);
+          if (ajustes.fundoTorrido) document.documentElement.classList.add('pn-alto-contraste');
+
+          var tema = localStorage.getItem('theme');
+          if (tema !== 'light' && tema !== 'dark') {
+            tema = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.classList.toggle('dark', tema === 'dark');
+        } catch (e) {
+          /* localStorage bloqueado (modo privativo): segue com o padrão do CSS. */
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

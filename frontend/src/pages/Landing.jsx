@@ -1,67 +1,250 @@
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import Logo from '../components/Logo'
+import ColorPicker from '../components/ColorPicker'
 import ThemeToggle from '../components/ThemeToggle'
-import './Landing.css'
+import { useTheme } from '../context/ThemeContext'
 
-const reveal = { hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0, transition: { duration: .48 } } }
-
-const pillars = [
-  { icon: '◎', label: 'Mapa de estudo', title: 'Você sempre sabe o próximo passo.', text: 'A rotina vira um plano praticável, com tempo, matéria e motivo para cada sessão.' },
-  { icon: '↗', label: 'Evidências reais', title: 'Prática que melhora o plano.', text: 'Questões, provas, redações e atividades mostram o que já está firme e o que merece atenção.' },
-  { icon: '✦', label: 'Apoio humano', title: 'Sua turma no mesmo compasso.', text: 'Professores publicam materiais, acompanham entregas e dão feedback no espaço certo.' }
-]
-
-function Brand() {
-  return <Link to="/" className="landing-brand" aria-label="Página inicial PlanejAI"><Logo className="h-10 w-10" /><span>Planej<strong>AI</strong><small>aprenda com direção</small></span></Link>
+// A entrada escalonada cria ritmo de leitura: cada bloco aparece um pouco
+// depois do anterior, guiando o olho de cima para baixo.
+const container = {
+  oculto: {},
+  visivel: { transition: { staggerChildren: 0.08, delayChildren: 0.04 } },
 }
 
-function JourneyBoard() {
-  return <section className="landing-board" aria-label="Exemplo de uma jornada de estudos">
-    <header><div><span>JORNADA DE HOJE</span><strong>Quarta-feira, 03</strong></div><b>02/03</b></header>
-    <div className="landing-board-focus"><span>EM FOCO</span><h2>Funções<br />exponenciais</h2><p>Matemática · 35 min</p><button type="button">Começar sessão <i>→</i></button><em>01</em></div>
-    <div className="landing-board-next"><span>DEPOIS</span><strong>Revisão ativa</strong><small>8 cartões para consolidar</small><i>02</i></div>
-    <footer><div><span>RITMO DA SEMANA</span><strong><i /> 4 dias de sequência</strong></div><div><b>68%</b><span>meta concluída</span></div></footer>
-  </section>
+const item = {
+  oculto: { opacity: 0, y: 20 },
+  visivel: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.2, 0.8, 0.2, 1] } },
+}
+
+// Os quatro territórios do saber. Cada um aponta para a tela real do produto,
+// então o card é clicável e leva o usuário até a ferramenta de verdade.
+const TERRITORIOS = [
+  {
+    rotulo: 'Cronograma',
+    titulo: 'Seu tempo, desenhado',
+    texto: 'Sessões distribuídas na semana real e reajustadas quando a vida muda de planos.',
+    rota: '/cronograma',
+    marca: '◷',
+  },
+  {
+    rotulo: 'Provas',
+    titulo: 'Treine sem apostar no escuro',
+    texto: 'Simulados por vestibular, objetivo e nível, com o resultado já calibrando a rota.',
+    rota: '/provas',
+    marca: '◎',
+  },
+  {
+    rotulo: 'Redações',
+    titulo: 'Escreva e receba retorno',
+    texto: 'Escrita guiada com comentários do docente apontando exatamente onde melhorar.',
+    rota: '/redacoes',
+    marca: '✎',
+  },
+  {
+    rotulo: 'Sua turma',
+    titulo: 'Todo mundo no mesmo rumo',
+    texto: 'Entre com o código, Activities e avisos do professor reunidos num só lugar.',
+    // Antes apontava para /turmas, que é a tela de GESTÃO. Um aluno logado era
+    // jogado para /dashboard em silêncio, sem entender por quê. A promessa é
+    // escrita do ponto de vista do aluno, então precisa levar à tela do aluno.
+    rota: '/minhas-turmas',
+    marca: '◈',
+  },
+]
+
+const JORNADA = [
+  { titulo: 'Você marca onde está', texto: 'O sistema descobre sua base em cada disciplina e desenha o território.' },
+  { titulo: 'O caminho se traça', texto: 'Um plano com etapas claras, do primeiro passo ao domínio, sempre com um destino à vista.' },
+  { titulo: 'Cada passo deixa marca', texto: 'Questões, provas e redações atualizam o mapa e revelam o que falta.' },
+]
+
+function Cabecalho() {
+  return (
+    <header className="pn-topo">
+      <Link to="/" className="pn-marca" aria-label="PlanejAI, página inicial">
+        <Logo className="h-9 w-9" animado={false} />
+        <span className="pn-marca-texto">Planej<strong>AI</strong></span>
+      </Link>
+
+      <nav className="pn-nav" aria-label="Navegação principal">
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#recursos">Recursos</a>
+      </nav>
+
+      <div className="pn-acoes">
+        <ColorPicker />
+        <ThemeToggle />
+        <Link to="/login" className="pn-btn pn-btn-fantasma">Entrar</Link>
+        <Link to="/register" className="pn-btn pn-btn-primario">Criar conta</Link>
+      </div>
+    </header>
+  )
+}
+
+// A prévia do produto: o "mapa" do aluno. Mostra uma rota real — do que já foi
+// dominado ao que está em foco agora — que é a ideia central do conceito Atlas.
+function PreviaMapa() {
+  return (
+    <div className="pn-mapa">
+      <div className="pn-mapa-topo">
+        <span className="pn-sobrancelha">Seu mapa</span>
+        <strong>Quarta-feira</strong>
+      </div>
+
+      <ul className="pn-mapa-trilha" aria-label="Rota de estudos de hoje">
+        <li data-estado="feito">
+          <span className="pn-mapa-no" aria-hidden="true">✓</span>
+          <div>
+            <b>Revisão ativa</b>
+            <small>8 cartões · concluído</small>
+          </div>
+        </li>
+        <li data-estado="agora">
+          <span className="pn-mapa-no" aria-hidden="true">2</span>
+          <div>
+            <b>Funções exponenciais</b>
+            <small>Matemática · 35 min</small>
+            <span className="pn-progresso" role="presentation"><span /></span>
+          </div>
+        </li>
+        <li data-estado="depois">
+          <span className="pn-mapa-no" aria-hidden="true">3</span>
+          <div>
+            <b>Redação dissertativa</b>
+            <small>40 min</small>
+          </div>
+        </li>
+      </ul>
+
+      <div className="pn-mapa-rodape">
+        <span>4 dias seguidos</span>
+        <b>68% da meta</b>
+      </div>
+    </div>
+  )
 }
 
 export default function Landing() {
-  return <div className="landing-shell">
-    <nav className="landing-nav"><Brand /><div className="landing-nav-links"><a href="#como-funciona">Como funciona</a><a href="#recursos">Recursos</a><Link to="/login">Entrar</Link><Link to="/register" className="landing-nav-cta">Criar meu plano <span>→</span></Link><ThemeToggle /></div></nav>
+  const { paletaAtiva } = useTheme()
+  const reduzirMovimento = useReducedMotion()
+  // Com movimento reduzido não há variantes: o conteúdo aparece direto, sem
+  // depender de animação para ser lido.
+  const animaContainer = reduzirMovimento ? {} : container
+  const animaItem = reduzirMovimento ? {} : item
 
-    <main id="conteudo-principal" tabIndex="-1">
-      <section className="landing-hero">
-        <motion.div initial="hidden" animate="visible" className="landing-hero-copy">
-          <motion.p variants={reveal} className="landing-kicker"><i /> UM ESPAÇO PARA APRENDER COM CALMA</motion.p>
-          <motion.h1 variants={reveal}>Sua rotina de estudos,<br /><em>com um norte.</em></motion.h1>
-          <motion.p variants={reveal} className="landing-lead">PlanejAI organiza o que importa agora e transforma cada tentativa em um próximo passo mais inteligente.</motion.p>
-          <motion.div variants={reveal} className="landing-actions"><Link to="/register">Começar minha jornada <span>→</span></Link><a href="#como-funciona">Ver como funciona <i>↓</i></a></motion.div>
-          <motion.div variants={reveal} className="landing-hero-note"><span>✦</span><p><b>Seu caminho é seu.</b> Uma plataforma para alunos, docentes e turmas aprenderem juntos.</p></motion.div>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, scale: .96, y: 18 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: .65, delay: .08 }} className="landing-board-wrap"><JourneyBoard /><div className="landing-orbit landing-orbit-one" /><div className="landing-orbit landing-orbit-two" /></motion.div>
-      </section>
+  return (
+    <div className="pn-pagina">
+      <a href="#conteudo-principal" className="pn-saltar">Pular para o conteúdo</a>
 
-      <section className="landing-signal" aria-label="Áreas da plataforma"><span>PLANEJAR</span><i>✦</i><span>ESTUDAR</span><i>✦</i><span>PRATICAR</span><i>✦</i><span>EVOLUIR</span></section>
+      <Cabecalho />
 
-      <section id="como-funciona" className="landing-way">
-        <div className="landing-section-intro"><p>UMA JORNADA, NÃO UMA PILHA DE TAREFAS</p><h2>O estudo volta a fazer sentido quando tudo conversa.</h2><span>Do primeiro plano ao resultado da prova, cada parte deixa uma pista útil para a próxima.</span></div>
-        <div className="landing-path">{pillars.map((pillar, index) => <article key={pillar.label}><div><i>{pillar.icon}</i><span>0{index + 1}</span></div><small>{pillar.label}</small><h3>{pillar.title}</h3><p>{pillar.text}</p></article>)}</div>
-      </section>
+      <main id="conteudo-principal" tabIndex={-1}>
+        <section className="pn-hero">
+          <motion.div className="pn-hero-texto" variants={animaContainer} initial="oculto" animate="visivel">
+            <motion.p variants={animaItem} className="pn-sobrancelha">
+              <span className="pn-ponto" /> O conhecimento como território
+            </motion.p>
 
-      <section id="recursos" className="landing-lab">
-        <div className="landing-lab-copy"><p>LABORATÓRIO PLANEJAI</p><h2>Uma plataforma viva para quem aprende e para quem orienta.</h2><Link to="/register">Montar meu espaço <span>→</span></Link></div>
-        <div className="landing-lab-grid">
-          <article className="is-large"><span>01 · CRONOGRAMA</span><h3>Planos que cabem<br />na semana real.</h3><div className="landing-mini-calendar"><b>SEG</b><i /><b>QUA</b><i /><b>SEX</b><i /></div></article>
-          <article><span>02 · PROVAS</span><h3>Simulados por objetivo e nível.</h3><strong>ITA <i>+</i> ENEM</strong></article>
-          <article><span>03 · ATIVIDADES</span><h3>Feedback que chega onde ele ajuda.</h3><div className="landing-mini-feedback"><i>✓</i><b>Comentário do docente</b></div></article>
-        </div>
-      </section>
+            <motion.h1 variants={animaItem} className="pn-titulo">
+              Saiba sempre<br />
+              <em>onde está.</em>
+            </motion.h1>
 
-      <section className="landing-exams"><div className="landing-exams-score"><span>SEU RITMO</span><strong>84<small>%</small></strong><p>resultado de uma jornada que aprende com você</p></div><div><p>PROVAS SEM APOSTAR NO ESCURO</p><h2>Treine o que você quer conquistar.</h2><span>Escolha vestibular, dificuldade e quantidade. O sistema preserva suas tentativas e usa o resultado para recalibrar sua rota.</span><Link to="/register">Conhecer o laboratório <b>→</b></Link></div><ol><li><b>01</b><span>Escolha uma coleção</span></li><li><b>02</b><span>Faça no seu ritmo</span></li><li><b>03</b><span>Receba o próximo passo</span></li></ol></section>
+            <motion.p variants={animaItem} className="pn-corpo pn-hero-lead">
+              O PlanejAI mapeia o que você já domina e traça a rota até onde quer
+              chegar. Nada de lista solta: cada passo tem destino, e cada prova
+              redesenha o caminho.
+            </motion.p>
 
-      <section className="landing-final"><div><Logo className="h-12 w-12" /><p>PLANEJAI É O SEU ESPAÇO DE APRENDER</p><h2>Estude com presença.<br /><em>Avance com clareza.</em></h2></div><Link to="/register">Criar minha conta <span>→</span></Link></section>
-    </main>
+            <motion.div variants={animaItem} className="pn-hero-acoes">
+              <Link to="/register" className="pn-btn pn-btn-primario">Traçar meu mapa</Link>
+              <a href="#como-funciona" className="pn-btn pn-btn-fantasma">Como funciona</a>
+            </motion.div>
+          </motion.div>
 
-    <footer className="landing-footer"><Brand /><p>Planejamento inteligente para uma aprendizagem que continua.</p><div><Link to="/login">Entrar</Link><Link to="/register">Criar conta</Link></div><small>© {new Date().getFullYear()} PlanejAI</small></footer>
-  </div>
+          <motion.div
+            className="pn-hero-previa"
+            initial={reduzirMovimento ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15 }}
+          >
+            <PreviaMapa />
+          </motion.div>
+        </section>
+
+        <section id="recursos" className="pn-secao-bloco">
+          <div className="pn-secao-cabecalho">
+            <p className="pn-sobrancelha">Os territórios</p>
+            <h2 className="pn-secao">Cada área do conhecimento tem seu mapa.</h2>
+            <p className="pn-corpo">
+              Entre em qualquer território para ver como ele funciona na prática.
+            </p>
+          </div>
+
+          <div className="pn-territorios">
+            {TERRITORIOS.map((t) => (
+              <Link
+                key={t.rotulo}
+                to={t.rota}
+                className="pn-territorio pn-folha-interativa"
+              >
+                <span className="pn-territorio-marca" aria-hidden="true">{t.marca}</span>
+                <span className="pn-sobrancelha">{t.rotulo}</span>
+                <h3>{t.titulo}</h3>
+                <p className="pn-corpo">{t.texto}</p>
+                <span className="pn-territorio-ir" aria-hidden="true">Explorar →</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section id="como-funciona" className="pn-secao-bloco">
+          <div className="pn-secao-cabecalho">
+            <p className="pn-sobrancelha">Como funciona</p>
+            <h2 className="pn-secao">O mapa se desenha enquanto você estuda.</h2>
+          </div>
+
+          <ol className="pn-jornada">
+            {JORNADA.map((j, indice) => (
+              <motion.li
+                key={j.titulo}
+                className="pn-jornada-passo"
+                variants={animaItem}
+                initial="oculto"
+                whileInView="visivel"
+                viewport={{ once: true, margin: '-80px' }}
+              >
+                <span className="pn-jornada-no" aria-hidden="true">
+                  {String(indice + 1).padStart(2, '0')}
+                </span>
+                <div>
+                  <h3>{j.titulo}</h3>
+                  <p className="pn-corpo">{j.texto}</p>
+                </div>
+              </motion.li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="pn-fecho pn-folha">
+          <div>
+            <h2 className="pn-secao">Pronto para abrir seu caderno?</h2>
+            <p className="pn-corpo">
+              Crie sua conta em menos de um minuto e comece pelo que importa hoje.
+            </p>
+          </div>
+          <Link to="/register" className="pn-btn pn-btn-primario">Criar minha conta</Link>
+        </section>
+      </main>
+
+      <footer className="pn-rodape">
+        <Logo className="h-7 w-7" animado={false} />
+        <p className="pn-corpo">
+          Planejamento inteligente para uma aprendizagem que continua. · Cor atual: {paletaAtiva.nome}
+        </p>
+        <small>© {new Date().getFullYear()} PlanejAI</small>
+      </footer>
+    </div>
+  )
 }

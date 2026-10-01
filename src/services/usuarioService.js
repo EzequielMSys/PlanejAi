@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt')
 
 const usuarioModel = require('../models/usuarioModel')
-const { gerarSenhaTemporaria, validarSenhaForte, getBcryptRounds } = require('../utils/authUtils')
+const { gerarSenhaTemporaria, validarSenhaForte, getBcryptRounds, REQUISITOS_SENHA } = require('../utils/authUtils')
 
 const TIPOS_PERMITIDOS = ['dono', 'admin', 'docente', 'aluno']
 
@@ -168,7 +168,7 @@ if (dados.nome !== undefined && dados.nome !== null && dados.nome !== '') {
     }
 
     if (!validarSenhaForte(novaSenha)) {
-      throw new Error('A nova senha deve ter ao menos 12 caracteres, com maiúscula, minúscula e número.')
+      throw new Error(`A nova senha deve ter ${REQUISITOS_SENHA.toLowerCase()}.`)
     }
 
     const usuarioAlvo = await usuarioModel.buscarPorId(id)

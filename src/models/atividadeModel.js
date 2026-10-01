@@ -38,14 +38,14 @@ async function buscarPorId(idAtividade, executor = pool) {
   return normalizar(rows[0])
 }
 
-async function criar({ titulo, descricao, prazo, status, anexos, questoes, criadoPor, destinatarios, atribuicao, rubrica, publicarEm, permiteReenvio }) {
+async function criar({ titulo, descricao, prazo, status, anexos, questoes, criadoPor, destinatarios, atribuicao, rubrica, publicarEm, permiteReenvio, idTurma = null }) {
   const connection = await pool.getConnection()
   try {
     await connection.beginTransaction()
     const [result] = await connection.execute(
-      `INSERT INTO atividades (titulo, descricao, criado_por, prazo, status, anexos, questoes, pergunta, tipo, destinatarios, atribuicao, rubrica, publicar_em, permite_reenvio)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [titulo, descricao || null, criadoPor, prazo || null, status, JSON.stringify(anexos || []), JSON.stringify(questoes || []), titulo, 'DISSERTATIVA', destinatarios?.length ? JSON.stringify(destinatarios) : null, atribuicao || 'TODOS', JSON.stringify(rubrica || []), publicarEm || null, permiteReenvio ? 1 : 0]
+      `INSERT INTO atividades (titulo, descricao, criado_por, prazo, status, anexos, questoes, pergunta, tipo, destinatarios, atribuicao, rubrica, publicar_em, permite_reenvio, id_turma)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [titulo, descricao || null, criadoPor, prazo || null, status, JSON.stringify(anexos || []), JSON.stringify(questoes || []), titulo, 'DISSERTATIVA', destinatarios?.length ? JSON.stringify(destinatarios) : null, atribuicao || 'TODOS', JSON.stringify(rubrica || []), publicarEm || null, permiteReenvio ? 1 : 0, idTurma || null]
     )
     await connection.execute('INSERT INTO atividade_versoes (id_atividade, numero_versao, conteudo, alterado_por) VALUES (?, 1, ?, ?)', [result.insertId, JSON.stringify({ titulo, descricao, prazo, status, anexos, questoes, destinatarios, atribuicao, rubrica, publicarEm, permiteReenvio }), criadoPor])
     await connection.commit()
@@ -114,7 +114,8 @@ async function autosalvarRascunho(idAtividade, dados, criadoPor) {
     atribuicao: dados.atribuicao === 'SELECIONADOS' ? 'SELECIONADOS' : 'TODOS',
     rubrica: Array.isArray(dados.rubrica) ? dados.rubrica : [],
     publicarEm: dados.publicarEm || null,
-    permiteReenvio: Boolean(dados.permiteReenvio)
+    permiteReenvio: Boolean(dados.permiteReenvio),
+    idTurma: dados.idTurma || null
   }
   if (!idAtividade) return criar({ ...payload, criadoPor })
   const atual = await buscarPorId(idAtividade)
