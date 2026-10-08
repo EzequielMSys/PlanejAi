@@ -193,4 +193,38 @@ async function trilhas(idUsuario) {
   const grouped=new Map();for(const row of rows){if(!grouped.has(row.id_trilha))grouped.set(row.id_trilha,{idTrilha:row.id_trilha,disciplina:row.disciplina,status:row.trilha_status,etapas:[]});grouped.get(row.id_trilha).etapas.push(row)}return [...grouped.values()]
 }
 
-module.exports = { diagnostico, salvarDiagnostico, metas, salvarMeta, privacidade, listarFlashcards, criarFlashcard, avaliarFlashcard, buscar, provas, criarProva, catalogoProvas, gerarSimulado, obterSimulado, salvarProgressoSimulado, concluirSimulado, historicoSimulados, trilhas }
+async function listarMensagensChat(idUsuario, limite = 20) {
+  const numLimite = Number(limite)
+  const safeLimite = Number.isFinite(numLimite) && numLimite > 0 && numLimite <= 200 ? numLimite : 20
+  const [rows] = await pool.execute(
+    `SELECT role, conteudo, disciplina, criado_em FROM mensagens_chat_ia WHERE id_usuario = ? ORDER BY id_mensagem DESC LIMIT ?`,
+    [Number(idUsuario), safeLimite]
+  )
+  return rows.reverse()
+}
+
+async function salvarMensagemChat(idUsuario, role, conteudo, disciplina) {
+  if (!['user', 'assistant', 'system'].includes(role)) {
+    throw new Error(`Role inválido para mensagem de chat: ${role}`)
+  }
+  const [result] = await pool.execute(
+    `INSERT INTO mensagens_chat_ia (id_usuario, role, conteudo, disciplina) VALUES (?, ?, ?, ?)`,
+    [Number(idUsuario), role, conteudo || '', disciplina || null]
+  )
+  return { idMensagem: Number(result.insertId) }
+}
+
+async function limparConversaChat(idUsuario) {
+  const [result] = await pool.execute(`DELETE FROM mensagens_chat_ia WHERE id_usuario = ?`, [Number(idUsuario)])
+  return { removidas: Number(result.affectedRows) }
+}
+
+async function contagemMensagensDoDia(idUsuario) {
+  const [[row]] = await pool.execute(
+    `SELECT COUNT(*) AS total FROM mensagens_chat_ia WHERE id_usuario = ? AND role = 'user' AND DATE(criado_em) = CURDATE()`,
+    [Number(idUsuario)]
+  )
+  return Number(row?.total || 0)
+}
+
+module.exports = { diagnostico, salvarDiagnostico, metas, salvarMeta, privacidade, listarFlashcards, criarFlashcard, avaliarFlashcard, buscar, provas, criarProva, catalogoProvas, gerarSimulado, obterSimulado, salvarProgressoSimulado, concluirSimulado, historicoSimulados, trilhas, listarMensagensChat, salvarMensagemChat, limparConversaChat, contagemMensagensDoDia }

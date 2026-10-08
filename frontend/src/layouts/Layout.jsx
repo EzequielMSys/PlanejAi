@@ -8,6 +8,7 @@ import FocusTimer from '../components/FocusTimer'
 import InstallApp from '../components/InstallApp'
 import StudyAudioDockV2 from '../components/StudyAudioDockV2'
 import AccessibilityToolbar from '../components/AccessibilityToolbar'
+import Chatbot from '../components/Chatbot'
 
 function Layout() {
   const { isAuthenticated } = useAuth()
@@ -41,6 +42,7 @@ function Layout() {
         {isAuthenticated && <FocusTimer />}
         {isAuthenticated && <InstallApp />}
         {isAuthenticated && <StudyAudioDockV2 />}
+        {isAuthenticated && <Chatbot />}
         <AccessibilityToolbar />
       </div>
     </div>

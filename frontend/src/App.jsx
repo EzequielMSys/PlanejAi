@@ -34,6 +34,7 @@ const Turmas = lazy(() => import('./pages/Turmas'))
 const MinhasTurmas = lazy(() => import('./pages/MinhasTurmas'))
 const MinhasTurmasDetalhe = lazy(() => import('./pages/MinhasTurmasDetalhe'))
 const Provas = lazy(() => import('./pages/Provas'))
+const Chat = lazy(() => import('./pages/Chat'))
 
 function App() {
   return (
@@ -57,7 +58,8 @@ function App() {
             <Route path="/status" element={<SystemStatus />} />
             <Route path="/aprendizagem" element={<Aprendizagem />} />
             <Route path="/planejamento-inteligente" element={<PlanejamentoInteligente />} />
-            <Route path="/provas" element={<Provas />} />
+                        <Route path="/provas" element={<Provas />} />
+            <Route path="/chat" element={<Chat />} />
             <Route path="/minha-jornada" element={<MinhaJornada />} />
             <Route path="/redacoes" element={<Redacoes />} />
             <Route path="/perfil" element={<Perfil />} />

@@ -30,8 +30,9 @@ const migrationOrder = [
   'add_exam_session_features_v11.sql',
   'security_session_version_v12.sql',
   'persistent_rate_limits_v13.sql',
-  'persist_cronograma_assessment_answers_v14.sql',
-  'persist_study_notes_v15.sql'
+    'persist_cronograma_assessment_answers_v14.sql',
+  'persist_study_notes_v15.sql',
+  'add_ia_chatbot_v17.sql'
 ];
 
 function sortMigrations(files) {

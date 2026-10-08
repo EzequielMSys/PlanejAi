@@ -84,6 +84,19 @@ function ExamIcon({ className }) {
   )
 }
 
+function ChatIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M8 12h.01M12 12h.01M16 12h.01M9.05 21a7.5 7.5 0 1 1-5.06-12.75 5.5 5.5 0 0 1 8.3-.9L15.5 10a6 6 0 1 0-6.45 9.9"
+      />
+    </svg>
+  )
+}
+
 export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate()
   const { isAdmin, isDono, isGestor, user } = useAuth()
@@ -94,6 +107,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { path: '/cronograma', label: 'Cronograma', icon: CalendarIcon },
     { path: '/aprendizagem', label: 'Aprendizagem', icon: DashboardIcon },
     { path: '/provas', label: 'Provas', icon: ExamIcon },
+    { path: '/chat', label: 'Assistente de IA', icon: ChatIcon },
     { path: '/planejamento-inteligente', label: 'Planejamento', icon: CalendarIcon },
     { path: '/redacoes', label: 'Redações', icon: RedacaoIcon },
     ...(isGestor ? [{ path: '/turmas', label: 'Turmas', icon: UsersIcon }] : []),

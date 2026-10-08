@@ -12,6 +12,9 @@ export default {
   gerarSimulado: (dados) => api.post('/simulados', dados).then((r) => r.data),
   obterSimulado: (id) => api.get(`/simulados/${id}`).then((r) => r.data),
   salvarProgressoSimulado: (id, respostas, revisao = []) => api.patch(`/simulados/${id}`, { respostas, revisao }).then((r) => r.data),
-  concluirSimulado: (id, respostas, revisao = []) => api.post(`/simulados/${id}/concluir`, { respostas, revisao }).then((r) => r.data)
-  ,trilhas: () => api.get('/trilhas').then((r) => r.data)
+    concluirSimulado: (id, respostas, revisao = []) => api.post(`/simulados/${id}/concluir`, { respostas, revisao }).then((r) => r.data),
+  trilhas: () => api.get('/trilhas').then((r) => r.data),
+  chatHistory: (limite) => api.get('/chat', { params: { limite } }).then((r) => r.data),
+  chatSend: (mensagem, disciplina) => api.post('/chat', { mensagem, disciplina }).then((r) => r.data),
+  chatClear: () => api.delete('/chat').then((r) => r.data)
 }

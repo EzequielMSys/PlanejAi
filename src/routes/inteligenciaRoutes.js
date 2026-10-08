@@ -21,4 +21,10 @@ router.get('/simulados/:idSimulado', controller.obterSimulado)
 router.patch('/simulados/:idSimulado', controller.salvarProgressoSimulado)
 router.post('/simulados/:idSimulado/concluir', controller.concluirSimulado)
 router.get('/trilhas', controller.trilhas)
+
+// Assistente de IA (chatbot) para dúvidas de matéria.
+router.get('/chat', controller.chat)
+router.post('/chat', controller.enviarMensagem)
+router.delete('/chat', controller.limparChat)
+
 module.exports = router
