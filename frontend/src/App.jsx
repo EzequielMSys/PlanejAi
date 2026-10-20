@@ -39,7 +39,17 @@ const Chat = lazy(() => import('./pages/Chat'))
 function App() {
   return (
     <AuthProvider>
-      <Suspense fallback={<div className="grid min-h-screen place-items-center font-bold">Carregando PlanejAI…</div>}>
+      <Suspense
+        fallback={
+          <div
+            role="status"
+            aria-live="polite"
+            className="grid min-h-screen place-items-center font-bold"
+          >
+            Carregando PlanejAI…
+          </div>
+        }
+      >
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />

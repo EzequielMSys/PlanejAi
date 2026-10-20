@@ -288,12 +288,14 @@ export default function UsuariosAdmin() {
                 value={busca}
                 onChange={(e) => atualizarBusca(e.target.value)}
                 placeholder="Buscar por nome ou email..."
+                aria-label="Buscar usuário por nome ou email"
                 className="rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 outline-none focus:ring-2 focus:ring-[#9394CF]"
               />
 
               <select
                 value={tipoFiltro}
                 onChange={(e) => atualizarTipoFiltro(e.target.value)}
+                aria-label="Filtrar usuários por tipo"
                 className="rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 outline-none focus:ring-2 focus:ring-[#9394CF]"
               >
                 <option value="">Todos</option>
@@ -511,6 +513,7 @@ export default function UsuariosAdmin() {
               <input
                 type="password"
                 placeholder="Nova senha"
+                aria-label="Nova senha"
                 value={novaSenha}
                 onChange={(e) => setNovaSenha(e.target.value)}
                 className="w-full rounded-2xl px-5 py-4 bg-[#F7F7FB] border border-[#9394CF]/30 outline-none focus:ring-2 focus:ring-[#9394CF]"
@@ -519,6 +522,7 @@ export default function UsuariosAdmin() {
               <input
                 type="password"
                 placeholder="Confirmar senha"
+                aria-label="Confirmar nova senha"
                 value={confirmarSenha}
                 onChange={(e) => setConfirmarSenha(e.target.value)}
                 className="w-full rounded-2xl px-5 py-4 bg-[#F7F7FB] border border-[#9394CF]/30 outline-none focus:ring-2 focus:ring-[#9394CF]"

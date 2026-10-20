@@ -61,6 +61,49 @@ async function limparConversa(idUsuario) {
 }
 
 /**
+ * Monta o payload enviado ao /chat/completions.
+ * `reasoning_effort` só entra quando configurado: provedores que não conhecem
+ * o parâmetro rejeitariam a requisição inteira.
+ * Exportada para testes.
+ */
+function montarPayloadChat(mensagens) {
+  const payload = {
+    model: iaConfig.model,
+    messages: mensagens,
+    max_tokens: iaConfig.maxTokens,
+    temperature: iaConfig.temperature,
+  }
+  if (iaConfig.reasoningEffort) payload.reasoning_effort = iaConfig.reasoningEffort
+  return payload
+}
+
+/**
+ * Classifica o erro devolvido pela API do provedor de IA.
+ *
+ * - 'QUOTA' → saldo/cota esgotado no provedor (ex.: HTTP 403 "You've run out
+ *   of funds", 402 Payment Required, insufficient_quota). É um problema de
+ *   faturamento/configuração da conta no provedor, não do estudante.
+ * - null    → qualquer outro erro (rede, 5xx, payload inválido...).
+ *
+ * Exportada para testes.
+ */
+function classificarErroApi(apiError) {
+  const status = Number(apiError?.status || apiError?.response?.status || 0)
+  if (status === 402 || status === 403) return 'QUOTA'
+
+  const texto = [apiError?.message, apiError?.error?.message, apiError?.code]
+    .filter((parte) => typeof parte === 'string')
+    .join(' ')
+    .toLowerCase()
+  if (
+    /run out of funds|insufficient[_ ](?:quota|credit)|exceeded your (?:current )?quota|out of credit|credit balance|payment method|billing|top up your balance|quota exceeded/.test(texto)
+  ) {
+    return 'QUOTA'
+  }
+  return null
+}
+
+/**
  * Envia uma mensagem do estudante para a OpenAI e persiste a resposta.
  *
  * Fluxo:
@@ -101,19 +144,18 @@ async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario) {
 
   let resposta
   try {
-    const completion = await client.chat.completions.create({
-      model: iaConfig.model,
-      messages,
-      max_tokens: iaConfig.maxTokens,
-      temperature: iaConfig.temperature,
-    })
+    const completion = await client.chat.completions.create(montarPayloadChat(messages))
     resposta =
       completion.choices?.[0]?.message?.content?.trim() ||
       'Não consegui formular uma resposta. Tente reformular a pergunta.'
   } catch (apiError) {
-    console.error('[IA] Erro ao chamar a OpenAI:', apiError?.message || apiError)
-    const err = new Error(iaConfig.mensagensUsuario.apiError)
-    err.code = 'ERR_API'
+    const tipoErro = classificarErroApi(apiError)
+    const status = apiError?.status || apiError?.response?.status || '(sem status)'
+    console.error('[IA] Erro ao chamar a OpenAI:', apiError?.message || apiError, '| status:', status)
+    const err = new Error(
+      tipoErro === 'QUOTA' ? iaConfig.mensagensUsuario.semCredito : iaConfig.mensagensUsuario.apiError,
+    )
+    err.code = tipoErro === 'QUOTA' ? 'ERR_QUOTA' : 'ERR_API'
     throw err
   }
 
@@ -140,7 +182,9 @@ module.exports = {
     validarEntrada,
     normalizarHistorico,
     montarMensagensParaApi,
+    montarPayloadChat,
     resolverErroCliente,
+    classificarErroApi,
     LIMITE_CARACTERES_MENSAGEM,
   },
 }

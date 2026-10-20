@@ -9,11 +9,17 @@ const MAX_TOKENS_DEFAULT = 1024;
 const TEMPERATURE_DEFAULT = 0.7;
 
 const model = (process.env.OPENAI_MODEL || 'deepseek/deepseek-chat').trim();
-// Base URL do provedor (ex.: https://api.aimlapi.com/v1). Vazia usa a API
+// Base URL do provedor (ex.: https://api.groq.com/openai/v1). Vazia usa a API
 // oficial da OpenAI como padrão do SDK.
 const baseUrl = (process.env.OPENAI_BASE_URL || '').trim();
 const maxTokens = Number(process.env.OPENAI_MAX_TOKENS || MAX_TOKENS_DEFAULT);
 const temperature = Number(process.env.OPENAI_TEMPERATURE || TEMPERATURE_DEFAULT);
+
+// Esforço de raciocínio para modelos "reasoning" (ex.: gpt-oss na Groq).
+// Vazio/inválido = não envia o parâmetro, mantendo compatibilidade com
+// provedores que rejeitariam campos desconhecidos.
+const reasoningEffortRaw = (process.env.OPENAI_REASONING_EFFORT || '').trim().toLowerCase();
+const reasoningEffort = /^(none|low|medium|high)$/.test(reasoningEffortRaw) ? reasoningEffortRaw : null;
 
 // Limite diário de mensagens enviadas por um mesmo usuário. Evita consumo
 // descontrolado de tokens e abusos. Zero ou negativo desativa a proteção.
@@ -62,6 +68,10 @@ const mensagensUsuario = {
   dailyLimit: 'Você atingiu o limite diário de mensagens da IA. Volte amanhã para continuar com o assistente.',
   emptyMessage: 'Envie uma mensagem para que eu possa ajudar.',
   apiError: 'O assistente de IA está com dificuldades para responder agora. Tente novamente em instantes.',
+  // Erro 403/"run out of funds" do provedor (AIMLAPI): saldo/cota do serviço
+  // esgotado. Não é problema do estudante — é o responsável pelo site que
+  // precisa recarregar o saldo (ou trocar de provedor no .env).
+  semCredito: 'O assistente de IA está temporariamente indisponível: o serviço de IA atingiu seu limite de crédito. Tente novamente mais tarde e, se persistir, avise o responsável pelo site.',
 };
 
 module.exports = {
@@ -69,6 +79,7 @@ module.exports = {
   baseUrl,
   maxTokens: Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : MAX_TOKENS_DEFAULT,
   temperature: Number.isFinite(temperature) ? Math.max(0, Math.min(1, temperature)) : TEMPERATURE_DEFAULT,
+  reasoningEffort,
   dailyLimit: Number.isFinite(dailyLimit) ? Math.max(0, dailyLimit) : 60,
   historyTrim: Number.isFinite(historyTrim) && historyTrim > 0 ? historyTrim : 12,
   systemPrompt,

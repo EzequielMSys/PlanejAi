@@ -486,13 +486,13 @@ const handleSaveEstudos = async (e) => {
             <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
               <form onSubmit={handleSaveInfo} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <input className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome completo" required />
-                  <input className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Apelido" />
+                  <input aria-label="Nome completo" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome completo" required />
+                  <input aria-label="Apelido" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Apelido" />
                 </div>
 
-                <input className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" required />
+                <input aria-label="Email" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" required />
 
-                <button disabled={saving} className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                <button type="submit" disabled={saving} className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-bold shadow-xl">
                   {saving ? 'Salvando...' : 'Salvar alterações'}
                 </button>
               </form>

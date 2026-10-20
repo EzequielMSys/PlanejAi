@@ -21,5 +21,15 @@ exports.concluirSimulado = (req, res) => responder(res, model.concluirSimulado(i
 exports.historicoSimulados = (req, res) => responder(res, model.historicoSimulados(idUsuario(req)))
 exports.trilhas = (req, res) => responder(res, model.trilhas(idUsuario(req)))
 exports.chat = (req, res) => responder(res, iaService.listarConversa(idUsuario(req), req.query.limite))
-exports.enviarMensagem = async (req, res) => { try { const result = await iaService.enviarMensagem(idUsuario(req), req.body.mensagem, req.body.disciplina, req.usuario.nome); res.json(result) } catch (error) { const status = error.code === 'ERR_DAILY_LIMIT' ? 429 : 400; res.status(status).json({ message: error.message }) } }
+// Status HTTP por tipo de falha: entrada inválida fica em 400; limite diário
+// do usuário em 429; indisponibilidade do provedor de IA (saldo esgotado,
+// erro de API, chave ausente) em 503 — é o servidor que precisa agir, não o
+// cliente que enviou algo errado.
+const STATUS_CHAT = {
+  ERR_DAILY_LIMIT: 429,
+  ERR_QUOTA: 503,
+  ERR_API: 503,
+  ERR_CLIENT: 503,
+}
+exports.enviarMensagem = async (req, res) => { try { const result = await iaService.enviarMensagem(idUsuario(req), req.body.mensagem, req.body.disciplina, req.usuario.nome); res.json(result) } catch (error) { const status = STATUS_CHAT[error.code] || 400; res.status(status).json({ message: error.message, code: error.code }) } }
 exports.limparChat = (req, res) => responder(res, iaService.limparConversa(idUsuario(req)).then(() => ({ ok: true })))

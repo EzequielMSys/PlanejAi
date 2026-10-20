@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import ChatInterface from './ChatInterface'
+
+// Interface só é baixada quando o estudante ABRE o chat: tira ~9 kB do
+// caminho crítico de toda página autenticada.
+const ChatInterface = lazy(() => import('./ChatInterface'))
 
 const ChatIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
@@ -53,7 +56,15 @@ export default function Chatbot() {
                   </svg>
                 </button>
               </header>
-              <ChatInterface className="flex-1" />
+              <Suspense
+                fallback={
+                  <div role="status" className="grid flex-1 place-items-center p-6 text-xs font-bold text-[#5b21b6] dark:text-white/70">
+                    Carregando assistente…
+                  </div>
+                }
+              >
+                <ChatInterface className="flex-1" />
+              </Suspense>
             </motion.div>
           </motion.div>
         )}

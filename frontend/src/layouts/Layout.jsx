@@ -1,14 +1,29 @@
 import { Outlet } from 'react-router-dom'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import ConnectionStatus from '../components/ConnectionStatus'
-import FocusTimer from '../components/FocusTimer'
-import InstallApp from '../components/InstallApp'
-import StudyAudioDockV2 from '../components/StudyAudioDockV2'
-import AccessibilityToolbar from '../components/AccessibilityToolbar'
-import Chatbot from '../components/Chatbot'
+import Deferred from '../components/Deferred'
+
+// Widgets secundários: não participam da primeira pintura. O lazy() tira o
+// código deles do bundle de entrada (index.js) e o Deferred garante que os
+// imports sejam disparados só depois do paint, em ociosidade — a página fica
+// utilizável antes deles e o peso crítico cai em todas as rotas.
+const FocusTimer = lazy(() => import('../components/FocusTimer'))
+const InstallApp = lazy(() => import('../components/InstallApp'))
+const StudyAudioDockV2 = lazy(() => import('../components/StudyAudioDockV2'))
+const Chatbot = lazy(() => import('../components/Chatbot'))
+const AccessibilityToolbar = lazy(() => import('../components/AccessibilityToolbar'))
+
+/** Deferred + Suspense num só ponto: import lazy em si, sem indicador visível. */
+function CarregadoAposPintura({ children }) {
+  return (
+    <Deferred>
+      <Suspense fallback={null}>{children}</Suspense>
+    </Deferred>
+  )
+}
 
 function Layout() {
   const { isAuthenticated } = useAuth()
@@ -39,11 +54,17 @@ function Layout() {
             <Outlet />
           </div>
         </main>
-        {isAuthenticated && <FocusTimer />}
-        {isAuthenticated && <InstallApp />}
-        {isAuthenticated && <StudyAudioDockV2 />}
-        {isAuthenticated && <Chatbot />}
-        <AccessibilityToolbar />
+        {isAuthenticated && (
+          <CarregadoAposPintura>
+            <FocusTimer />
+            <InstallApp />
+            <StudyAudioDockV2 />
+            <Chatbot />
+          </CarregadoAposPintura>
+        )}
+        <CarregadoAposPintura>
+          <AccessibilityToolbar />
+        </CarregadoAposPintura>
       </div>
     </div>
   )

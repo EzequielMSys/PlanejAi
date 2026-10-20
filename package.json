@@ -26,7 +26,8 @@
   "nodemonConfig": {
     "watch": [
       "src",
-      "migrations"
+      "migrations",
+      ".env"
     ],
     "ext": "js,json,sql",
     "ignore": [
