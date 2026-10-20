@@ -24,6 +24,7 @@ router.get('/trilhas', controller.trilhas)
 
 // Assistente de IA (chatbot) para dúvidas de matéria.
 router.get('/chat', controller.chat)
+router.get('/chat/contexto', controller.contextoChat)
 router.post('/chat', controller.enviarMensagem)
 router.delete('/chat', controller.limparChat)
 

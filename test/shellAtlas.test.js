@@ -90,16 +90,17 @@ test('a primária comum continua serving ao fundo, e a forte ao texto', () => {
 
 test('o card de destaque do dashboard deriva da paleta', () => {
   // Era `linear-gradient(135deg,#3a255e,#59399b 57%,#7d57bd)`: mais um roxo fixo
-  // que ignorava o seletor de cor.
+  // que ignorava o seletor de cor. Hoje o card usa tokens do tema (--ui-*/--pn-*),
+  // que por sua vez derivam da paleta escolhida pelo usuário.
   const regras = dashboardCss.replace(/\/\*[\s\S]*?\*\//g, '')
   for (const cor of ['#3a255e', '#59399b', '#7d57bd', '#271b43', '#463071', '#5d4292']) {
     assert.ok(!regras.includes(cor), `card do dashboard ainda usa ${cor}`)
   }
-  assert.match(regras, /--pn-shell-fundo/, 'o card não usa a superfície da paleta')
+  assert.match(regras, /var\(--(?:ui-|pn-)/, 'o card não usa tokens da paleta')
 });
 
-test('o botão do card usa a primária forte, e não roxo fixo', () => {
-  assert.match(dashboardCss, /var\(--pn-primaria-forte/, 'falta a primária forte no botão')
+test('o botão do card usa a cor do tema, e não roxo fixo', () => {
+  assert.match(dashboardCss, /var\(--pn-on-primaria|var\(--ui-purple/, 'falta o token do tema no botão')
 });
 
 test('a rota do dashboard aponta para a tela que existe', () => {

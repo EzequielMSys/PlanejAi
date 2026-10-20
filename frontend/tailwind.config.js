@@ -8,6 +8,16 @@ export default {
   theme: {
     extend: {
       colors: {
+        study: {
+          accent: 'rgb(var(--pn-primaria-rgb) / <alpha-value>)',
+          on: 'rgb(var(--pn-on-primaria-rgb) / <alpha-value>)',
+          canvas: 'rgb(var(--pn-fundo-rgb) / <alpha-value>)',
+          paper: 'rgb(var(--pn-superficie-rgb) / <alpha-value>)',
+          tint: 'rgb(var(--pn-primaria-suave-rgb) / <alpha-value>)',
+          ink: 'rgb(var(--pn-texto-rgb) / <alpha-value>)',
+          muted: 'rgb(var(--pn-texto-suave-rgb) / <alpha-value>)',
+          line: 'rgb(var(--pn-borda-rgb) / <alpha-value>)',
+        },
         primary: 'rgb(var(--color-primary) / <alpha-value>)',
         secondary: '#22C55E',
         accent: '#F59E0B',

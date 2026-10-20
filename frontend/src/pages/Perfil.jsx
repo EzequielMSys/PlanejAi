@@ -351,9 +351,9 @@ const handleSaveEstudos = async (e) => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F7F7FB]">
-        <div className="bg-white rounded-[3rem] shadow-2xl border border-[#9394CF]/20 p-10 text-center">
-          <div className="animate-spin rounded-full h-14 w-14 border-b-4 border-[#4B4C9D] mx-auto mb-4"></div>
+      <div className="min-h-screen flex items-center justify-center bg-study-canvas">
+        <div className="bg-study-paper rounded-[3rem] shadow-2xl border border-study-line/20 p-10 text-center">
+          <div className="animate-spin rounded-full h-14 w-14 border-b-4 border-study-line mx-auto mb-4"></div>
           <p className="text-black/65 font-bold">Carregando perfil...</p>
         </div>
       </div>
@@ -377,18 +377,18 @@ const handleSaveEstudos = async (e) => {
     : 'Não informado'
 
   return (
-    <div className="profile-page min-h-screen bg-[#F7F7FB] text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-72 h-72 bg-[#9394CF]/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#4B4C9D]/10 rounded-full blur-3xl" />
+    <div className="profile-page min-h-screen bg-study-canvas text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-72 h-72 bg-study-accent/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-study-accent/10 rounded-full blur-3xl" />
 
       <div className="max-w-4xl mx-auto relative z-10">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <div className="workspace-hero profile-hero bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+          <div className="workspace-hero profile-hero bg-gradient-to-br from-study-accent via-study-accent to-study-accent rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
             <div className="absolute inset-0 bg-black/20" />
 
             <div className="relative z-10 text-center">
               <div className="relative inline-block">
-                <div className="w-28 h-28 rounded-full bg-white/85 flex items-center justify-center shadow-2xl ring-4 ring-white/40 overflow-hidden mx-auto">
+                <div className="w-28 h-28 rounded-full bg-study-paper flex items-center justify-center shadow-2xl ring-4 ring-white/40 overflow-hidden mx-auto">
                   {avatarPreview ? (
                     <img
                       src={getFotoUrl(avatarPreview)}
@@ -397,7 +397,7 @@ const handleSaveEstudos = async (e) => {
                       onError={() => setAvatarPreview(null)}
                     />
                   ) : (
-                    <span className="text-5xl font-black text-[#4B4C9D]">
+                    <span className="text-5xl font-black text-study-accent">
                       {initials}
                     </span>
                   )}
@@ -407,7 +407,7 @@ const handleSaveEstudos = async (e) => {
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={uploadingFoto}
-                  className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-[#4B4C9D] transition-all shadow-xl disabled:opacity-50"
+                  className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-study-accent transition-all shadow-xl disabled:opacity-50"
                   aria-label="Trocar foto de perfil"
                   title="Trocar foto"
                 >
@@ -426,7 +426,7 @@ const handleSaveEstudos = async (e) => {
                     type="button"
                     onClick={handleRemoverFoto}
                     disabled={uploadingFoto || removingFoto}
-                    className="absolute bottom-0 left-0 rounded-full bg-white px-3 py-2 text-xs font-black text-[#4B2A6D] shadow-xl transition hover:bg-[#F3EAFE] disabled:opacity-50"
+                    className="absolute bottom-0 left-0 rounded-full bg-study-paper px-3 py-2 text-xs font-black text-[#4B2A6D] shadow-xl transition hover:bg-[#F3EAFE] disabled:opacity-50"
                     aria-label="Remover foto de perfil"
                   >
                     {removingFoto ? 'Removendo…' : 'Remover'}
@@ -444,14 +444,14 @@ const handleSaveEstudos = async (e) => {
             </div>
           </div>
 
-          <div className="profile-tabs flex flex-wrap gap-2 mb-6 bg-white p-1.5 rounded-full border border-[#9394CF]/20 w-fit mx-auto shadow-xl">
+          <div className="profile-tabs flex flex-wrap gap-2 mb-6 bg-study-paper p-1.5 rounded-full border border-study-line/20 w-fit mx-auto shadow-xl">
             <button
               type="button"
               onClick={() => setTab('info')}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                 tab === 'info'
-                  ? 'bg-[#4B4C9D] text-white shadow-lg'
-                  : 'text-black/60 hover:text-black hover:bg-[#9394CF]/15'
+                  ? 'bg-study-accent text-white shadow-lg'
+                  : 'text-black/60 hover:text-black hover:bg-study-accent/15'
               }`}
             >
               <IconUser /> Informações
@@ -462,8 +462,8 @@ const handleSaveEstudos = async (e) => {
               onClick={() => setTab('seguranca')}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                 tab === 'seguranca'
-                  ? 'bg-[#4B4C9D] text-white shadow-lg'
-                  : 'text-black/60 hover:text-black hover:bg-[#9394CF]/15'
+                  ? 'bg-study-accent text-white shadow-lg'
+                  : 'text-black/60 hover:text-black hover:bg-study-accent/15'
               }`}
             >
               <IconLock /> Segurança
@@ -474,8 +474,8 @@ const handleSaveEstudos = async (e) => {
               onClick={() => setTab('estudos')}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                 tab === 'estudos'
-                  ? 'bg-[#4B4C9D] text-white shadow-lg'
-                  : 'text-black/60 hover:text-black hover:bg-[#9394CF]/15'
+                  ? 'bg-study-accent text-white shadow-lg'
+                  : 'text-black/60 hover:text-black hover:bg-study-accent/15'
               }`}
             >
               <IconBook /> Estudos
@@ -483,16 +483,16 @@ const handleSaveEstudos = async (e) => {
           </div>
 
           {tab === 'info' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-study-paper rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-study-line/20">
               <form onSubmit={handleSaveInfo} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <input aria-label="Nome completo" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome completo" required />
-                  <input aria-label="Apelido" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Apelido" />
+                  <input aria-label="Nome completo" className="w-full rounded-full px-5 py-3 bg-study-canvas border border-study-line/40" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome completo" required />
+                  <input aria-label="Apelido" className="w-full rounded-full px-5 py-3 bg-study-canvas border border-study-line/40" value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Apelido" />
                 </div>
 
-                <input aria-label="Email" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" required />
+                <input aria-label="Email" className="w-full rounded-full px-5 py-3 bg-study-canvas border border-study-line/40" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" required />
 
-                <button type="submit" disabled={saving} className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                <button type="submit" disabled={saving} className="bg-study-accent text-white px-8 py-3 rounded-full font-bold shadow-xl">
                   {saving ? 'Salvando...' : 'Salvar alterações'}
                 </button>
               </form>
@@ -500,15 +500,15 @@ const handleSaveEstudos = async (e) => {
           )}
 
           {tab === 'seguranca' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-study-paper rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-study-line/20">
               <h2 className="text-xl font-black text-black mb-6 flex items-center gap-2">
                 <IconLock /> Alterar senha
               </h2>
 
               <form onSubmit={handleSaveSenha} className="space-y-5 max-w-lg">
-                <input type="password" value={senhaForm.senhaAtual} onChange={(e) => setSenhaForm((f) => ({ ...f, senhaAtual: e.target.value }))} placeholder="Senha atual" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" required />
-                <input type="password" value={senhaForm.novaSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, novaSenha: e.target.value }))} placeholder="Nova senha" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" required />
-                <input type="password" value={senhaForm.confirmarSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, confirmarSenha: e.target.value }))} placeholder="Confirmar nova senha" className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" required />
+                <input type="password" value={senhaForm.senhaAtual} onChange={(e) => setSenhaForm((f) => ({ ...f, senhaAtual: e.target.value }))} placeholder="Senha atual" className="w-full rounded-full px-5 py-3 bg-study-canvas border border-study-line/40" required />
+                <input type="password" value={senhaForm.novaSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, novaSenha: e.target.value }))} placeholder="Nova senha" className="w-full rounded-full px-5 py-3 bg-study-canvas border border-study-line/40" required />
+                <input type="password" value={senhaForm.confirmarSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, confirmarSenha: e.target.value }))} placeholder="Confirmar nova senha" className="w-full rounded-full px-5 py-3 bg-study-canvas border border-study-line/40" required />
 
                 {senhaErro && (
                   <div className="p-4 rounded-[1.5rem] bg-red-100 border border-red-300 text-red-700 text-sm font-semibold">
@@ -516,7 +516,7 @@ const handleSaveEstudos = async (e) => {
                   </div>
                 )}
 
-                <button disabled={saving} className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                <button disabled={saving} className="bg-study-accent text-white px-8 py-3 rounded-full font-bold shadow-xl">
                   {saving ? 'Salvando...' : 'Alterar senha'}
                 </button>
               </form>
@@ -524,7 +524,7 @@ const handleSaveEstudos = async (e) => {
           )}
 
           {tab === 'estudos' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20">
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-study-paper rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-study-line/20">
               <h2 className="text-xl font-black text-black mb-2 flex items-center gap-2">
                 <IconBook /> Perfil de estudo
               </h2>
@@ -535,7 +535,7 @@ const handleSaveEstudos = async (e) => {
 
               <form onSubmit={handleSaveEstudos} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <select value={estudoForm.ano_escolar} onChange={(e) => setEstudoForm((f) => ({ ...f, ano_escolar: e.target.value }))} className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" required>
+                  <select value={estudoForm.ano_escolar} onChange={(e) => setEstudoForm((f) => ({ ...f, ano_escolar: e.target.value }))} className="w-full rounded-full px-5 py-3 bg-study-canvas border border-study-line/40" required>
                     <option value="">Ano escolar</option>
                     <option value="9º">9º ano</option>
                     <option value="1º EM">1º ano EM</option>
@@ -543,7 +543,7 @@ const handleSaveEstudos = async (e) => {
                     <option value="3º EM">3º ano EM</option>
                   </select>
 
-                  <select value={estudoForm.objetivo} onChange={(e) => setEstudoForm((f) => ({ ...f, objetivo: e.target.value }))} className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" required>
+                  <select value={estudoForm.objetivo} onChange={(e) => setEstudoForm((f) => ({ ...f, objetivo: e.target.value }))} className="w-full rounded-full px-5 py-3 bg-study-canvas border border-study-line/40" required>
                     <option value="">Objetivo</option>
                     <option value="ENEM">ENEM</option>
                     <option value="VESTIBULAR">Vestibular</option>
@@ -560,9 +560,9 @@ const handleSaveEstudos = async (e) => {
                 />
 
                 <div className="grid md:grid-cols-2 gap-6">
-                  <input type="number" min="30" max="480" value={estudoForm.tempo_diario_min} onChange={(e) => setEstudoForm((f) => ({ ...f, tempo_diario_min: Number(e.target.value) }))} className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40" />
+                  <input type="number" min="30" max="480" value={estudoForm.tempo_diario_min} onChange={(e) => setEstudoForm((f) => ({ ...f, tempo_diario_min: Number(e.target.value) }))} className="w-full rounded-full px-5 py-3 bg-study-canvas border border-study-line/40" />
 
-                  <select value={estudoForm.prazo_estimado} onChange={(e) => setEstudoForm((f) => ({ ...f, prazo_estimado: Number(e.target.value) }))} className="w-full rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40">
+                  <select value={estudoForm.prazo_estimado} onChange={(e) => setEstudoForm((f) => ({ ...f, prazo_estimado: Number(e.target.value) }))} className="w-full rounded-full px-5 py-3 bg-study-canvas border border-study-line/40">
                     <option value={30}>Mensal</option>
                     <option value={90}>Trimestral</option>
                     <option value={180}>Semestral</option>
@@ -570,9 +570,9 @@ const handleSaveEstudos = async (e) => {
                   </select>
                 </div>
 
-                <div className="space-y-3 pt-4 border-t border-[#9394CF]/20">
+                <div className="space-y-3 pt-4 border-t border-study-line/20">
                   {disponibilidade.map((dia, index) => (
-                    <div key={dia.dia_semana} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-[#F7F7FB] rounded-[2rem] border border-[#9394CF]/20">
+                    <div key={dia.dia_semana} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-study-canvas rounded-[2rem] border border-study-line/20">
                       <label className="flex items-center gap-4 font-bold">
                         <input type="checkbox" checked={!dia.ocupado} onChange={() => toggleDiaEstudo(index)} className="w-5 h-5 accent-[#4B4C9D]" />
                         {dia.label}
@@ -584,7 +584,7 @@ const handleSaveEstudos = async (e) => {
                             const novosDias = [...disponibilidade]
                             novosDias[index].hora_inicio = e.target.value
                             setDisponibilidade(novosDias)
-                          }} className="bg-white border border-[#9394CF]/40 rounded-full px-3 py-2 text-xs" />
+                          }} className="bg-study-paper border border-study-line/40 rounded-full px-3 py-2 text-xs" />
 
                           <span>às</span>
 
@@ -592,7 +592,7 @@ const handleSaveEstudos = async (e) => {
                             const novosDias = [...disponibilidade]
                             novosDias[index].hora_fim = e.target.value
                             setDisponibilidade(novosDias)
-                          }} className="bg-white border border-[#9394CF]/40 rounded-full px-3 py-2 text-xs" />
+                          }} className="bg-study-paper border border-study-line/40 rounded-full px-3 py-2 text-xs" />
                         </div>
                       )}
                     </div>
@@ -600,11 +600,11 @@ const handleSaveEstudos = async (e) => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button type="submit" disabled={loadingEstudos} className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                  <button type="submit" disabled={loadingEstudos} className="bg-study-accent text-white px-8 py-3 rounded-full font-bold shadow-xl ds-btn">
                     {loadingEstudos ? 'Salvando...' : 'Salvar perfil de estudo'}
                   </button>
 
-                  <button type="button" onClick={handleRegenerarCronograma} disabled={regenerando} className="bg-black text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                  <button type="button" onClick={handleRegenerarCronograma} disabled={regenerando} className="bg-black text-white px-8 py-3 rounded-full font-bold shadow-xl ds-btn">
                     {regenerando ? 'Gerando...' : 'Regenerar cronograma'}
                   </button>
                 </div>

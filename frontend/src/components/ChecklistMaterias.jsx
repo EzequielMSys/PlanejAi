@@ -131,7 +131,7 @@ export default function ChecklistMaterias({ value, onChange, max = 10 }) {
   const todasPadraoFlatten = MATERIAS_PADRAO.flatMap((g) => g.materias)
 
   return (
-    <div className="w-full rounded-2xl border border-[#E4E3F0] bg-[#FAFAFD] p-4 sm:p-5">
+    <div className="w-full rounded-2xl border border-study-line bg-[#FAFAFD] p-4 sm:p-5">
       <div className="space-y-5">
         {MATERIAS_PADRAO.map((grupo) => (
           <div key={grupo.area}>
@@ -149,8 +149,8 @@ export default function ChecklistMaterias({ value, onChange, max = 10 }) {
                     aria-pressed={ativa}
                     className={`rounded-xl border px-3.5 py-2 text-sm font-bold transition-all duration-200 ${
                       ativa
-                        ? 'border-[#6157D9] bg-[#6157D9] text-white shadow-md shadow-indigo-200'
-                        : 'border-[#DDDCEB] bg-white text-[#55526B] hover:-translate-y-0.5 hover:border-[#8B7CF6] hover:text-[#3F36A5]'
+                        ? 'border-study-line bg-study-accent text-white shadow-md shadow-indigo-200'
+                        : 'border-[#DDDCEB] bg-study-paper text-[#55526B] hover:-translate-y-0.5 hover:border-[#8B7CF6] hover:text-[#3F36A5]'
                     }`}
                   >
                     {materia}
@@ -179,7 +179,7 @@ export default function ChecklistMaterias({ value, onChange, max = 10 }) {
         {mostrarOutra && (
           <input
             type="text"
-            className="mt-3 w-full rounded-xl border border-[#DADAF0] bg-white px-4 py-3 text-[#25233D] placeholder-black/35 outline-none transition focus:border-[#6157D9] focus:ring-4 focus:ring-indigo-100"
+            className="mt-3 w-full rounded-xl border border-study-line bg-study-paper px-4 py-3 text-study-ink placeholder-black/35 outline-none transition focus:border-study-line focus:ring-4 focus:ring-indigo-100"
             placeholder="Ex.: Artes, Educação Física, Informática"
             value={outrasText}
             onChange={(e) => handleOutrasChange(e.target.value)}
@@ -188,10 +188,10 @@ export default function ChecklistMaterias({ value, onChange, max = 10 }) {
       </div>
 
       {/* Contador / selecionadas */}
-      <div className="mt-4 flex items-center justify-between text-sm font-semibold text-[#77758F]">
+      <div className="mt-4 flex items-center justify-between text-sm font-semibold text-study-muted">
         {selecionadas.length > 0 ? (
           <>
-            <span className="font-black text-[#6157D9]">
+            <span className="font-black text-study-accent">
               {selecionadas.length}
             </span>{' '}
             {selecionadas.length === 1 ? 'matéria selecionada' : 'matérias selecionadas'}

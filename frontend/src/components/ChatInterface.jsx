@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import inteligencia from '../services/inteligenciaService'
+import TutorLumi from './TutorLumi'
 
 const SUGESTOES_INICIO = [
   'Como estudar funções do 2º grau de forma prática?',
@@ -23,18 +23,13 @@ function formatarHora(data) {
 function Mensagem({ mensagem }) {
   const ehUsuario = mensagem.role === 'user'
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -4 }}
-      className={`flex ${ehUsuario ? 'justify-end' : 'justify-start'}`}
-    >
+    <div className={`flex items-start gap-2 ${ehUsuario ? 'justify-end' : 'justify-start'}`}>
+      {!ehUsuario && <TutorLumi tamanho={28} humor={mensagem.reacao || 'neutro'} />}
       <div
         className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
           ehUsuario
-            ? 'bg-[#6D3EC5] text-white rounded-br-md'
-            : 'bg-[#F3E8FF] dark:bg-[#2C203C] text-[#2C1a3d] dark:text-white/90 border border-[#7C4DFF]/15 rounded-bl-md'
+            ? 'bg-study-accent text-white rounded-br-md'
+            : 'bg-study-tint dark:bg-study-paper text-study-ink dark:text-white/90 border border-study-line/15 rounded-bl-md'
         }`}
       >
         <p className="whitespace-pre-wrap leading-relaxed">{mensagem.content}</p>
@@ -44,7 +39,7 @@ function Mensagem({ mensagem }) {
           </time>
         )}
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -53,6 +48,8 @@ export default function ChatInterface({ className = '' }) {
   const [input, setInput] = useState('')
   const [materia, setMateria] = useState('')
   const [loading, setLoading] = useState(false)
+  const [humorLumi, setHumorLumi] = useState('neutro')
+  const [contexto, setContexto] = useState(null)
   const fimRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -78,6 +75,10 @@ export default function ChatInterface({ className = '' }) {
     fimRef.current?.scrollIntoView({ block: 'end' })
   }, [mensagens, loading])
 
+  useEffect(() => {
+    inteligencia.chatContext().then(setContexto).catch(() => {})
+  }, [])
+
   function append(mensagem) {
     setMensagens((prev) => [...prev, { ...mensagem, id: Date.now() + Math.random() }])
   }
@@ -93,29 +94,36 @@ export default function ChatInterface({ className = '' }) {
     })
     setInput('')
     setLoading(true)
+    setHumorLumi('pensando')
     try {
       const data = await inteligencia.chatSend(mensagem, materia || undefined)
       if (data?.offline || data?.queued) {
         toast(data.message || 'Sem conexão: a mensagem será enviada quando você ficar online.')
+        setHumorLumi('neutro')
       } else if (data?.mensagens) {
         setMensagens(
-          data.mensagens.map((m) => ({
+          data.mensagens.map((m, index) => ({
             role: m.role,
             content: m.conteudo,
             disciplina: m.disciplina,
             criado_em: m.criado_em,
-          })),
+            reacao: index === data.mensagens.length - 1 ? data.reacao : undefined,
+          }))
         )
+        setHumorLumi(data.reacao || 'neutro')
       } else if (data?.conteudo) {
         append({
           role: 'assistant',
           content: data.conteudo,
           disciplina: materia || null,
           criado_em: new Date().toISOString(),
+          reacao: data.reacao,
         })
+        setHumorLumi(data.reacao || 'neutro')
       }
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Não foi possível conversar com a IA agora.')
+      toast.error(error?.response?.data?.message || 'Não foi possível conversar com a Lumi agora.')
+      setHumorLumi('neutro')
     } finally {
       setLoading(false)
       inputRef.current?.focus()
@@ -123,7 +131,7 @@ export default function ChatInterface({ className = '' }) {
   }
 
   async function limparConversa() {
-    if (!window.confirm('Limpar toda a conversa com a IA?')) return
+    if (!window.confirm('Limpar toda a conversa com a Lumi?')) return
     try {
       await inteligencia.chatClear()
       setMensagens([])
@@ -135,13 +143,13 @@ export default function ChatInterface({ className = '' }) {
 
   return (
     <div className={`flex min-h-0 flex-col h-full ${className}`}>
-      <div className="flex items-center justify-between gap-2 border-b border-[#7C4DFF]/10 px-3 py-2">
+      <div className="flex items-center justify-between gap-2 border-b border-study-line/10 px-3 py-2">
         <label className="flex items-center gap-2 text-xs font-bold text-black/60 dark:text-white/60">
           Matéria
           <select
             value={materia}
             onChange={(event) => setMateria(event.target.value)}
-            className="rounded-lg border border-[#7C4DFF]/25 bg-white px-2 py-1 text-xs font-semibold text-[#2C1a3d] dark:bg-[#2C203C] dark:text-white"
+            className="rounded-lg border border-study-line/25 bg-study-paper px-2 py-1 text-xs font-semibold text-study-ink dark:bg-study-paper dark:text-white"
           >
             <option value="">Todas</option>
             {DISCIPLINAS.map((item) => (
@@ -155,26 +163,40 @@ export default function ChatInterface({ className = '' }) {
           type="button"
           onClick={limparConversa}
           disabled={!mensagens.length || loading}
-          className="rounded-lg px-2 py-1 text-xs font-bold text-[#5b21b6] hover:bg-[#7C4DFF]/10 disabled:opacity-40 dark:text-white/80"
+          className="rounded-lg px-2 py-1 text-xs font-bold text-study-accent hover:bg-study-accent/10 disabled:opacity-40 dark:text-white/80"
         >
           Limpar conversa
         </button>
       </div>
 
+      {contexto && (contexto.areasFoco || contexto.licoes?.length > 0 || contexto.dificuldades?.length > 0) && (
+        <div className="border-b border-study-line/10 px-3 py-2 text-xs text-study-ink/70 dark:text-white/70" aria-label="Contexto de estudos disponível para a Lumi">
+          <span className="font-bold">Lumi conhece seus estudos:</span>{' '}
+          {contexto.areasFoco && <span>áreas de foco · </span>}
+          {contexto.licoes?.length > 0 && <span>{contexto.licoes.length} lições recentes · </span>}
+          {contexto.dificuldades?.length > 0 && <span>{contexto.dificuldades.length} dificuldades identificadas</span>}
+        </div>
+      )}
+
       <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-live="polite">
         {!mensagens.length && !loading && (
           <div className="mx-auto flex max-w-md flex-col items-center gap-3 py-6 text-center">
-            <p className="text-base font-black text-[#5b21b6] dark:text-white">Olá! Sou seu assistente de estudos.</p>
+            <TutorLumi tamanho={76} humor={humorLumi} />
+            <p className="text-base font-black text-study-accent dark:text-white">
+              Olá! Eu sou a Lumi, sua parceira de estudos.
+            </p>
             <p className="text-sm text-black/60 dark:text-white/60">
-              Pergunte sobre qualquer matéria. Eu explico o raciocínio passo a passo.
+              Posso explicar matérias, retomar suas lições e praticar o que está difícil.
             </p>
             <div className="flex w-full flex-col gap-2">
+              {contexto?.licoes?.[0]?.titulo && <button type="button" onClick={() => enviar(`Me ajude a estudar a lição ${contexto.licoes[0].titulo}. Comece pelo conceito principal.`)} className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white">Retomar minha lição: {contexto.licoes[0].titulo}</button>}
+              {contexto?.dificuldades?.[0]?.disciplina && <button type="button" onClick={() => enviar(`Tenho tido dificuldade em ${contexto.dificuldades[0].disciplina}${contexto.dificuldades[0].competencia ? `, especialmente ${contexto.dificuldades[0].competencia}` : ''}. Explique de outra forma e proponha um exercício curto.`)} className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white">Trabalhar uma dificuldade em {contexto.dificuldades[0].disciplina}</button>}
               {SUGESTOES_INICIO.map((sugestao) => (
                 <button
                   key={sugestao}
                   type="button"
                   onClick={() => enviar(sugestao)}
-                  className="rounded-xl border border-[#7C4DFF]/25 bg-white px-3 py-2 text-left text-sm font-semibold text-[#5b21b6] transition hover:bg-[#F3E8FF] dark:bg-[#2C203C] dark:text-white dark:hover:bg-[#3a2a50]"
+                  className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white dark:hover:bg-[#3a2a50]"
                 >
                   {sugestao}
                 </button>
@@ -183,21 +205,19 @@ export default function ChatInterface({ className = '' }) {
           </div>
         )}
 
-        <AnimatePresence initial={false}>
-          {mensagens.map((mensagem, index) => (
-            <Mensagem key={mensagem.id || `${mensagem.role}-${index}`} mensagem={mensagem} />
-          ))}
-        </AnimatePresence>
+        {mensagens.map((mensagem, index) => (
+          <Mensagem key={mensagem.id || `${mensagem.role}-${index}`} mensagem={mensagem} />
+        ))}
 
         {loading && (
-          <div className="flex justify-start" role="status" aria-label="A IA está digitando">
-            <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-[#7C4DFF]/15 bg-[#F3E8FF] px-4 py-3 dark:bg-[#2C203C]">
+          <div className="flex items-start gap-2 justify-start" role="status" aria-label="Lumi está pensando na resposta">
+            <TutorLumi tamanho={28} humor="pensando" />
+            <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-study-line/15 bg-study-tint px-4 py-3 dark:bg-study-paper">
               {[0, 1, 2].map((dot) => (
-                <motion.span
+                <span
                   key={dot}
-                  className="h-2 w-2 rounded-full bg-[#6D3EC5] dark:bg-white/70"
-                  animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
-                  transition={{ duration: 0.9, repeat: Infinity, delay: dot * 0.15 }}
+                  className="h-2 w-2 rounded-full bg-study-accent dark:bg-white/70 animate-bounce"
+                  style={{ animationDelay: `${dot * 0.15}s` }}
                 />
               ))}
             </div>
@@ -211,7 +231,7 @@ export default function ChatInterface({ className = '' }) {
           event.preventDefault()
           enviar()
         }}
-        className="flex items-end gap-2 border-t border-[#7C4DFF]/15 p-3"
+        className="flex items-end gap-2 border-t border-study-line/15 p-3"
       >
         <textarea
           ref={inputRef}
@@ -226,13 +246,13 @@ export default function ChatInterface({ className = '' }) {
           rows={1}
           maxLength={2000}
           placeholder="Digite sua dúvida..."
-          aria-label="Mensagem para o assistente de IA"
-          className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-xl border border-[#7C4DFF]/25 bg-white px-3 py-2 text-sm text-[#2C1a3d] outline-none focus:border-[#6D3EC5] dark:bg-[#2C203C] dark:text-white"
+          aria-label="Mensagem para a Lumi"
+          className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-sm text-study-ink outline-none focus:border-study-line dark:bg-study-paper dark:text-white"
         />
         <button
           type="submit"
           disabled={loading || !input.trim()}
-          className="rounded-xl bg-[#6D3EC5] px-4 py-2 text-sm font-black text-white transition hover:bg-[#5b21b6] disabled:opacity-50"
+          className="rounded-xl bg-study-accent px-4 py-2 text-sm font-black text-white transition hover:bg-study-accent disabled:opacity-50"
         >
           Enviar
         </button>

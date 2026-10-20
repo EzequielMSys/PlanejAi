@@ -33,12 +33,13 @@ test('systemPrompt inclui nome e disciplina quando informados', () => {
   const prompt = iaConfig.systemPrompt('Maria Souza', 'Física');
   assert.match(prompt, /Maria Souza/);
   assert.match(prompt, /Física/);
-  assert.match(prompt, /PlanejAI Assistente/);
+  assert.match(prompt, /Lumi/);
+  assert.match(prompt, /PlanejAI/);
 });
 
 test('systemPrompt funciona sem nome e sem disciplina', () => {
   const prompt = iaConfig.systemPrompt(undefined, undefined);
-  assert.match(prompt, /PlanejAI Assistente/);
+  assert.match(prompt, /Lumi/);
   assert.doesNotMatch(prompt, /Nome do estudante/);
   assert.doesNotMatch(prompt, /disciplina: undefined/);
 });

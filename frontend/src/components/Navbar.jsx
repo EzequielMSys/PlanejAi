@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import ThemeToggle from './ThemeToggle'
 import Avatar from './Avatar'
+import ColorPicker from './ColorPicker'
 
 const routeNames = {
   '/inicio': ['Visão geral', 'Seu centro de aprendizagem'],
@@ -12,7 +13,7 @@ const routeNames = {
   '/aprendizagem': ['Aprendizagem', 'Pratique e acompanhe seu domínio'],
   '/planejamento-inteligente': ['Planejamento', 'Estratégia guiada por dados'],
     '/provas': ['Provas e simulados', 'Treino real com progresso salvo'],
-  '/chat': ['Assistente de IA', 'Tire dúvidas sobre suas matérias'],
+  '/chat': ['Lumi', 'Tire dúvidas sobre suas matérias'],
   '/redacoes': ['Redações', 'Escreva, revise e evolua'],
   '/turmas': ['Turmas', 'Comunidade e acompanhamento'],
   '/atividades': ['Atividades', 'Criação e correção pedagógica'],
@@ -58,24 +59,25 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
   return (
     <header className="app-topbar">
       <div className="topbar-left">
-        <button type="button" onClick={onMenuClick} className="topbar-menu" aria-label={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}><Icon name={sidebarOpen ? 'close' : 'menu'} /></button>
+        <button type="button" onClick={onMenuClick} className="topbar-menu ds-btn-fantasma" aria-label={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}><Icon name={sidebarOpen ? 'close' : 'menu'} /></button>
         <div className="topbar-route"><span className="topbar-date">Hoje · {today}</span><div><strong>{title}</strong><small>{subtitle}</small></div></div>
       </div>
 
       <div className="topbar-actions">
         <div className="topbar-quick-wrap">
-          <button type="button" className="topbar-quick" onClick={() => setQuickOpen((value) => !value)} aria-expanded={quickOpen}><Icon name="spark" /> <span>Criar</span></button>
-          <AnimatePresence>{quickOpen && <><button className="topbar-dismiss" type="button" aria-label="Fechar" onClick={() => setQuickOpen(false)} /><motion.div className="topbar-popover topbar-create-menu" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}><small>AÇÃO RÁPIDA</small><button onClick={() => go('/planejamento-inteligente')}>Montar planejamento <b>→</b></button><button onClick={() => go('/redacoes')}>Começar redação <b>→</b></button><button onClick={() => go(user?.tipo === 'aluno' ? '/minhas-atividades' : '/atividades')}>Abrir atividades <b>→</b></button></motion.div></>}</AnimatePresence>
+          <button type="button" className="topbar-quick ds-btn" onClick={() => setQuickOpen((value) => !value)} aria-expanded={quickOpen}><Icon name="spark" /> <span>Criar</span></button>
+          <AnimatePresence>{quickOpen && <><button className="topbar-dismiss" type="button" aria-label="Fechar" onClick={() => setQuickOpen(false)} /><motion.div className="topbar-popover topbar-create-menu" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}><small>AÇÃO RÁPIDA</small><button className="ds-btn-fantasma" onClick={() => go('/planejamento-inteligente')}>Montar planejamento <b>→</b></button><button onClick={() => go('/redacoes')}>Começar redação <b>→</b></button><button className="ds-btn-fantasma" onClick={() => go(user?.tipo === 'aluno' ? '/minhas-atividades' : '/atividades')}>Abrir atividades <b>→</b></button></motion.div></>}</AnimatePresence>
         </div>
         <button type="button" className="topbar-icon-button" onClick={() => go('/avisos')} aria-label="Abrir avisos"><Icon name="bell" /></button>
+        <ColorPicker />
         <ThemeToggle className="topbar-theme" />
         <div className="topbar-profile-wrap">
-          <button type="button" className="topbar-profile" onClick={() => setDropdownOpen((value) => !value)} aria-expanded={dropdownOpen}>
+          <button type="button" className="topbar-profile ds-btn-fantasma" onClick={() => setDropdownOpen((value) => !value)} aria-expanded={dropdownOpen}>
             <Avatar src={user?.foto_url} nome={displayName} tamanho={34} className="topbar-avatar" />
             <span className="topbar-profile-copy"><strong>{displayName}</strong><small>{user?.tipo || 'aluno'}</small></span>
             <Icon name="chevron" className={dropdownOpen ? 'is-open' : ''} />
           </button>
-          <AnimatePresence>{dropdownOpen && <><button className="topbar-dismiss" type="button" aria-label="Fechar" onClick={() => setDropdownOpen(false)} /><motion.div className="topbar-popover topbar-profile-menu" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}><div><strong>{displayName}</strong><small>{user?.email}</small></div><button onClick={() => go('/perfil')}>Meu perfil</button><button onClick={() => go('/alterar-senha')}>Segurança</button>{isAdmin && <button onClick={() => go('/usuarios')}>Administração</button>}{isDono && <button onClick={() => go('/dono')}>Central do proprietário</button>}<button className="is-danger" onClick={signOut}>Sair da conta</button></motion.div></>}</AnimatePresence>
+          <AnimatePresence>{dropdownOpen && <><button className="topbar-dismiss" type="button" aria-label="Fechar" onClick={() => setDropdownOpen(false)} /><motion.div className="topbar-popover topbar-profile-menu" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}><div><strong>{displayName}</strong><small>{user?.email}</small></div><button className="ds-btn-fantasma" onClick={() => go('/perfil')}>Meu perfil</button><button className="ds-btn-fantasma" onClick={() => go('/alterar-senha')}>Segurança</button>{isAdmin && <button className="ds-btn-fantasma" onClick={() => go('/usuarios')}>Administração</button>}{isDono && <button className="ds-btn-fantasma" onClick={() => go('/dono')}>Central do proprietário</button>}<button className="ds-btn-fantasma is-danger" onClick={signOut}>Sair da conta</button></motion.div></>}</AnimatePresence>
         </div>
       </div>
     </header>

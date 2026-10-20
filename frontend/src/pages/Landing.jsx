@@ -1,250 +1,59 @@
-import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import ColorPicker from '../components/ColorPicker'
 import ThemeToggle from '../components/ThemeToggle'
-import { useTheme } from '../context/ThemeContext'
+import './Landing.css'
 
-// A entrada escalonada cria ritmo de leitura: cada bloco aparece um pouco
-// depois do anterior, guiando o olho de cima para baixo.
-const container = {
-  oculto: {},
-  visivel: { transition: { staggerChildren: 0.08, delayChildren: 0.04 } },
-}
-
-const item = {
-  oculto: { opacity: 0, y: 20 },
-  visivel: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.2, 0.8, 0.2, 1] } },
-}
-
-// Os quatro territórios do saber. Cada um aponta para a tela real do produto,
-// então o card é clicável e leva o usuário até a ferramenta de verdade.
-const TERRITORIOS = [
-  {
-    rotulo: 'Cronograma',
-    titulo: 'Seu tempo, desenhado',
-    texto: 'Sessões distribuídas na semana real e reajustadas quando a vida muda de planos.',
-    rota: '/cronograma',
-    marca: '◷',
-  },
-  {
-    rotulo: 'Provas',
-    titulo: 'Treine sem apostar no escuro',
-    texto: 'Simulados por vestibular, objetivo e nível, com o resultado já calibrando a rota.',
-    rota: '/provas',
-    marca: '◎',
-  },
-  {
-    rotulo: 'Redações',
-    titulo: 'Escreva e receba retorno',
-    texto: 'Escrita guiada com comentários do docente apontando exatamente onde melhorar.',
-    rota: '/redacoes',
-    marca: '✎',
-  },
-  {
-    rotulo: 'Sua turma',
-    titulo: 'Todo mundo no mesmo rumo',
-    texto: 'Entre com o código, Activities e avisos do professor reunidos num só lugar.',
-    // Antes apontava para /turmas, que é a tela de GESTÃO. Um aluno logado era
-    // jogado para /dashboard em silêncio, sem entender por quê. A promessa é
-    // escrita do ponto de vista do aluno, então precisa levar à tela do aluno.
-    rota: '/minhas-turmas',
-    marca: '◈',
-  },
+const recursos = [
+  ['01', 'Um plano que cabe na vida.', 'Distribua as matérias no tempo que você tem. Retome o que ficou para depois e enxergue o próximo passo.', '/cronograma', 'Organizar meus estudos'],
+  ['02', 'Entender vale mais que decorar.', 'Converse com o tutor, peça outro exemplo e pratique com questões. Aprenda a explicar com suas palavras.', '/chat', 'Conhecer o assistente'],
+  ['03', 'Sua escrita, em construção.', 'Reúna versões, revise argumentos e acompanhe a evolução das suas redações em um só lugar.', '/redacoes', 'Explorar redações'],
+  ['04', 'Aprender também é compartilhar.', 'Atividades, materiais e avisos aproximam a sua rotina da turma e de quem ensina.', '/minhas-turmas', 'Encontrar minha turma'],
 ]
-
-const JORNADA = [
-  { titulo: 'Você marca onde está', texto: 'O sistema descobre sua base em cada disciplina e desenha o território.' },
-  { titulo: 'O caminho se traça', texto: 'Um plano com etapas claras, do primeiro passo ao domínio, sempre com um destino à vista.' },
-  { titulo: 'Cada passo deixa marca', texto: 'Questões, provas e redações atualizam o mapa e revelam o que falta.' },
-]
-
-function Cabecalho() {
-  return (
-    <header className="pn-topo">
-      <Link to="/" className="pn-marca" aria-label="PlanejAI, página inicial">
-        <Logo className="h-9 w-9" animado={false} />
-        <span className="pn-marca-texto">Planej<strong>AI</strong></span>
-      </Link>
-
-      <nav className="pn-nav" aria-label="Navegação principal">
-        <a href="#como-funciona">Como funciona</a>
-        <a href="#recursos">Recursos</a>
-      </nav>
-
-      <div className="pn-acoes">
-        <ColorPicker />
-        <ThemeToggle />
-        <Link to="/login" className="pn-btn pn-btn-fantasma">Entrar</Link>
-        <Link to="/register" className="pn-btn pn-btn-primario">Criar conta</Link>
-      </div>
-    </header>
-  )
-}
-
-// A prévia do produto: o "mapa" do aluno. Mostra uma rota real — do que já foi
-// dominado ao que está em foco agora — que é a ideia central do conceito Atlas.
-function PreviaMapa() {
-  return (
-    <div className="pn-mapa">
-      <div className="pn-mapa-topo">
-        <span className="pn-sobrancelha">Seu mapa</span>
-        <strong>Quarta-feira</strong>
-      </div>
-
-      <ul className="pn-mapa-trilha" aria-label="Rota de estudos de hoje">
-        <li data-estado="feito">
-          <span className="pn-mapa-no" aria-hidden="true">✓</span>
-          <div>
-            <b>Revisão ativa</b>
-            <small>8 cartões · concluído</small>
-          </div>
-        </li>
-        <li data-estado="agora">
-          <span className="pn-mapa-no" aria-hidden="true">2</span>
-          <div>
-            <b>Funções exponenciais</b>
-            <small>Matemática · 35 min</small>
-            <span className="pn-progresso" role="presentation"><span /></span>
-          </div>
-        </li>
-        <li data-estado="depois">
-          <span className="pn-mapa-no" aria-hidden="true">3</span>
-          <div>
-            <b>Redação dissertativa</b>
-            <small>40 min</small>
-          </div>
-        </li>
-      </ul>
-
-      <div className="pn-mapa-rodape">
-        <span>4 dias seguidos</span>
-        <b>68% da meta</b>
-      </div>
-    </div>
-  )
-}
 
 export default function Landing() {
-  const { paletaAtiva } = useTheme()
-  const reduzirMovimento = useReducedMotion()
-  // Com movimento reduzido não há variantes: o conteúdo aparece direto, sem
-  // depender de animação para ser lido.
-  const animaContainer = reduzirMovimento ? {} : container
-  const animaItem = reduzirMovimento ? {} : item
-
-  return (
-    <div className="pn-pagina">
-      <a href="#conteudo-principal" className="pn-saltar">Pular para o conteúdo</a>
-
-      <Cabecalho />
-
-      <main id="conteudo-principal" tabIndex={-1}>
-        <section className="pn-hero">
-          <motion.div className="pn-hero-texto" variants={animaContainer} initial="oculto" animate="visivel">
-            <motion.p variants={animaItem} className="pn-sobrancelha">
-              <span className="pn-ponto" /> O conhecimento como território
-            </motion.p>
-
-            <motion.h1 variants={animaItem} className="pn-titulo">
-              Saiba sempre<br />
-              <em>onde está.</em>
-            </motion.h1>
-
-            <motion.p variants={animaItem} className="pn-corpo pn-hero-lead">
-              O PlanejAI mapeia o que você já domina e traça a rota até onde quer
-              chegar. Nada de lista solta: cada passo tem destino, e cada prova
-              redesenha o caminho.
-            </motion.p>
-
-            <motion.div variants={animaItem} className="pn-hero-acoes">
-              <Link to="/register" className="pn-btn pn-btn-primario">Traçar meu mapa</Link>
-              <a href="#como-funciona" className="pn-btn pn-btn-fantasma">Como funciona</a>
-            </motion.div>
-          </motion.div>
-
-          <motion.div
-            className="pn-hero-previa"
-            initial={reduzirMovimento ? false : { opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15 }}
-          >
-            <PreviaMapa />
-          </motion.div>
-        </section>
-
-        <section id="recursos" className="pn-secao-bloco">
-          <div className="pn-secao-cabecalho">
-            <p className="pn-sobrancelha">Os territórios</p>
-            <h2 className="pn-secao">Cada área do conhecimento tem seu mapa.</h2>
-            <p className="pn-corpo">
-              Entre em qualquer território para ver como ele funciona na prática.
-            </p>
+  return <div className="study-landing">
+    <header className="study-nav">
+      <Link to="/" className="study-brand" aria-label="PlanejAI, página inicial"><Logo className="h-9 w-9" /><span>Planej<span className="brand-accent">AI</span></span></Link>
+      <nav aria-label="Navegação principal"><a href="#recursos">O que você encontra</a><a href="#como-funciona">Como começar</a></nav>
+      <div className="study-nav-actions"><ColorPicker /><ThemeToggle /><Link to="/login" className="study-login">Entrar</Link></div>
+    </header>
+    <main id="conteudo-principal" tabIndex={-1}>
+      <section className="study-hero">
+        <div className="study-hero-copy">
+          <p className="study-kicker">ESPAÇO PARA APRENDER · PLANEJAI</p>
+          <h1>Seu futuro.<br />Uma página<br /><em>por vez.</em></h1>
+          <p className="study-lead">Entre a vontade de aprender e o próximo passo, existe um lugar seu. Organize os estudos, tire dúvidas e veja o que já conquistou.</p>
+          <div className="study-actions"><Link to="/register" className="study-button">Começar meu caderno <span aria-hidden="true">↗</span></Link><a href="#como-funciona">Conhecer o PlanejAI <span aria-hidden="true">↓</span></a></div>
+          <p className="study-caption">No seu tempo. Do seu jeito. Com direção.</p>
+        </div>
+        <div className="study-desk" aria-label="Exemplo de organização de estudos">
+          <div className="study-note"><span>um lembrete</span><p>Você não precisa<br />aprender tudo hoje.</p><svg viewBox="0 0 140 25" aria-hidden="true"><path d="M4 15 Q65 0 130 13 M110 4l22 9-20 9" /></svg></div>
+          <div className="study-notebook">
+            <div className="notebook-heading"><span>MEU CADERNO</span><span>EXEMPLO / 01</span></div>
+            <h2>Hoje, um pouco<br /><em>mais longe.</em></h2>
+            <div className="notebook-date">Três momentos para aprender</div>
+            <ol>
+              <li><span className="notebook-check">✓</span><div><b>Rever o que ficou</b><small>Revisão ativa · 15 min</small></div><span>01</span></li>
+              <li className="notebook-current"><span className="notebook-check">↗</span><div><b>Dar sentido às funções</b><small>Matemática · 30 min</small></div><span>02</span></li>
+              <li><span className="notebook-check">✎</span><div><b>Colocar ideias no papel</b><small>Redação · 25 min</small></div><span>03</span></li>
+            </ol>
+            <footer><span>O próximo passo já é um começo.</span><Logo className="h-7 w-7" /></footer>
           </div>
-
-          <div className="pn-territorios">
-            {TERRITORIOS.map((t) => (
-              <Link
-                key={t.rotulo}
-                to={t.rota}
-                className="pn-territorio pn-folha-interativa"
-              >
-                <span className="pn-territorio-marca" aria-hidden="true">{t.marca}</span>
-                <span className="pn-sobrancelha">{t.rotulo}</span>
-                <h3>{t.titulo}</h3>
-                <p className="pn-corpo">{t.texto}</p>
-                <span className="pn-territorio-ir" aria-hidden="true">Explorar →</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section id="como-funciona" className="pn-secao-bloco">
-          <div className="pn-secao-cabecalho">
-            <p className="pn-sobrancelha">Como funciona</p>
-            <h2 className="pn-secao">O mapa se desenha enquanto você estuda.</h2>
-          </div>
-
-          <ol className="pn-jornada">
-            {JORNADA.map((j, indice) => (
-              <motion.li
-                key={j.titulo}
-                className="pn-jornada-passo"
-                variants={animaItem}
-                initial="oculto"
-                whileInView="visivel"
-                viewport={{ once: true, margin: '-80px' }}
-              >
-                <span className="pn-jornada-no" aria-hidden="true">
-                  {String(indice + 1).padStart(2, '0')}
-                </span>
-                <div>
-                  <h3>{j.titulo}</h3>
-                  <p className="pn-corpo">{j.texto}</p>
-                </div>
-              </motion.li>
-            ))}
-          </ol>
-        </section>
-
-        <section className="pn-fecho pn-folha">
-          <div>
-            <h2 className="pn-secao">Pronto para abrir seu caderno?</h2>
-            <p className="pn-corpo">
-              Crie sua conta em menos de um minuto e comece pelo que importa hoje.
-            </p>
-          </div>
-          <Link to="/register" className="pn-btn pn-btn-primario">Criar minha conta</Link>
-        </section>
-      </main>
-
-      <footer className="pn-rodape">
-        <Logo className="h-7 w-7" animado={false} />
-        <p className="pn-corpo">
-          Planejamento inteligente para uma aprendizagem que continua. · Cor atual: {paletaAtiva.nome}
-        </p>
-        <small>© {new Date().getFullYear()} PlanejAI</small>
-      </footer>
-    </div>
-  )
+          <span className="study-desk-caption">MENOS RUÍDO. MAIS ESPAÇO PARA PENSAR.</span>
+        </div>
+      </section>
+      <section className="study-manifesto"><span>APRENDER É UM PROCESSO</span><p>Um lugar para organizar.<br /><em>Liberdade para descobrir.</em></p><span>PLANEJAR / PRATICAR / EVOLUIR</span></section>
+      <section id="recursos" className="study-resources">
+        <div className="study-section-heading"><p className="study-kicker">SEU ESTUDO, POR INTEIRO</p><h2>As ferramentas certas.<br /><em>O caminho é seu.</em></h2></div>
+        <div className="study-resource-grid">{recursos.map(([number, title, text, route, label]) => <article key={number}><span className="study-resource-number">{number}</span><h3>{title}</h3><p>{text}</p><Link to={route}>{label}<span aria-hidden="true">↗</span></Link></article>)}</div>
+      </section>
+      <section id="como-funciona" className="study-start">
+        <div><p className="study-kicker">SEM COMPLICAR</p><h2>Comece de onde<br /><em>você está.</em></h2><p>Não existe uma rotina perfeita. Existe a que funciona para você — e ela pode mudar.</p></div>
+        <ol>{[['Conte o que você busca', 'Seu objetivo, suas matérias e o tempo disponível ajudam a montar o plano.'], ['Encontre seu ritmo', 'Estude, pratique e converse com o assistente quando precisar de outra explicação.'], ['Volte e perceba a diferença', 'Use seus resultados para revisar dificuldades e escolher os próximos passos.']].map(([title, text], i) => <li key={title}><span>0{i + 1}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol>
+      </section>
+      <section className="study-invitation"><p className="study-kicker">O ESPAÇO É SEU</p><h2>O que você quer<br /><em>aprender agora?</em></h2><Link to="/register" className="study-button">Criar minha conta <span aria-hidden="true">↗</span></Link><p>Escolha suas cores no topo e sinta-se em casa.</p></section>
+    </main>
+    <footer className="study-footer"><Link to="/" className="study-brand"><Logo className="h-8 w-8" /><span>PlanejAI</span></Link><p>Aprender transforma o que vem depois.</p><small>© {new Date().getFullYear()} PlanejAI</small></footer>
+  </div>
 }

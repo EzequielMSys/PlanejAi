@@ -1,9 +1,11 @@
 import { Routes, Route } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { AuthProvider } from './context/AuthContext'
+import { UserProvider } from './context/UserContext'
 
 import ProtectedRoute from './routes/ProtectedRoute'
-import Layout from './layouts/Layout'
+import RouteLoading from './components/RouteLoading'
+const Layout = lazy(() => import('./layouts/Layout'))
 
 const Landing = lazy(() => import('./pages/Landing'))
 const Login = lazy(() => import('./pages/Login'))
@@ -39,18 +41,9 @@ const Chat = lazy(() => import('./pages/Chat'))
 function App() {
   return (
     <AuthProvider>
-      <Suspense
-        fallback={
-          <div
-            role="status"
-            aria-live="polite"
-            className="grid min-h-screen place-items-center font-bold"
-          >
-            Carregando PlanejAI…
-          </div>
-        }
-      >
-      <Routes>
+      <UserProvider>
+        <Suspense fallback={<RouteLoading />}>
+        <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -109,6 +102,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
+      </UserProvider>
     </AuthProvider>
   )
 }

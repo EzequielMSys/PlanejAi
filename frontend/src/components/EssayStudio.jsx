@@ -44,11 +44,11 @@ function TemaLab({ sugestao, usarTema }) {
 function DiagnosticPanel({ diagnostico }) {
   if (!diagnostico) return null
   return <section className="essay-diagnostic" aria-live="polite">
-    <header><div><span>PRÉVIA FORMATIVA</span><h3>{diagnostico.notaEstimada}<small>/1000</small></h3></div><p>Não é uma nota oficial. Use como mapa de revisão.</p></header>
-    <div className="essay-competences">{(diagnostico.competencias || []).map((c) => <article key={c.codigo}><div><span>C{c.codigo}</span><b>{c.nota}/200</b></div><meter min="0" max="200" value={c.nota} /><p>{c.feedback}</p></article>)}</div>
+    <header><div><span>PRÉVIA FORMATIVA DA LUMI</span><h3>{diagnostico.notaEstimada == null ? 'Sem nota' : <>{diagnostico.notaEstimada}<small>/1000</small></>}</h3></div><p>{diagnostico.aviso}</p></header>
+    <div className="essay-competences">{(diagnostico.competencias || []).map((c) => <article key={c.codigo}><div><span>C{c.codigo}</span><b>{c.nota}/200</b></div><meter min="0" max="200" value={c.nota} /><p><strong>Evidência:</strong> {c.evidencia}</p><p>{c.feedback}</p></article>)}</div>
     <div className="essay-revision-roadmap"><h4>Próximas 3 revisões</h4>{(diagnostico.planoRevisao || []).map((p) => <div key={p.competencia}><b>{p.prioridade}</b><span><strong>{p.titulo}</strong><small>{p.acao}</small></span></div>)}</div>
     {diagnostico.sinaisAutoria && <details className="essay-authorship"><summary>Sinais de estilo e autoria <span>análise limitada</span></summary><p>{diagnostico.sinaisAutoria.aviso}</p>{diagnostico.sinaisAutoria.evidencias?.map((e) => <small key={e}>• {e}</small>)}</details>}
-    <footer>{diagnostico.privacidade}</footer>
+    <footer>{diagnostico.privacidade} <a href="https://www.gov.br/inep/pt-br/centrais-de-conteudo/acervo-linha-editorial/publicacoes-institucionais/avaliacoes-e-exames-da-educacao-basica/a-redacao-do-enem-2026-cartilha-do-a-participante" target="_blank" rel="noreferrer">Consultar a cartilha oficial do Inep</a></footer>
   </section>
 }
 
@@ -85,8 +85,9 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
 
   async function analisar() {
     if (form.texto.trim().length < 80) return toast.error('Escreva mais um pouco antes da pré-análise.')
+    if (!form.tema.trim()) return toast.error('Informe o tema para que a Lumi avalie a aderência do texto.')
     setAnalisando(true)
-    try { setDiagnostico(await redacaoService.analisarRascunho(form)) } finally { setAnalisando(false) }
+    try { setDiagnostico(await redacaoService.analisarRascunho(form)) } catch (error) { toast.error(error?.response?.data?.message || 'Não foi possível analisar o rascunho.'); } finally { setAnalisando(false) }
   }
 
   function descartar() {
@@ -103,7 +104,7 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
         <div className="essay-outline-list">{estrutura.map((item, i) => <article className={item.ok ? 'is-done' : ''} key={item.nome}><span>{item.ok ? '✓' : i + 1}</span><div><b>{item.nome}</b><small>{item.dica}</small></div></article>)}</div>
         <div className="essay-mini-stats"><div><b>{metricas.palavras}</b><span>palavras</span></div><div><b>{metricas.linhas}</b><span>linhas estim.</span></div><div><b>{metricas.paragrafos}</b><span>parágrafos</span></div><div><b>{metricas.leitura} min</b><span>leitura</span></div></div>
         <button className="essay-outline-analysis" type="button" onClick={analisar} disabled={analisando}>{analisando ? 'Lendo o projeto...' : 'Analisar meu rascunho'}</button>
-        <small className="essay-private-note">Prévia processada pelo backend do PlanejAI, sem enviar o rascunho ao corretor externo.</small>
+        <small className="essay-private-note">A prévia usa a Lumi e envia o texto ao provedor de IA configurado pelo PlanejAI. A nota é apenas estimada.</small>
       </aside>
 
       <main className="essay-sheet">

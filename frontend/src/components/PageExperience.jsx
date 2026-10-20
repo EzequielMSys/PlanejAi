@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./Accessibility.css";
+const AccessibilityToolbar = lazy(() => import('./AccessibilityToolbar'))
 
 const titles = {
   "/": "PlanejAI — Estude com direção",
@@ -23,6 +24,16 @@ const titles = {
   "/alterar-senha": "Segurança da conta — PlanejAI",
   "/onboarding": "Configurar estudos — PlanejAI",
   "/primeiro-acesso": "Primeiro acesso — PlanejAI",
+  "/chat": "Tutor de estudos — PlanejAI",
+  "/estudar": "Sessão de estudo — PlanejAI",
+  "/minha-jornada": "Minha jornada — PlanejAI",
+  "/planejamento-inteligente": "Planejamento — PlanejAI",
+  "/minhas-turmas": "Minhas turmas — PlanejAI",
+  "/turmas": "Gestão de turmas — PlanejAI",
+  "/status": "Estado do sistema — PlanejAI",
+  "/esqueci-senha": "Recuperar acesso — PlanejAI",
+  "/redefinir-senha": "Nova senha — PlanejAI",
+  "/dono/usuarios": "Gestão de pessoas — PlanejAI",
 };
 
 export default function PageExperience() {
@@ -59,7 +70,6 @@ export default function PageExperience() {
           navigate(target);
         }
       }
-      if (event.key === "Escape") document.activeElement?.blur();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -73,6 +83,7 @@ export default function PageExperience() {
       <span className="sr-route" aria-live="polite">
         {titles[pathname] || "PlanejAI"}
       </span>
+      <Suspense fallback={null}><AccessibilityToolbar /></Suspense>
     </>
   );
 }

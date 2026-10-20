@@ -1,6 +1,7 @@
 const { getOpenAIClient } = require('../utils/openaiClient')
 const iaConfig = require('../config/iaConfig')
 const model = require('../models/inteligenciaModel')
+const { contextoDisponivel } = require('./tutorContextService')
 
 const LIMITE_CARACTERES_MENSAGEM = 2000
 
@@ -22,7 +23,7 @@ function validarEntrada(mensagem) {
  * da OpenAI: [{ role, content }]. Exportada para testes.
  */
 function normalizarHistorico(rows) {
-  return (Array.isArray(rows) ? rows : []).map((row) => ({
+  return (Array.isArray(rows) ? rows : []).filter((row) => row && ['user', 'assistant'].includes(row.role)).map((row) => ({
     role: row.role,
     content: typeof row.conteudo === 'string' ? row.conteudo : String(row.conteudo || ''),
   }))
@@ -103,6 +104,15 @@ function classificarErroApi(apiError) {
   return null
 }
 
+function extrairReacao(conteudo) {
+  const texto = typeof conteudo === 'string' ? conteudo.trim() : ''
+  const marcador = texto.match(/\s*\[LUMI:(feliz|pensando|surpreso|neutro)\]\s*$/i)
+  return {
+    conteudo: marcador ? texto.slice(0, marcador.index).trim() : texto,
+    reacao: marcador ? marcador[1].toLowerCase() : 'neutro',
+  }
+}
+
 /**
  * Envia uma mensagem do estudante para a OpenAI e persiste a resposta.
  *
@@ -136,9 +146,12 @@ async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario) {
     throw err
   }
 
-  const historicoRows = await model.listarMensagensChat(Number(idUsuario), iaConfig.historyTrim)
+  const [historicoRows, perfil] = await Promise.all([
+    model.listarMensagensChat(Number(idUsuario), iaConfig.historyTrim),
+    contextoDisponivel(Number(idUsuario)),
+  ])
   const messages = montarMensagensParaApi(
-    iaConfig.systemPrompt(nomeUsuario, disciplinaNormalizada),
+    iaConfig.systemPrompt(nomeUsuario, disciplinaNormalizada, perfil),
     normalizarHistorico(historicoRows),
   )
 
@@ -159,12 +172,15 @@ async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario) {
     throw err
   }
 
+  const saida = extrairReacao(resposta)
+  resposta = saida.conteudo || 'Não consegui formular uma resposta. Tente reformular a pergunta.'
   await model.salvarMensagemChat(Number(idUsuario), 'assistant', resposta, disciplinaNormalizada)
 
   const atualizado = await model.listarMensagensChat(Number(idUsuario), iaConfig.historyTrim)
   return {
     role: 'assistant',
     conteudo: resposta,
+    reacao: saida.reacao,
     disciplina: disciplinaNormalizada,
     mensagens: atualizado.map((row) => ({
       role: row.role,
@@ -185,6 +201,7 @@ module.exports = {
     montarPayloadChat,
     resolverErroCliente,
     classificarErroApi,
+    extrairReacao,
     LIMITE_CARACTERES_MENSAGEM,
   },
 }

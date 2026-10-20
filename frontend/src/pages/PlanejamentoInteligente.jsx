@@ -132,10 +132,10 @@ export default function PlanejamentoInteligente() {
     }
   }
   return (
-    <main className="intelligence-page min-h-screen bg-[#F7F4FA] px-4 py-7 text-[#21162F] dark:bg-[#120E18] dark:text-white sm:px-8">
+    <main className="intelligence-page min-h-screen bg-study-canvas px-4 py-7 text-study-ink dark:bg-study-canvas dark:text-white sm:px-8">
       <div className="mx-auto max-w-5xl">
         <header className="rounded-[2rem] bg-[#241A34] p-7 text-white">
-          <p className="text-xs font-black uppercase tracking-[.2em] text-[#CBB3FF]">
+          <p className="text-xs font-black uppercase tracking-[.2em] text-study-accent">
             Planejamento inteligente
           </p>
           <h1 className="mt-2 text-4xl font-black">Estude com evidências.</h1>
@@ -153,16 +153,16 @@ export default function PlanejamentoInteligente() {
         </header>
         <AdaptiveLearningHub />
         <LearningPaths />
-        <section className="mt-5 flex flex-col items-start justify-between gap-4 rounded-[2rem] border border-[#E2D7EB] bg-white p-6 dark:border-[#4B385A] dark:bg-[#211A2D] sm:flex-row sm:items-center">
+        <section className="mt-5 flex flex-col items-start justify-between gap-4 rounded-[2rem] border border-[#E2D7EB] bg-study-paper p-6 dark:border-[#4B385A] dark:bg-study-paper sm:flex-row sm:items-center">
           <div>
-            <p className="text-xs font-black uppercase tracking-[.18em] text-[#6D3EC5]">Modo Prova Real</p>
+            <p className="text-xs font-black uppercase tracking-[.18em] text-study-accent">Modo Prova Real</p>
             <h2 className="mt-1 text-2xl font-black">Simulados agora têm um espaço próprio.</h2>
             <p className="mt-1 text-sm opacity-65">Monte, retome e corrija provas sem misturar o treino com a configuração do seu plano.</p>
           </div>
-          <Link to="/provas" className="shrink-0 rounded-xl bg-[#6D3EC5] px-5 py-3 text-sm font-black text-white">Abrir provas →</Link>
+          <Link to="/provas" className="shrink-0 rounded-xl bg-study-accent px-5 py-3 text-sm font-black text-white">Abrir provas →</Link>
         </section>
         <section className="mt-5 grid gap-5 lg:grid-cols-2">
-          <article className="rounded-[2rem] bg-white p-6 dark:bg-[#211A2D]">
+          <article className="rounded-[2rem] bg-study-paper p-6 dark:bg-study-paper">
             <h2 className="text-xl font-black">Diagnóstico inicial</h2>
             {!questoes.length ? (
               <>
@@ -172,7 +172,7 @@ export default function PlanejamentoInteligente() {
                 </p>
                 <button
                   onClick={iniciarDiagnostico}
-                  className="mt-5 rounded-full bg-[#6D3EC5] px-5 py-3 font-black text-white"
+                  className="mt-5 rounded-full bg-study-accent px-5 py-3 font-black text-white"
                 >
                   Iniciar diagnóstico
                 </button>
@@ -191,7 +191,7 @@ export default function PlanejamentoInteligente() {
                           onClick={() =>
                             setRespostas({ ...respostas, [q.id_questao]: j })
                           }
-                          className={`rounded-xl border p-2 text-left text-sm ${respostas[q.id_questao] === j ? "border-[#6D3EC5] bg-[#F0E8FA]" : ""}`}
+                          className={`rounded-xl border p-2 text-left text-sm ${respostas[q.id_questao] === j ? "border-study-line bg-study-tint" : ""}`}
                         >
                           {String.fromCharCode(65 + j)}. {a}
                         </button>
@@ -201,14 +201,14 @@ export default function PlanejamentoInteligente() {
                 ))}
                 <button
                   onClick={concluirDiagnostico}
-                  className="rounded-full bg-[#6D3EC5] px-5 py-3 font-black text-white"
+                  className="rounded-full bg-study-accent px-5 py-3 font-black text-white"
                 >
                   Salvar diagnóstico
                 </button>
               </div>
             )}
           </article>
-          <article className="rounded-[2rem] bg-white p-6 dark:bg-[#211A2D]">
+          <article className="rounded-[2rem] bg-study-paper p-6 dark:bg-study-paper">
             <h2 className="text-xl font-black">Meta por matéria</h2>
             <form onSubmit={salvarMeta} className="mt-4 grid gap-3">
               <select
@@ -235,7 +235,7 @@ export default function PlanejamentoInteligente() {
                 value={form.alvo}
                 onChange={(e) => setForm({ ...form, alvo: e.target.value })}
               />
-              <button className="rounded-full bg-[#6D3EC5] px-5 py-3 font-black text-white">
+              <button className="rounded-full bg-study-accent px-5 py-3 font-black text-white">
                 Salvar meta
               </button>
             </form>
@@ -248,19 +248,19 @@ export default function PlanejamentoInteligente() {
             </ul>
           </article>
         </section>
-        <section className="mt-5 rounded-[2rem] bg-white p-6 dark:bg-[#211A2D]">
+        <section className="mt-5 rounded-[2rem] bg-study-paper p-6 dark:bg-study-paper">
           <h2 className="text-xl font-black">Provas e vestibulares</h2>
           <form onSubmit={salvarProva} className="mt-3 grid gap-2 sm:grid-cols-4">
             <input value={prova.titulo} onChange={(e) => setProva({ ...prova, titulo: e.target.value })} placeholder="Nome da prova" />
             <input type="date" value={prova.dataProva} onChange={(e) => setProva({ ...prova, dataProva: e.target.value })} />
             <select multiple value={prova.materias.map((m) => m.disciplina)} onChange={(e) => setProva({ ...prova, materias: [...e.target.selectedOptions].map((o) => ({ disciplina: o.value, peso: prova.materias.find((m) => m.disciplina === o.value)?.peso || 1 })) })}>{materias.map((m) => <option key={m}>{m}</option>)}</select>
-            <button className="rounded-full bg-[#6D3EC5] px-4 py-2 font-bold text-white">Adicionar prova</button>
+            <button className="rounded-full bg-study-accent px-4 py-2 font-bold text-white">Adicionar prova</button>
           </form>
           {provas.map((item) => <p key={item.id_prova} className="mt-3 text-sm"><b>{item.titulo}</b> · {String(item.data_prova).slice(0, 10)} · {item.materias.map((m) => m.disciplina || m).join(', ')}</p>)}
           {prova.materias.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{prova.materias.map((materia, indice) => <label key={materia.disciplina} className="text-sm">{materia.disciplina} peso <input type="number" min="1" max="10" value={materia.peso} onChange={(e) => setProva({ ...prova, materias: prova.materias.map((m, i) => i === indice ? { ...m, peso: Number(e.target.value) || 1 } : m) })} className="ml-1 w-14" /></label>)}</div>}
         </section>
         <section className="mt-5 grid gap-5 lg:grid-cols-2">
-          <article className="rounded-[2rem] bg-white p-6 dark:bg-[#211A2D]">
+          <article className="rounded-[2rem] bg-study-paper p-6 dark:bg-study-paper">
             <h2 className="text-xl font-black">Flashcards</h2>
             <form onSubmit={criarFlash} className="mt-3 grid gap-2">
               <input
@@ -273,7 +273,7 @@ export default function PlanejamentoInteligente() {
                 onChange={(e) => setFlash({ ...flash, verso: e.target.value })}
                 placeholder="Resposta"
               />
-              <button className="rounded-full bg-[#6D3EC5] px-4 py-2 font-bold text-white">
+              <button className="rounded-full bg-study-accent px-4 py-2 font-bold text-white">
                 Criar flashcard
               </button>
             </form>
@@ -302,7 +302,7 @@ export default function PlanejamentoInteligente() {
               </div>
             ))}
           </article>
-          <section className="rounded-[2rem] bg-white p-6 dark:bg-[#211A2D]">
+          <section className="rounded-[2rem] bg-study-paper p-6 dark:bg-study-paper">
             <h2 className="text-xl font-black">Privacidade pedagógica</h2>
             <p className="mt-1 text-sm opacity-65">
               Você escolhe o nível de informação disponível para gestores.
@@ -316,7 +316,7 @@ export default function PlanejamentoInteligente() {
                 <button
                   key={id}
                   onClick={() => mudarPrivacidade(id)}
-                  className={`rounded-full border px-4 py-2 font-bold ${privacidade === id ? "bg-[#6D3EC5] text-white" : ""}`}
+                  className={`rounded-full border px-4 py-2 font-bold ${privacidade === id ? "bg-study-accent text-white" : ""}`}
                 >
                   {label}
                 </button>

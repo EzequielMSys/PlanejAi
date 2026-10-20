@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import cronogramaService from '../services/cronogramaService'
 import aprendizagemService from '../services/aprendizagemService'
 import './TodayDashboard.css'
+import RouteLoading from '../components/RouteLoading'
 
 const done = (item) => Number(item?.concluido) === 1 || item?.status === 'concluído'
 const iso = (value) => value ? new Date(value).toISOString().slice(0, 10) : ''
@@ -43,18 +44,23 @@ export default function TodayDashboard() {
 
   useEffect(() => {
     let active = true
-    Promise.allSettled([cronogramaService.listarCronogramas(), aprendizagemService.resumo(), aprendizagemService.revisoes(), aprendizagemService.erros()])
-      .then(([schedules, learning, reviews, errors]) => {
+    // Os indicadores secundários não devem atrasar a primeira visão do dia.
+    Promise.allSettled([cronogramaService.listarCronogramas(), aprendizagemService.resumo()])
+      .then(([schedules, learning]) => {
         if (!active) return
-        setData({
+        setData((current) => ({ ...current,
           schedules: schedules.status === 'fulfilled' && Array.isArray(schedules.value) ? schedules.value : [],
           learning: learning.status === 'fulfilled' ? learning.value : null,
-          reviews: reviews.status === 'fulfilled' && Array.isArray(reviews.value) ? reviews.value : [],
-          errors: errors.status === 'fulfilled' && Array.isArray(errors.value) ? errors.value : []
-        })
+        }))
         if (learning.status === 'fulfilled' && Number(learning.value?.metaSemanal) >= 30) setWeeklyGoal(Number(learning.value.metaSemanal))
         if ([schedules, learning].every((result) => result.status === 'rejected')) toast.error('A central diária está temporariamente sem conexão.')
       }).finally(() => active && setLoading(false))
+    aprendizagemService.revisoes()
+      .then((reviews) => { if (active && Array.isArray(reviews)) setData((current) => ({ ...current, reviews })) })
+      .catch(() => {})
+    aprendizagemService.erros()
+      .then((errors) => { if (active && Array.isArray(errors)) setData((current) => ({ ...current, errors })) })
+      .catch(() => {})
     return () => { active = false }
   }, [])
 
@@ -87,19 +93,27 @@ export default function TodayDashboard() {
     }
   }
   const date = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date())
+  const recentDays = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date()
+    day.setDate(day.getDate() - 6 + index)
+    const key = new Intl.DateTimeFormat('en-CA').format(day)
+    const count = days.filter((item) => done(item) && String(item.data_estudo).slice(0, 10) === key).length
+    return { label: day.toLocaleDateString('pt-BR', { weekday: 'short' }), count }
+  })
+  const maxRecent = Math.max(1, ...recentDays.map((day) => day.count))
 
-  if (loading) return <main className="dash-v2-loading"><span />Preparando sua central…</main>
+  if (loading) return <RouteLoading />
 
   return <main className="dash-v2">
     <div className="dash-v2-wrap">
       <header className="dash-v2-heading">
-        <div><span><i /> CENTRAL INTELIGENTE</span><h1>{greeting()}, {name}.</h1><p>{date}</p></div>
+        <div><span>SEU CADERNO DE ESTUDOS</span><h1>{greeting()}, {name}.</h1><p>{date}</p></div>
         <div><button type="button" onClick={() => navigate('/provas')}>Simulados</button><button type="button" onClick={() => navigate('/cronograma')}>Ver planejamento <b>→</b></button></div>
       </header>
 
       <section className="dash-v2-spotlight">
         <motion.article className="dash-v2-focus" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="dash-v2-focus-top"><span>PRÓXIMA MISSÃO</span><small>{nextContent?.disciplina || nextContent?.area || 'Plano de estudos'}</small></div>
+          <div className="dash-v2-focus-top"><span>UM PASSO DE CADA VEZ</span><small>{nextContent?.disciplina || nextContent?.area || 'Plano de estudos'}</small></div>
           <div className="dash-v2-focus-copy"><p>{nextContent ? 'Continue de onde seu plano recomenda' : 'Seu espaço de aprendizagem está pronto'}</p><h2>{nextContent?.titulo || 'Organize seu próximo ciclo de estudos'}</h2><div><span>{nextContent?.tipo || 'Planejamento'}</span><span>{nextDay?.tempo_previsto ? `${nextDay.tempo_previsto} min` : 'No seu ritmo'}</span></div></div>
           <footer><button type="button" onClick={() => start()}>{nextContent ? 'Começar agora' : 'Montar cronograma'} <b>→</b></button><span>{progress}% do plano concluído</span></footer>
         </motion.article>
@@ -126,7 +140,7 @@ export default function TodayDashboard() {
 
         <aside className="dash-v2-insights">
           <article className="dash-v2-coach"><span>ORIENTAÇÃO DO PLANEJAI</span><h2>{data.learning?.porDisciplina?.[0] ? `Dê atenção a ${data.learning.porDisciplina[0].disciplina}` : reviews ? 'Uma revisão curta cabe agora' : 'Gere evidências do que aprendeu'}</h2><p>Questões e revisões alimentam seu mapa e tornam as próximas recomendações mais precisas.</p><button onClick={() => navigate('/aprendizagem')}>Treinar agora <b>→</b></button></article>
-          <article className="dash-v2-week"><header><span>RITMO DOS ÚLTIMOS 7 DIAS</span><strong>{completed}/{days.length || 0}</strong></header><div>{[0,1,2,3,4,5,6].map((item) => <i key={item} style={{ height: `${24 + ((item * 23 + progress) % 68)}%` }} />)}</div><p>Seu histórico cresce cada vez que você retorna.</p></article>
+          <article className="dash-v2-week"><header><span>DIAS DO PLANO CONCLUÍDOS</span><strong>{completed}/{days.length || 0}</strong></header><div role="img" aria-label={recentDays.map((day) => `${day.label}: ${day.count}`).join('; ')}>{recentDays.map((day, index) => <i key={index} title={`${day.label}: ${day.count}`} style={{ height: `${Math.max(4, day.count / maxRecent * 100)}%`, opacity: day.count ? 1 : .2 }} />)}</div><p>Últimos 7 dias do cronograma. Dias sem conclusão aparecem na linha de base.</p></article>
           {(isAdmin || isDono || user?.tipo === 'docente') && <button type="button" className="dash-v2-manager" onClick={() => navigate(isDono ? '/dono' : '/dashboard-gestor')}>Acessar central de gestão <span>↗</span></button>}
         </aside>
       </section>

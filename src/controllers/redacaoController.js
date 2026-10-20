@@ -1,5 +1,6 @@
 const redacaoModel = require('../models/redacaoModel');
 const { analisarRedacao } = require('../utils/analiseRedacao');
+const { avaliarRedacaoComLumi } = require('../services/lumiEssayService');
 const { corrigirTexto } = require('../utils/languageToolService');
 const { sugerirTemaPorPalavraChave, sugerirTemaAleatorio, gerarRepertorioParaTema } = require('../utils/repertorioRedacao');
 const { montarKitTema } = require('../utils/estudioRedacao');
@@ -168,15 +169,18 @@ async function enviarRedacao(req, res) {
     const usuarioId = req.usuario.id;
     const { tema, texto } = req.body;
 
-    if (!tema || !texto) {
+    if (typeof tema !== 'string' || typeof texto !== 'string' || !tema.trim() || !texto.trim()) {
       return res.status(400).json({ message: 'Tema e texto são obrigatórios.' });
     }
+    if (tema.length > 500 || texto.length > 30000) return res.status(413).json({ message: 'A redação ultrapassa o limite aceito.' });
 
     // Correção ortográfica com LanguageTool (com fallback)
-    const linguagem = await corrigirTexto(texto);
+    const [linguagem, avaliacaoLumi] = await Promise.all([corrigirTexto(texto), avaliarRedacaoComLumi(tema, texto)]);
 
     // Análise avançada: erros, sugestões, detecção de IA e competências ENEM
     const analise = analisarRedacao(texto, linguagem.erros, { tema });
+    analise.enem = { ...analise.enem, notaFinal: avaliacaoLumi?.notaFinal ?? null, competencias: avaliacaoLumi?.competencias || [] };
+    analise.planoRevisao = (avaliacaoLumi?.competencias || []).slice().sort((a, b) => a.nota - b.nota).slice(0, 3).map((c, i) => ({ prioridade: i + 1, competencia: c.codigo, titulo: `Revisar ${c.nome}`, acao: c.feedback }));
 
     // Se o LanguageTool falhou, usa análise básica de erros
     const errosFinais = linguagem.sucesso ? linguagem.erros : analise.erros;
@@ -184,24 +188,20 @@ async function enviarRedacao(req, res) {
     const repertorioSugerido = sugerirTemaPorPalavraChave(tema || '');
     const repertorio = gerarRepertorioParaTema(repertorioSugerido, 5);
 
-    const feedbackEnem = [
-      `Redação avaliada pelo modelo ENEM (0 a 1000 pontos).`,
-      `Sua redação tem ${analise.estrutura.totalPalavras} palavras e ${analise.estrutura.quantidadeParagrafos} parágrafo(s).`,
-      `Nota estimada: ${analise.enem.notaFinal}/1000.`,
-      analise.enem.competencias
-        .map((c) => `C${c.codigo} (${c.nome}): ${c.nota}/${c.maximo}. ${c.feedback}`)
-        .join(' ')
-    ].join(' ');
+    const feedbackEnem = avaliacaoLumi ? [
+      `Estimativa formativa da Lumi: ${avaliacaoLumi.notaFinal}/1000. Não substitui a correção oficial.`,
+      ...avaliacaoLumi.competencias.map((c) => `C${c.codigo} (${c.nome}): ${c.nota}/200. Evidência: ${c.evidencia}. Revisão: ${c.feedback}`)
+    ].join(' ') : 'A redação foi salva, mas a avaliação formativa da Lumi está indisponível no momento. Nenhuma nota foi atribuída.';
 
     const redacao = await redacaoModel.criarRedacao(usuarioId, {
       tema,
       texto,
-      notaEstimada: analise.enem.notaFinal,
+      notaEstimada: avaliacaoLumi?.notaFinal ?? null,
       feedbackIa: feedbackEnem,
       errosTexto: errosFinais,
       sugestoes: analise.sugestoes,
       flagIa: analise.ia.flag_ia,
-      competenciasEnem: analise.enem.competencias,
+      competenciasEnem: avaliacaoLumi?.competencias || null,
       repertorioSugerido: repertorio,
       iaNivel: analise.ia.nivel,
       iaEvidencias: analise.ia.evidencias,
@@ -254,21 +254,23 @@ async function sugerirTema(req, res) {
 async function analisarRascunho(req, res) {
   try {
     const { tema = '', texto = '' } = req.body || {};
+    if (typeof texto !== 'string' || typeof tema !== 'string') return res.status(400).json({ message: 'Tema e texto devem ser strings.' });
     if (texto.trim().length < 80) return res.status(400).json({ message: 'Escreva ao menos 80 caracteres para receber um diagnóstico útil.' });
     if (texto.length > 30000 || tema.length > 500) return res.status(413).json({ message: 'O rascunho ultrapassa o limite aceito.' });
     const analise = analisarRedacao(texto, [], { tema });
+    const avaliacaoLumi = await avaliarRedacaoComLumi(tema, texto);
     return res.json({
-      notaEstimada: analise.enem.notaFinal,
-      competencias: analise.enem.competencias,
+      notaEstimada: avaliacaoLumi?.notaFinal ?? null,
+      competencias: avaliacaoLumi?.competencias || [],
       estrutura: analise.estrutura,
       aderencia: analise.enem.aderencia,
       intervencao: analise.enem.intervencao,
       sugestoes: analise.sugestoes,
       sinaisAutoria: analise.ia,
-      planoRevisao: analise.planoRevisao,
+      planoRevisao: (avaliacaoLumi?.competencias || []).slice().sort((a, b) => a.nota - b.nota).slice(0, 3).map((c, i) => ({ prioridade: i + 1, competencia: c.codigo, titulo: `Revisar ${c.nome}`, acao: c.feedback })),
       erros: [],
-      privacidade: 'Esta prévia foi processada localmente pelo servidor do PlanejAI, sem serviço linguístico externo.',
-      aviso: 'Diagnóstico formativo e estimado; a correção oficial depende de avaliadores humanos.'
+      privacidade: 'O texto foi enviado ao provedor de IA configurado pelo PlanejAI para esta avaliação.',
+      aviso: avaliacaoLumi ? avaliacaoLumi.aviso : 'A Lumi está indisponível; nenhum número foi atribuído ao rascunho.'
     });
   } catch (error) {
     console.error('Erro ao analisar rascunho:', error);

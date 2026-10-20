@@ -1,5 +1,4 @@
 import { useTheme } from '../context/ThemeContext'
-import { motion } from 'framer-motion'
 
 const SunIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -17,32 +16,28 @@ export default function ThemeToggle({ className = '' }) {
   const { isDark, toggleTheme } = useTheme()
 
   return (
-    <motion.button
-      whileTap={{ scale: 0.85 }}
+    <button
       onClick={toggleTheme}
       aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
       title={isDark ? 'Modo claro' : 'Modo escuro'}
       className={`relative inline-flex items-center justify-center w-10 h-10 rounded-xl
-        bg-white/70 dark:bg-white/10 backdrop-blur-xl border border-[#E7DDF0] dark:border-white/10
-        text-[#6D28D9] dark:text-[#DDD6FE] hover:scale-105
-        hover:bg-[#9394CF]/20 dark:hover:bg-white/20
+        bg-study-paper dark:bg-study-paper backdrop-blur-xl border border-study-line dark:border-white/10
+        text-study-accent dark:text-study-accent hover:scale-105
+        hover:bg-study-accent/20 dark:hover:bg-study-paper
         transition-all duration-300 ${className}`}
     >
       <AnimateIcon key={isDark ? 'dark' : 'light'} isDark={isDark} />
-    </motion.button>
+    </button>
   )
 }
 
 function AnimateIcon({ isDark }) {
   return (
-    <motion.span
+    <span
       key={isDark ? 'dark' : 'light'}
-      initial={{ opacity: 0, rotate: -90, scale: 0.5 }}
-      animate={{ opacity: 1, rotate: 0, scale: 1 }}
-      transition={{ duration: 0.3 }}
       className="flex items-center justify-center"
     >
       {isDark ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
-    </motion.span>
+    </span>
   )
 }

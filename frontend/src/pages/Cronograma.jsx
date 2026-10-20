@@ -303,9 +303,9 @@ async function concluirDia(idDia) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F7F7FB] flex items-center justify-center">
-        <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-[#9394CF]/20 text-center">
-          <div className="h-14 w-14 border-b-4 border-[#4B4C9D] rounded-full animate-spin mx-auto mb-4" />
+      <div className="min-h-screen bg-study-canvas flex items-center justify-center">
+        <div className="bg-study-paper rounded-[3rem] p-10 shadow-2xl border border-study-line/20 text-center">
+          <div className="h-14 w-14 border-b-4 border-study-line rounded-full animate-spin mx-auto mb-4" />
           <p className="font-bold text-black/60">Carregando cronograma...</p>
         </div>
       </div>
@@ -313,15 +313,15 @@ async function concluirDia(idDia) {
   }
 
   return (
-    <div className="schedule-page min-h-screen bg-[#F7F7FB] text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-72 h-72 bg-[#9394CF]/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#4B4C9D]/10 rounded-full blur-3xl" />
+    <div className="schedule-page min-h-screen bg-study-canvas text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-72 h-72 bg-study-accent/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-study-accent/10 rounded-full blur-3xl" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <section className="workspace-hero bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+          <section className="workspace-hero bg-gradient-to-br from-study-accent via-study-accent to-study-accent rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
             <div className="absolute inset-0 bg-black/20" />
-            <div className="absolute top-8 left-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
+            <div className="absolute top-8 left-8 w-24 h-24 bg-study-paper rounded-full blur-xl" />
             <div className="absolute bottom-8 right-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
 
             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -343,7 +343,7 @@ async function concluirDia(idDia) {
                 type="button"
                 onClick={gerarNovoCronograma}
                 disabled={gerando}
-                className="bg-white text-[#4B4C9D] px-7 py-3 rounded-full font-black shadow-xl hover:bg-black hover:text-white transition disabled:opacity-60"
+                className="bg-study-paper text-study-accent px-7 py-3 rounded-full font-black shadow-xl hover:bg-black hover:text-white transition disabled:opacity-60"
               >
                 {gerando
                   ? 'Gerando...'
@@ -354,15 +354,15 @@ async function concluirDia(idDia) {
             </div>
           </section>
 
-          {cronogramaAtual && <div className="mb-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={abrirRecuperacao} className="rounded-full border border-[#7C3AED]/25 bg-white px-5 py-3 text-sm font-black text-[#6D28D9] dark:bg-[#211A2D] dark:text-[#CBB3FF]">Plano de recuperação</button><button type="button" onClick={() => exportarCronograma(cronogramaAtual)} className="rounded-full bg-[#6D3EC5] px-5 py-3 text-sm font-black text-white">Exportar calendário</button></div>}
+          {cronogramaAtual && <div className="mb-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={abrirRecuperacao} className="rounded-full border border-study-line/25 bg-study-paper px-5 py-3 text-sm font-black text-study-accent dark:bg-study-paper dark:text-study-accent">Plano de recuperação</button><button type="button" onClick={() => exportarCronograma(cronogramaAtual)} className="rounded-full bg-study-accent px-5 py-3 text-sm font-black text-white">Exportar calendário</button></div>}
 
           {!cronogramaAtual ? (
             <section className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.9fr] lg:items-center">
               <div>
-                <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#DDD0EF] bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-[#6D28D9] dark:border-white/10 dark:bg-white/5 dark:text-[#C4B5FD]">
+                <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-study-line bg-study-paper px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-study-accent dark:border-white/10 dark:bg-study-paper dark:text-[#C4B5FD]">
                   Comece por aqui
                 </span>
-                <h2 className="max-w-xl text-3xl font-black tracking-[-.04em] text-[#2C1A3D] dark:text-white sm:text-4xl">
+                <h2 className="max-w-xl text-3xl font-black tracking-[-.04em] text-study-ink dark:text-white sm:text-4xl">
                   Sua semana ainda está em branco.
                 </h2>
                 <p className="mt-4 max-w-lg leading-relaxed text-[#74627F] dark:text-[#B7A9C1]">
@@ -372,7 +372,7 @@ async function concluirDia(idDia) {
                   type="button"
                   onClick={gerarNovoCronograma}
                   disabled={gerando}
-                  className="mt-7 rounded-xl bg-[#7C3AED] px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-[#6D28D9] disabled:opacity-60"
+                  className="mt-7 rounded-xl bg-study-accent px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-study-accent disabled:opacity-60"
                 >
                   {gerando ? 'Montando sua semana...' : 'Montar meu cronograma'}
                 </button>
@@ -380,10 +380,10 @@ async function concluirDia(idDia) {
               <div className="planner-preview" aria-hidden="true">
                 <div className="mb-5 flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[.18em] text-[#8B5CF6]">Prévia</p>
-                    <p className="mt-1 font-black text-[#2C1A3D] dark:text-white">Sua próxima semana</p>
+                    <p className="text-xs font-black uppercase tracking-[.18em] text-study-accent">Prévia</p>
+                    <p className="mt-1 font-black text-study-ink dark:text-white">Sua próxima semana</p>
                   </div>
-                  <svg className="h-6 w-6 text-[#7C3AED]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-6 w-6 text-study-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
@@ -404,21 +404,21 @@ async function concluirDia(idDia) {
               </section>
 
               <section className="grid lg:grid-cols-3 gap-6 mb-8">
-                <div className="schedule-surface lg:col-span-2 bg-white rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
+                <div className="schedule-surface lg:col-span-2 bg-study-paper rounded-[2.5rem] p-6 shadow-xl border border-study-line/20">
                   <div className="flex justify-between text-sm font-bold mb-2">
                     <span>Progresso geral</span>
                     <span>{progresso}%</span>
                   </div>
 
-                  <div className="h-4 bg-[#F7F7FB] rounded-full overflow-hidden">
+                  <div className="h-4 bg-study-canvas rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[#4B4C9D] rounded-full transition-all"
+                      className="h-full bg-study-accent rounded-full transition-all"
                       style={{ width: `${progresso}%` }}
                     />
                   </div>
                 </div>
 
-                <div className="schedule-surface bg-white rounded-[2.5rem] p-6 shadow-xl border border-[#9394CF]/20">
+                <div className="schedule-surface bg-study-paper rounded-[2.5rem] p-6 shadow-xl border border-study-line/20">
                   <p className="text-sm font-bold text-black/50 mb-1">
                     Próximo estudo
                   </p>
@@ -435,8 +435,8 @@ async function concluirDia(idDia) {
                 </div>
               </section>
 
-              {cronogramaAtual.avaliacao_em_andamento && <section className="schedule-surface mb-8 rounded-[2rem] border border-[#7C3AED]/30 bg-[#F3ECFC] p-6 dark:bg-[#291D38]"><p className="text-xs font-black uppercase tracking-[.18em] text-[#7C3AED]">Avaliação em andamento</p><h2 className="mt-1 text-2xl font-black">{cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'Sua prova final está pronta para continuar.' : 'Seu desafio de avanço está pronto para continuar.'}</h2><p className="mt-2 text-sm text-black/65 dark:text-white/65">Você pode fechar a tela e voltar quando quiser. As questões permanecem as mesmas; neste aparelho, as escolhas também são preservadas.</p><div className="mt-4 flex flex-wrap gap-3"><button type="button" onClick={() => retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)} className="rounded-full bg-[#4B4C9D] px-5 py-3 font-black text-white">Retomar {cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'prova final' : 'desafio'}</button><button type="button" onClick={() => abandonarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)} className="rounded-full border border-[#7C3AED] px-5 py-3 font-bold text-[#6D28D9]">Descartar e iniciar outra</button></div></section>}
-              {cronogramaAtual.prova_final?.disponivel && !cronogramaAtual.avaliacao_em_andamento && <section className="schedule-surface mb-8 rounded-[2rem] border border-[#7C3AED]/30 bg-[#F3ECFC] p-6 dark:bg-[#291D38]"><p className="text-xs font-black uppercase tracking-[.18em] text-[#7C3AED]">Etapa final</p><h2 className="mt-1 text-2xl font-black">Seu cronograma foi concluído. Agora comprove seu domínio.</h2><p className="mt-2 text-sm text-black/65 dark:text-white/65">A prova final tem 20 questões das matérias estudadas. É necessário acertar ao menos 14 para concluir a trilha.</p><button type="button" onClick={iniciarProvaFinal} className="mt-4 rounded-full bg-[#4B4C9D] px-5 py-3 font-black text-white">Iniciar prova final</button></section>}
+              {cronogramaAtual.avaliacao_em_andamento && <section className="schedule-surface mb-8 rounded-[2rem] border border-study-line/30 bg-study-tint p-6 dark:bg-[#291D38]"><p className="text-xs font-black uppercase tracking-[.18em] text-study-accent">Avaliação em andamento</p><h2 className="mt-1 text-2xl font-black">{cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'Sua prova final está pronta para continuar.' : 'Seu desafio de avanço está pronto para continuar.'}</h2><p className="mt-2 text-sm text-black/65 dark:text-white/65">Você pode fechar a tela e voltar quando quiser. As questões permanecem as mesmas; neste aparelho, as escolhas também são preservadas.</p><div className="mt-4 flex flex-wrap gap-3"><button type="button" onClick={() => retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)} className="rounded-full bg-study-accent px-5 py-3 font-black text-white">Retomar {cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'prova final' : 'desafio'}</button><button type="button" onClick={() => abandonarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)} className="rounded-full border border-study-line px-5 py-3 font-bold text-study-accent">Descartar e iniciar outra</button></div></section>}
+              {cronogramaAtual.prova_final?.disponivel && !cronogramaAtual.avaliacao_em_andamento && <section className="schedule-surface mb-8 rounded-[2rem] border border-study-line/30 bg-study-tint p-6 dark:bg-[#291D38]"><p className="text-xs font-black uppercase tracking-[.18em] text-study-accent">Etapa final</p><h2 className="mt-1 text-2xl font-black">Seu cronograma foi concluído. Agora comprove seu domínio.</h2><p className="mt-2 text-sm text-black/65 dark:text-white/65">A prova final tem 20 questões das matérias estudadas. É necessário acertar ao menos 14 para concluir a trilha.</p><button type="button" onClick={iniciarProvaFinal} className="mt-4 rounded-full bg-study-accent px-5 py-3 font-black text-white">Iniciar prova final</button></section>}
               {cronogramaAtual.prova_final?.concluida && <section className="schedule-surface mb-8 rounded-[2rem] border border-emerald-400/30 bg-emerald-50 p-6 text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-100"><b>Trilha certificada.</b> Você concluiu o cronograma e foi aprovado na prova final.</section>}
 
 <section className="grid gap-4">
@@ -460,11 +460,11 @@ async function concluirDia(idDia) {
                       onDragOver={(event) => { event.preventDefault(); if (conteudoArrastado) setDiaAlvo(idDia) }}
                       onDragLeave={() => setDiaAlvo((current) => current === idDia ? null : current)}
                       onDrop={(event) => soltarConteudo(event, idDia)}
-                      className={`schedule-day group relative overflow-hidden rounded-[2rem] p-5 shadow-xl border before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 transition ${bloqueado ? 'border-[#9394CF]/15 bg-black/[.03] opacity-75 before:bg-[#8A769F]' : diaAlvo === idDia ? 'border-[#7C3AED] bg-[#F3ECFC] ring-4 ring-[#7C3AED]/10 before:bg-[#7C3AED]' : 'border-[#9394CF]/20 bg-white before:bg-[#C4B5FD] hover:before:bg-[#7C3AED]'}`}
+                      className={`schedule-day group relative overflow-hidden rounded-[2rem] p-5 shadow-xl border before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 transition ${bloqueado ? 'border-study-line/15 bg-black/[.03] opacity-75 before:bg-[#8A769F]' : diaAlvo === idDia ? 'border-study-line bg-study-tint ring-4 ring-[#7C3AED]/10 before:bg-study-accent' : 'border-study-line/20 bg-study-paper before:bg-[#C4B5FD] hover:before:bg-study-accent'}`}
                     >
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex-1">
-                          <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-1">
+                          <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-1">
                             Dia {index + 1}
                           </p>
 
@@ -490,14 +490,14 @@ async function concluirDia(idDia) {
                             {concluido ? 'Concluído' : bloqueado ? 'Bloqueado' : 'Pendente'}
                           </span>
 
-                          {dia.requer_desafio && <button type="button" onClick={() => cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao) : iniciarDesafio(idDia)} className="rounded-full border border-[#7C3AED] px-4 py-2.5 text-sm font-bold text-[#6D28D9]">{cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? 'Retomar desafio' : 'Desafio para liberar'}</button>}
+                          {dia.requer_desafio && <button type="button" onClick={() => cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao) : iniciarDesafio(idDia)} className="rounded-full border border-study-line px-4 py-2.5 text-sm font-bold text-study-accent">{cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? 'Retomar desafio' : 'Desafio para liberar'}</button>}
 
                           {!concluido && !bloqueado && (
                             <button
                               type="button"
                               onClick={() => concluirDia(idDia)}
                               disabled={concluindo === idDia}
-                              className="bg-[#4B4C9D] text-white px-5 py-2.5 rounded-full font-bold hover:bg-black transition disabled:opacity-60"
+                              className="bg-study-accent text-white px-5 py-2.5 rounded-full font-bold hover:bg-black transition disabled:opacity-60"
                             >
                               {concluindo === idDia ? 'Salvando...' : 'Concluir'}
                             </button>
@@ -507,7 +507,7 @@ async function concluirDia(idDia) {
                             <button
                               type="button"
                               onClick={() => alternarExpansaoDia(idDia)}
-                              className="bg-[#F7F7FB] border border-[#9394CF]/40 text-black px-4 py-2.5 rounded-full font-bold hover:bg-[#9394CF]/20 transition"
+                              className="bg-study-canvas border border-study-line/40 text-black px-4 py-2.5 rounded-full font-bold hover:bg-study-accent/20 transition"
                             >
                               {expandido ? 'Ocultar' : 'Ver conteúdos'}
                             </button>
@@ -516,7 +516,7 @@ async function concluirDia(idDia) {
                       </div>
 
                       {expandido && conteudos.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-[#9394CF]/20 space-y-2">
+                        <div className="mt-4 pt-4 border-t border-study-line/20 space-y-2">
                           <p className="text-xs uppercase tracking-[0.25em] font-black text-black/40 mb-2">
                             Materiais / Conteúdos do dia
                           </p>
@@ -532,7 +532,7 @@ async function concluirDia(idDia) {
                                 className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-[1.5rem] border ${
                                   conteudoConcluido
                                     ? 'bg-green-50 border-green-200'
-                                    : 'bg-[#F7F7FB] border-[#9394CF]/20'
+                                    : 'bg-study-canvas border-study-line/20'
                                 }`}
                                 draggable={isGestor && !conteudoConcluido}
                                 onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(idConteudo)); setConteudoArrastado(idConteudo) }}
@@ -561,7 +561,7 @@ async function concluirDia(idDia) {
                                   <button
                                     type="button"
                                     onClick={() => navigate('/estudar', { state: { conteudo, dia } })}
-                                    className="text-[#4B4C9D] text-sm font-bold hover:underline"
+                                    className="text-study-accent text-sm font-bold hover:underline"
                                   >
                                     Começar sessão
                                   </button>
@@ -573,19 +573,19 @@ async function concluirDia(idDia) {
                                       value={editLink}
                                       onChange={(e) => setEditLink(e.target.value)}
                                       placeholder="https://..."
-                                      className="rounded-full border border-[#9394CF]/40 bg-white px-3 py-1 text-xs text-black dark:bg-[#1E1D3A] dark:text-white"
+                                      className="rounded-full border border-study-line/40 bg-study-paper px-3 py-1 text-xs text-black dark:bg-study-paper dark:text-white"
                                     />
                                     <button
                                       type="button"
                                       onClick={() => salvarEdicao(idConteudo)}
-                                      className="rounded-full bg-[#4B4C9D] text-white px-3 py-1 text-xs font-bold"
+                                      className="rounded-full bg-study-accent text-white px-3 py-1 text-xs font-bold"
                                     >
                                       Salvar
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => setEditando(null)}
-                                      className="rounded-full border border-[#9394CF] px-3 py-1 text-xs font-bold text-[#4B4C9D]"
+                                      className="rounded-full border border-study-line px-3 py-1 text-xs font-bold text-study-accent"
                                     >
                                       Cancelar
                                     </button>
@@ -594,14 +594,14 @@ async function concluirDia(idDia) {
                                   <button
                                     type="button"
                                     onClick={() => iniciarEdicao(conteudo)}
-                                    className="text-xs font-bold text-[#4B4C9D] hover:underline"
+                                    className="text-xs font-bold text-study-accent hover:underline"
                                   >
                                     Editar link
                                   </button>
                                 ) : null}
 
                                 {isGestor && (
-                                  <label className="text-xs font-bold text-[#4B4C9D] cursor-pointer">
+                                  <label className="text-xs font-bold text-study-accent cursor-pointer">
                                     {enviandoMaterial === idConteudo ? 'Enviando...' : 'Anexar material'}
                                     <input
                                       type="file"
@@ -618,7 +618,7 @@ async function concluirDia(idDia) {
                                   aria-label={`Mover ${conteudo.titulo || 'conteúdo'} para outro dia`}
                                   value=""
                                   onChange={(event) => { if (event.target.value) moverConteudo(idConteudo, Number(event.target.value)) }}
-                                  className="rounded-full border border-[#9394CF]/30 bg-white px-3 py-2 text-xs font-bold text-[#4B4C9D]"
+                                  className="rounded-full border border-study-line/30 bg-study-paper px-3 py-2 text-xs font-bold text-study-accent"
                                 ><option value="">Mover para…</option>{dias.filter((item) => (item.id_dia || item.id) !== idDia).map((item) => <option key={item.id_dia || item.id} value={item.id_dia || item.id}>{formatarData(item.data_estudo)}</option>)}</select>}
 
                                 <button
@@ -628,8 +628,8 @@ async function concluirDia(idDia) {
                                   disabled={concluindoConteudo === idConteudo}
                                   className={`px-4 py-2 rounded-full text-sm font-bold transition disabled:opacity-60 ${
                                     conteudoConcluido
-                                      ? 'bg-white border border-[#4B4C9D] text-[#4B4C9D] hover:bg-[#4B4C9D] hover:text-white'
-                                      : 'bg-[#4B4C9D] text-white hover:bg-black'
+                                      ? 'bg-study-paper border border-study-line text-study-accent hover:bg-study-accent hover:text-white'
+                                      : 'bg-study-accent text-white hover:bg-black'
                                   }`}
                                 >
                                   {concluindoConteudo === idConteudo
@@ -643,7 +643,7 @@ async function concluirDia(idDia) {
                           })}
                         </div>
                       )}
-                      {bloqueado && <p className="mt-4 border-t border-[#9394CF]/20 pt-4 text-sm font-semibold text-black/55 dark:text-white/55">{dia.requer_desafio ? 'Conclua o desafio de 5 questões (4 acertos) para estudar este dia antes da data prevista.' : 'Conclua os dias anteriores para liberar esta etapa.'}</p>}
+                      {bloqueado && <p className="mt-4 border-t border-study-line/20 pt-4 text-sm font-semibold text-black/55 dark:text-white/55">{dia.requer_desafio ? 'Conclua o desafio de 5 questões (4 acertos) para estudar este dia antes da data prevista.' : 'Conclua os dias anteriores para liberar esta etapa.'}</p>}
                     </div>
                   )
                 })}
@@ -656,19 +656,19 @@ async function concluirDia(idDia) {
         <MaterialViewer material={materialAberto} onClose={() => setMaterialAberto(null)} />
       )}
       {avaliacao && <CronogramaAssessment key={avaliacao.id_avaliacao} assessment={avaliacao} onSubmit={enviarAvaliacao} onSaveAnswer={salvarRespostaAvaliacao} onClose={() => { setAvaliacao(null); carregarCronogramas() }} />}
-      {recuperacao && <div className="fixed inset-0 z-[130] grid place-items-center bg-black/60 p-4"><section className="max-w-lg rounded-[2rem] bg-white p-6 text-[#21162F] dark:bg-[#211A2D] dark:text-white"><h2 className="text-2xl font-black">Plano de recuperação</h2><p className="mt-2 text-sm opacity-70">Há {recuperacao.dias_atrasados} dia(s) atrasado(s) e {recuperacao.conteudos_pendentes} conteúdo(s) pendente(s).</p><div className="mt-5 grid gap-3">{recuperacao.opcoes.map((opcao) => <button key={opcao.id} onClick={async () => { if (opcao.id === 'REDISTRIBUIR' || opcao.id === 'REDUZIR') await replanejar(); setRecuperacao(null); if (opcao.id === 'MANTER') toast('O cronograma foi mantido como está.'); }} className="rounded-2xl border p-4 text-left"><b>{opcao.titulo}</b><span className="mt-1 block text-sm opacity-65">{opcao.impacto}</span></button>)}</div><button onClick={() => setRecuperacao(null)} className="mt-5 text-sm font-bold underline">Fechar</button></section></div>}
+      {recuperacao && <div className="fixed inset-0 z-[130] grid place-items-center bg-black/60 p-4"><section className="max-w-lg rounded-[2rem] bg-study-paper p-6 text-study-ink dark:bg-study-paper dark:text-white"><h2 className="text-2xl font-black">Plano de recuperação</h2><p className="mt-2 text-sm opacity-70">Há {recuperacao.dias_atrasados} dia(s) atrasado(s) e {recuperacao.conteudos_pendentes} conteúdo(s) pendente(s).</p><div className="mt-5 grid gap-3">{recuperacao.opcoes.map((opcao) => <button key={opcao.id} onClick={async () => { if (opcao.id === 'REDISTRIBUIR' || opcao.id === 'REDUZIR') await replanejar(); setRecuperacao(null); if (opcao.id === 'MANTER') toast('O cronograma foi mantido como está.'); }} className="rounded-2xl border p-4 text-left"><b>{opcao.titulo}</b><span className="mt-1 block text-sm opacity-65">{opcao.impacto}</span></button>)}</div><button onClick={() => setRecuperacao(null)} className="mt-5 text-sm font-bold underline">Fechar</button></section></div>}
     </div>
   )
 }
 
 function CardStat({ titulo, valor }) {
   return (
-    <div className="schedule-surface bg-white rounded-[2rem] p-6 shadow-xl border border-[#9394CF]/20">
+    <div className="schedule-surface bg-study-paper rounded-[2rem] p-6 shadow-xl border border-study-line/20">
       <p className="text-sm font-bold text-black/50 mb-1">
         {titulo}
       </p>
 
-      <p className="text-3xl font-black text-[#4B4C9D]">
+      <p className="text-3xl font-black text-study-accent">
         {valor}
       </p>
     </div>
@@ -683,7 +683,7 @@ function MateriaisComplementares({ materiais, onOpen }) {
   return (
     <div className="flex flex-wrap gap-2">
       {lista.map((material, index) => (
-        <button type="button" key={`${material.url}-${index}`} onClick={() => onOpen({ titulo: material.titulo || 'Material complementar', tipo: material.tipo, url: material.url })} className="rounded-full border border-[#9394CF]/40 px-3 py-1 text-xs font-bold text-[#4B4C9D] hover:bg-[#9394CF]/15">
+        <button type="button" key={`${material.url}-${index}`} onClick={() => onOpen({ titulo: material.titulo || 'Material complementar', tipo: material.tipo, url: material.url })} className="rounded-full border border-study-line/40 px-3 py-1 text-xs font-bold text-study-accent hover:bg-study-accent/15">
           {material.tipo === 'VIDEO' ? '▶ ' : material.tipo === 'PDF' ? 'PDF ' : ''}{material.titulo || 'Material'}
         </button>
       ))}

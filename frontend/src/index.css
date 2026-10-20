@@ -1,3 +1,4 @@
+@import './design/DesignSystem.css';
 .connection-alert {
   position: relative;
   z-index: 30;
@@ -42,6 +43,35 @@
   .focus-tool { bottom: .75rem; right: .75rem; }
 }
 
+/* Carregamento de rota: discreto, acessível e sem travar a primeira pintura. */
+.route-loading {
+  display: grid;
+  place-content: center;
+  gap: 1rem;
+  min-height: 100vh;
+  text-align: center;
+  color: var(--pn-texto-suave, #6a6379);
+  font-size: .85rem;
+  font-weight: 650;
+}
+.route-loading > div { display: flex; justify-content: center; gap: .45rem; }
+.route-loading span {
+  width: .55rem;
+  height: .55rem;
+  border-radius: 50%;
+  background: var(--pn-primaria, #7c3aed);
+  animation: route-loading-bounce .9s ease-in-out infinite;
+}
+.route-loading span:nth-child(2) { animation-delay: .15s; }
+.route-loading span:nth-child(3) { animation-delay: .3s; }
+@keyframes route-loading-bounce {
+  0%, 100% { transform: translateY(0); opacity: .45; }
+  50% { transform: translateY(-6px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-loading span { animation: none; }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -67,24 +97,28 @@
 @layer base {
   :root {
     /* Fallback: paleta Amétis, modo claro. */
-    --pn-fundo: #fbfaff;
-    --pn-fundo-alt: #f4f2fb;
+    /* Fallback: paleta Amétis, modo claro. Os valores espelham exatamente
+       src/theme/palettes.js (tokensDaPaleta('amethyst').claro) para que o CSS
+       standalone já seja coerente com o design system. O ThemeContext os
+       sobrescreve em runtime com a matiz escolhida pelo usuário. */
+    --pn-fundo: #faf9fe;
+    --pn-fundo-alt: #f3f2fb;
     --pn-superficie: #ffffff;
-    --pn-superficie-alt: #f8f6fd;
-    --pn-borda: #e4e0f0;
-    --pn-borda-forte: #8d86a8;
-    --pn-texto: #2b2438;
-    --pn-texto-suave: #6a6379;
-    --pn-primaria: #7c3aed;
-    --pn-primaria-hover: #6d28d9;
-    --pn-primaria-suave: #f3ecff;
-    --pn-primaria-borda: #c9b3f5;
+    --pn-superficie-alt: #f6f5ff;
+    --pn-borda: #dddceb;
+    --pn-borda-forte: #908ead;
+    --pn-texto: #282737;
+    --pn-texto-suave: #626173;
+    --pn-primaria: #705ec5;
+    --pn-primaria-hover: #5d47b2;
+    --pn-primaria-suave: #ebe9ff;
+    --pn-primaria-borda: #cbc8f7;
     --pn-on-primaria: #ffffff;
-    --pn-primaria-forte: #6d28d9;
+    --pn-primaria-forte: #6755bb;
 
     /* Trilhas do caderno: a malha quadriculada que sugere papel pautado. */
-    --pn-grade: rgba(124, 58, 237, 0.055);
-    --pn-margem: rgba(124, 58, 237, 0.13);
+    --pn-grade: rgba(112, 94, 197, 0.055);
+    --pn-margem: rgba(112, 94, 197, 0.13);
     --pn-sombra-suave: 0 1px 2px rgba(43, 36, 56, 0.05);
     --pn-sombra-media: 0 12px 32px -18px rgba(43, 36, 56, 0.35);
     --pn-sombra-alta: 0 30px 70px -32px rgba(43, 36, 56, 0.45);
@@ -94,8 +128,8 @@
     /* Erro: vermelho fixo, com L ajustado por modo para bater 4.5:1 no texto e
        3:1 na borda. Não segue o hue da paleta — um erro precisa continuar
        legível como erro em qualquer tema. */
-    --pn-erro: #b3261e;
-    --pn-erro-borda: #c0342b;
+    --pn-erro: #7c0000;
+    --pn-erro-borda: #7c0000;
   }
 
   /* Modo escuro definido AQUI, e não só via JavaScript.
@@ -107,29 +141,29 @@
      Estes valores são os da paleta Amétis em modo escuro, conferidos por
      test/theme.test.js. */
   .dark {
-    --pn-fundo: #17141f;
-    --pn-fundo-alt: #1f1b2b;
-    --pn-superficie: #221d30;
-    --pn-superficie-alt: #2a2439;
-    --pn-borda: #3a3350;
-    --pn-borda-forte: #6b6288;
-    --pn-texto: #f5f2fb;
-    --pn-texto-suave: #b3abc4;
-    --pn-primaria: #c4b5fd;
-    --pn-primaria-hover: #ddd6fe;
-    --pn-primaria-suave: #2e2545;
-    --pn-primaria-borda: #4b3f6b;
-    --pn-on-primaria: #1a1626;
+    --pn-fundo: #0d0c15;
+    --pn-fundo-alt: #151420;
+    --pn-superficie: #1b1a26;
+    --pn-superficie-alt: #242331;
+    --pn-borda: #343344;
+    --pn-borda-forte: #8482a0;
+    --pn-texto: #f5f4fa;
+    --pn-texto-suave: #b0afbd;
+    --pn-primaria: #b3a6ff;
+    --pn-primaria-hover: #c9bbff;
+    --pn-primaria-suave: #2d2a42;
+    --pn-primaria-borda: #4b476f;
+    --pn-on-primaria: #000000;
     /* No escuro a primária é clara, mas a forte continua escura: ela existe
        para ser texto sobre branco e não depende do modo. */
-    --pn-primaria-forte: #6d28d9;
-    --pn-grade: rgba(196, 181, 253, 0.05);
-    --pn-margem: rgba(196, 181, 253, 0.12);
+    --pn-primaria-forte: #6755bb;
+    --pn-grade: rgba(179, 166, 255, 0.05);
+    --pn-margem: rgba(179, 166, 255, 0.12);
     --pn-sombra-suave: 0 1px 2px rgba(0, 0, 0, 0.5);
     --pn-sombra-media: 0 12px 32px -18px rgba(0, 0, 0, 0.8);
     --pn-sombra-alta: 0 30px 70px -32px rgba(0, 0, 0, 0.9);
-    --pn-erro: #f2b8b5;
-    --pn-erro-borda: #e5484d;
+    --pn-erro: #ffbeb4;
+    --pn-erro-borda: #ffbeb4;
   }
 
   /* Contraste extra para leitura longa ou baixa visão: escurece/clareia o
@@ -330,6 +364,26 @@
     border-color: var(--pn-primaria);
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--pn-primaria) 22%, transparent);
   }
+
+  /* Classes editoriais study-*: disponíveis globalmente para qualquer tela. */
+  .study-input {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid var(--pn-borda);
+    border-radius: 5px;
+    background: var(--pn-superficie);
+    padding: .75rem .9rem;
+    color: var(--pn-texto);
+    font-size: .92rem;
+  }
+  .study-input:focus-visible {
+    outline: 2px solid var(--pn-primaria);
+    outline-offset: 1px;
+    border-color: var(--pn-primaria);
+  }
+  .study-input-erro { border-color: var(--pn-erro, #b3261e); }
+  .study-error { margin-top: .4rem; font-size: .75rem; color: var(--pn-erro, #b3261e); }
+  .study-hint { margin-top: .4rem; font-size: .72rem; color: var(--pn-texto-suave); }
 
   .pn-etiqueta {
     display: block;

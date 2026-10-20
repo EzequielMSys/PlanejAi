@@ -62,10 +62,14 @@ function aplicarTokens(tokens) {
   const root = document.documentElement;
   for (const [nome, hex] of Object.entries(tokens)) {
     root.style.setProperty(`--pn-${nome}`, hex);
+    // CSS usa nomes com hífen; consumidores JS também recebem camelCase.
+    const cssName = nome.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+    root.style.setProperty(`--pn-${cssName}`, hex);
     // Também publica em RGB separado, para o Tailwind usar com alpha:
     // rgb(var(--pn-primaria-rgb) / 0.2)
     const [r, g, b] = hexToRgb(hex);
     root.style.setProperty(`--pn-${nome}-rgb`, `${r} ${g} ${b}`);
+    root.style.setProperty(`--pn-${cssName}-rgb`, `${r} ${g} ${b}`);
   }
 }
 

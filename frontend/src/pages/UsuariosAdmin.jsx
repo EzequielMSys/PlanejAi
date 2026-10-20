@@ -12,9 +12,9 @@ const tipoLabel = {
 
 const tipoBadge = {
   dono: 'bg-black text-white border-black',
-  admin: 'bg-[#4B4C9D] text-white border-[#4B4C9D]',
-  docente: 'bg-[#9394CF]/25 text-black border-[#9394CF]',
-  aluno: 'bg-[#F7F7FB] text-black border-[#9394CF]/40'
+  admin: 'bg-study-accent text-white border-study-line',
+  docente: 'bg-study-accent/25 text-black border-study-line',
+  aluno: 'bg-study-canvas text-black border-study-line/40'
 }
 
 const USUARIOS_POR_PAGINA = 10
@@ -231,9 +231,9 @@ export default function UsuariosAdmin() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F7F7FB] flex items-center justify-center">
-        <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-[#9394CF]/20 text-center">
-          <div className="h-14 w-14 border-b-4 border-[#4B4C9D] rounded-full animate-spin mx-auto mb-4" />
+      <div className="min-h-screen bg-study-canvas flex items-center justify-center">
+        <div className="bg-study-paper rounded-[3rem] p-10 shadow-2xl border border-study-line/20 text-center">
+          <div className="h-14 w-14 border-b-4 border-study-line rounded-full animate-spin mx-auto mb-4" />
           <p className="font-bold text-black/60">Carregando usuários...</p>
         </div>
       </div>
@@ -241,9 +241,9 @@ export default function UsuariosAdmin() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7FB] text-black px-4 sm:px-6 lg:px-8 py-10">
+    <div className="min-h-screen bg-study-canvas text-black px-4 sm:px-6 lg:px-8 py-10">
       <div className="max-w-7xl mx-auto">
-        <section className="workspace-hero bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+        <section className="workspace-hero bg-gradient-to-br from-study-accent via-study-accent to-study-accent rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
           <div className="absolute inset-0 bg-black/20" />
 
           <div className="relative z-10">
@@ -268,7 +268,7 @@ export default function UsuariosAdmin() {
           <CardStat titulo="Admins" valor={stats.admins} />
         </section>
 
-        <section className="bg-white rounded-[2.5rem] p-5 sm:p-6 shadow-xl border border-[#9394CF]/20 mb-6">
+        <section className="bg-study-paper rounded-[2.5rem] p-5 sm:p-6 shadow-xl border border-study-line/20 mb-6">
           <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
             <div>
               <h2 className="text-2xl font-black text-black">
@@ -289,14 +289,14 @@ export default function UsuariosAdmin() {
                 onChange={(e) => atualizarBusca(e.target.value)}
                 placeholder="Buscar por nome ou email..."
                 aria-label="Buscar usuário por nome ou email"
-                className="rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 outline-none focus:ring-2 focus:ring-[#9394CF]"
+                className="rounded-full px-5 py-3 bg-study-canvas border border-study-line/40 outline-none focus:ring-2 focus:ring-[#9394CF]"
               />
 
               <select
                 value={tipoFiltro}
                 onChange={(e) => atualizarTipoFiltro(e.target.value)}
                 aria-label="Filtrar usuários por tipo"
-                className="rounded-full px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 outline-none focus:ring-2 focus:ring-[#9394CF]"
+                className="rounded-full px-5 py-3 bg-study-canvas border border-study-line/40 outline-none focus:ring-2 focus:ring-[#9394CF]"
               >
                 <option value="">Todos</option>
                 <option value="dono">Dono</option>
@@ -308,10 +308,10 @@ export default function UsuariosAdmin() {
           </div>
         </section>
 
-        <section className="bg-white rounded-[2.5rem] shadow-2xl border border-[#9394CF]/20 overflow-hidden">
+        <section className="bg-study-paper rounded-[2.5rem] shadow-2xl border border-study-line/20 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1000px]">
-              <thead className="bg-[#9394CF]/20">
+              <thead className="bg-study-accent/20">
                 <tr>
                   <Th>Usuário</Th>
                   <Th>Email</Th>
@@ -328,7 +328,7 @@ export default function UsuariosAdmin() {
                   const podeAlterar = podeMexer(usuario)
 
                   return (
-                    <tr key={id} className="hover:bg-[#F7F7FB] transition-colors">
+                    <tr key={id} className="hover:bg-study-canvas transition-colors">
                       <td className="p-5">
                         <div className="font-black text-black">
                           {usuario.nome || 'Sem nome'}
@@ -384,7 +384,7 @@ export default function UsuariosAdmin() {
                             type="button"
                             disabled={!isDono || !podeAlterar || acaoLoading === `status-${id}`}
                             onClick={() => alterarStatus(usuario)}
-                            className="px-4 py-2 rounded-full bg-[#F7F7FB] border border-[#9394CF]/40 text-sm font-bold disabled:opacity-40 hover:bg-[#9394CF]/20 transition"
+                            className="px-4 py-2 rounded-full bg-study-canvas border border-study-line/40 text-sm font-bold disabled:opacity-40 hover:bg-study-accent/20 transition"
                           >
                             {Number(usuario.ativo) ? 'Desativar' : 'Ativar'}
                           </button>
@@ -393,7 +393,7 @@ export default function UsuariosAdmin() {
                             type="button"
                             disabled={!podeAlterar || acaoLoading === `senha-${id}`}
                             onClick={() => resetarSenha(usuario)}
-                            className="px-4 py-2 rounded-full bg-[#4B4C9D] text-white text-sm font-bold disabled:opacity-40 hover:bg-black transition"
+                            className="px-4 py-2 rounded-full bg-study-accent text-white text-sm font-bold disabled:opacity-40 hover:bg-black transition"
                           >
                             Resetar senha
                           </button>
@@ -402,7 +402,7 @@ export default function UsuariosAdmin() {
                             type="button"
                             disabled={!isDono || !podeAlterar}
                             onClick={() => abrirModalSenha(usuario)}
-                            className="px-4 py-2 rounded-full bg-black text-white text-sm font-bold disabled:opacity-40 hover:bg-[#4B4C9D] transition"
+                            className="px-4 py-2 rounded-full bg-black text-white text-sm font-bold disabled:opacity-40 hover:bg-study-accent transition"
                           >
                             Definir senha
                           </button>
@@ -430,7 +430,7 @@ export default function UsuariosAdmin() {
           {usuarios.length > 0 && (
             <nav
               aria-label="Paginação de usuários"
-              className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-[#9394CF]/20 px-5 py-5"
+              className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-study-line/20 px-5 py-5"
             >
               <p className="text-sm text-black/60">
                 Mostrando{' '}
@@ -452,7 +452,7 @@ export default function UsuariosAdmin() {
                   type="button"
                   disabled={paginaAtual === 1}
                   onClick={() => setPaginaAtual((pagina) => pagina - 1)}
-                  className="px-4 py-2 rounded-full border border-[#9394CF]/40 font-bold text-sm hover:bg-[#9394CF]/15 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  className="px-4 py-2 rounded-full border border-study-line/40 font-bold text-sm hover:bg-study-accent/15 disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
                   Anterior
                 </button>
@@ -466,8 +466,8 @@ export default function UsuariosAdmin() {
                     onClick={() => setPaginaAtual(pagina)}
                     className={`h-10 min-w-10 px-3 rounded-full font-black text-sm transition ${
                       pagina === paginaAtual
-                        ? 'bg-[#4B4C9D] text-white shadow-lg'
-                        : 'bg-[#F7F7FB] border border-[#9394CF]/30 text-black hover:bg-[#9394CF]/20'
+                        ? 'bg-study-accent text-white shadow-lg'
+                        : 'bg-study-canvas border border-study-line/30 text-black hover:bg-study-accent/20'
                     }`}
                   >
                     {pagina}
@@ -478,7 +478,7 @@ export default function UsuariosAdmin() {
                   type="button"
                   disabled={paginaAtual === totalPaginas}
                   onClick={() => setPaginaAtual((pagina) => pagina + 1)}
-                  className="px-4 py-2 rounded-full border border-[#9394CF]/40 font-bold text-sm hover:bg-[#9394CF]/15 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  className="px-4 py-2 rounded-full border border-study-line/40 font-bold text-sm hover:bg-study-accent/15 disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
                   Próxima
                 </button>
@@ -490,9 +490,9 @@ export default function UsuariosAdmin() {
 
       {modalSenha && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl border border-[#9394CF]/20 p-8">
+          <div className="w-full max-w-md bg-study-paper rounded-[2.5rem] shadow-2xl border border-study-line/20 p-8">
             <div className="mb-6">
-              <p className="text-xs uppercase tracking-[0.3em] text-[#4B4C9D] font-black mb-2">
+              <p className="text-xs uppercase tracking-[0.3em] text-study-accent font-black mb-2">
                 PlanejAI
               </p>
 
@@ -504,7 +504,7 @@ export default function UsuariosAdmin() {
                 Defina uma nova senha para:
               </p>
 
-              <p className="font-black text-[#4B4C9D] mt-2">
+              <p className="font-black text-study-accent mt-2">
                 {modalSenha.nome || modalSenha.email}
               </p>
             </div>
@@ -516,7 +516,7 @@ export default function UsuariosAdmin() {
                 aria-label="Nova senha"
                 value={novaSenha}
                 onChange={(e) => setNovaSenha(e.target.value)}
-                className="w-full rounded-2xl px-5 py-4 bg-[#F7F7FB] border border-[#9394CF]/30 outline-none focus:ring-2 focus:ring-[#9394CF]"
+                className="w-full rounded-2xl px-5 py-4 bg-study-canvas border border-study-line/30 outline-none focus:ring-2 focus:ring-[#9394CF]"
               />
 
               <input
@@ -525,7 +525,7 @@ export default function UsuariosAdmin() {
                 aria-label="Confirmar nova senha"
                 value={confirmarSenha}
                 onChange={(e) => setConfirmarSenha(e.target.value)}
-                className="w-full rounded-2xl px-5 py-4 bg-[#F7F7FB] border border-[#9394CF]/30 outline-none focus:ring-2 focus:ring-[#9394CF]"
+                className="w-full rounded-2xl px-5 py-4 bg-study-canvas border border-study-line/30 outline-none focus:ring-2 focus:ring-[#9394CF]"
               />
             </div>
 
@@ -537,7 +537,7 @@ export default function UsuariosAdmin() {
               <button
                 type="button"
                 onClick={fecharModalSenha}
-                className="flex-1 py-3 rounded-full bg-[#F7F7FB] border border-[#9394CF]/30 font-bold hover:bg-[#9394CF]/10 transition"
+                className="flex-1 py-3 rounded-full bg-study-canvas border border-study-line/30 font-bold hover:bg-study-accent/10 transition"
               >
                 Cancelar
               </button>
@@ -546,7 +546,7 @@ export default function UsuariosAdmin() {
                 type="button"
                 disabled={salvandoSenha}
                 onClick={definirSenha}
-                className="flex-1 py-3 rounded-full bg-[#4B4C9D] text-white font-black hover:bg-black transition disabled:opacity-60"
+                className="flex-1 py-3 rounded-full bg-study-accent text-white font-black hover:bg-black transition disabled:opacity-60"
               >
                 {salvandoSenha ? 'Salvando...' : 'Salvar senha'}
               </button>
@@ -560,12 +560,12 @@ export default function UsuariosAdmin() {
 
 function CardStat({ titulo, valor }) {
   return (
-    <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-[#9394CF]/20">
+    <div className="bg-study-paper rounded-[2rem] p-6 shadow-xl border border-study-line/20">
       <p className="text-sm font-bold text-black/50 mb-1">
         {titulo}
       </p>
 
-      <p className="text-3xl font-black text-[#4B4C9D]">
+      <p className="text-3xl font-black text-study-accent">
         {valor}
       </p>
     </div>
@@ -574,7 +574,7 @@ function CardStat({ titulo, valor }) {
 
 function Th({ children }) {
   return (
-    <th className="text-left p-5 text-sm font-black text-black border-b border-[#9394CF]/20">
+    <th className="text-left p-5 text-sm font-black text-black border-b border-study-line/20">
       {children}
     </th>
   )

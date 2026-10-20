@@ -47,16 +47,16 @@ const PrimeiroAcesso = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-gradient-to-br from-study-accent via-study-accent to-study-accent relative overflow-hidden">
       <div className="absolute inset-0 bg-black/20" />
 
-      <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
+      <div className="absolute top-20 left-10 w-32 h-32 bg-study-paper rounded-full blur-xl" />
       <div className="absolute bottom-20 right-16 w-48 h-48 bg-black/10 rounded-full blur-2xl" />
       <div className="absolute top-40 right-1/4 w-20 h-20 border border-white/30 rounded-full" />
 
-      <div className="relative z-10 max-w-md w-full rounded-[3rem] bg-white/85 backdrop-blur-md border border-white/60 shadow-2xl p-8 animate-fade-in">
+      <div className="relative z-10 max-w-md w-full rounded-[3rem] bg-study-paper backdrop-blur-md border border-white/60 shadow-2xl p-8 animate-fade-in">
         <div className="text-center">
-          <div className="w-20 h-20 bg-[#9394CF] rounded-full mx-auto mb-6 flex items-center justify-center shadow-2xl">
+          <div className="w-20 h-20 bg-study-accent rounded-full mx-auto mb-6 flex items-center justify-center shadow-2xl">
             <svg className="w-10 h-10 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -66,8 +66,8 @@ const PrimeiroAcesso = () => {
             Primeiro Acesso
           </h2>
 
-          <div className="bg-[#9394CF]/20 border border-[#9394CF]/40 rounded-[2rem] p-6 mb-8">
-            <p className="text-[#4B4C9D] font-black text-lg mb-2">
+          <div className="bg-study-accent/20 border border-study-line/40 rounded-[2rem] p-6 mb-8">
+            <p className="text-study-accent font-black text-lg mb-2">
               ⚠️ Troca obrigatória
             </p>
 
@@ -92,7 +92,7 @@ const PrimeiroAcesso = () => {
             <input
               type="password"
               required
-              className="w-full rounded-full px-5 py-3 bg-white border border-[#9394CF]/40 text-black placeholder-gray-400 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
+              className="w-full rounded-full px-5 py-3 bg-study-paper border border-study-line/40 text-black placeholder-gray-400 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
               placeholder="Senha temporária recebida"
               value={formData.senha_atual}
               onChange={(e) => setFormData({ ...formData, senha_atual: e.target.value })}
@@ -107,7 +107,7 @@ const PrimeiroAcesso = () => {
             <input
               type="password"
               required
-              className="w-full rounded-full px-5 py-3 bg-white border border-[#9394CF]/40 text-black placeholder-gray-400 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
+              className="w-full rounded-full px-5 py-3 bg-study-paper border border-study-line/40 text-black placeholder-gray-400 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
               placeholder="Nova senha segura"
               value={formData.nova_senha}
               onChange={(e) => setFormData({ ...formData, nova_senha: e.target.value })}
@@ -126,7 +126,7 @@ const PrimeiroAcesso = () => {
             <input
               type="password"
               required
-              className="w-full rounded-full px-5 py-3 bg-white border border-[#9394CF]/40 text-black placeholder-gray-400 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
+              className="w-full rounded-full px-5 py-3 bg-study-paper border border-study-line/40 text-black placeholder-gray-400 focus:ring-2 focus:ring-[#9394CF] focus:outline-none transition-all duration-300"
               placeholder="Confirme a nova senha"
               value={formData.confirmar_senha}
               onChange={(e) => setFormData({ ...formData, confirmar_senha: e.target.value })}
@@ -136,7 +136,7 @@ const PrimeiroAcesso = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#4B4C9D] text-white py-4 rounded-full font-bold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full bg-study-accent text-white py-4 rounded-full font-bold hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? 'Alterando...' : 'Definir Nova Senha'}
           </button>

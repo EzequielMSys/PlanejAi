@@ -264,7 +264,7 @@ export default function Atividades() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="mb-10 space-y-6 rounded-[2.5rem] bg-white p-6 sm:p-8 shadow-2xl dark:bg-[#1E1D3A]"
+              className="mb-10 space-y-6 rounded-[2.5rem] bg-study-paper p-6 sm:p-8 shadow-2xl dark:bg-study-paper"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-2xl font-black">{editandoId ? 'Editar atividade' : 'Nova atividade'}</h2>
@@ -275,14 +275,14 @@ export default function Atividades() {
                 value={form.titulo}
                 onChange={(e) => setForm({ ...form, titulo: e.target.value })}
                 placeholder="Título da atividade"
-                className="w-full rounded-2xl border border-[#9394CF]/40 bg-[#F7F7FB] px-5 py-3 text-black dark:text-white"
+                className="w-full rounded-2xl border border-study-line/40 bg-study-canvas px-5 py-3 text-black dark:text-white"
               />
 
               <textarea
                 value={form.descricao}
                 onChange={(e) => setForm({ ...form, descricao: e.target.value })}
                 placeholder="Instruções ou situação-problema"
-                className="h-32 w-full rounded-2xl border border-[#9394CF]/40 bg-[#F7F7FB] px-5 py-3 text-black dark:text-white"
+                className="h-32 w-full rounded-2xl border border-study-line/40 bg-study-canvas px-5 py-3 text-black dark:text-white"
               />
 
               <div className="grid sm:grid-cols-2 gap-4">
@@ -290,7 +290,7 @@ export default function Atividades() {
                   type="datetime-local"
                   value={form.prazo}
                   onChange={(e) => setForm({ ...form, prazo: e.target.value })}
-                  className="rounded-2xl border border-[#9394CF]/40 bg-[#F7F7FB] px-5 py-3 text-black dark:text-white"
+                  className="rounded-2xl border border-study-line/40 bg-study-canvas px-5 py-3 text-black dark:text-white"
                 />
                 <div>
                   <input
@@ -304,7 +304,7 @@ export default function Atividades() {
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     disabled={enviandoImagem}
-                    className="w-full rounded-2xl border border-dashed border-[#9394CF] bg-[#F7F7FB] px-5 py-3 font-bold text-[#4B4C9D] hover:bg-[#9394CF]/10 transition disabled:opacity-50"
+                    className="w-full rounded-2xl border border-dashed border-study-line bg-study-canvas px-5 py-3 font-bold text-study-accent hover:bg-study-accent/10 transition disabled:opacity-50"
                   >
                     {enviandoImagem ? 'Enviando...' : 'Anexar arquivo'}
                   </button>
@@ -317,19 +317,19 @@ export default function Atividades() {
               </div>
 
               {isGestor && (
-                <div className="rounded-2xl border border-[#9394CF]/30 bg-[#F7F7FB] p-5 dark:bg-white/5 space-y-3">
-                  <p className="text-xs font-black uppercase tracking-[0.25em] text-[#4B4C9D]">Atribuição</p>
+                <div className="rounded-2xl border border-study-line/30 bg-study-canvas p-5 dark:bg-study-paper space-y-3">
+                  <p className="text-xs font-black uppercase tracking-[0.25em] text-study-accent">Atribuição</p>
                   <select
                     value={form.atribuicao}
                     onChange={(e) => setForm((f) => ({ ...f, atribuicao: e.target.value, destinatarios: e.target.value === 'TODOS' ? [] : f.destinatarios }))}
-                    className="w-full rounded-xl border border-[#9394CF]/40 bg-white px-4 py-2 text-sm font-bold text-black dark:bg-[#1E1D3A] dark:text-white"
+                    className="w-full rounded-xl border border-study-line/40 bg-study-paper px-4 py-2 text-sm font-bold text-black dark:bg-study-paper dark:text-white"
                   >
                     <option value="TODOS">Todos os alunos</option>
                     <option value="SELECIONADOS">Alunos selecionados</option>
                   </select>
 
                   {form.atribuicao === 'SELECIONADOS' && (
-                    <div className="max-h-48 overflow-y-auto rounded-xl border border-[#9394CF]/30 bg-white p-3 dark:bg-[#1E1D3A]">
+                    <div className="max-h-48 overflow-y-auto rounded-xl border border-study-line/30 bg-study-paper p-3 dark:bg-study-paper">
                       {carregandoAlunos ? (
                         <p className="text-sm text-black/60 dark:text-white/60">Carregando alunos...</p>
                       ) : alunos.length === 0 ? (
@@ -366,7 +366,7 @@ export default function Atividades() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="relative inline-block"
                   >
-                    <img src={uploadPreview} alt="Prévia do anexo" className="h-40 w-auto rounded-2xl border border-[#9394CF]/30 object-cover" />
+                    <img src={uploadPreview} alt="Prévia do anexo" className="h-40 w-auto rounded-2xl border border-study-line/30 object-cover" />
                     <button
                       type="button"
                       onClick={() => removerAnexo(0)}
@@ -381,7 +381,7 @@ export default function Atividades() {
               {form.anexos.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {form.anexos.map((anexo, i) => (
-                    <span key={i} className="flex items-center gap-2 rounded-full bg-[#9394CF]/10 px-3 py-1 text-xs font-bold text-[#4B4C9D]">
+                    <span key={i} className="flex items-center gap-2 rounded-full bg-study-accent/10 px-3 py-1 text-xs font-bold text-study-accent">
                       {anexo.nome || anexo.url}
                       <button type="button" onClick={() => removerAnexo(i)} className="hover:text-red-500">×</button>
                     </span>
@@ -399,7 +399,7 @@ export default function Atividades() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <button type="button" onClick={adicionarQuestao} className="rounded-full border border-[#9394CF] px-5 py-2 text-sm font-black text-[#4B4C9D] hover:bg-[#9394CF]/10 transition">
+                <button type="button" onClick={adicionarQuestao} className="rounded-full border border-study-line px-5 py-2 text-sm font-black text-study-accent hover:bg-study-accent/10 transition">
                   + Adicionar questão
                 </button>
               </div>
@@ -408,14 +408,14 @@ export default function Atividades() {
                 <button
                   onClick={() => salvar('RASCUNHO')}
                   disabled={salvando}
-                  className="rounded-full border border-[#4B4C9D] px-6 py-3 font-bold text-[#4B4C9D] hover:bg-[#4B4C9D]/10 transition disabled:opacity-50"
+                  className="rounded-full border border-study-line px-6 py-3 font-bold text-study-accent hover:bg-study-accent/10 transition disabled:opacity-50"
                 >
                   {salvando ? 'Salvando...' : 'Salvar rascunho'}
                 </button>
                 <button
                   onClick={() => salvar('PUBLICADA')}
                   disabled={salvando}
-                  className="rounded-full bg-[#4B4C9D] px-6 py-3 font-bold text-white shadow-xl hover:bg-black transition disabled:opacity-50"
+                  className="rounded-full bg-study-accent px-6 py-3 font-bold text-white shadow-xl hover:bg-black transition disabled:opacity-50"
                 >
                   {salvando ? 'Publicando...' : 'Publicar atividade'}
                 </button>
@@ -430,10 +430,10 @@ export default function Atividades() {
               key={item.id_atividade}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-[2.5rem] bg-white p-6 shadow-xl dark:bg-[#1E1D3A] border border-[#9394CF]/20"
+              className="rounded-[2.5rem] bg-study-paper p-6 shadow-xl dark:bg-study-paper border border-study-line/20"
             >
               <div className="flex items-center justify-between mb-4">
-                <span className="rounded-full bg-[#9394CF]/20 px-3 py-1 text-xs font-black">{item.status}</span>
+                <span className="rounded-full bg-study-accent/20 px-3 py-1 text-xs font-black">{item.status}</span>
                 <span className="text-xs font-bold text-black/50 dark:text-white/50">v{item.versao || 1} · {item.questoes?.length || 0} questões</span>
               </div>
 
@@ -447,8 +447,8 @@ export default function Atividades() {
               )}
 
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                <span className="text-sm font-bold text-[#4B4C9D]">{isGestor ? `${item.entregas || 0} entregas` : 'Ver atividade'}</span>
-                <div className="flex gap-2"><button type="button" onClick={() => abrirVersoes(item)} className="rounded-full border px-3 py-1 text-xs font-bold">Versões</button><button type="button" onClick={() => editar(item)} className="rounded-full border px-3 py-1 text-xs font-bold">Editar</button><button type="button" onClick={() => abrirEntregas(item)} className="rounded-full bg-[#6D3EC5] px-3 py-1 text-xs font-bold text-white">Corrigir</button></div>
+                <span className="text-sm font-bold text-study-accent">{isGestor ? `${item.entregas || 0} entregas` : 'Ver atividade'}</span>
+                <div className="flex gap-2"><button type="button" onClick={() => abrirVersoes(item)} className="rounded-full border px-3 py-1 text-xs font-bold">Versões</button><button type="button" onClick={() => editar(item)} className="rounded-full border px-3 py-1 text-xs font-bold">Editar</button><button type="button" onClick={() => abrirEntregas(item)} className="rounded-full bg-study-accent px-3 py-1 text-xs font-bold text-white">Corrigir</button></div>
               </div>
             </motion.article>
           ))}
@@ -464,7 +464,7 @@ export default function Atividades() {
             {isGestor && <button type="button" className="pj-button pj-button--primary" onClick={() => setAberto(true)}>Criar primeira atividade</button>}
           </section>
         )}
-        {entregas && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 p-4" onMouseDown={() => setEntregas(null)}><section className="activity-correction-modal" onMouseDown={(e) => e.stopPropagation()}><header className="flex justify-between gap-3"><div><p className="text-xs font-black text-[#6D3EC5]">CORREÇÃO HÍBRIDA</p><h2 className="text-2xl font-black">{entregas.atividade.titulo}</h2></div><button onClick={() => setEntregas(null)} className="text-2xl">×</button></header>{!entregas.itens.length ? <p className="mt-8 rounded-xl bg-slate-50 p-6 text-center">Ainda não há entregas.</p> : <div className="mt-5 grid gap-4">{entregas.itens.map((resposta) => { const formCorrecao = correcoes[resposta.id_resposta] || { nota: resposta.nota ?? '', feedback: resposta.feedback || '' }; return <article key={resposta.id_resposta} className="activity-delivery"><div className="flex justify-between"><div><b>{resposta.nome}</b><p className="text-xs opacity-60">{resposta.email}</p></div><span className="text-xs font-bold">{resposta.status}</span></div><DeliveryAnswers atividade={entregas.atividade} entrega={resposta} /><div className="mt-3 grid gap-2 sm:grid-cols-[100px_1fr_auto]"><input type="number" min="0" max="100" value={formCorrecao.nota} onChange={(e) => setCorrecoes({ ...correcoes, [resposta.id_resposta]: { ...formCorrecao, nota: e.target.value } })} placeholder="Nota" /><input value={formCorrecao.feedback} onChange={(e) => setCorrecoes({ ...correcoes, [resposta.id_resposta]: { ...formCorrecao, feedback: e.target.value } })} placeholder="Feedback ao aluno" /><Button onClick={() => corrigir(resposta)}>Liberar correção</Button></div></article>})}</div>}</section></div>}
+        {entregas && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 p-4" onMouseDown={() => setEntregas(null)}><section className="activity-correction-modal" onMouseDown={(e) => e.stopPropagation()}><header className="flex justify-between gap-3"><div><p className="text-xs font-black text-study-accent">CORREÇÃO HÍBRIDA</p><h2 className="text-2xl font-black">{entregas.atividade.titulo}</h2></div><button onClick={() => setEntregas(null)} className="text-2xl">×</button></header>{!entregas.itens.length ? <p className="mt-8 rounded-xl bg-slate-50 p-6 text-center">Ainda não há entregas.</p> : <div className="mt-5 grid gap-4">{entregas.itens.map((resposta) => { const formCorrecao = correcoes[resposta.id_resposta] || { nota: resposta.nota ?? '', feedback: resposta.feedback || '' }; return <article key={resposta.id_resposta} className="activity-delivery"><div className="flex justify-between"><div><b>{resposta.nome}</b><p className="text-xs opacity-60">{resposta.email}</p></div><span className="text-xs font-bold">{resposta.status}</span></div><DeliveryAnswers atividade={entregas.atividade} entrega={resposta} /><div className="mt-3 grid gap-2 sm:grid-cols-[100px_1fr_auto]"><input type="number" min="0" max="100" value={formCorrecao.nota} onChange={(e) => setCorrecoes({ ...correcoes, [resposta.id_resposta]: { ...formCorrecao, nota: e.target.value } })} placeholder="Nota" /><input value={formCorrecao.feedback} onChange={(e) => setCorrecoes({ ...correcoes, [resposta.id_resposta]: { ...formCorrecao, feedback: e.target.value } })} placeholder="Feedback ao aluno" /><Button onClick={() => corrigir(resposta)}>Liberar correção</Button></div></article>})}</div>}</section></div>}
         {historicoVersoes && <div className="fixed inset-0 z-[100] grid place-items-center bg-black/60 p-4" onMouseDown={() => setHistoricoVersoes(null)}><section className="activity-version-modal" onMouseDown={(e) => e.stopPropagation()}><header><div><span>HISTÓRICO SEGURO</span><h2>{historicoVersoes.atividade.titulo}</h2></div><button type="button" onClick={() => setHistoricoVersoes(null)}>×</button></header><div>{historicoVersoes.itens.map((item) => <article key={item.id_versao}><strong>Versão {item.numero_versao}</strong><span>{new Date(item.criado_em).toLocaleString('pt-BR')}</span></article>)}</div></section></div>}
         {material && <MaterialViewer material={material} onClose={() => setMaterial(null)} />}
       </div>

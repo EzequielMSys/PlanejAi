@@ -38,7 +38,7 @@ const Register = () => {
   const validate = () => {
     const newErrors = {}
 
-if (!formData.nome.trim()) {
+    if (!formData.nome.trim()) {
       newErrors.nome = 'Nome é obrigatório'
     } else if (!/^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ ][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(formData.nome.trim())) {
       newErrors.nome = 'O nome deve conter apenas letras'
@@ -95,7 +95,7 @@ if (!formData.nome.trim()) {
     }
   }
 
-const inputClass = (field) => `pn-campo${errors[field] ? ' pn-campo-erro' : ''}`
+  const inputClass = (field) => `study-input ds-input${errors[field] ? ' study-input-erro' : ''}`
 
   return (
     <AuthLayout
@@ -103,9 +103,9 @@ const inputClass = (field) => `pn-campo${errors[field] ? ' pn-campo-erro' : ''}`
       subtitle="Em menos de um minuto o primeiro mapa de estudos fica pronto."
       destaque={
         <>
-          <p className="pn-sobrancelha">Comece por aqui</p>
-          <h2 className="pn-secao">Veja onde você está. Depois, para onde ir.</h2>
-          <ul className="pn-auth-lista">
+          <p className="study-auth-kicker">Suas escolhas</p>
+          <h2 className="study-auth-titulo">Veja onde você está. Depois, para onde ir.</h2>
+          <ul className="study-auth-lista">
             <li>Seu cronograma se monta sozinho, semana por semana.</li>
             <li>Provas e redações revelam o que já está firme.</li>
             <li>Turma, docente e você no mesmo mapa.</li>
@@ -113,14 +113,14 @@ const inputClass = (field) => `pn-campo${errors[field] ? ' pn-campo-erro' : ''}`
         </>
       }
       rodape={
-        <p className="pn-corpo">
-          Já tem conta? <Link to="/login">Entrar</Link>
+        <p className="study-auth-rodape">
+          Já tem conta? <Link to="/login" className="study-link">Entrar</Link>
         </p>
       }
     >
-      <form className="pn-form" onSubmit={handleSubmit} noValidate>
+      <form className="study-form" onSubmit={handleSubmit} noValidate>
         <div>
-          <label htmlFor="nome" className="pn-etiqueta">Nome completo</label>
+          <label htmlFor="nome" className="study-label ds-label">Nome completo</label>
           <input
             id="nome"
             type="text"
@@ -132,27 +132,37 @@ const inputClass = (field) => `pn-campo${errors[field] ? ' pn-campo-erro' : ''}`
             aria-invalid={Boolean(errors.nome)}
             className={inputClass('nome')}
           />
-          {errors.nome && <p className="pn-erro" role="alert">{errors.nome}</p>}
+          {errors.nome ? (
+            <p className="study-error" role="alert">{errors.nome}</p>
+          ) : (
+            <p id="nome-valor" className="study-hint">Use apenas letras</p>
+          )}
         </div>
 
           <div>
-            <label htmlFor="email" className="pn-etiqueta">Email</label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="joao@exemplo.com"
-              value={formData.email}
-              onChange={(e) => handleChange('email', e.target.value)}
-              aria-invalid={Boolean(errors.email)}
-              className={inputClass('email')}
-            />
-            {errors.email && <p className="pn-erro" role="alert">{errors.email}</p>}
+            <label htmlFor="email" className="study-label ds-label">Email</label>
+            <div className="study-input-wrap">
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="joao@exemplo.com"
+                value={formData.email}
+                onChange={(e) => handleChange('email', e.target.value)}
+                aria-invalid={Boolean(errors.email)}
+                className={inputClass('email')}
+              />
+            </div>
+            {errors.email ? (
+              <p className="study-error" role="alert">{errors.email}</p>
+            ) : (
+              <p id="email-requisitos" className="study-hint">Email deve conter @ e domínio</p>
+            )}
           </div>
 
           <div>
-            <label htmlFor="senha" className="pn-etiqueta">Senha</label>
-            <div className="pn-com-botao">
+            <label htmlFor="senha" className="study-label ds-label">Senha</label>
+            <div className="study-input-wrap">
               <input
                 id="senha"
                 type={showPassword ? 'text' : 'password'}
@@ -169,21 +179,21 @@ const inputClass = (field) => `pn-campo${errors[field] ? ' pn-campo-erro' : ''}`
                 type="button"
                 onClick={() => setShowPassword(v => !v)}
                 aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                className="pn-olho"
+                className="study-eye ds-btn-fantasma"
               >
                 <EyeIcon open={showPassword} />
               </button>
             </div>
             {errors.senha ? (
-              <p className="pn-erro" role="alert">{errors.senha}</p>
+              <p className="study-error" role="alert">{errors.senha}</p>
             ) : (
-              <p id="senha-requisitos" className="pn-dica">{REQUISITOS_SENHA}</p>
+              <p id="senha-requisitos" className="study-hint">{REQUISITOS_SENHA}</p>
             )}
           </div>
 
         <div>
-          <label htmlFor="confirmarSenha" className="pn-etiqueta">Confirmar senha</label>
-          <div className="pn-com-botao">
+          <label htmlFor="confirmarSenha" className="study-label ds-label">Confirmar senha</label>
+          <div className="study-input-wrap">
             <input
               id="confirmarSenha"
               type={showConfirm ? 'text' : 'password'}
@@ -198,15 +208,19 @@ const inputClass = (field) => `pn-campo${errors[field] ? ' pn-campo-erro' : ''}`
               type="button"
               onClick={() => setShowConfirm(v => !v)}
               aria-label={showConfirm ? 'Ocultar confirmação' : 'Mostrar confirmação'}
-              className="pn-olho"
+              className="study-eye ds-btn-fantasma"
             >
               <EyeIcon open={showConfirm} />
             </button>
           </div>
-          {errors.confirmarSenha && <p className="pn-erro" role="alert">{errors.confirmarSenha}</p>}
+          {errors.confirmarSenha ? (
+            <p className="study-error" role="alert">{errors.confirmarSenha}</p>
+          ) : (
+            <p id="confirmar-requisitos" className="study-hint">Repita exatamente a mesma senha</p>
+          )}
         </div>
 
-        <button type="submit" disabled={loading} className="pn-btn pn-btn-primario pn-btn-largo">
+        <button type="submit" disabled={loading} className="study-submit ds-btn">
           {loading ? 'Criando conta…' : 'Criar conta'}
         </button>
 

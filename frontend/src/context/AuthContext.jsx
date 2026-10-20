@@ -6,7 +6,7 @@ import { apiUrl } from "../config/api";
 import { clearStoredSession, isTokenExpired } from "../utils/session";
 import { clearOfflineData } from "../utils/offlineStore";
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 const initialState = {
   user: null,

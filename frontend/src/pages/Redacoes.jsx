@@ -244,9 +244,9 @@ export default function Redacoes() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F7F7FB] flex items-center justify-center">
-        <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-[#9394CF]/20 text-center">
-          <div className="h-14 w-14 border-b-4 border-[#4B4C9D] rounded-full animate-spin mx-auto mb-4" />
+      <div className="min-h-screen bg-study-canvas flex items-center justify-center">
+        <div className="bg-study-paper rounded-[3rem] p-10 shadow-2xl border border-study-line/20 text-center">
+          <div className="h-14 w-14 border-b-4 border-study-line rounded-full animate-spin mx-auto mb-4" />
           <p className="font-bold text-black/60">Carregando redações...</p>
         </div>
       </div>
@@ -254,15 +254,15 @@ export default function Redacoes() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7FB] text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-72 h-72 bg-[#9394CF]/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#4B4C9D]/10 rounded-full blur-3xl" />
+    <div className="min-h-screen bg-study-canvas text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-72 h-72 bg-study-accent/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-study-accent/10 rounded-full blur-3xl" />
 
       <div className="max-w-5xl mx-auto relative z-10">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <section className="workspace-hero bg-gradient-to-br from-[#9394CF] via-[#7778BD] to-[#4B4C9D] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+          <section className="workspace-hero bg-gradient-to-br from-study-accent via-study-accent to-study-accent rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
             <div className="absolute inset-0 bg-black/20" />
-            <div className="absolute top-8 left-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
+            <div className="absolute top-8 left-8 w-24 h-24 bg-study-paper rounded-full blur-xl" />
             <div className="absolute bottom-8 right-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
 
             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -284,7 +284,7 @@ export default function Redacoes() {
                 <button
                   type="button"
                   onClick={() => setModoEscrita(true)}
-                  className="bg-white text-[#4B4C9D] px-7 py-3 rounded-full font-black shadow-xl hover:bg-black hover:text-white transition"
+                  className="bg-study-paper text-study-accent px-7 py-3 rounded-full font-black shadow-xl hover:bg-black hover:text-white transition"
                 >
                   Nova redação
                 </button>
@@ -293,14 +293,14 @@ export default function Redacoes() {
           </section>
 
           {isGestor && (
-            <div className="flex gap-2 mb-6 bg-white p-1.5 rounded-full border border-[#9394CF]/20 w-fit shadow-xl">
+            <div className="flex gap-2 mb-6 bg-study-paper p-1.5 rounded-full border border-study-line/20 w-fit shadow-xl">
               <button
                 type="button"
                 onClick={() => setAba('minhas')}
                 className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                   aba === 'minhas'
-                    ? 'bg-[#4B4C9D] text-white shadow-lg'
-                    : 'text-black/60 hover:text-black hover:bg-[#9394CF]/15'
+                    ? 'bg-study-accent text-white shadow-lg'
+                    : 'text-black/60 hover:text-black hover:bg-study-accent/15'
                 }`}
               >
                 Minhas redações
@@ -311,8 +311,8 @@ export default function Redacoes() {
                 onClick={() => setAba('gestor')}
                 className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                   aba === 'gestor'
-                    ? 'bg-[#4B4C9D] text-white shadow-lg'
-                    : 'text-black/60 hover:text-black hover:bg-[#9394CF]/15'
+                    ? 'bg-study-accent text-white shadow-lg'
+                    : 'text-black/60 hover:text-black hover:bg-study-accent/15'
                 }`}
               >
                 Avaliar redações
@@ -335,7 +335,7 @@ export default function Redacoes() {
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[#9394CF]/20"
+              className="bg-study-paper rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-study-line/20"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-black text-black">
@@ -364,24 +364,24 @@ export default function Redacoes() {
                         setForm((f) => ({ ...f, tema: e.target.value }))
                       }
                       placeholder="Ex: O papel da tecnologia na educação brasileira"
-                      className="w-full rounded-[1.5rem] px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none"
+                      className="w-full rounded-[1.5rem] px-5 py-3 bg-study-canvas border border-study-line/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none"
                     />
 
                     <button
                       type="button"
                       onClick={buscarSugestaoTema}
                       disabled={sugerindoTema}
-                      className="bg-[#F7F7FB] border border-[#9394CF]/40 text-[#4B4C9D] px-5 py-3 rounded-full text-sm font-bold hover:bg-[#9394CF]/20 transition disabled:opacity-60 shrink-0"
+                      className="bg-study-canvas border border-study-line/40 text-study-accent px-5 py-3 rounded-full text-sm font-bold hover:bg-study-accent/20 transition disabled:opacity-60 shrink-0"
                     >
                       {sugerindoTema ? 'Buscando...' : 'Sugerir tema e repertório'}
                     </button>
                   </div>
 
                   {sugestaoTema && (
-                    <div className="mt-3 p-4 rounded-[1.5rem] bg-[#F7F7FB] border border-[#9394CF]/30">
+                    <div className="mt-3 p-4 rounded-[1.5rem] bg-study-canvas border border-study-line/30">
                       {sugestaoTema.tema && (
                         <>
-                          <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-1">
+                          <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-1">
                             Tema sugerido
                           </p>
                           <p className="text-sm font-bold text-black mb-3">
@@ -392,17 +392,17 @@ export default function Redacoes() {
 
                       {sugestaoTema.repertorio && sugestaoTema.repertorio.length > 0 && (
                         <>
-                          <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-2">
+                          <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-2">
                             Repertórios socioculturais
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {sugestaoTema.repertorio.map((rep, idx) => (
                               <span
                                 key={idx}
-                                className="px-3 py-1 rounded-full bg-white border border-[#4B4C9D]/30 text-[#4B4C9D] text-xs font-semibold capitalize"
+                                className="px-3 py-1 rounded-full bg-study-paper border border-study-line/30 text-study-accent text-xs font-semibold capitalize"
                               >
                                 {rep.titulo || rep}
-                                {rep.tipo && <span className="text-[#9394CF]"> • {rep.tipo}</span>}
+                                {rep.tipo && <span className="text-study-accent"> • {rep.tipo}</span>}
                               </span>
                             ))}
                           </div>
@@ -411,7 +411,7 @@ export default function Redacoes() {
 
                       {sugestaoTema.resumo && (
                         <div className="mt-3">
-                          <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-1">
+                          <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-1">
                             Repertório sugerido
                           </p>
                           <p className="text-sm text-black/75 leading-relaxed">
@@ -434,7 +434,7 @@ export default function Redacoes() {
                     }
                     rows={12}
                     placeholder="Escreva sua redação aqui..."
-                    className="writing-paper w-full rounded-[1.5rem] px-5 py-3 bg-[#F7F7FB] border border-[#9394CF]/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none resize-y"
+                    className="writing-paper w-full rounded-[1.5rem] px-5 py-3 bg-study-canvas border border-study-line/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none resize-y"
                   />
                   <p className="text-xs text-black/50 mt-1">
                     {form.texto.trim().length} caracteres
@@ -444,7 +444,7 @@ export default function Redacoes() {
                 <button
                   type="submit"
                   disabled={enviando}
-                  className="bg-[#4B4C9D] text-white px-8 py-3 rounded-full font-black hover:bg-black transition disabled:opacity-60"
+                  className="bg-study-accent text-white px-8 py-3 rounded-full font-black hover:bg-black transition disabled:opacity-60"
                 >
                   {enviando ? 'Enviando...' : 'Enviar redação'}
                 </button>
@@ -455,21 +455,21 @@ export default function Redacoes() {
               {redacoes.length === 0 ? (
                 <section className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.85fr] lg:items-center">
                   <div>
-                  <span className="mb-5 inline-flex rounded-full border border-[#DDD0EF] bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-[#6D28D9] dark:border-white/10 dark:bg-white/5 dark:text-[#C4B5FD]">Oficina de texto</span>
-                  <h2 className="max-w-xl text-3xl font-black tracking-[-.04em] text-[#2C1A3D] dark:text-white sm:text-4xl">
+                  <span className="mb-5 inline-flex rounded-full border border-study-line bg-study-paper px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-study-accent dark:border-white/10 dark:bg-study-paper dark:text-[#C4B5FD]">Oficina de texto</span>
+                  <h2 className="max-w-xl text-3xl font-black tracking-[-.04em] text-study-ink dark:text-white sm:text-4xl">
                     {aba === 'gestor' ? 'Nenhuma redação para avaliar' : 'Nenhuma redação enviada'}
                   </h2>
                   <p className="mt-4 max-w-lg leading-relaxed text-[#74627F] dark:text-[#B7A9C1]">
                     {aba === 'gestor'
                       ? 'Quando os alunos enviarem redações, elas aparecerão aqui para você avaliar.'
-                      : 'Escreva sua primeira redação e receba um feedback automático com nota estimada.'}
+                      : 'Escreva sua primeira redação e peça à Lumi uma avaliação formativa por competência.'}
                   </p>
 
                   {aba !== 'gestor' && (
                     <button
                       type="button"
                       onClick={() => setModoEscrita(true)}
-                      className="mt-7 rounded-xl bg-[#7C3AED] px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-[#6D28D9]"
+                      className="mt-7 rounded-xl bg-study-accent px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-study-accent"
                     >
                       Escrever redação
                     </button>
@@ -516,11 +516,11 @@ export default function Redacoes() {
                     return (
                       <div
                         key={redacao.id_redacao}
-                        className="essay-record bg-white rounded-[2rem] p-5 shadow-xl border border-[#9394CF]/20"
+                        className="essay-record bg-study-paper rounded-[2rem] p-5 shadow-xl border border-study-line/20"
                       >
                         <div className="essay-record__header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           <div>
-                            <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-1">
+                            <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-1">
                               {formatarData(redacao.enviada_em)}
                             </p>
 
@@ -543,9 +543,9 @@ export default function Redacoes() {
                             <span className={`px-4 py-2 rounded-full border text-sm font-bold ${
                               temFeedbackManual
                                 ? 'bg-green-100 text-green-700 border-green-300'
-                                : 'bg-[#4B4C9D]/10 text-[#4B4C9D] border-[#4B4C9D]/30'
+                                : 'bg-study-accent/10 text-study-accent border-study-line/30'
                             }`}>
-                              {temFeedbackManual ? 'Avaliada' : `Nota: ${formatarNota(nota)}`}
+                              {temFeedbackManual ? 'Avaliada' : nota == null ? 'Sem nota estimada' : `Estimativa: ${formatarNota(nota)}`}
                             </span>
 
                             <button
@@ -556,7 +556,7 @@ export default function Redacoes() {
                                   selecionadaE ? null : redacao
                                 )
                               }
-                              className="bg-[#F7F7FB] border border-[#9394CF]/40 text-black px-4 py-2 rounded-full text-sm font-bold hover:bg-[#9394CF]/20 transition"
+                              className="bg-study-canvas border border-study-line/40 text-black px-4 py-2 rounded-full text-sm font-bold hover:bg-study-accent/20 transition"
                             >
                               {selecionadaE ? 'Fechar' : 'Ver detalhes'}
                             </button>
@@ -564,7 +564,7 @@ export default function Redacoes() {
                         </div>
 
                         {selecionadaE && (
-                          <div className="essay-record__details mt-4 pt-4 border-t border-[#9394CF]/20 space-y-4">
+                          <div className="essay-record__details mt-4 pt-4 border-t border-study-line/20 space-y-4">
                             <div className="essay-record__manuscript">
                               <p className="text-xs uppercase tracking-[0.25em] font-black text-black/40 mb-2">
                                 Texto
@@ -583,7 +583,7 @@ export default function Redacoes() {
                                   {erros.map((erro, idx) => (
                                     <span
                                       key={idx}
-                                      className="px-3 py-1 rounded-full bg-white border border-red-300 text-red-700 text-xs font-semibold"
+                                      className="px-3 py-1 rounded-full bg-study-paper border border-red-300 text-red-700 text-xs font-semibold"
                                     >
                                       <span className="line-through">{erro.palavra}</span>
                                       {erro.sugestao && (
@@ -633,9 +633,9 @@ export default function Redacoes() {
                               })()
 
                               return (comps.length > 0 || repertorioSugerido.length > 0) ? (
-                                <div className="essay-record__scoreboard p-4 rounded-[1.5rem] bg-[#F7F7FB] border border-[#9394CF]/30">
-                                  <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-3">
-                                    Avaliação ENEM (0-1000)
+                                <div className="essay-record__scoreboard p-4 rounded-[1.5rem] bg-study-canvas border border-study-line/30">
+                                  <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-3">
+                                    Avaliação formativa da Lumi (0–1000, não oficial)
                                   </p>
 
                                   {comps.length > 0 && (
@@ -643,13 +643,11 @@ export default function Redacoes() {
                                       {comps.map((c) => (
                                         <div
                                           key={c.codigo}
-                                          className="essay-record__competency flex items-center justify-between px-3 py-2 rounded-[1rem] bg-white border border-[#9394CF]/20"
+                                          className="essay-record__competency flex items-center justify-between px-3 py-2 rounded-[1rem] bg-study-paper border border-study-line/20"
                                           style={{ '--score-ratio': Math.min(1, Math.max(0, Number(c.nota) / 200)) }}
                                         >
-                                          <span className="text-xs text-black/70 font-semibold">
-                                            Competência {c.codigo}
-                                          </span>
-                                          <span className="text-sm font-black text-[#4B4C9D]">
+                                          <span className="text-xs text-black/70 font-semibold">Competência {c.codigo}{c.evidencia ? ` · ${c.evidencia}` : ''}</span>
+                                          <span className="text-sm font-black text-study-accent">
                                             {c.nota}
                                           </span>
                                         </div>
@@ -659,17 +657,17 @@ export default function Redacoes() {
 
                                   {repertorioSugerido.length > 0 && (
                                     <div className="mt-2">
-                                      <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-2">
+                                      <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-2">
                                         Repertório sugerido
                                       </p>
                                       <div className="essay-record__repertoire flex flex-wrap gap-2">
                                         {repertorioSugerido.map((rep, idx) => (
                                           <span
                                             key={idx}
-                                            className="px-3 py-1 rounded-full bg-white border border-[#4B4C9D]/30 text-[#4B4C9D] text-xs font-semibold capitalize"
+                                            className="px-3 py-1 rounded-full bg-study-paper border border-study-line/30 text-study-accent text-xs font-semibold capitalize"
                                           >
                                             {rep.titulo || rep}
-                                            {rep.tipo && <span className="text-[#9394CF]"> • {rep.tipo}</span>}
+                                            {rep.tipo && <span className="text-study-accent"> • {rep.tipo}</span>}
                                           </span>
                                         ))}
                                       </div>
@@ -702,8 +700,8 @@ export default function Redacoes() {
                             )}
 
                             {feedback && (
-                              <div className="essay-record__feedback p-4 rounded-[1.5rem] bg-[#F7F7FB] border border-[#9394CF]/20">
-                                <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-2">
+                              <div className="essay-record__feedback p-4 rounded-[1.5rem] bg-study-canvas border border-study-line/20">
+                                <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-2">
                                   {temFeedbackManual ? 'Feedback do avaliador' : 'Feedback automático'}
                                 </p>
                                 <p className="text-black/80 leading-relaxed whitespace-pre-wrap">
@@ -717,9 +715,9 @@ export default function Redacoes() {
                               avaliando?.id_redacao === redacao.id_redacao ? (
                                 <form
                                   onSubmit={handleAvaliar}
-                                  className="essay-record__assessment p-4 rounded-[1.5rem] bg-[#F7F7FB] border border-[#9394CF]/30"
+                                  className="essay-record__assessment p-4 rounded-[1.5rem] bg-study-canvas border border-study-line/30"
                                 >
-                                  <p className="text-xs uppercase tracking-[0.25em] font-black text-[#4B4C9D] mb-3">
+                                  <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-3">
                                     Avaliar redação
                                   </p>
 
@@ -741,7 +739,7 @@ export default function Redacoes() {
                                           }))
                                         }
                                         placeholder="Ex: 880"
-                                        className="w-full rounded-[1rem] px-4 py-2 bg-white border border-[#9394CF]/40 text-black focus:ring-2 focus:ring-[#4B4C9D] focus:outline-none"
+                                        className="w-full rounded-[1rem] px-4 py-2 bg-study-paper border border-study-line/40 text-black focus:ring-2 focus:ring-[#4B4C9D] focus:outline-none"
                                       />
                                     </div>
 
@@ -759,7 +757,7 @@ export default function Redacoes() {
                                         }
                                         rows={4}
                                         placeholder="Escreva seu feedback para o aluno..."
-                                        className="w-full rounded-[1rem] px-4 py-2 bg-white border border-[#9394CF]/40 text-black focus:ring-2 focus:ring-[#4B4C9D] focus:outline-none resize-y"
+                                        className="w-full rounded-[1rem] px-4 py-2 bg-study-paper border border-study-line/40 text-black focus:ring-2 focus:ring-[#4B4C9D] focus:outline-none resize-y"
                                       />
                                     </div>
                                   </div>
@@ -768,7 +766,7 @@ export default function Redacoes() {
                                     <button
                                       type="submit"
                                       disabled={salvandoAvaliacao}
-                                      className="bg-[#4B4C9D] text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-black transition disabled:opacity-60"
+                                      className="bg-study-accent text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-black transition disabled:opacity-60"
                                     >
                                       {salvandoAvaliacao ? 'Salvando...' : 'Salvar avaliação'}
                                     </button>
@@ -779,7 +777,7 @@ export default function Redacoes() {
                                         setAvaliando(null)
                                         setAvaliacaoForm({ nota: '', feedback: '' })
                                       }}
-                                      className="bg-white border border-[#9394CF]/40 text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-[#9394CF]/20 transition"
+                                      className="bg-study-paper border border-study-line/40 text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-study-accent/20 transition"
                                     >
                                       Cancelar
                                     </button>
@@ -796,7 +794,7 @@ export default function Redacoes() {
                                         feedback: ''
                                       })
                                     }}
-                                    className="bg-[#4B4C9D] text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-black transition"
+                                    className="bg-study-accent text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-black transition"
                                   >
                                     Avaliar redação
                                   </button>

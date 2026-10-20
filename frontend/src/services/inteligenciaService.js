@@ -15,6 +15,7 @@ export default {
     concluirSimulado: (id, respostas, revisao = []) => api.post(`/simulados/${id}/concluir`, { respostas, revisao }).then((r) => r.data),
   trilhas: () => api.get('/trilhas').then((r) => r.data),
   chatHistory: (limite) => api.get('/chat', { params: { limite } }).then((r) => r.data),
-  chatSend: (mensagem, disciplina) => api.post('/chat', { mensagem, disciplina }).then((r) => r.data),
+  chatContext: () => api.get('/chat/contexto').then((r) => r.data),
+  chatSend: (mensagem, disciplina) => api.post('/chat', { mensagem, disciplina }, { timeout: 60000 }).then((r) => r.data),
   chatClear: () => api.delete('/chat').then((r) => r.data)
 }

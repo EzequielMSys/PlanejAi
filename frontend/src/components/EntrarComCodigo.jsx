@@ -59,7 +59,7 @@ export function EntrarComCodigo({ aoEntrar }) {
 
       <Field label="Código" hint="Pode ter hífen ou não — tanto faz.">
         <input
-          className="pn-campo entrar-codigo-input"
+          className="study-input entrar-codigo-input"
           value={codigo}
           onChange={evento => aoMudar(evento.target.value)}
           placeholder="EX: FIS-2026"
@@ -72,9 +72,9 @@ export function EntrarComCodigo({ aoEntrar }) {
       </Field>
 
       {erro ? (
-        <p id="entrar-codigo-erro" className="pn-erro" role="alert">{erro}</p>
+        <p id="entrar-codigo-erro" className="study-error" role="alert">{erro}</p>
       ) : (
-        <p id="entrar-codigo-dica" className="pn-dica">
+        <p id="entrar-codigo-dica" className="study-hint">
           Se o código não funcionar, peça um novo ao professor.
         </p>
       )}

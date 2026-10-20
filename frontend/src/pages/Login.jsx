@@ -48,9 +48,9 @@ const Login = () => {
       subtitle="Entre para retomar o ponto exato onde você parou."
       destaque={
         <>
-          <p className="pn-sobrancelha">Seu mapa</p>
-          <h2 className="pn-secao">O que espera por você primeiro</h2>
-          <ul className="pn-auth-lista">
+          <p className="study-auth-kicker">Seu mapa</p>
+          <h2>O que espera por você primeiro</h2>
+          <ul className="study-auth-lista">
             <li>As aulas e provas que exigem atenção hoje.</li>
             <li>Onde o cronograma parou e o que ficou para trás.</li>
             <li>Suas redações recentes e o que elas apontaram.</li>
@@ -58,30 +58,32 @@ const Login = () => {
         </>
       }
       rodape={
-        <p className="pn-corpo">
+        <p className="study-auth-rodape">
           Não tem conta? <Link to="/register">Criar conta</Link>
         </p>
       }
     >
-      <form className="pn-form" onSubmit={handleSubmit}>
+      <form className="study-form ds-form" onSubmit={handleSubmit}>
         <div>
-          <label htmlFor="email" className="pn-etiqueta">Email</label>
-          <input
-            id="email"
-            type="email"
-            autoFocus
-            required
-            autoComplete="email"
-            placeholder="seu@email.com"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="pn-campo"
-          />
+          <label htmlFor="email" className="study-label ds-label">Email</label>
+          <div className="study-input-wrap">
+            <input
+              id="email"
+              type="email"
+              autoFocus
+              required
+              autoComplete="email"
+              placeholder="seu@email.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="study-input ds-input"
+            />
+          </div>
         </div>
 
         <div>
-          <label htmlFor="senha" className="pn-etiqueta">Senha</label>
-          <div className="pn-com-botao">
+          <label htmlFor="senha" className="study-label ds-label">Senha</label>
+          <div className="study-input-wrap">
             <input
               id="senha"
               type={showPassword ? 'text' : 'password'}
@@ -90,27 +92,27 @@ const Login = () => {
               placeholder="••••••••"
               value={formData.senha}
               onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-              className="pn-campo"
+              className="study-input ds-input"
             />
             <button
               type="button"
               aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               onClick={() => setShowPassword(v => !v)}
-              className="pn-olho"
+              className="study-eye ds-btn-fantasma"
             >
               <EyeIcon open={showPassword} />
             </button>
           </div>
         </div>
 
-        <p className="pn-auth-esqueci">
+        <p className="study-form-quiet">
           <Link to="/esqueci-senha">Esqueci minha senha</Link>
         </p>
 
         <button
           type="submit"
           disabled={loading || !formData.email || !formData.senha}
-          className="pn-btn pn-btn-primario pn-btn-largo"
+          className="study-submit ds-btn"
         >
           {loading ? 'Entrando…' : 'Entrar'}
         </button>

@@ -107,7 +107,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { path: '/cronograma', label: 'Cronograma', icon: CalendarIcon },
     { path: '/aprendizagem', label: 'Aprendizagem', icon: DashboardIcon },
     { path: '/provas', label: 'Provas', icon: ExamIcon },
-    { path: '/chat', label: 'Assistente de IA', icon: ChatIcon },
+    { path: '/chat', label: 'Lumi', icon: ChatIcon },
     { path: '/planejamento-inteligente', label: 'Planejamento', icon: CalendarIcon },
     { path: '/redacoes', label: 'Redações', icon: RedacaoIcon },
     ...(isGestor ? [{ path: '/turmas', label: 'Turmas', icon: UsersIcon }] : []),
@@ -167,7 +167,7 @@ export default function Sidebar({ isOpen, onClose }) {
         <div className="sidebar-brand-row">
           <button
             type="button"
-            className="sidebar-brand-button"
+            className="sidebar-brand-button ds-btn-fantasma"
             onClick={handleNavigateHome}
           >
             <motion.div
@@ -182,7 +182,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="sidebar-close"
+            className="sidebar-close ds-btn-fantasma"
           >
             <CloseIcon className="w-6 h-6" />
           </button>
@@ -225,7 +225,7 @@ function SidebarLink({ item, onClose }) {
     <NavLink
       to={item.path}
       onClick={onClose}
-      className={({ isActive }) => `sidebar-link${isActive ? ' is-active' : ''}`}
+      className={({ isActive }) => `sidebar-link ds-btn-fantasma${isActive ? ' is-active' : ''}`}
     >
       <span className="sidebar-link-icon"><item.icon className="h-5 w-5" /></span>
       <span>{item.label}</span>
