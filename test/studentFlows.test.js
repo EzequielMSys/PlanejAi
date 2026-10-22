@@ -167,6 +167,20 @@ test('writing workshop opens staged fields without hiding the essay history', as
     assert.ok(document.getElementById('redacoes-historico'));
   } finally { await screen.close(); }
 });
+test('progress page separates overview, goals and study tools without losing navigation', async () => {
+  const screen = await renderRoute('/planejamento-inteligente');
+  try {
+    assert.ok(screen.container.textContent.includes('Progresso que vira ação'));
+    await act(async () => button('Metas e diagnóstico').click());
+    assert.ok(screen.container.textContent.includes('Diagnóstico inicial'));
+    assert.ok(screen.container.textContent.includes('Meta por matéria'));
+    await act(async () => button('Ferramentas').click());
+    assert.ok(document.getElementById('progress-search-input'));
+    assert.ok(screen.container.textContent.includes('Flashcards'));
+    await act(async () => button('Visão geral').click());
+    assert.ok(screen.container.textContent.includes('Progresso que vira ação'));
+  } finally { await screen.close(); }
+});
 test('Lumi starters prepare a question, then send one request and render safe structured text', async () => {
   failChat = false;
   const screen = await renderRoute('/lumi');

@@ -5,9 +5,12 @@ import inteligencia from "../services/inteligenciaService";
 import perfil from "../services/perfilService";
 import AdaptiveLearningHub from "../components/AdaptiveLearningHub";
 import LearningPaths from "../components/LearningPaths";
+import "./PlanejamentoInteligente.css";
 
 export default function PlanejamentoInteligente() {
   const [materias, setMaterias] = useState([]);
+  const [aba, setAba] = useState("visao");
+  const [cardVirado, setCardVirado] = useState(null);
   const [questoes, setQuestoes] = useState([]);
   const [respostas, setRespostas] = useState({});
   const [metas, setMetas] = useState([]);
@@ -28,7 +31,7 @@ export default function PlanejamentoInteligente() {
     materias: [],
   });
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       perfil.obterPerfilCompleto(),
       inteligencia.metas(),
       inteligencia.privacidade(),
@@ -36,17 +39,19 @@ export default function PlanejamentoInteligente() {
       inteligencia.provas(),
     ])
       .then(([dados, lista, priv, cards, listaProvas]) => {
-        const areas = String(dados.perfil?.areas_foco || "")
+        const perfilCarregado = dados.status === "fulfilled" ? dados.value : null;
+        const areas = String(perfilCarregado?.perfil?.areas_foco || "")
           .split(",")
           .map((x) => x.trim())
           .filter(Boolean);
         setMaterias(areas);
         setForm((v) => ({ ...v, disciplina: areas[0] || "" }));
         setFlash((v) => ({ ...v, disciplina: areas[0] || "" }));
-        setMetas(lista);
-        setPrivacidade(priv.visibilidade);
-        setFlashcards(cards);
-        setProvas(listaProvas);
+        setMetas(lista.status === "fulfilled" && Array.isArray(lista.value) ? lista.value : []);
+        if (priv.status === "fulfilled") setPrivacidade(priv.value?.visibilidade || "RESUMO");
+        setFlashcards(cards.status === "fulfilled" && Array.isArray(cards.value) ? cards.value : []);
+        setProvas(listaProvas.status === "fulfilled" && Array.isArray(listaProvas.value) ? listaProvas.value : []);
+        if ([dados, lista, priv, cards, listaProvas].some(item => item.status === "rejected")) toast.error("Parte do seu progresso não pôde ser carregada.");
       })
       .catch(() => toast.error("Não foi possível carregar seu planejamento."));
   }, []);
@@ -131,26 +136,18 @@ export default function PlanejamentoInteligente() {
       toast.error("Preencha os dados da prova.");
     }
   }
+  const metasConcluidas = metas.filter(meta => Number(meta.progresso || 0) >= Number(meta.alvo || 1)).length;
+  const metaEmFoco = metas.find(meta => Number(meta.progresso || 0) < Number(meta.alvo || 1));
   return (
-    <main className="intelligence-page min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] px-4 py-7 text-[rgb(var(--pn-texto-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] dark:text-white sm:px-8">
-      <div className="mx-auto max-w-5xl">
-        <header className="rounded-[2rem] bg-[rgb(var(--pn-primaria-forte-rgb)/1)] p-7 text-white student-page-heading">
-          <p className="text-xs font-black uppercase tracking-[.2em] text-[rgb(var(--pn-primaria-rgb)/1)]">
-            Planejamento inteligente
-          </p>
-          <h1 className="mt-2 text-4xl font-black">Estude com evidências.</h1>
-          <input
-            value={busca}
-            onChange={(e) => pesquisar(e.target.value)}
-            placeholder="Buscar conteúdo, questão ou flashcard"
-            className="mt-5 w-full rounded-xl p-3 text-[rgb(var(--pn-texto-rgb)/1)]"
-          />
-          {resultadosBusca.map((item) => (
-            <p key={`${item.tipo}-${item.id}`} className="mt-2 text-sm">
-              {item.tipo} · {item.disciplina}: {item.titulo}
-            </p>
-          ))}
+    <main className="intelligence-page progress-page">
+      <div className="progress-shell">
+        <header className="progress-hero">
+          <div><span className="progress-eyebrow">PLANEJAI · MEU PROGRESSO</span><h1>Veja o caminho que você está construindo.</h1><p>Suas metas, competências e revisões reunidas para ajudar a decidir o próximo estudo.</p><div className="progress-hero-actions"><button type="button" onClick={() => setAba("metas")}>Ajustar minhas metas <span aria-hidden="true">→</span></button><Link to="/aprendizagem">Praticar agora</Link></div></div>
+          <div className="progress-hero-visual" aria-hidden="true"><div><span>CONTINUAR É PROGREDIR</span><strong>{metasConcluidas}<small> / {metas.length}</small></strong><p>metas alcançadas</p><i style={{ width: `${metas.length ? metasConcluidas / metas.length * 100 : 0}%` }} /></div></div>
         </header>
+        <section className="progress-snapshot" aria-label="Resumo do progresso"><article><span>MATÉRIAS EM FOCO</span><strong>{materias.length}</strong><p>{materias.length ? materias.slice(0, 2).join(' · ') : 'Escolha suas matérias no perfil'}</p></article><article><span>METAS ATIVAS</span><strong>{metas.length}</strong><p>{metaEmFoco ? `${metaEmFoco.disciplina}: ${metaEmFoco.progresso || 0} de ${metaEmFoco.alvo}` : 'Defina um objetivo para começar'}</p></article><article><span>REVISÕES PRONTAS</span><strong>{flashcards.length}</strong><p>{flashcards.length ? 'Use seus cartões para lembrar melhor' : 'Crie um cartão após estudar'}</p></article></section>
+        <nav className="progress-tabs" aria-label="Áreas do meu progresso">{[["visao", "Visão geral"], ["metas", "Metas e diagnóstico"], ["ferramentas", "Ferramentas"]].map(([id, label]) => <button key={id} type="button" aria-current={aba === id ? "page" : undefined} onClick={() => setAba(id)}>{label}</button>)}</nav>
+        {aba === "visao" && <div className="progress-view"><div className="progress-section-heading"><div><span className="progress-eyebrow">SEU PRÓXIMO PASSO</span><h2>Progresso que vira ação.</h2><p>As recomendações se ajustam conforme você pratica e registra seus estudos.</p></div></div>
         <AdaptiveLearningHub />
         <LearningPaths />
         <section className="mt-5 flex flex-col items-start justify-between gap-4 rounded-[2rem] border border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 dark:border-[rgb(var(--pn-primaria-borda-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] sm:flex-row sm:items-center">
@@ -161,6 +158,8 @@ export default function PlanejamentoInteligente() {
           </div>
           <Link to="/provas" className="shrink-0 rounded-xl bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-5 py-3 text-sm font-black text-white">Abrir provas →</Link>
         </section>
+        </div>}
+        {aba === "metas" && <div className="progress-view"><div className="progress-section-heading"><div><span className="progress-eyebrow">SEU RITMO</span><h2>Metas que cabem na sua rotina.</h2><p>Faça um diagnóstico curto e acompanhe cada matéria sem perder de vista o que já avançou.</p></div></div>
         <section className="mt-5 grid gap-5 lg:grid-cols-2">
           <article className="rounded-[2rem] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 dark:bg-[rgb(var(--pn-superficie-rgb)/1)]">
             <h2 className="text-xl font-black">Diagnóstico inicial</h2>
@@ -239,15 +238,17 @@ export default function PlanejamentoInteligente() {
                 Salvar meta
               </button>
             </form>
-            <ul className="mt-5 space-y-2 text-sm">
+            <ul className="progress-goals mt-5 space-y-2 text-sm">
               {metas.map((m) => (
                 <li key={`${m.disciplina}-${m.tipo}`}>
-                  <b>{m.disciplina}</b>: {m.progresso || 0}/{m.alvo} {m.tipo.toLowerCase()} · sugestão {m.sugestaoDiaria || 0}/dia
+                  <div><b>{m.disciplina}</b><span>{m.progresso || 0}/{m.alvo} {String(m.tipo || '').toLowerCase()}</span></div><div className="progress-goal-track" role="progressbar" aria-label={`Meta de ${m.disciplina}`} aria-valuemin="0" aria-valuemax={Number(m.alvo) || 1} aria-valuenow={Math.min(Number(m.progresso) || 0, Number(m.alvo) || 1)}><i style={{ width: `${Math.min(100, Math.max(0, (Number(m.progresso) || 0) / (Number(m.alvo) || 1) * 100))}%` }} /></div><small>{Number(m.progresso || 0) >= Number(m.alvo || 1) ? 'Meta alcançada' : `Sugestão: ${m.sugestaoDiaria || 0} por dia`}</small>
                 </li>
               ))}
             </ul>
           </article>
         </section>
+        </div>}
+        {aba === "ferramentas" && <div className="progress-view"><div className="progress-section-heading"><div><span className="progress-eyebrow">APOIO AO ESTUDO</span><h2>Organize, encontre e revise.</h2><p>Guarde datas importantes e transforme o que estudou em perguntas para recordar depois.</p></div></div><div className="progress-search"><label htmlFor="progress-search-input">Buscar no seu estudo</label><input id="progress-search-input" value={busca} onChange={(e) => pesquisar(e.target.value)} placeholder="Conteúdo, questão ou flashcard" />{resultadosBusca.length > 0 && <ul>{resultadosBusca.map(item => <li key={`${item.tipo}-${item.id}`}>{item.tipo} · {item.disciplina}: {item.titulo}</li>)}</ul>}</div>
         <section className="mt-5 rounded-[2rem] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 dark:bg-[rgb(var(--pn-superficie-rgb)/1)]">
           <h2 className="text-xl font-black">Provas e vestibulares</h2>
           <form onSubmit={salvarProva} className="mt-3 grid gap-2 sm:grid-cols-4">
@@ -256,7 +257,7 @@ export default function PlanejamentoInteligente() {
             <select multiple value={prova.materias.map((m) => m.disciplina)} onChange={(e) => setProva({ ...prova, materias: [...e.target.selectedOptions].map((o) => ({ disciplina: o.value, peso: prova.materias.find((m) => m.disciplina === o.value)?.peso || 1 })) })}>{materias.map((m) => <option key={m}>{m}</option>)}</select>
             <button className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-4 py-2 font-bold text-white">Adicionar prova</button>
           </form>
-          {provas.map((item) => <p key={item.id_prova} className="mt-3 text-sm"><b>{item.titulo}</b> · {String(item.data_prova).slice(0, 10)} · {item.materias.map((m) => m.disciplina || m).join(', ')}</p>)}
+          {provas.map((item) => <p key={item.id_prova} className="mt-3 text-sm"><b>{item.titulo}</b> · {String(item.data_prova).slice(0, 10)} · {(item.materias || []).map((m) => m.disciplina || m).join(', ')}</p>)}
           {prova.materias.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{prova.materias.map((materia, indice) => <label key={materia.disciplina} className="text-sm">{materia.disciplina} peso <input type="number" min="1" max="10" value={materia.peso} onChange={(e) => setProva({ ...prova, materias: prova.materias.map((m, i) => i === indice ? { ...m, peso: Number(e.target.value) || 1 } : m) })} className="ml-1 w-14" /></label>)}</div>}
         </section>
         <section className="mt-5 grid gap-5 lg:grid-cols-2">
@@ -283,8 +284,9 @@ export default function PlanejamentoInteligente() {
                 className="mt-3 rounded-xl border p-3"
               >
                 <b>{card.frente}</b>
-                <p className="mt-1 text-sm">{card.verso}</p>
-                <div className="mt-2 flex gap-2">
+                <button type="button" className="progress-flash-reveal" aria-expanded={cardVirado === card.id_flashcard} onClick={() => setCardVirado(cardVirado === card.id_flashcard ? null : card.id_flashcard)}>{cardVirado === card.id_flashcard ? "Ocultar resposta" : "Revelar resposta"}</button>
+                {cardVirado === card.id_flashcard && <p className="mt-1 text-sm">{card.verso}</p>}
+                {cardVirado === card.id_flashcard && <div className="mt-2 flex gap-2">
                   {[
                     ["ERREI", "Errei"],
                     ["LEMBREI", "Lembrei"],
@@ -298,7 +300,7 @@ export default function PlanejamentoInteligente() {
                       {label}
                     </button>
                   ))}
-                </div>
+                </div>}
               </div>
             ))}
           </article>
@@ -324,6 +326,7 @@ export default function PlanejamentoInteligente() {
             </div>
           </section>
         </section>
+        </div>}
       </div>
     </main>
   );
