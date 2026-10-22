@@ -36,7 +36,7 @@ const historyTrim = Number(process.env.IA_CHAT_HISTORY_TRIM || 12);
  * estudante e a disciplina (quando informada) são injetados para personalizar
  * a resposta e dar contexto ao modelo.
  */
-function systemPrompt(studentName, disciplina, perfil = null) {
+function systemPrompt(studentName, disciplina, perfil = null, estudoAtual = null) {
   const orientacao = [
     'Você é Lumi, o tutor de estudos do PlanejAI: ajuda a compreender, praticar e organizar os estudos.',
     'Seu nome é Lumi; use-o para se apresentar na abertura ou quando perguntarem quem você é — sem repeti-lo a cada resposta.',
@@ -45,6 +45,7 @@ function systemPrompt(studentName, disciplina, perfil = null) {
     'Adapte a profundidade ao pedido e ao histórico: uma dúvida direta merece uma resposta direta; uma dificuldade recorrente pede outra abordagem, não a repetição da mesma explicação.',
     'Use o ano escolar e os objetivos apenas como ponto de partida. Não presuma capacidade, diagnóstico, condição social ou dificuldade que não foi informada.',
     'Quando ensinar, conecte a ideia a um exemplo concreto. Em cálculos, confira unidades, sinais e resultado. Apresente etapas úteis da solução, sem monólogos internos.',
+    'Quando estudoAtual estiver presente, priorize o tema e a disciplina da sessão atual acima de assuntos antigos do histórico. Ensine por etapas, use um exemplo concreto adequado à matéria e proponha uma pergunta curta para praticar quando isso ajudar. Responda também a qualquer outra dúvida; nunca finja que leu um anexo que não foi fornecido.',
     'Pode resolver exemplos e comentar tentativas do estudante. Se ele quiser praticar, dê uma pista de cada vez; se pedir a explicação completa, forneça-a. Não force um interrogatório socrático.',
     'Se faltar informação indispensável, faça uma pergunta específica. Quando possível, avance com uma hipótese explicitamente indicada.',
     'Aproveite preferências e correções expressas na conversa. Quando houver tempo disponível no perfil, proponha atividades que caibam nele. Não invente progresso, notas, tarefas ou compromissos.',
@@ -64,6 +65,7 @@ function systemPrompt(studentName, disciplina, perfil = null) {
   const dados = {
     nome: typeof studentName === 'string' ? studentName.slice(0, 100) : undefined,
     disciplina: typeof disciplina === 'string' ? disciplina.slice(0, 100) : undefined,
+    estudoAtual,
     perfil,
   }
   return orientacao + '\n\nDados de contexto (JSON):\n' + JSON.stringify(dados)

@@ -107,6 +107,6 @@ export default function StudyGuide({ material, sourceUrl, className = '' }) {
       </fieldset>)}
       {resultado === null ? <button type="button" className="study-guide-check" disabled={!completas} onClick={corrigir}>{completas ? 'Corrigir respostas' : 'Responda as 3 questões para corrigir'}</button> : <div className="study-guide-result" role="status"><b>{resultado}/3 respostas corretas</b><span>{resultado === 3 ? 'Ótimo: você entendeu o roteiro de estudo.' : 'Revise os comentários e tente aplicar o método na fonte.'}</span><button type="button" onClick={() => { setRespostas({}); setResultado(null) }}>Refazer teste</button></div>}
     </section>
-    <footer><span>Para aprofundar, consulte a fonte original.</span><a href={sourceUrl} target="_blank" rel="noopener noreferrer">Abrir {origem} ↗</a></footer>
+    <footer>{sourceUrl ? <><span>Para aprofundar, consulte a fonte original.</span><a href={sourceUrl} target="_blank" rel="noopener noreferrer">Abrir {origem} ↗</a></> : <span>Use este roteiro para organizar o estudo e peça à Lumi outra explicação quando precisar.</span>}</footer>
   </article>
 }

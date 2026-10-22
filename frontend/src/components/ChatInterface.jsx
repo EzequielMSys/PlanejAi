@@ -44,10 +44,10 @@ function Mensagem({ mensagem }) {
   )
 }
 
-export default function ChatInterface({ className = '', redacaoSelecionada, perguntaInicial = '' }) {
+export default function ChatInterface({ className = '', redacaoSelecionada, perguntaInicial = '', estudoAtual, compacto = false }) {
   const [mensagens, setMensagens] = useState([])
   const [input, setInput] = useState(perguntaInicial)
-  const [materia, setMateria] = useState('')
+  const [materia, setMateria] = useState(estudoAtual?.disciplina || '')
   const [loading, setLoading] = useState(false)
   const [contexto, setContexto] = useState(null)
   const [sendError, setSendError] = useState('')
@@ -56,7 +56,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
 
   useEffect(() => {
     inteligencia
-      .chatHistory()
+      .chatHistory(compacto ? 6 : undefined)
       .then((data) =>
         setMensagens(
           (data || []).map((m) => ({
@@ -70,7 +70,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
       .catch(() => {
         /* sem histórico ainda */
       })
-  }, [])
+  }, [compacto])
 
   useEffect(() => {
     if (mensagens.length) fimRef.current?.scrollIntoView({ block: 'end' })
@@ -99,7 +99,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
     setInput('')
     setLoading(true)
     try {
-      const data = await inteligencia.chatSend(mensagem, materia || undefined, redacaoSelecionada?.id)
+      const data = await inteligencia.chatSend(mensagem, materia || undefined, redacaoSelecionada?.id, estudoAtual)
       if (data?.offline || data?.queued) {
         toast(data.message || 'Sem conexão: a mensagem será enviada quando você ficar online.')
       } else if (data?.mensagens) {
@@ -153,21 +153,21 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
             className="rounded-lg border border-study-line/25 bg-study-paper px-2 py-1 text-xs font-semibold text-study-ink dark:bg-study-paper dark:text-white"
           >
             <option value="">Todas</option>
-            {DISCIPLINAS.map((item) => (
+            {[...new Set([...DISCIPLINAS, estudoAtual?.disciplina].filter(Boolean))].map((item) => (
               <option key={item} value={item}>
                 {item}
               </option>
             ))}
           </select>
         </label>
-        <button
+        {!compacto && <button
           type="button"
           onClick={limparConversa}
           disabled={!mensagens.length || loading}
           className="rounded-lg px-2 py-1 text-xs font-bold text-study-accent hover:bg-study-accent/10 disabled:opacity-40 dark:text-white/80"
         >
           Limpar conversa
-        </button>
+        </button>}
       </div>
 
       {redacaoSelecionada?.id && (
@@ -177,7 +177,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         </div>
       )}
 
-      {contexto && (contexto.areasFoco || contexto.licoes?.length > 0 || contexto.revisoes?.length > 0 || contexto.dificuldades?.length > 0 || contexto.redacoes?.length > 0) && (
+      {!compacto && contexto && (contexto.areasFoco || contexto.licoes?.length > 0 || contexto.revisoes?.length > 0 || contexto.dificuldades?.length > 0 || contexto.redacoes?.length > 0) && (
         <div className="lumi-context-evidence border-b border-study-line/10 px-3 py-2 text-xs text-study-ink/70 dark:text-white/70" aria-label="Dados dos seus estudos disponíveis para a Lumi">
           <strong>Contexto disponível para a Lumi</strong>
           <div>
@@ -193,13 +193,14 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
       <div className="lumi-feed flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-live="polite">
         {!mensagens.length && !loading && (
           <div className="lumi-welcome-content">
-            <div className="lumi-welcome-top"><TutorLumi tamanho={64} /><div><strong>Por onde começamos?</strong><span>Escolha um caminho ou escreva sua própria pergunta abaixo.</span></div></div>
-            {(contexto?.licoes?.[0]?.titulo || contexto?.dificuldades?.[0]?.disciplina || contexto?.redacoes?.[0]?.tema) && <div className="lumi-starter-section"><span>CONTINUAR MEUS ESTUDOS</span><div className="lumi-starters">
+            <div className="lumi-welcome-top"><TutorLumi tamanho={compacto ? 38 : 64} /><div><strong>{compacto && estudoAtual?.titulo ? `Vamos estudar ${estudoAtual.titulo}` : 'Por onde começamos?'}</strong><span>{compacto ? 'Pergunte qualquer coisa ou comece pelo tema de hoje.' : 'Escolha um caminho ou escreva sua própria pergunta abaixo.'}</span></div></div>
+            {compacto && estudoAtual?.titulo && <div className="lumi-starter-section"><div className="lumi-starters"><button type="button" onClick={() => { setInput(`Me ensine ${estudoAtual.titulo}${estudoAtual.disciplina ? ` em ${estudoAtual.disciplina}` : ''} passo a passo, com um exemplo e uma pergunta curta para eu praticar.`); inputRef.current?.focus() }}>Começar por este conteúdo →</button></div></div>}
+            {!compacto && (contexto?.licoes?.[0]?.titulo || contexto?.dificuldades?.[0]?.disciplina || contexto?.redacoes?.[0]?.tema) && <div className="lumi-starter-section"><span>CONTINUAR MEUS ESTUDOS</span><div className="lumi-starters">
               {contexto?.licoes?.[0]?.titulo && <button type="button" data-personalized="true" onClick={() => enviar(`Me ajude a estudar a lição ${contexto.licoes[0].titulo}. Comece pelo conceito principal.`)}>Retomar lição: {contexto.licoes[0].titulo}</button>}
               {contexto?.dificuldades?.[0]?.disciplina && <button type="button" data-personalized="true" onClick={() => enviar(`Tenho tido dificuldade em ${contexto.dificuldades[0].disciplina}${contexto.dificuldades[0].competencia ? `, especialmente ${contexto.dificuldades[0].competencia}` : ''}. Explique de outra forma e proponha um exercício curto.`)}>Praticar {contexto.dificuldades[0].disciplina}</button>}
               {contexto?.redacoes?.[0]?.tema && <button type="button" data-personalized="true" onClick={() => enviar('Quero revisar minha redação mais recente. Mostre a competência mais fraca, cite um trecho do meu texto e sugira uma reescrita curta para eu tentar.')}>Revisar redação: {contexto.redacoes[0].tema}</button>}
             </div></div>}
-            <div className="lumi-starter-section"><span>EXPLORAR UMA DÚVIDA</span><div className="lumi-starters">
+            {!compacto && <div className="lumi-starter-section"><span>EXPLORAR UMA DÚVIDA</span><div className="lumi-starters">
               {SUGESTOES_INICIO.map((sugestao) => (
                 <button
                   key={sugestao}
@@ -209,7 +210,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
                   {sugestao}
                 </button>
               ))}
-            </div></div>
+            </div></div>}
           </div>
         )}
 

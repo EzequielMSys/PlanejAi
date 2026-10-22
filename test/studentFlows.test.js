@@ -318,6 +318,23 @@ test('profile accepts custom pronouns without making the field required', async 
     assert.ok(requests.some(request => request.method === 'put' && request.url.endsWith('/usuarios/900001') && JSON.parse(request.data).pronome === 'they/them'));
   } finally { await screen.close(); }
 });
+test('study room teaches the scheduled topic and gives Lumi its subject context', async () => {
+  window.sessionStorage.setItem('planejai:active-study-content', JSON.stringify({ conteudo: { id: 51, id_conteudo: 9, titulo: 'Leis de Newton', disciplina: 'Física' }, dia: { data_estudo: '2026-10-22' } }));
+  const screen = await renderRoute('/estudar');
+  try {
+    assert.ok(screen.container.textContent.includes('O que você precisa aprender'));
+    assert.ok(screen.container.textContent.includes('Roteiro de estudo'));
+    assert.ok(screen.container.querySelector('.session-lumi'));
+    assert.equal(screen.container.querySelector('.session-timer'), null);
+    const message = document.getElementById('lumi-message');
+    await inputValue(message, 'Não entendi a primeira lei.');
+    await act(async () => message.closest('form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true })));
+    await flush();
+    const request = requests.find(item => item.method === 'post' && item.url.endsWith('/inteligencia/chat'));
+    assert.deepEqual(JSON.parse(request.data).estudoAtual, { titulo: 'Leis de Newton', disciplina: 'Física', data: '2026-10-22' });
+    assert.equal(JSON.parse(request.data).disciplina, 'Física');
+  } finally { await screen.close(); window.sessionStorage.removeItem('planejai:active-study-content'); }
+});
 test('a provider failure leaves the question available to retry', async () => {
   failChat = true;
   const screen = await renderRoute('/lumi');

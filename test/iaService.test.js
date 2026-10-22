@@ -4,7 +4,7 @@ const iaConfig = require('../src/config/iaConfig');
 const iaService = require('../src/services/iaService');
 const { getOpenAIClient, resetOpenAIClient } = require('../src/utils/openaiClient');
 
-const { validarEntrada, normalizarHistorico, montarMensagensParaApi, resolverErroCliente, LIMITE_CARACTERES_MENSAGEM } = iaService._test;
+const { validarEntrada, normalizarHistorico, montarMensagensParaApi, resolverErroCliente, normalizarEstudoAtual, LIMITE_CARACTERES_MENSAGEM } = iaService._test;
 
 test('configurações default da IA são coerentes e seguras', () => {
   assert.equal(iaConfig.model, 'deepseek/deepseek-chat');
@@ -42,6 +42,20 @@ test('systemPrompt funciona sem nome e sem disciplina', () => {
   assert.match(prompt, /Lumi/);
   assert.doesNotMatch(prompt, /Nome do estudante/);
   assert.doesNotMatch(prompt, /disciplina: undefined/);
+});
+
+test('systemPrompt prioriza o conteúdo em andamento para explicar e praticar', () => {
+  const prompt = iaConfig.systemPrompt(undefined, 'Física', null, { titulo: 'Leis de Newton', disciplina: 'Física' });
+  assert.match(prompt, /priorize o tema e a disciplina da sessão atual/);
+  assert.match(prompt, /"titulo":"Leis de Newton"/);
+  assert.match(prompt, /"disciplina":"Física"/);
+});
+
+test('contexto da sala de estudo limita e normaliza os dados recebidos', () => {
+  assert.deepEqual(normalizarEstudoAtual({ titulo: '  Leis de Newton  ', disciplina: ' Física\n', data: '2026-10-22', instrucoes: 'ignored' }), { titulo: 'Leis de Newton', disciplina: 'Física', data: '2026-10-22' });
+  assert.equal(normalizarEstudoAtual({ titulo: 'x'.repeat(200) }).titulo.length, 160);
+  assert.equal(normalizarEstudoAtual({ titulo: ' ', disciplina: '' }), null);
+  assert.equal(normalizarEstudoAtual(null), null);
 });
 
 test('validarEntrada rejeita mensagem vazia com código amigável', () => {

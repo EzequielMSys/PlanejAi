@@ -33,5 +33,5 @@ const STATUS_CHAT = {
   ERR_API: 503,
   ERR_CLIENT: 503,
 }
-exports.enviarMensagem = async (req, res) => { try { const result = await iaService.enviarMensagem(idUsuario(req), req.body.mensagem, req.body.disciplina, req.usuario.nome, req.body.redacaoId); res.json(result) } catch (error) { const status = STATUS_CHAT[error.code] || 400; res.status(status).json({ message: error.message, code: error.code }) } }
+exports.enviarMensagem = async (req, res) => { try { const result = await iaService.enviarMensagem(idUsuario(req), req.body.mensagem, req.body.disciplina, req.usuario.nome, req.body.redacaoId, req.body.estudoAtual); res.json(result) } catch (error) { const status = STATUS_CHAT[error.code] || 400; res.status(status).json({ message: error.message, code: error.code }) } }
 exports.limparChat = (req, res) => responder(res, iaService.limparConversa(idUsuario(req)).then(() => ({ ok: true })))

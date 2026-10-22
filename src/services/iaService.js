@@ -5,6 +5,16 @@ const { contextoDisponivel } = require('./tutorContextService')
 
 const LIMITE_CARACTERES_MENSAGEM = 2000
 
+function normalizarEstudoAtual(estudoAtual) {
+  if (!estudoAtual || typeof estudoAtual !== 'object' || Array.isArray(estudoAtual)) return null
+  const limpar = (valor, limite) => typeof valor === 'string' ? valor.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, limite) : ''
+  const titulo = limpar(estudoAtual.titulo, 160)
+  const disciplina = limpar(estudoAtual.disciplina, 100)
+  const data = limpar(estudoAtual.data, 10)
+  if (!titulo && !disciplina) return null
+  return { titulo: titulo || undefined, disciplina: disciplina || undefined, data: /^\d{4}-\d{2}-\d{2}$/.test(data) ? data : undefined }
+}
+
 /**
  * Valida e normaliza a mensagem do usuário antes de enviá-la à API.
  * Lança erro quando a mensagem é vazia. Exportada para testes.
@@ -115,9 +125,10 @@ function classificarErroApi(apiError) {
  *  5. persistir a resposta do assistente;
  *  6. devolver a conversa atualizada para sincronizar o cliente.
  */
-async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, redacaoId) {
+async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, redacaoId, estudoAtual) {
   const conteudo = validarEntrada(mensagem)
   const disciplinaNormalizada = disciplina ? String(disciplina).trim().slice(0, 100) : null
+  const estudoAtualNormalizado = normalizarEstudoAtual(estudoAtual)
   const idRedacao = Number.isSafeInteger(Number(redacaoId)) && Number(redacaoId) > 0 ? Number(redacaoId) : null
 
   if (iaConfig.dailyLimit > 0) {
@@ -146,7 +157,7 @@ async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, reda
     }),
   ])
   const messages = montarMensagensParaApi(
-    iaConfig.systemPrompt(nomeUsuario, disciplinaNormalizada, perfil),
+    iaConfig.systemPrompt(nomeUsuario, disciplinaNormalizada, perfil, estudoAtualNormalizado),
     normalizarHistorico(historicoRows),
   )
 
@@ -193,6 +204,7 @@ module.exports = {
     montarPayloadChat,
     resolverErroCliente,
     classificarErroApi,
+    normalizarEstudoAtual,
     LIMITE_CARACTERES_MENSAGEM,
   },
 }

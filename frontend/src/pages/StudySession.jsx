@@ -6,13 +6,12 @@ import aprendizagemService from '../services/aprendizagemService'
 import { resolveProtectedAsset } from '../services/fileService'
 import StudyGuide, { isExternalStudySource } from '../components/StudyGuide'
 import DictationButton from '../components/DictationButton'
+import ChatInterface from '../components/ChatInterface'
+import TutorLumi from '../components/TutorLumi'
+import './Chat.css'
 import './StudySession.css'
 
 const SESSION_CONTENT_KEY = 'planejai:active-study-content'
-
-function fmt(seconds) {
-  return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
-}
 
 function loadSavedContent() {
   try { return JSON.parse(window.sessionStorage.getItem(SESSION_CONTENT_KEY) || 'null') } catch { return null }
@@ -41,7 +40,7 @@ function StudyMaterial({ content }) {
   const video = type.includes('VIDEO') && /\.(mp4|webm|ogg)(?:$|[?#])/i.test(url)
 
   if (loadError) return <div className="session-no-material" role="alert"><span>ACESSO INDISPONÍVEL</span><h2>{loadError}</h2></div>
-  if (!source) return <div className="session-no-material"><span>SEM ANEXO</span><h2>Use esta sessão para estudar pelo seu próprio material.</h2><p>Suas anotações e seu tempo ficam vinculados à sua conta.</p></div>
+  if (!source) return <StudyGuide material={content} />
   if (!url) return <div className="session-no-material" role="status"><span>CARREGANDO</span><h2>Preparando material…</h2></div>
   if (externalSource) return <StudyGuide material={content} sourceUrl={url} />
   if (video) return <video className="session-frame" src={url} controls />
@@ -60,9 +59,6 @@ export default function StudySession() {
   const [saved, setSaved] = useState(null)
   const [notesReady, setNotesReady] = useState(false)
   const [notesStoredRemotely, setNotesStoredRemotely] = useState(false)
-  const [seconds, setSeconds] = useState(25 * 60)
-  const [running, setRunning] = useState(false)
-  const [elapsed, setElapsed] = useState(0)
   const [finishing, setFinishing] = useState(false)
   const [difficulty, setDifficulty] = useState('LEMBREI')
   const startedAt = useRef(Date.now())
@@ -95,20 +91,6 @@ export default function StudySession() {
   }, [content, day, noteFallbackKey])
 
   useEffect(() => {
-    if (!running) return undefined
-    const timer = window.setInterval(() => {
-      setSeconds((value) => {
-        if (value <= 1) {
-          window.clearInterval(timer); setRunning(false); toast.success('Ciclo de foco concluído. Faça uma pausa curta.'); return 0
-        }
-        return value - 1
-      })
-      setElapsed((value) => value + 1)
-    }, 1000)
-    return () => window.clearInterval(timer)
-  }, [running])
-
-  useEffect(() => {
     if (!notesReady) return undefined
     if (!notes && !saved) return undefined
     const timer = window.setTimeout(async () => {
@@ -129,12 +111,10 @@ export default function StudySession() {
     return () => window.clearTimeout(timer)
   }, [content?.id_conteudo, noteFallbackKey, notes, notesReady])
 
-  function selectCycle(minutes) { setRunning(false); setSeconds(minutes * 60) }
-
   async function finish() {
     if (!content) return
     setFinishing(true)
-    const minutes = Math.max(1, Math.round(Math.max(elapsed, (Date.now() - startedAt.current) / 1000) / 60))
+    const minutes = Math.max(1, Math.round((Date.now() - startedAt.current) / 60000))
     try {
       if (content.id && !Number(content.concluido)) await cronogramaService.concluirConteudo(content.id)
       if (content.id_conteudo) {
@@ -153,6 +133,10 @@ export default function StudySession() {
 
   if (!content) return <main className="pj-page"><div className="session-missing pj-panel"><span className="pj-eyebrow">Sala de estudo</span><h1>Nenhum conteúdo foi escolhido.</h1><p>Abra o cronograma e escolha “Começar sessão” em um dos materiais.</p><button className="pj-button pj-button--primary" onClick={() => navigate('/cronograma')}>Ir ao cronograma</button></div></main>
 
+  const materialUrl = content.link || content.url || ''
+  const mostrarAbaRoteiro = Boolean(materialUrl) && !isExternalStudySource(materialUrl)
+  const estudoAtual = { titulo: content.titulo || 'Este conteúdo', disciplina: content.disciplina || content.area || '', data: day?.data_estudo ? String(day.data_estudo).slice(0, 10) : '' }
+
   return <main className="session-page pj-page">
     <div className="pj-wrap">
       <header className="session-topbar student-page-heading">
@@ -163,14 +147,14 @@ export default function StudySession() {
 
       <section className="session-layout">
         <div className="session-workspace pj-panel">
-          <nav className="session-tabs" aria-label="Ferramentas da sessão"><button className={tab === 'material' ? 'is-active' : ''} onClick={() => setTab('material')}>Material</button><button className={tab === 'notes' ? 'is-active' : ''} onClick={() => setTab('notes')}>Anotações <span>{saved ? 'salvas' : ''}</span></button></nav>
+          <nav className="session-tabs" aria-label="Ferramentas da sessão"><button className={tab === 'material' ? 'is-active' : ''} onClick={() => setTab('material')}>Material</button>{mostrarAbaRoteiro && <button className={tab === 'guide' ? 'is-active' : ''} onClick={() => setTab('guide')}>Roteiro de estudo</button>}<button className={tab === 'notes' ? 'is-active' : ''} onClick={() => setTab('notes')}>Anotações <span>{saved ? 'salvas' : ''}</span></button></nav>
           <div className="session-canvas">
-            {tab === 'material' ? <StudyMaterial content={content} /> : <div className="session-notes"><header><div><span className="pj-eyebrow">Caderno da sessão</span><h2>Escreva para entender.</h2><DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? ' ' : ''}${texto}`)}/></div><small>{saved ? `${notesStoredRemotely ? 'Sincronizado' : 'Salvo neste aparelho'} às ${saved.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Salvamento automático'}</small></header><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={'Ideia principal:\n\nO que ainda não entendi:\n\nComo eu explicaria isso para alguém:'} /></div>}
+            {tab === 'material' ? <StudyMaterial content={content} /> : tab === 'guide' ? <div className="session-guide-wrap"><StudyGuide material={content} /></div> : <div className="session-notes"><header><div><span className="pj-eyebrow">Caderno da sessão</span><h2>Escreva para entender.</h2><DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? ' ' : ''}${texto}`)}/></div><small>{saved ? `${notesStoredRemotely ? 'Sincronizado' : 'Salvo neste aparelho'} às ${saved.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Salvamento automático'}</small></header><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={'Ideia principal:\n\nO que ainda não entendi:\n\nComo eu explicaria isso para alguém:'} /></div>}
           </div>
         </div>
 
         <aside className="session-tools">
-          <article className="session-timer pj-panel"><span className="pj-eyebrow">Ciclo de foco</span><strong>{fmt(seconds)}</strong><p>{running ? 'Agora: apenas esta tarefa.' : 'Escolha um ritmo possível.'}</p><div>{[25,50,5].map((minutes) => <button key={minutes} onClick={() => selectCycle(minutes)}>{minutes === 5 ? 'Pausa 5' : `${minutes} min`}</button>)}</div><button className="pj-button pj-button--primary" onClick={() => setRunning((value) => !value)}>{running ? 'Pausar' : seconds === 0 ? 'Recomeçar' : 'Iniciar foco'}</button></article>
+          <article className="session-lumi pj-panel"><header><TutorLumi tamanho={32} rotulo="Lumi"/><div><span className="pj-eyebrow">APOIO DURANTE A SESSÃO</span><h2>Tire uma dúvida.</h2><p>Sobre este tema ou qualquer outra matéria.</p></div></header><ChatInterface className="session-lumi-chat" compacto estudoAtual={estudoAtual}/></article>
           <article className="session-check pj-panel"><span className="pj-eyebrow">Antes de sair</span><h2>Como esse conteúdo ficou?</h2><p>Sua resposta define quando ele volta para revisão.</p><div>{[['DIFICIL','Ainda difícil'],['LEMBREI','Entendi'],['DOMINEI','Consigo explicar']].map(([value,label]) => <button type="button" key={value} className={difficulty === value ? 'is-active' : ''} onClick={() => setDifficulty(value)}>{label}</button>)}</div></article>
           <article className="session-audio-note"><span>♫</span><div><b>Trilha de foco</b><small>O player do Spotify pode ser arrastado pela alça ⠿.</small></div></article>
         </aside>
