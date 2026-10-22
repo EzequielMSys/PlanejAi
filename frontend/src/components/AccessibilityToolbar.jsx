@@ -13,7 +13,7 @@ export default function AccessibilityToolbar() {
   useEffect(() => {
     if (!open) return undefined
     const close = (event) => {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Escape') { setOpen(false); requestAnimationFrame(() => triggerRef.current?.focus()) }
       if (event.key !== 'Tab') return
       const focusable = panelRef.current?.querySelectorAll('button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])')
       if (!focusable?.length) return

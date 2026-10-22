@@ -48,7 +48,7 @@ export default function AvisosAluno() {
   }
 
   return (
-    <div className="min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] dark:text-white px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
+    <main className="min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] dark:text-white px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-72 h-72 bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)] rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] rounded-full blur-3xl" />
 
@@ -107,6 +107,6 @@ export default function AvisosAluno() {
           </section>
         )}
       </div>
-    </div>
+    </main>
   )
 }

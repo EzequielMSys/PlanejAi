@@ -260,7 +260,7 @@ export default function Redacoes() {
   }
 
   return (
-    <div className="redacoes-page min-h-screen px-4 sm:px-6 lg:px-8 py-10">
+    <main className="redacoes-page min-h-screen px-4 sm:px-6 lg:px-8 py-10">
       <div className="redacoes-shell max-w-6xl mx-auto">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <section className="redacoes-intro" aria-labelledby="redacoes-title">
@@ -812,6 +812,6 @@ export default function Redacoes() {
           )}
         </motion.div>
       </div>
-    </div>
+    </main>
   )
 }

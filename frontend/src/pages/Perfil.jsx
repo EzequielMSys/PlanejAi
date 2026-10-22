@@ -372,7 +372,7 @@ const handleSaveEstudos = async (e) => {
     : null
 
   return (
-    <div className="profile-page">
+    <main className="profile-page">
       <div className="profile-shell">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <header className="profile-hero">
@@ -408,6 +408,7 @@ const handleSaveEstudos = async (e) => {
                   ref={fileRef}
                   type="file"
                   accept="image/*"
+                  hidden
                   className="profile-file-input"
                   onChange={handleUploadFoto}
                 />
@@ -601,6 +602,6 @@ const handleSaveEstudos = async (e) => {
           )}
         </motion.div>
       </div>
-    </div>
+    </main>
   )
 }

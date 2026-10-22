@@ -33,7 +33,7 @@ export default function MinhasTurmas() {
   )
 
   return (
-    <div className="minhas-turmas">
+    <main className="minhas-turmas">
       <PageHeader
         eyebrow="Minhas turmas"
         title="As salas onde você estuda"
@@ -79,7 +79,7 @@ export default function MinhasTurmas() {
           </ul>
         </>
       )}
-    </div>
+    </main>
   )
 }
 

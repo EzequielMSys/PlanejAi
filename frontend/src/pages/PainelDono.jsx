@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import usuarioService from '../services/usuarioService'
+import { loadOperationsMetrics } from '../services/operationsService'
 import './PainelDono.css'
 
 const numero = valor => Number(valor || 0)
@@ -11,12 +12,16 @@ export default function PainelDono() {
   const [usuarios, setUsuarios] = useState([])
   const [totais, setTotais] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [webVitals, setWebVitals] = useState([])
+
+  const refreshVitals = () => loadOperationsMetrics().then((data) => setWebVitals(data.web_vitals || [])).catch(() => {})
 
   useEffect(() => {
     usuarioService.listar().then(data => {
       setUsuarios(Array.isArray(data) ? data : data.usuarios || [])
       setTotais(data.stats || null)
     }).catch(() => toast.error('Erro ao carregar métricas do dono.')).finally(() => setLoading(false))
+    refreshVitals()
   }, [])
 
   const stats = useMemo(() => totais || ({
@@ -29,6 +34,8 @@ export default function PainelDono() {
     alunos: usuarios.filter(item => item.tipo === 'aluno').length
   }), [usuarios, totais])
   const proporcaoAtivos = numero(stats.total) ? Math.round(numero(stats.ativos) / numero(stats.total) * 100) : 0
+  const vitalRoutes = [...new Set(webVitals.map((item) => item.route))].sort()
+  const metricFor = (route, name) => webVitals.find((item) => item.route === route && item.name === name)
 
   if (loading) return <main className="owner-page"><div className="owner-wrap"><h1>Operação da plataforma</h1><p className="owner-loading">Carregando indicadores de acesso…</p></div></main>
 
@@ -38,6 +45,7 @@ export default function PainelDono() {
     <section className="owner-overview" aria-label="Indicadores de contas"><div className="owner-section-heading"><span className="owner-kicker">VISÃO GERAL</span><h2>A comunidade em números</h2><p>Indicadores de contas cadastradas, independentes da página atual do diretório.</p></div><div className="owner-stat-grid"><Stat label="Contas cadastradas" value={stats.total} hint="Pessoas na plataforma" /><Stat label="Contas ativas" value={stats.ativos} hint="Com acesso habilitado" /><Stat label="Contas inativas" value={stats.inativos} hint="Sem acesso no momento" /><Stat label="Administradores" value={stats.admins} hint="Gestão da plataforma" /></div></section>
 
     <div className="owner-panels"><section className="owner-panel"><span className="owner-kicker">QUEM PARTICIPA</span><h2>Composição da comunidade</h2><p>Distribuição dos perfis de acesso cadastrados.</p><div className="owner-role-list"><Role label="Estudantes" value={stats.alunos} total={stats.total} /><Role label="Docentes" value={stats.docentes} total={stats.total} /><Role label="Administradores" value={stats.admins} total={stats.total} /><Role label="Donos" value={stats.donos} total={stats.total} /></div></section><section className="owner-panel"><span className="owner-kicker">ÁREAS DE GESTÃO</span><h2>Seu próximo destino</h2><p>Entre diretamente na área que precisa da sua atenção.</p><nav className="owner-link-list" aria-label="Áreas de gestão"><button type="button" onClick={() => navigate('/dono/usuarios')}><span><strong>Pessoas e acessos</strong><small>Perfis, permissões e estado das contas</small></span><b aria-hidden="true">↗</b></button><button type="button" onClick={() => navigate('/dashboard-gestor')}><span><strong>Visão pedagógica</strong><small>Entregas, desempenho e intervenções</small></span><b aria-hidden="true">↗</b></button><button type="button" onClick={() => navigate('/turmas')}><span><strong>Turmas</strong><small>Participantes e espaços de aprendizagem</small></span><b aria-hidden="true">↗</b></button><button type="button" onClick={() => navigate('/atividades')}><span><strong>Atividades</strong><small>Publicações, rascunhos e correções</small></span><b aria-hidden="true">↗</b></button><button type="button" onClick={() => navigate('/materiais')}><span><strong>Biblioteca de materiais</strong><small>Recursos vinculados ao cronograma</small></span><b aria-hidden="true">↗</b></button></nav></section></div>
+    <section className="owner-panel owner-vitals" aria-labelledby="owner-vitals-title"><div className="owner-vitals-heading"><div><span className="owner-kicker">EXPERIÊNCIA REAL</span><h2 id="owner-vitals-title">Desempenho por página</h2><p>Percentil 75 das visitas dos últimos 7 dias. Sem identificação dos estudantes. LCP: carregamento; INP: resposta; CLS: estabilidade. A troca de página mede a navegação interna.</p></div><button type="button" onClick={refreshVitals}>Atualizar dados</button></div>{vitalRoutes.length ? <div className="owner-vitals-scroll"><table><caption>Métricas de carregamento e interação por rota</caption><thead><tr><th scope="col">Página</th><th scope="col">LCP</th><th scope="col">INP</th><th scope="col">CLS</th><th scope="col">Troca de página</th></tr></thead><tbody>{vitalRoutes.map((route) => <tr key={route}><th scope="row">{route}</th>{['LCP', 'INP', 'CLS', 'ROUTE_READY'].map((name) => { const item = metricFor(route, name); return <td key={name}>{item ? `${item.p75}${name === 'CLS' ? '' : ' ms'}` : '—'}{item && <small>{item.count} amostras{item.count < 20 ? ' · preliminar' : ''}</small>}</td> })}</tr>)}</tbody></table></div> : <p className="owner-vitals-empty">Ainda não há amostras. Abra as páginas no navegador e volte para acompanhar as medições.</p>}</section>
   </div></main>
 }
 

@@ -6,7 +6,7 @@ const rootDir = path.resolve(__dirname, '..');
 const frontendDir = path.join(rootDir, 'frontend');
 const requireFrontend = createRequire(path.join(frontendDir, 'package.json'));
 const { JSDOM, VirtualConsole } = requireFrontend('jsdom');
-const dom = new JSDOM('<!doctype html><html><head></head><body><div id="root"></div></body></html>', { url: 'http://planejai.test/', virtualConsole: new VirtualConsole(), pretendToBeVisual: true });
+const dom = new JSDOM('<!doctype html><html lang="pt-BR"><head><title>PlanejAI</title></head><body><div id="root"></div></body></html>', { url: 'http://planejai.test/', virtualConsole: new VirtualConsole(), pretendToBeVisual: true });
 for (const key of ['window', 'document', 'localStorage', 'HTMLElement', 'Element', 'SVGElement', 'Node', 'MutationObserver', 'getComputedStyle']) global[key] = key === 'getComputedStyle' ? dom.window.getComputedStyle.bind(dom.window) : dom.window[key];
 Object.defineProperty(global, 'navigator', { value: dom.window.navigator, configurable: true });
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -24,6 +24,7 @@ const { act } = React;
 const { createRoot } = requireFrontend('react-dom/client');
 const { MemoryRouter } = requireFrontend('react-router-dom');
 const axios = requireFrontend('axios');
+const axe = requireFrontend('axe-core');
 let bundle;
 let requests = [];
 let failChat = false;
@@ -379,6 +380,19 @@ test('daily panel explains a practice recommendation using recorded attempts', a
     assert.equal(document.querySelector('.learning-tabs button[aria-pressed="true"]')?.textContent.trim(), 'Simulado');
     assert.equal([...document.querySelectorAll('select')].find(node => node.parentElement?.textContent.includes('Disciplina'))?.value, 'Matemática');
   } finally { await screen.close(); dashboardLearningFixture = null; }
+});
+
+test('main routes expose labels and landmarks to assistive technology', async () => {
+  const routes = ['/', '/login', '/register', '/inicio', '/cronograma', '/aprendizagem', '/provas', '/redacoes', '/lumi', '/perfil', '/planejamento-inteligente', '/minha-jornada', '/preferencias', '/minhas-atividades', '/minhas-turmas', '/avisos', '/status'];
+  const management = ['/dashboard-gestor', '/turmas', '/atividades', '/materiais', '/usuarios', '/dono', '/dono/usuarios'];
+  for (const route of [...routes, ...management]) {
+    const screen = await renderRoute(route, management.includes(route) ? 'dono' : 'aluno');
+    try {
+      const results = await axe.run(document, { rules: { 'color-contrast': { enabled: false } } });
+      const failures = results.violations.map((item) => `${item.id}: ${item.nodes.map((node) => node.target.join(' ')).join(', ')}`);
+      assert.deepEqual(failures, [], `${route}: ${failures.join('; ')}`);
+    } finally { await screen.close(); }
+  }
 });
 
 

@@ -29,3 +29,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     </HashRouter>
   </React.StrictMode>,
 );
+
+// A coleta de métricas não participa da primeira renderização nem envia dados pessoais.
+if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
+  const startMetrics = () => import('./performance/fieldMetrics').then(({ startFieldMetrics }) => startFieldMetrics()).catch(() => {});
+  if (document.readyState === 'complete') startMetrics();
+  else window.addEventListener('load', startMetrics, { once: true });
+}

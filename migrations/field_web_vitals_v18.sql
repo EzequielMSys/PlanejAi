@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS web_vital_samples (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  route VARCHAR(100) NOT NULL,
+  metric VARCHAR(20) NOT NULL,
+  value DECIMAL(10,4) NOT NULL,
+  recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_web_vitals_recent (recorded_at, route, metric)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -329,7 +329,7 @@ async function concluirDia(idDia) {
   }
 
   return (
-    <div className="schedule-page min-h-screen bg-study-canvas text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
+    <main className="schedule-page min-h-screen bg-study-canvas text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-72 h-72 bg-study-accent/20 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-study-accent/10 rounded-full blur-3xl" />
 
@@ -666,7 +666,7 @@ async function concluirDia(idDia) {
       )}
       {avaliacao && <CronogramaAssessment key={avaliacao.id_avaliacao} assessment={avaliacao} onSubmit={enviarAvaliacao} onSaveAnswer={salvarRespostaAvaliacao} onClose={() => { setAvaliacao(null); carregarCronogramas() }} />}
       {recuperacao && <div className="fixed inset-0 z-[130] grid place-items-center bg-black/60 p-4"><section className="max-w-lg rounded-[2rem] bg-study-paper p-6 text-study-ink dark:bg-study-paper dark:text-white"><h2 className="text-2xl font-black">Plano de recuperação</h2><p className="mt-2 text-sm opacity-70">Há {recuperacao.dias_atrasados} dia(s) atrasado(s) e {recuperacao.conteudos_pendentes} conteúdo(s) pendente(s).</p><div className="mt-5 grid gap-3">{recuperacao.opcoes.map((opcao) => <button key={opcao.id} onClick={async () => { if (opcao.id === 'REDISTRIBUIR' || opcao.id === 'REDUZIR') await replanejar(); setRecuperacao(null); if (opcao.id === 'MANTER') toast('O cronograma foi mantido como está.'); }} className="rounded-2xl border p-4 text-left"><b>{opcao.titulo}</b><span className="mt-1 block text-sm opacity-65">{opcao.impacto}</span></button>)}</div><button onClick={() => setRecuperacao(null)} className="mt-5 text-sm font-bold underline">Fechar</button></section></div>}
-    </div>
+    </main>
   )
 }
 

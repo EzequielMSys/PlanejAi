@@ -974,6 +974,15 @@
   animation: none !important;
 }
 
+.a11y-reduced-motion *,
+.a11y-reduced-motion *::before,
+.a11y-reduced-motion *::after {
+  scroll-behavior: auto !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
 /* ==========================================================================
    LANDING — conceito "Atlas": o conhecimento como território
    ========================================================================== */
@@ -1523,5 +1532,4 @@
   .pn-faixa { gap: 1.25rem; }
   .pn-secao-bloco { padding: 3rem 1.25rem; }
 }
-
 

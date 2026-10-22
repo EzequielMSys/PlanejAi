@@ -243,7 +243,7 @@ export default function UsuariosAdmin() {
   }
 
   return (
-    <div className="users-admin-page min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] px-4 sm:px-6 lg:px-8 py-10">
+    <main className="users-admin-page min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] px-4 sm:px-6 lg:px-8 py-10">
       <div className="max-w-7xl mx-auto">
         <header className="users-hero"><div><span className="users-kicker">PLANEJAI · GESTÃO DE ACESSOS</span><h1>Pessoas e acessos</h1><p>Consulte quem faz parte da plataforma e acompanhe as permissões de cada pessoa com clareza.</p></div><aside><span>CONTROLE DE ACESSO</span><p>{isDono ? 'Alterações de perfil e status são reservadas ao dono.' : 'Seu acesso administrativo permite consultar e gerenciar contas conforme sua permissão.'}</p><strong>{stats.ativos} de {stats.total} contas ativas</strong></aside></header>
 
@@ -535,7 +535,7 @@ export default function UsuariosAdmin() {
         </div>
       )}
       {senhaTemporaria && <div className="users-secret-backdrop" role="presentation"><section className="users-secret-dialog" role="dialog" aria-modal="true" aria-labelledby="users-secret-title"><span className="users-kicker">ACESSO TEMPORÁRIO</span><h2 id="users-secret-title">Senha redefinida</h2><p>Compartilhe esta senha com {senhaTemporaria.nome} por um canal seguro. Ela será mostrada apenas enquanto este aviso estiver aberto.</p><code>{senhaTemporaria.senha}</code><button type="button" onClick={() => setSenhaTemporaria(null)}>Concluir</button></section></div>}
-    </div>
+    </main>
   )
 }
 
