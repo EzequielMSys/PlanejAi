@@ -99,6 +99,7 @@ const Register = () => {
 
   return (
     <AuthLayout
+      variant="register"
       title="Criar sua conta"
       subtitle="Em menos de um minuto o primeiro mapa de estudos fica pronto."
       destaque={

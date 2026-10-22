@@ -78,3 +78,14 @@
 @media (max-width:900px) { .study-auth--login .study-auth-corpo { grid-template-columns:1fr; max-width:32rem; padding-block:2rem 4rem; } .study-auth--login .study-auth-lateral { display:none; } }
 @media (max-width:480px) { .study-auth--login .study-auth-formulario { padding:1.25rem; } .study-auth--login .study-auth-formulario h1 { font-size:2.7rem; } .study-auth--login .study-auth-topo { min-height:72px; } }
 @media (min-width:901px) and (max-height:760px) { .study-auth--login .study-auth-corpo { padding-block:1rem; } .study-auth--login .study-auth-formulario { padding:1.4rem 2rem; } .study-auth--login .study-auth-formulario::before { margin-bottom:.7rem; } .study-auth--login .study-auth-formulario h1 { font-size:clamp(2.5rem,3.5vw,3.3rem); } .study-auth--login .study-auth-sub { margin-top:.6rem; } .study-auth--login .study-form { gap:.8rem; margin-top:1.15rem; } .study-auth--login .study-auth-rodape { margin-top:1rem; padding-top:.8rem; } .study-auth--login .study-auth-caderno { min-height:0; padding:1.3rem 2rem 1rem; } .study-login-note-eyebrow { margin-top:.8rem; } .study-login-note-steps { margin-top:1rem; } .study-login-note-steps > div { padding:.55rem 0; } }
+
+/* Cadastro: a mesma linguagem da entrada, com espaço para dicas e validação. */
+.study-auth--register { background:radial-gradient(circle at 76% 36%,var(--pn-fundo-alt) 0,transparent 42%),var(--pn-fundo); }
+.study-auth--register .study-auth-corpo { grid-template-columns:minmax(0,1fr) minmax(0,.9fr); gap:clamp(2rem,7vw,7rem); }
+.study-auth--register .study-auth-formulario { border:1px solid var(--pn-borda); border-radius:14px; background:var(--pn-superficie); padding:clamp(1.4rem,3vw,2.2rem); box-shadow:0 18px 55px color-mix(in srgb,var(--pn-texto) 5%,transparent); }
+.study-auth--register .study-auth-formulario h1 { font-size:clamp(2.3rem,3.5vw,3.3rem); }
+.study-auth--register .study-form { max-width:none; gap:.85rem; margin-top:1.5rem; }
+.study-auth--register .study-auth-rodape { margin-top:1.2rem; padding-top:1rem; border-top:1px solid var(--pn-borda); }
+.study-auth--register .study-auth-caderno { transform:rotate(-1deg); }
+@media(max-width:900px) { .study-auth--register .study-auth-corpo { grid-template-columns:1fr; width:min(34rem,calc(100% - 2rem)); padding-block:2rem 4rem; } }
+@media(max-width:480px) { .study-auth--register .study-auth-formulario { padding:1.25rem; } }
