@@ -73,6 +73,8 @@ const diasPadrao = [
   { dia_semana: 'DOM', label: 'Domingo', hora_inicio: '08:00', hora_fim: '18:00', ocupado: 1 }
 ]
 
+const pronomesPadrao = ['', 'ela_dela', 'ele_dele', 'elu_delu', 'nome_proprio']
+
 export default function Perfil() {
   const { user, changePassword, updateUser } = useAuth()
   const fileRef = useRef(null)
@@ -87,7 +89,8 @@ export default function Perfil() {
     nome: '',
     apelido: '',
     email: '',
-    pronome: ''
+    pronome: '',
+    pronomePersonalizado: ''
   })
 
   const [senhaForm, setSenhaForm] = useState({
@@ -117,7 +120,8 @@ export default function Perfil() {
         nome: user.nome || '',
         apelido: user.apelido || '',
         email: user.email || '',
-        pronome: user.pronome || ''
+        pronome: pronomesPadrao.includes(user.pronome || '') ? (user.pronome || '') : user.pronome ? 'personalizado' : '',
+        pronomePersonalizado: pronomesPadrao.includes(user.pronome || '') ? '' : (user.pronome || '')
       })
 
       setAvatarPreview(user.foto_url || null)
@@ -235,7 +239,7 @@ const handleSaveInfo = async (e) => {
         nome: form.nome,
         email: form.email,
         apelido: form.apelido,
-        pronome: form.pronome
+        pronome: form.pronome === 'personalizado' ? form.pronomePersonalizado.trim() : form.pronome
       }
 
       const response = await usuarioService.atualizar(usuarioId, payload)
@@ -496,9 +500,12 @@ const handleSaveEstudos = async (e) => {
                   <option value="ele_dele">Ele / dele</option>
                   <option value="elu_delu">Elu / delu</option>
                   <option value="nome_proprio">Prefiro que use meu nome</option>
+                  <option value="personalizado">Quero informar outros pronomes</option>
                 </select><small className="profile-field-hint">Essa preferência é opcional e serve para adaptar a linguagem da Lumi. Você pode alterá-la quando quiser.</small></label>
 
-                <div className="profile-pronoun-preview" aria-live="polite"><span>PRÉVIA DE TRATAMENTO</span><p>“{fraseConviteLumi(form.pronome)}”</p><small>A frase acompanha a opção selecionada e só muda no seu perfil quando você salvar.</small></div>
+                {form.pronome === 'personalizado' && <label className="profile-field">Quais pronomes você usa?<input value={form.pronomePersonalizado} onChange={(e) => setForm((f) => ({ ...f, pronomePersonalizado: e.target.value }))} maxLength={80} placeholder="Ex.: they/them, xe/xem ou ela/elu" /><small className="profile-field-hint">Opcional. A Lumi mantém linguagem neutra nos textos que não podem ser adaptados com segurança.</small></label>}
+
+                <div className="profile-pronoun-preview" aria-live="polite"><span>PRÉVIA DE TRATAMENTO</span><p>“{fraseConviteLumi(form.pronome === 'personalizado' ? form.pronomePersonalizado : form.pronome)}”</p><small>{form.pronome === 'personalizado' && form.pronomePersonalizado.trim() ? `Preferência informada: ${form.pronomePersonalizado.trim()}. ` : ''}A preferência só muda no perfil quando você salvar; nos textos sem flexão, a linguagem continua neutra.</small></div>
 
                 <label className="profile-field">Email da conta<input autoComplete="email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required /></label>
 

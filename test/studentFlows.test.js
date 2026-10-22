@@ -294,11 +294,28 @@ test('profile saves the optional pronoun preference to the signed-in account', a
     const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
     await act(async () => { setter.call(pronounSelect, 'elu_delu'); pronounSelect.dispatchEvent(new window.Event('change', { bubbles: true })); });
     assert.ok(preview.textContent.includes('Vamos pensar juntes?'));
-    assert.ok(preview.textContent.includes('só muda no seu perfil quando você salvar'));
+    assert.ok(preview.textContent.includes('A preferência só muda no perfil quando você salvar'));
     await act(async () => button('Salvar alterações').click());
     await flush();
     assert.equal(JSON.parse(localStorage.getItem('user')).pronome, 'elu_delu');
     assert.ok(requests.some(request => request.method === 'put' && request.url.endsWith('/usuarios/900001')));
+  } finally { await screen.close(); }
+});
+test('profile accepts custom pronouns without making the field required', async () => {
+  const screen = await renderRoute('/perfil');
+  try {
+    const pronounSelect = [...document.querySelectorAll('select')].find(node => node.parentElement?.textContent.includes('Pronomes'));
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
+    await act(async () => { setter.call(pronounSelect, 'personalizado'); pronounSelect.dispatchEvent(new window.Event('change', { bubbles: true })); });
+    const customInput = document.querySelector('input[placeholder="Ex.: they/them, xe/xem ou ela/elu"]');
+    assert.ok(customInput);
+    assert.ok(screen.container.textContent.includes('Vamos pensar nisso?'));
+    await inputValue(customInput, 'they/them');
+    assert.ok(screen.container.textContent.includes('Preferência informada: they/them.'));
+    await act(async () => button('Salvar alterações').click());
+    await flush();
+    assert.equal(JSON.parse(localStorage.getItem('user')).pronome, 'they/them');
+    assert.ok(requests.some(request => request.method === 'put' && request.url.endsWith('/usuarios/900001') && JSON.parse(request.data).pronome === 'they/them'));
   } finally { await screen.close(); }
 });
 test('a provider failure leaves the question available to retry', async () => {
