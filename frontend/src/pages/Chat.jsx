@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import ChatInterface from '../components/ChatInterface'
 import TutorLumi from '../components/TutorLumi'
 import './Chat.css'
@@ -7,8 +7,9 @@ import './Chat.css'
 export default function Chat() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [humorLumi, setHumorLumi] = useState('neutro')
-  const estados = { neutro: 'Pronta para conversar', feliz: 'Feliz com a conversa', pensando: 'Pensando com você', surpreso: 'Surpresa com a pergunta', sonolento: 'Em uma pausa tranquila', raiva: 'Descontente com o tom da conversa' }
+  const { user } = useAuth()
+  const formasJuntos = { ela_dela: 'juntas', ele_dele: 'juntos', elu_delu: 'juntes' }
+  const convite = formasJuntos[user?.pronome] ? `Vamos pensar ${formasJuntos[user.pronome]}?` : 'Vamos pensar nisso?'
 
   return (
     <main className="lumi-page">
@@ -19,17 +20,16 @@ export default function Chat() {
 
       <div className="lumi-page-grid">
         <aside className="lumi-intro" aria-label="Sobre a Lumi">
-          <div className="lumi-portrait"><TutorLumi tamanho={150} humor={humorLumi} rotulo={`Lumi, gata tutora de estudos: ${estados[humorLumi]}`} /></div>
-          <span className="lumi-intro-label">COMPANHEIRA DE ESTUDOS</span>
-          <h2>Vamos pensar juntas?</h2>
-          <span className="lumi-mood" aria-live="polite">{estados[humorLumi]}</span>
+          <div className="lumi-portrait"><TutorLumi tamanho={150} rotulo="Lumi, gata tutora de estudos" /></div>
+          <span className="lumi-intro-label">APOIO PARA SEUS ESTUDOS</span>
+          <h2>{convite}</h2>
           <p>Explique onde travou ou o que já tentou. Posso propor um exercício, revisar uma redação e ajudar a retomar seu plano.</p>
           <div className="lumi-intro-note"><strong>Uma conversa com contexto</strong><span>Quando disponíveis, suas matérias, lições e redações ajudam a tornar a resposta mais útil.</span></div>
         </aside>
 
         <section className="lumi-chat-card" aria-label="Conversa com a Lumi">
           <div className="lumi-chat-heading"><span className="lumi-chat-status" aria-hidden="true" /><div><strong>Sua conversa</strong><small>Um passo de cada vez</small></div><span className="lumi-chat-heading-tip">Lumi está aqui para estudar com você</span></div>
-          <ChatInterface className="lumi-chat-body" onEstadoChange={setHumorLumi} redacaoSelecionada={location.state?.redacaoSelecionada} perguntaInicial={location.state?.perguntaInicial} />
+          <ChatInterface className="lumi-chat-body" redacaoSelecionada={location.state?.redacaoSelecionada} perguntaInicial={location.state?.perguntaInicial} />
         </section>
       </div>
     </main>

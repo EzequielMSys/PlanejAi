@@ -13,12 +13,6 @@ const SUGESTOES_INICIO = [
 
 const DISCIPLINAS = ['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português', 'Inglês']
 
-function reacaoDaMensagem(texto) {
-  if (/\b(idiota|burra|burro|est[uú]pida|est[uú]pido|cale a boca|vai se ferrar)\b/i.test(texto)) return 'raiva'
-  if (/\b(obrigad[oa]|por favor|por gentileza|agrade[çc]o|valeu)\b/i.test(texto)) return 'feliz'
-  return 'pensando'
-}
-
 function formatarHora(data) {
   try {
     return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -31,7 +25,7 @@ function Mensagem({ mensagem }) {
   const ehUsuario = mensagem.role === 'user'
   return (
     <div className={`flex items-start gap-2 ${ehUsuario ? 'lumi-message--user justify-end' : 'justify-start'}`}>
-      {!ehUsuario && <TutorLumi tamanho={28} humor={mensagem.reacao || 'neutro'} />}
+      {!ehUsuario && <TutorLumi tamanho={28} />}
       <div
         className={`min-w-0 max-w-[88%] rounded-2xl px-4 py-3 text-[.94rem] shadow-sm sm:max-w-[82%] ${
           ehUsuario
@@ -50,20 +44,15 @@ function Mensagem({ mensagem }) {
   )
 }
 
-export default function ChatInterface({ className = '', onEstadoChange, redacaoSelecionada, perguntaInicial = '' }) {
+export default function ChatInterface({ className = '', redacaoSelecionada, perguntaInicial = '' }) {
   const [mensagens, setMensagens] = useState([])
   const [input, setInput] = useState(perguntaInicial)
   const [materia, setMateria] = useState('')
   const [loading, setLoading] = useState(false)
-  const [humorLumi, setHumorLumi] = useState('neutro')
   const [contexto, setContexto] = useState(null)
   const [sendError, setSendError] = useState('')
   const fimRef = useRef(null)
   const inputRef = useRef(null)
-
-  useEffect(() => {
-    onEstadoChange?.(humorLumi)
-  }, [humorLumi, onEstadoChange])
 
   useEffect(() => {
     inteligencia
@@ -99,7 +88,6 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
     const mensagem = (texto || input).trim()
     if (!mensagem || loading) return
     const envioId = Date.now() + Math.random()
-    const reacaoInicial = reacaoDaMensagem(mensagem)
     setSendError('')
     setMensagens((prev) => [...prev, {
       id: envioId,
@@ -110,32 +98,26 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
     }])
     setInput('')
     setLoading(true)
-    setHumorLumi(reacaoInicial)
     try {
       const data = await inteligencia.chatSend(mensagem, materia || undefined, redacaoSelecionada?.id)
       if (data?.offline || data?.queued) {
         toast(data.message || 'Sem conexão: a mensagem será enviada quando você ficar online.')
-        setHumorLumi('neutro')
       } else if (data?.mensagens) {
         setMensagens(
-          data.mensagens.map((m, index) => ({
+          data.mensagens.map((m) => ({
             role: m.role,
             content: m.conteudo,
             disciplina: m.disciplina,
             criado_em: m.criado_em,
-            reacao: index === data.mensagens.length - 1 ? (data.reacao === 'neutro' ? reacaoInicial : data.reacao) : undefined,
           }))
         )
-        setHumorLumi(data.reacao && data.reacao !== 'neutro' ? data.reacao : reacaoInicial)
       } else if (data?.conteudo) {
         append({
           role: 'assistant',
           content: data.conteudo,
           disciplina: materia || null,
           criado_em: new Date().toISOString(),
-          reacao: data.reacao && data.reacao !== 'neutro' ? data.reacao : reacaoInicial,
         })
-        setHumorLumi(data.reacao && data.reacao !== 'neutro' ? data.reacao : reacaoInicial)
       }
     } catch (error) {
       const aviso = error?.response?.data?.message || 'Não foi possível conversar com a Lumi agora.'
@@ -143,7 +125,6 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
       setInput(mensagem)
       setSendError(aviso)
       toast.error(aviso)
-      setHumorLumi('neutro')
     } finally {
       setLoading(false)
       inputRef.current?.focus()
@@ -212,7 +193,7 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
       <div className="lumi-feed flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-live="polite">
         {!mensagens.length && !loading && (
           <div className="lumi-welcome-content">
-            <div className="lumi-welcome-top"><TutorLumi tamanho={64} humor={humorLumi} /><div><strong>Por onde começamos?</strong><span>Escolha um caminho ou escreva sua própria pergunta abaixo.</span></div></div>
+            <div className="lumi-welcome-top"><TutorLumi tamanho={64} /><div><strong>Por onde começamos?</strong><span>Escolha um caminho ou escreva sua própria pergunta abaixo.</span></div></div>
             {(contexto?.licoes?.[0]?.titulo || contexto?.dificuldades?.[0]?.disciplina || contexto?.redacoes?.[0]?.tema) && <div className="lumi-starter-section"><span>CONTINUAR MEUS ESTUDOS</span><div className="lumi-starters">
               {contexto?.licoes?.[0]?.titulo && <button type="button" data-personalized="true" onClick={() => enviar(`Me ajude a estudar a lição ${contexto.licoes[0].titulo}. Comece pelo conceito principal.`)}>Retomar lição: {contexto.licoes[0].titulo}</button>}
               {contexto?.dificuldades?.[0]?.disciplina && <button type="button" data-personalized="true" onClick={() => enviar(`Tenho tido dificuldade em ${contexto.dificuldades[0].disciplina}${contexto.dificuldades[0].competencia ? `, especialmente ${contexto.dificuldades[0].competencia}` : ''}. Explique de outra forma e proponha um exercício curto.`)}>Praticar {contexto.dificuldades[0].disciplina}</button>}
@@ -238,7 +219,7 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
 
         {loading && (
           <div className="flex items-start gap-2 justify-start" role="status" aria-label="Lumi está pensando na resposta">
-            <TutorLumi tamanho={28} humor="pensando" />
+            <TutorLumi tamanho={28} />
             <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-study-line/15 bg-study-tint px-4 py-3 dark:bg-study-paper">
               <span className="text-xs text-study-ink/70 dark:text-white/70">Lumi está pensando</span>
               {[0, 1, 2].map((dot) => (

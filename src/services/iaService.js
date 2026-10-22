@@ -104,15 +104,6 @@ function classificarErroApi(apiError) {
   return null
 }
 
-function extrairReacao(conteudo) {
-  const texto = typeof conteudo === 'string' ? conteudo.trim() : ''
-  const marcador = texto.match(/\s*\[LUMI:(feliz|pensando|surpreso|raiva|neutro)\]\s*$/i)
-  return {
-    conteudo: marcador ? texto.slice(0, marcador.index).trim() : texto,
-    reacao: marcador ? marcador[1].toLowerCase() : 'neutro',
-  }
-}
-
 /**
  * Envia uma mensagem do estudante para a OpenAI e persiste a resposta.
  *
@@ -176,15 +167,12 @@ async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, reda
     throw err
   }
 
-  const saida = extrairReacao(resposta)
-  resposta = saida.conteudo || 'Não consegui formular uma resposta. Tente reformular a pergunta.'
   await model.salvarMensagemChat(Number(idUsuario), 'assistant', resposta, disciplinaNormalizada)
 
   const atualizado = await model.listarMensagensChat(Number(idUsuario), iaConfig.historyTrim)
   return {
     role: 'assistant',
     conteudo: resposta,
-    reacao: saida.reacao,
     disciplina: disciplinaNormalizada,
     mensagens: atualizado.map((row) => ({
       role: row.role,
@@ -205,7 +193,6 @@ module.exports = {
     montarPayloadChat,
     resolverErroCliente,
     classificarErroApi,
-    extrairReacao,
     LIMITE_CARACTERES_MENSAGEM,
   },
 }

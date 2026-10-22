@@ -1,7 +1,6 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const { validarAvaliacao, extrairJson } = require('../src/services/lumiEssayService')
-const { _test: ia } = require('../src/services/iaService')
 
 const texto = 'A escola pode oferecer aulas de reforço para reduzir a desigualdade.'
 const competencias = Array.from({ length: 5 }, (_, i) => ({
@@ -30,10 +29,4 @@ test('evidência pode atravessar uma quebra de linha, mas não pode ser inventad
 test('resposta inválida do provedor não vira avaliação', () => {
   assert.equal(extrairJson('O texto merece 900 pontos.'), null)
   assert.deepEqual(extrairJson('```json\n{"competencias":[]}\n```'), { competencias: [] })
-})
-
-test('reação da Lumi é removida da resposta visível e validada', () => {
-  assert.deepEqual(ia.extrairReacao('Bom raciocínio.\n[LUMI:feliz]'), { conteudo: 'Bom raciocínio.', reacao: 'feliz' })
-  assert.deepEqual(ia.extrairReacao('Não posso ajudar com isso.\n[LUMI:raiva]'), { conteudo: 'Não posso ajudar com isso.', reacao: 'raiva' })
-  assert.deepEqual(ia.extrairReacao('Vamos pensar. [LUMI:invalido]'), { conteudo: 'Vamos pensar. [LUMI:invalido]', reacao: 'neutro' })
 })

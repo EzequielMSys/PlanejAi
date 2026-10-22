@@ -46,7 +46,7 @@ const Login = () => {
   return (
     <AuthLayout
       variant="login"
-      title="Bem-vindo de volta"
+      title="Boas-vindas de volta"
       subtitle="Seu próximo passo começa exatamente de onde você parou."
       destaque={<AuthJourneyPreview variant="login" />}
       rodape={

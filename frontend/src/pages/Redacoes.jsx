@@ -281,7 +281,7 @@ export default function Redacoes() {
               <Link to="/lumi" state={{ perguntaInicial: 'Quero planejar uma redação no modelo ENEM. Ajude-me a definir uma tese, dois argumentos e uma proposta de intervenção sem escrever o texto por mim.' }}><span>01 · PENSAR COM A LUMI</span><strong>Destrave seu argumento</strong><small>Converse sobre tese, repertório e intervenção.</small><b aria-hidden="true">↗</b></Link>
               <a href="#redacoes-historico"><span>02 · REVISAR</span><strong>Aprenda com seus textos</strong><small>Volte aos comentários e escolha um ajuste.</small><b aria-hidden="true">↗</b></a>
             </div></div>
-            <div className="redacoes-lumi"><TutorLumi tamanho={62} humor="feliz" rotulo="Lumi, tutora de redação" /><span className="redacoes-eyebrow">LUMI NO ATELIÊ</span><h2>Uma dúvida pode virar uma tese melhor.</h2><p>Peça ajuda para organizar ideias ou compreender o feedback. No estúdio, a Lumi também faz uma pré-análise do seu rascunho antes do envio.</p></div>
+            <div className="redacoes-lumi"><TutorLumi tamanho={62} rotulo="Lumi, tutora de redação" /><span className="redacoes-eyebrow">LUMI NO ATELIÊ</span><h2>Uma dúvida pode virar uma tese melhor.</h2><p>Peça ajuda para organizar ideias ou compreender o feedback. No estúdio, a Lumi também faz uma pré-análise do seu rascunho antes do envio.</p></div>
           </section>}
 
           {isGestor && (

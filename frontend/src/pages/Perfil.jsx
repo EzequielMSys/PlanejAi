@@ -85,7 +85,8 @@ export default function Perfil() {
   const [form, setForm] = useState({
     nome: '',
     apelido: '',
-    email: ''
+    email: '',
+    pronome: ''
   })
 
   const [senhaForm, setSenhaForm] = useState({
@@ -114,7 +115,8 @@ export default function Perfil() {
       setForm({
         nome: user.nome || '',
         apelido: user.apelido || '',
-        email: user.email || ''
+        email: user.email || '',
+        pronome: user.pronome || ''
       })
 
       setAvatarPreview(user.foto_url || null)
@@ -231,7 +233,8 @@ const handleSaveInfo = async (e) => {
       const payload = {
         nome: form.nome,
         email: form.email,
-        apelido: form.apelido
+        apelido: form.apelido,
+        pronome: form.pronome
       }
 
       const response = await usuarioService.atualizar(usuarioId, payload)
@@ -365,7 +368,7 @@ const handleSaveEstudos = async (e) => {
         ? 'Administrador'
         : user?.tipo === 'docente'
           ? 'Docente'
-          : 'Aluno'
+          : 'Estudante'
 
   const dataCadastro = user?.data_cadastro
     ? new Date(user.data_cadastro).toLocaleDateString('pt-BR')
@@ -487,6 +490,14 @@ const handleSaveEstudos = async (e) => {
                   <label className="profile-field">Nome completo<input autoComplete="name" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} required /></label>
                   <label className="profile-field">Como quer ser chamado<input value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Apelido (opcional)" /></label>
                 </div>
+
+                <label className="profile-field">Pronomes<select value={form.pronome} onChange={(e) => setForm((f) => ({ ...f, pronome: e.target.value }))}>
+                  <option value="">Prefiro não informar</option>
+                  <option value="ela_dela">Ela / dela</option>
+                  <option value="ele_dele">Ele / dele</option>
+                  <option value="elu_delu">Elu / delu</option>
+                  <option value="nome_proprio">Prefiro que use meu nome</option>
+                </select><small className="profile-field-hint">Essa preferência é opcional e serve para adaptar a linguagem da Lumi. Você pode alterá-la quando quiser.</small></label>
 
                 <label className="profile-field">Email da conta<input autoComplete="email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required /></label>
 

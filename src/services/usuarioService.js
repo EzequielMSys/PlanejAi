@@ -4,6 +4,7 @@ const usuarioModel = require('../models/usuarioModel')
 const { gerarSenhaTemporaria, validarSenhaForte, getBcryptRounds, REQUISITOS_SENHA } = require('../utils/authUtils')
 
 const TIPOS_PERMITIDOS = ['dono', 'admin', 'docente', 'aluno']
+const PRONOMES_PERMITIDOS = ['ela_dela', 'ele_dele', 'elu_delu', 'nome_proprio', '']
 
 function obterIdUsuario(usuario) {
   return usuario?.id_usuario || usuario?.id
@@ -50,11 +51,17 @@ if (dados.nome !== undefined && dados.nome !== null && dados.nome !== '') {
       }
     }
 
+    if (dados.pronome !== undefined) {
+      if (!isMesmoUsuario) throw new Error('Permissão negada: a preferência de pronomes só pode ser alterada pela própria pessoa.')
+      if (!PRONOMES_PERMITIDOS.includes(String(dados.pronome))) throw new Error('Pronome inválido.')
+    }
+
     const dadosAtualizacao = {
       nome: dados.nome,
       email: dados.email,
       apelido: dados.apelido,
-      foto_url: dados.foto_url
+      foto_url: dados.foto_url,
+      pronome: dados.pronome
     }
 
     if (dados.tipo !== undefined) {

@@ -77,10 +77,10 @@ async function getBundle() {
   return bundle;
 }
 async function flush() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); }); }
-async function renderRoute(route, role = 'aluno') {
+async function renderRoute(route, role = 'aluno', userOverrides = {}) {
   localStorage.clear();
   const token = [Buffer.from('{"alg":"HS256"}').toString('base64'), Buffer.from(JSON.stringify({ id: 900001, exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64'), 'fixture'].join('.');
-  for (const [key, value] of Object.entries({ token, user: JSON.stringify(person(role)), perfil_completo: route === '/onboarding' ? 'false' : 'true', primeiro_acesso: route === '/primeiro-acesso' ? 'true' : 'false', theme: 'light' })) localStorage.setItem(key, value);
+  for (const [key, value] of Object.entries({ token, user: JSON.stringify({ ...person(role), ...userOverrides }), perfil_completo: route === '/onboarding' ? 'false' : 'true', primeiro_acesso: route === '/primeiro-acesso' ? 'true' : 'false', theme: 'light' })) localStorage.setItem(key, value);
   requests = [];
   const { App, ThemeProvider, AccessibilityProvider, ErrorBoundary } = await getBundle();
   const container = document.getElementById('root');
@@ -268,19 +268,33 @@ test('Lumi starters prepare a question, then send one request and render safe st
     assert.ok(document.querySelector('.lumi-feed').textContent.includes('<script>unsafe()</script>'));
   } finally { await screen.close(); }
 });
-test('Lumi reacts to kindness and rudeness while the floating button stays absent', async () => {
+test('Lumi keeps the original portrait without reactions or a floating button', async () => {
   const screen = await renderRoute('/lumi');
   try {
     assert.equal(button('Pergunte à Lumi'), undefined);
-    const textarea = document.getElementById('lumi-message');
-    await inputValue(textarea, 'Por favor, me explique frações. Obrigado!');
-    await act(async () => textarea.closest('form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true })));
+    assert.ok(document.querySelector('.lumi-portrait img[src$="images/lumi-original.png"]'));
+    assert.equal(document.querySelector('.lumi-mood'), null);
+    assert.equal(document.querySelector('[class*="lumi-cat--feliz"], [class*="lumi-cat--raiva"]'), null);
+  } finally { await screen.close(); }
+});
+test('chat adapts its wording to the chosen pronoun and stays neutral without a preference', async () => {
+  for (const [pronome, frase] of [[undefined, 'Vamos pensar nisso?'], ['ela_dela', 'Vamos pensar juntas?'], ['ele_dele', 'Vamos pensar juntos?'], ['elu_delu', 'Vamos pensar juntes?'], ['nome_proprio', 'Vamos pensar nisso?']]) {
+    const screen = await renderRoute('/lumi', 'aluno', { pronome });
+    try { assert.ok(screen.container.textContent.includes(frase), `pronome ${pronome || 'não informado'}`); }
+    finally { await screen.close(); }
+  }
+});
+test('profile saves the optional pronoun preference to the signed-in account', async () => {
+  const screen = await renderRoute('/perfil');
+  try {
+    const pronounSelect = [...document.querySelectorAll('select')].find(node => node.parentElement?.textContent.includes('Pronomes'));
+    assert.ok(pronounSelect);
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
+    await act(async () => { setter.call(pronounSelect, 'elu_delu'); pronounSelect.dispatchEvent(new window.Event('change', { bubbles: true })); });
+    await act(async () => button('Salvar alterações').click());
     await flush();
-    assert.ok(document.querySelector('.lumi-portrait .lumi-cat--feliz'));
-    await inputValue(textarea, 'Sua idiota, responda logo.');
-    await act(async () => textarea.closest('form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true })));
-    await flush();
-    assert.ok(document.querySelector('.lumi-portrait .lumi-cat--raiva'));
+    assert.equal(JSON.parse(localStorage.getItem('user')).pronome, 'elu_delu');
+    assert.ok(requests.some(request => request.method === 'put' && request.url.endsWith('/usuarios/900001')));
   } finally { await screen.close(); }
 });
 test('a provider failure leaves the question available to retry', async () => {

@@ -33,7 +33,8 @@ const migrationOrder = [
     'persist_cronograma_assessment_answers_v14.sql',
   'persist_study_notes_v15.sql',
   'add_ia_chatbot_v17.sql',
-  'field_web_vitals_v18.sql'
+  'field_web_vitals_v18.sql',
+  'user_pronouns_v19.sql'
 ];
 
 function sortMigrations(files) {

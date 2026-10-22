@@ -16,7 +16,7 @@ async function safeRows(sql, params) {
 }
 
 async function exportUserData(userId) {
-  const [profile] = await safeRows('SELECT id_usuario, nome, email, tipo, data_cadastro, ativo, ultimo_login, apelido, foto_url FROM usuarios WHERE id_usuario = ?', [userId])
+  const [profile] = await safeRows('SELECT id_usuario, nome, email, tipo, data_cadastro, ativo, ultimo_login, apelido, foto_url, pronome FROM usuarios WHERE id_usuario = ?', [userId])
   const data = { generated_at: new Date().toISOString(), user: profile || null, records: {} }
   for (const table of directTables) data.records[table] = await safeRows(`SELECT * FROM \`${table}\` WHERE id_usuario = ?`, [userId])
   data.records.perfil_estudo = await safeRows('SELECT * FROM perfil_estudo WHERE id_usuario = ?', [userId])

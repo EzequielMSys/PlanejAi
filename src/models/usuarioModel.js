@@ -39,7 +39,8 @@ async function buscarPorEmail(email) {
       ultimo_login,
       atualizado_em,
       apelido,
-      foto_url
+      foto_url,
+      pronome
     FROM usuarios
     WHERE email = ?`,
     [email]
@@ -84,7 +85,8 @@ async function buscarPorIdCompleto(id) {
       ultimo_login,
       atualizado_em,
       apelido,
-      foto_url
+      foto_url,
+      pronome
     FROM usuarios
     WHERE id_usuario = ?`,
     [id]
@@ -108,7 +110,8 @@ async function buscarPorId(id) {
       ultimo_login,
       atualizado_em,
       apelido,
-      foto_url
+      foto_url,
+      pronome
     FROM usuarios
     WHERE id_usuario = ?`,
     [id]
@@ -183,7 +186,7 @@ async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '' } =
 }
 
 async function atualizarUsuario(id, dados) {
-  const camposPermitidos = ['nome', 'email', 'tipo', 'apelido', 'foto_url']
+  const camposPermitidos = ['nome', 'email', 'tipo', 'apelido', 'foto_url', 'pronome']
   const campos = []
   const valores = []
 
