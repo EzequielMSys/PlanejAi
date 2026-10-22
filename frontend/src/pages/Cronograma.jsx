@@ -564,18 +564,20 @@ async function concluirDia(idDia) {
                                   </p>
                                 </div>
 
-                                {conteudo.link && (
+                                {(
                                   <button
                                     type="button"
                                     onClick={() => navigate('/estudar', { state: { conteudo, dia } })}
-                                    className="text-study-accent text-sm font-bold hover:underline"
+                                    className="schedule-session-cta"
                                   >
-                                    Começar sessão
+                                    <span aria-hidden="true">▶</span>
+                                    <span><strong>{conteudoConcluido ? 'Revisar conteúdo' : 'Começar sessão'}</strong><small>Guia de estudo e apoio da Lumi</small></span>
+                                    <span className="schedule-session-arrow" aria-hidden="true">→</span>
                                   </button>
                                 )}
 
                                 {isGestor && editando === idConteudo ? (
-                                  <div className="flex flex-wrap items-center gap-2">
+                                  <div className="schedule-manage-actions flex flex-wrap items-center gap-2">
                                     <input
                                       value={editLink}
                                       onChange={(e) => setEditLink(e.target.value)}
@@ -601,15 +603,15 @@ async function concluirDia(idDia) {
                                   <button
                                     type="button"
                                     onClick={() => iniciarEdicao(conteudo)}
-                                    className="text-xs font-bold text-study-accent hover:underline"
+                                    className="schedule-manage-button"
                                   >
-                                    Editar link
+                                    <span aria-hidden="true">↗</span> Editar fonte
                                   </button>
                                 ) : null}
 
                                 {isGestor && (
-                                  <label className="text-xs font-bold text-study-accent cursor-pointer">
-                                    {enviandoMaterial === idConteudo ? 'Enviando...' : 'Anexar material'}
+                                  <label className={`schedule-manage-button ${enviandoMaterial === idConteudo ? 'is-loading' : ''}`}>
+                                    <span aria-hidden="true">＋</span> {enviandoMaterial === idConteudo ? 'Enviando…' : 'Material de apoio'}
                                     <input
                                       type="file"
                                       accept="image/*,video/*,.pdf"

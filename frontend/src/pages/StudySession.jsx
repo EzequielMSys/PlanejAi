@@ -25,6 +25,23 @@ function saveStudyHistory(content, minutes, difficulty) {
   } catch { /* histórico local é complementar */ }
 }
 
+function urlParaIncorporar(value) {
+  try {
+    const url = new window.URL(value)
+    const host = url.hostname.replace(/^www\./, '')
+    if (host === 'youtu.be') return `https://www.youtube-nocookie.com/embed/${url.pathname.slice(1)}`
+    if (host.endsWith('youtube.com')) {
+      const videoId = url.searchParams.get('v') || url.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/)?.[1]
+      if (videoId) return `https://www.youtube-nocookie.com/embed/${videoId}`
+    }
+    if (host.endsWith('vimeo.com')) {
+      const videoId = url.pathname.match(/\/(\d+)/)?.[1]
+      if (videoId) return `https://player.vimeo.com/video/${videoId}`
+    }
+    return url.href
+  } catch { return value }
+}
+
 function StudyMaterial({ content }) {
   const source = content?.link || content?.url || ''
   const [url, setUrl] = useState('')
@@ -42,7 +59,7 @@ function StudyMaterial({ content }) {
   if (loadError) return <div className="session-no-material" role="alert"><span>ACESSO INDISPONÍVEL</span><h2>{loadError}</h2></div>
   if (!source) return <StudyGuide material={content} />
   if (!url) return <div className="session-no-material" role="status"><span>CARREGANDO</span><h2>Preparando material…</h2></div>
-  if (externalSource) return <StudyGuide material={content} sourceUrl={url} />
+  if (externalSource) return <div className="session-embedded-source"><iframe className="session-frame" src={urlParaIncorporar(url)} title={`Material: ${content.titulo || 'fonte principal'}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" /><a href={url} target="_blank" rel="noopener noreferrer">Se o material não aparecer, abrir em nova aba ↗</a></div>
   if (video) return <video className="session-frame" src={url} controls />
   if (pdf) return <iframe className="session-frame" src={`${url}#view=FitH&toolbar=1`} title={content.titulo} />
   return <iframe className="session-frame" src={url} title={content.titulo} sandbox="allow-scripts allow-same-origin allow-forms allow-popups" />
@@ -54,7 +71,7 @@ export default function StudySession() {
   const initial = location.state?.conteudo ? { conteudo: location.state.conteudo, dia: location.state.dia } : loadSavedContent()
   const [content] = useState(initial?.conteudo || null)
   const [day] = useState(initial?.dia || null)
-  const [tab, setTab] = useState('material')
+  const [tab, setTab] = useState('guide')
   const [notes, setNotes] = useState('')
   const [saved, setSaved] = useState(null)
   const [notesReady, setNotesReady] = useState(false)
@@ -134,7 +151,6 @@ export default function StudySession() {
   if (!content) return <main className="pj-page"><div className="session-missing pj-panel"><span className="pj-eyebrow">Sala de estudo</span><h1>Nenhum conteúdo foi escolhido.</h1><p>Abra o cronograma e escolha “Começar sessão” em um dos materiais.</p><button className="pj-button pj-button--primary" onClick={() => navigate('/cronograma')}>Ir ao cronograma</button></div></main>
 
   const materialUrl = content.link || content.url || ''
-  const mostrarAbaRoteiro = Boolean(materialUrl) && !isExternalStudySource(materialUrl)
   const estudoAtual = { titulo: content.titulo || 'Este conteúdo', disciplina: content.disciplina || content.area || '', data: day?.data_estudo ? String(day.data_estudo).slice(0, 10) : '' }
 
   return <main className="session-page pj-page">
@@ -147,9 +163,13 @@ export default function StudySession() {
 
       <section className="session-layout">
         <div className="session-workspace pj-panel">
-          <nav className="session-tabs" aria-label="Ferramentas da sessão"><button className={tab === 'material' ? 'is-active' : ''} onClick={() => setTab('material')}>Material</button>{mostrarAbaRoteiro && <button className={tab === 'guide' ? 'is-active' : ''} onClick={() => setTab('guide')}>Roteiro de estudo</button>}<button className={tab === 'notes' ? 'is-active' : ''} onClick={() => setTab('notes')}>Anotações <span>{saved ? 'salvas' : ''}</span></button></nav>
+          <nav className="session-tabs" aria-label="Ferramentas da sessão"><button className={tab === 'guide' ? 'is-active' : ''} onClick={() => setTab('guide')}>Guia de estudo</button><button className={tab === 'material' ? 'is-active' : ''} onClick={() => setTab('material')}>{materialUrl ? 'Fonte principal' : 'Material'}</button><button className={tab === 'notes' ? 'is-active' : ''} onClick={() => setTab('notes')}>Anotações <span>{saved ? 'salvas' : ''}</span></button></nav>
           <div className="session-canvas">
-            {tab === 'material' ? <StudyMaterial content={content} /> : tab === 'guide' ? <div className="session-guide-wrap"><StudyGuide material={content} /></div> : <div className="session-notes"><header><div><span className="pj-eyebrow">Caderno da sessão</span><h2>Escreva para entender.</h2><DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? ' ' : ''}${texto}`)}/></div><small>{saved ? `${notesStoredRemotely ? 'Sincronizado' : 'Salvo neste aparelho'} às ${saved.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Salvamento automático'}</small></header><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={'Ideia principal:\n\nO que ainda não entendi:\n\nComo eu explicaria isso para alguém:'} /></div>}
+            {tab === 'material' ? <StudyMaterial content={content} /> : tab === 'guide' ? <div className="session-guide-wrap"><StudyGuide material={content} sourceUrl={isExternalStudySource(materialUrl) ? materialUrl : undefined} /></div> : <div className="session-notes">
+              <header className="session-notes-header"><div><span className="pj-eyebrow">CADERNO DA SESSÃO</span><h2>Organize suas ideias.</h2><p>Anote o que entendeu e o que quer perguntar à Lumi.</p></div><div className="session-notes-tools"><span className="session-notes-save" role="status"><i />{saved ? `${notesStoredRemotely ? 'Sincronizado' : 'Salvo neste aparelho'} · ${saved.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Salvamento automático'}</span><DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? '\n' : ''}${texto}`)}/></div></header>
+              <div className="session-note-prompts"><span>ESTRUTURE SUA REVISÃO</span><div><button type="button" onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Ideia principal\n`)}>+ Ideia principal</button><button type="button" onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Minha dúvida\n`)}>+ Minha dúvida</button><button type="button" onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Exemplo próprio\n`)}>+ Exemplo próprio</button></div></div>
+              <label className="session-notes-editor"><span className="sr-only">Anotações da sessão</span><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Escreva com suas palavras…\n\nO que ficou claro? O que ainda precisa de outra explicação?" /><small>{notes.length} caracteres</small></label>
+            </div>}
           </div>
         </div>
 

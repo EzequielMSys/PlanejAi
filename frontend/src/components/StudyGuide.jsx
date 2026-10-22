@@ -80,6 +80,22 @@ export default function StudyGuide({ material, sourceUrl, className = '' }) {
   const titulo = material?.titulo || material?.title || 'Este conteúdo'
   const disciplina = material?.disciplina || material?.area || 'sua disciplina'
   const plano = useMemo(() => planoPorDisciplina(disciplina, titulo), [disciplina, titulo])
+  const tema = normalizarTitulo(titulo)
+  const apoioPorTema = [
+    ['interpretacao de texto', 'Todo texto constrói um sentido por meio de escolhas: quem fala, para quem, em qual situação e com que intenção. Ao responder, conecte uma pista concreta — como um conectivo, uma imagem ou uma informação do contexto — à conclusão que você tirou. Uma alternativa pode repetir palavras do texto e ainda assim distorcer a ideia; por isso, sempre volte ao trecho e confira se sua leitura é sustentada por ele.'],
+    ['funcoes do 1', 'Uma função do primeiro grau pode representar uma situação em que existe um valor inicial e uma variação constante. Em f(x) = ax + b, o número b mostra o valor quando x é zero, enquanto a indica quanto o resultado muda a cada unidade acrescentada. Em problemas, identifique primeiro o que varia e o que já existia antes da variação; essa distinção ajuda a montar a expressão e a interpretar o gráfico.'],
+    ['ecologia', 'Os seres vivos dependem uns dos outros e das condições do ambiente. Numa cadeia alimentar, a energia passa dos produtores aos consumidores e parte dela se perde em cada transferência; já a matéria retorna ao ambiente e pode ser reutilizada. Por isso, uma alteração num nível trófico pode afetar vários outros: acompanhe as relações antes de concluir o efeito de uma mudança na população.'],
+    ['estequiometria', 'Uma equação química balanceada conserva a quantidade de átomos de cada elemento. Seus coeficientes mostram a proporção entre partículas e mols das substâncias, funcionando como uma receita de quantidades: primeiro balanceie, depois use a razão entre coeficientes e só então converta para massa ou volume, se necessário. Alterar os índices da fórmula mudaria a própria substância, então o ajuste é feito nos coeficientes.'],
+    ['cinematica', 'A cinemática descreve como um corpo se move usando posição, deslocamento e tempo, sem investigar a força que causou o movimento. A velocidade média relaciona deslocamento e intervalo de tempo; distância percorrida, por sua vez, soma todo o caminho. Se o objeto retorna ao ponto de partida, percorreu uma distância, mas seu deslocamento total é zero — uma diferença que muda o cálculo e a interpretação.'],
+    ['repertorio sociocultural', 'Uma referência cultural fortalece a redação quando ajuda a explicar o problema e sustenta a tese. Apresente a ideia com precisão, mostre o que ela revela sobre o tema e conecte essa análise ao argumento do parágrafo. Uma citação ou nome famoso, sozinho, não prova nada; o que conta é a relação explicada entre a referência e o ponto defendido.'],
+    ['modernismo brasileiro', 'O Modernismo brasileiro propôs experimentar formas e aproximar a literatura da vida e da linguagem do país. Oralidade, humor e ruptura com convenções podem aparecer como escolhas conscientes para questionar modelos anteriores e discutir identidade nacional. Ao analisar um texto, observe não apenas o tema, mas também como a linguagem e a forma produzem esse efeito.']
+  ].find(([chave]) => tema.includes(chave))?.[1]
+  const apoioPorArea = /(matematica|fisica|quimica)/.test(normalizarTitulo(disciplina))
+    ? 'Em questões de exatas, o resultado fica mais confiável quando cada etapa do raciocínio pode ser conferida. Separe os dados da pergunta, represente a relação entre eles, escolha a regra adequada e mantenha as unidades durante o cálculo. No fim, estime se a resposta faz sentido: essa checagem ajuda a localizar erros de sinal, conversão ou interpretação.'
+    : /(historia|geografia|filosofia|sociologia)/.test(normalizarTitulo(disciplina))
+      ? 'Nas Ciências Humanas, um conceito ganha sentido quando situado em seu contexto. Observe tempo, espaço, agentes envolvidos e interesses; depois relacione causas e consequências sem reduzir processos complexos a uma única explicação. Comparar perspectivas ajuda a perceber como diferentes grupos interpretam o mesmo fenômeno.'
+      : 'Para compreender este tema, transforme a leitura em uma explicação sua: identifique a ideia central, observe como ela aparece num exemplo e conecte cada conclusão a uma evidência. Se uma parte não fizer sentido, marque o ponto exato e volte a ele antes de seguir. Assim, a dúvida vira uma pergunta clara para a Lumi e o estudo fica mais direcionado.'
+  const textoApoio = plano.apoio || apoioPorTema || apoioPorArea
   const questoes = useMemo(() => embaralharAlternativas(plano.questoes), [plano])
   const [respostas, setRespostas] = useState({})
   const [resultado, setResultado] = useState(null)
@@ -96,13 +112,14 @@ export default function StudyGuide({ material, sourceUrl, className = '' }) {
   return <article className={`study-guide ${className}`}>
     <header><span>LEITURA GUIADA</span><h2>{titulo}</h2><p>{disciplina} · primeiro entenda o método, depois confirme os detalhes na fonte original.</p></header>
     <section><h3>O que você precisa aprender</h3><p>{plano.conceito}</p></section>
+    <section className="study-guide-reading"><span>TEXTO DE APOIO</span><h3>Entenda a ideia antes de praticar</h3><p>{textoApoio}</p><small>Leia uma vez para compreender e volte ao texto quando uma questão trouxer dúvida.</small></section>
     <section><h3>Roteiro de estudo</h3><ol>{plano.passos.map((passo) => <li key={passo}>{passo}</li>)}</ol></section>
     {plano.armadilha && <section><h3>Armadilha comum</h3><p>{plano.armadilha}</p>{plano.pratica && <p><b>Prática ativa:</b> {plano.pratica}</p>}</section>}
     <section className="study-guide-quiz" aria-labelledby="quiz-title">
       <div><span>VALIDAÇÃO DE LEITURA</span><h3 id="quiz-title">Teste rápido: responda sem consultar</h3><p>São três perguntas curtas sobre o método apresentado acima.</p></div>
       {questoes.map(([pergunta, opcoes, correta, explicacao], indice) => <fieldset key={pergunta} disabled={resultado !== null}>
         <legend>{indice + 1}. {pergunta}</legend>
-        <div className="study-guide-options">{opcoes.map((opcao, opcaoIndice) => <button type="button" key={opcao} className={respostas[indice] === opcaoIndice ? 'is-selected' : ''} onClick={() => setRespostas((atuais) => ({ ...atuais, [indice]: opcaoIndice }))}><b>{String.fromCharCode(65 + opcaoIndice)}</b>{opcao}</button>)}</div>
+        <div className="study-guide-options">{opcoes.map((opcao, opcaoIndice) => <button type="button" key={opcao} aria-pressed={respostas[indice] === opcaoIndice} className={respostas[indice] === opcaoIndice ? 'is-selected' : ''} onClick={() => setRespostas((atuais) => ({ ...atuais, [indice]: opcaoIndice }))}><b>{String.fromCharCode(65 + opcaoIndice)}</b><span>{opcao}</span></button>)}</div>
         {resultado !== null && <p className={respostas[indice] === correta ? 'is-correct' : 'is-wrong'}>{respostas[indice] === correta ? '✓ Correto. ' : `Resposta correta: ${String.fromCharCode(65 + correta)}. `}{explicacao}</p>}
       </fieldset>)}
       {resultado === null ? <button type="button" className="study-guide-check" disabled={!completas} onClick={corrigir}>{completas ? 'Corrigir respostas' : 'Responda as 3 questões para corrigir'}</button> : <div className="study-guide-result" role="status"><b>{resultado}/3 respostas corretas</b><span>{resultado === 3 ? 'Ótimo: você entendeu o roteiro de estudo.' : 'Revise os comentários e tente aplicar o método na fonte.'}</span><button type="button" onClick={() => { setRespostas({}); setResultado(null) }}>Refazer teste</button></div>}
