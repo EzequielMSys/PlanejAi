@@ -1,19 +1,20 @@
 const router = require('express').Router();
 const controller = require('../controllers/aprendizagemController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
+const { idempotency } = require('../middlewares/idempotencyMiddleware');
 
 router.use(authMiddleware);
 router.get('/resumo', controller.resumo);
 router.get('/evolucao', controller.evolucao);
 router.get('/jornada', controller.jornada);
 router.get('/simulado', controller.simulado);
-router.post('/questoes/:idQuestao/responder', controller.responder);
+router.post('/questoes/:idQuestao/responder', idempotency('RESPONDER_QUESTAO'), controller.responder);
 router.get('/erros', controller.erros);
 router.patch('/erros/:idErro', controller.atualizarErro);
 router.get('/revisoes', controller.revisoes);
 router.post('/revisoes/:idConteudo', controller.adicionarRevisao);
 router.post('/revisoes/:idConteudo/avaliar', controller.avaliarRevisao);
-router.post('/sessoes', controller.registrarSessao);
+router.post('/sessoes', idempotency('REGISTRAR_SESSAO'), controller.registrarSessao);
 router.get('/meta-semanal', controller.metaSemanal);
 router.put('/meta-semanal', controller.atualizarMetaSemanal);
 router.get('/conteudos/:idConteudo/anotacao', controller.obterAnotacao);

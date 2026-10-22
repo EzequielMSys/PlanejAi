@@ -105,16 +105,18 @@ test('nenhuma regra é declarada em duplicado', () => {
   assert.equal(repetidos.length, 0, `repetidos: ${repetidos.join(', ')}`)
 })
 
-test('toda classe pn- usada na Landing existe no CSS', () => {
+test('as classes da landing redesenhada possuem estilos compartilhados ou locais', () => {
   // Se uma classe falta no CSS, a seção renderiza como texto puro empilhado.
   const landing = fs.readFileSync(path.join(RAIZ, 'frontend', 'src', 'pages', 'Landing.jsx'), 'utf8')
   const usadas = [...landing.matchAll(/className="([^"]+)"/g)]
     .flatMap((m) => m[1].split(/\s+/))
-    .filter((c) => c.startsWith('pn-'))
+    .filter((c) => c.startsWith('sd-'))
 
+  const landingCss = fs.readFileSync(path.join(RAIZ, 'frontend', 'src', 'pages', 'Landing.css'), 'utf8')
+  const sharedCss = fs.readFileSync(path.join(RAIZ, 'frontend', 'src', 'StudentDesign.css'), 'utf8')
   assert.ok(usadas.length > 15, `só encontrei ${usadas.length} classes`)
   for (const classe of usadas) {
-    assert.ok(css.includes(`.${classe}`), `.${classe} é usada na Landing mas não existe no CSS`)
+    assert.ok((landingCss + sharedCss).includes(`.${classe}`), `.${classe} sem definição de estilo`)
   }
 })
 

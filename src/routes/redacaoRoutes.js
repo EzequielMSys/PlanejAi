@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const redacaoController = require('../controllers/redacaoController');
 const { authMiddleware, isGestorPedagogico, isAdminOrDono } = require('../middlewares/authMiddleware');
+const { idempotency } = require('../middlewares/idempotencyMiddleware');
 
-router.post('/', authMiddleware, redacaoController.enviarRedacao);
+router.post('/', authMiddleware, idempotency('ENVIAR_REDACAO'), redacaoController.enviarRedacao);
 router.get('/', authMiddleware, redacaoController.listarRedacoes);
 router.get('/portfolio', authMiddleware, redacaoController.portfolio);
 router.get('/todas', authMiddleware, isGestorPedagogico, redacaoController.listarTodasRedacoes);

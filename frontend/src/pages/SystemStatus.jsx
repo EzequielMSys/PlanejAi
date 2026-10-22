@@ -20,7 +20,7 @@ export default function SystemStatus() {
 
   useEffect(() => { check() }, [check])
   const online = result.state === 'online'
-  return <main className="pj-page"><div className="pj-wrap"><header className="pj-panel" style={{ padding: 'clamp(1.5rem, 4vw, 3rem)' }}><span className="pj-eyebrow">PlanejAI / Diagnóstico</span><h1 style={{ marginTop: '.5rem', fontSize: 'clamp(2rem,5vw,4rem)', fontWeight: 950, letterSpacing: '-.055em' }}>Conexão sem mistério.</h1><p style={{ marginTop: '.75rem', maxWidth: '42rem', color: 'var(--pj-muted)' }}>Esta página separa problemas de internet, frontend, API e banco de dados — sem esconder a causa em uma mensagem genérica.</p></header>
+  return <main className="pj-page"><div className="pj-wrap"><header className="pj-panel student-page-heading" style={{ padding: 'clamp(1.5rem, 4vw, 3rem)' }}><span className="pj-eyebrow">PlanejAI / Diagnóstico</span><h1 style={{ marginTop: '.5rem', fontSize: 'clamp(2rem,5vw,4rem)', fontWeight: 950, letterSpacing: '-.055em' }}>Conexão sem mistério.</h1><p style={{ marginTop: '.75rem', maxWidth: '42rem', color: 'var(--pj-muted)' }}>Esta página separa problemas de internet, frontend, API e banco de dados — sem esconder a causa em uma mensagem genérica.</p></header>
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '.8rem', marginTop: '.8rem' }}>
       <StatusCard label="Navegador" ok={window.navigator.onLine} value={window.navigator.onLine ? 'Internet detectada' : 'Sem conexão'} detail="Sinal informado pelo dispositivo" />
       <StatusCard label="Backend" ok={online} value={result.state === 'checking' ? 'Verificando…' : online ? 'Respondendo' : 'Indisponível'} detail={API_ORIGIN || 'Proxy local / mesma origem'} />

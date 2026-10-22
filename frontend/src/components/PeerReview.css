@@ -1,0 +1,18 @@
+.collab-studio { margin-block: 1.5rem; border: 1px solid var(--pn-borda); border-radius: 1rem; background: var(--pn-superficie); padding: clamp(1.25rem, 3vw, 2rem); color: var(--pn-texto); }
+.collab-studio > header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.25rem; }
+.collab-studio > header span, .collab-text small { color: var(--pn-primaria); font-size: .67rem; font-weight: 700; letter-spacing: .1em; }
+.collab-studio h2 { margin-top: .55rem; font-size: clamp(1.4rem, 2.5vw, 1.9rem); font-weight: 700; line-height: 1.25; letter-spacing: -.035em; }
+.collab-studio p { max-width: var(--study-width); margin-top: .7rem; color: var(--pn-texto-suave); line-height: var(--a11y-line-height, 1.75); }
+.collab-studio button { min-height: 2.7rem; border: 1px solid var(--pn-primaria-borda); border-radius: .7rem; padding: .65rem 1rem; color: #fff; background: var(--pn-primaria-forte); font-size: .85rem; font-weight: 650; }
+.collab-empty { display: grid; justify-items: center; margin-top: 1.5rem; border: 1px dashed var(--pn-borda); border-radius: .8rem; padding: 2rem 1rem; text-align: center; }
+.collab-empty i { color: var(--pn-primaria); font-size: 1.75rem; font-style: normal; }
+.collab-empty b { margin-top: .5rem; font-size: 1.1rem; }
+.collab-review { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--pn-borda); }
+.collab-text { min-width: 0; border-radius: .8rem; padding: 1.25rem; background: var(--pn-superficie-alt); }
+.collab-text h3 { margin-top: .65rem; font-size: 1.2rem; font-weight: 650; }
+.collab-text p { white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--study-font); }
+.collab-form, .collab-form label { display: grid; gap: .6rem; }
+.collab-form { gap: 1rem; }.collab-form label { font-size: .85rem; font-weight: 600; }
+.collab-form :is(select, textarea) { width: 100%; padding: .8rem; font-weight: 400; }.collab-form textarea { min-height: 7rem; resize: vertical; }
+.collab-rubric { display: grid; gap: .8rem; }.collab-rubric label > span { display: flex; justify-content: space-between; text-transform: capitalize; }
+@media(max-width: 800px) { .collab-review { grid-template-columns: 1fr; } }

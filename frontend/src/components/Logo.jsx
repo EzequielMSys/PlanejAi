@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { useId } from 'react'
 
 /**
  * Marca do PlanejAI — "Atlas".
@@ -13,16 +13,14 @@ import { motion } from 'framer-motion'
  * com o mesmo id fariam o segundo reaproveitar o gradiente do primeiro.
  */
 export default function Logo({ className = 'w-9 h-9', title = 'PlanejAI', animado = true }) {
-  const id = `pn-atlas-${title.replace(/\W+/g, '')}-${Math.random().toString(36).slice(2, 7)}`
+  const id = `pn-atlas-${useId().replace(/:/g, '')}`
 
   return (
-    <motion.svg
+    <svg
       viewBox="0 0 48 48"
-      className={className}
+      className={`${className}${animado ? ' pn-logo-interactive' : ''}`}
       role="img"
       aria-label={title}
-      whileHover={animado ? { rotate: -6, scale: 1.06 } : undefined}
-      transition={{ type: 'spring', stiffness: 300, damping: 16 }}
     >
       <defs>
         <linearGradient id={id} x1="8" y1="6" x2="40" y2="42" gradientUnits="userSpaceOnUse">
@@ -62,6 +60,6 @@ export default function Logo({ className = 'w-9 h-9', title = 'PlanejAI', animad
 
       {/* Origem: onde o estudo começa */}
       <circle cx="13" cy="33" r="2.4" fill="var(--pn-superficie)" fillOpacity=".9" />
-    </motion.svg>
+    </svg>
   )
 }

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 export function PageHeader({ eyebrow, title, description, actions, icon, className = '' }) {
   return (
-    <header className={`ui-page-header ${className}`.trim()}>
+    <header className={`ui-page-header student-page-heading ${className}`.trim()}>
       <div className="ui-page-header-copy">
         {eyebrow && <span className="ui-eyebrow">{eyebrow}</span>}
         <h1>{title}</h1>

@@ -12,7 +12,7 @@
 .schedule-page .workspace-hero {
   border: 1px solid color-mix(in srgb, var(--ui-purple) 36%, transparent);
   border-radius: 1.5rem;
-  background: linear-gradient(120deg, #4e2c92, #7444c8 58%, #9b71e6) !important;
+  background: linear-gradient(120deg, var(--pn-primaria-forte), var(--pn-primaria-forte) 58%, var(--pn-primaria-forte)) !important;
   box-shadow: 0 1.25rem 3.25rem color-mix(in srgb, var(--ui-purple-strong) 23%, transparent) !important;
 }
 

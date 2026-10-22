@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import Logo from './Logo'
 import ThemeToggle from './ThemeToggle'
 
@@ -18,7 +17,6 @@ import ThemeToggle from './ThemeToggle'
 export default function AuthLayout({ title, subtitle, children, rodape, destaque }) {
   return (
     <div className="pn-auth">
-      <a href="#conteudo-principal" className="pn-saltar">Pular para o conteúdo</a>
       <div className="pn-auth-grade" aria-hidden="true" />
 
       <div className="pn-auth-topo">
@@ -27,28 +25,22 @@ export default function AuthLayout({ title, subtitle, children, rodape, destaque
       </div>
 
       <main id="conteudo-principal" tabIndex={-1} className="pn-auth-corpo">
-        <motion.section
+        <section
           className="pn-auth-painel"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
         >
           <h1 className="pn-secao">{title}</h1>
           {subtitle && <p className="pn-corpo pn-auth-sub">{subtitle}</p>}
           {children}
           {rodape && <div className="pn-auth-rodape">{rodape}</div>}
-        </motion.section>
+        </section>
 
         {destaque && (
-          <motion.aside
+          <aside
             className="pn-auth-destaque"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
             aria-hidden="true"
           >
             {destaque}
-          </motion.aside>
+          </aside>
         )}
       </main>
     </div>

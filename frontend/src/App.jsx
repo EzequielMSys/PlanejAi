@@ -1,9 +1,10 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { AuthProvider } from './context/AuthContext'
 
 import ProtectedRoute from './routes/ProtectedRoute'
-import Layout from './layouts/Layout'
+import RouteLoading from './components/RouteLoading'
+const Layout = lazy(() => import('./layouts/Layout'))
 
 const Landing = lazy(() => import('./pages/Landing'))
 const Login = lazy(() => import('./pages/Login'))
@@ -35,20 +36,13 @@ const MinhasTurmas = lazy(() => import('./pages/MinhasTurmas'))
 const MinhasTurmasDetalhe = lazy(() => import('./pages/MinhasTurmasDetalhe'))
 const Provas = lazy(() => import('./pages/Provas'))
 const Chat = lazy(() => import('./pages/Chat'))
+const Preferencias = lazy(() => import('./pages/Preferencias'))
 
 function App() {
   return (
     <AuthProvider>
       <Suspense
-        fallback={
-          <div
-            role="status"
-            aria-live="polite"
-            className="grid min-h-screen place-items-center font-bold"
-          >
-            Carregando PlanejAI…
-          </div>
-        }
+        fallback={<RouteLoading />}
       >
       <Routes>
         <Route path="/" element={<Landing />} />
@@ -69,7 +63,9 @@ function App() {
             <Route path="/aprendizagem" element={<Aprendizagem />} />
             <Route path="/planejamento-inteligente" element={<PlanejamentoInteligente />} />
                         <Route path="/provas" element={<Provas />} />
-            <Route path="/chat" element={<Chat />} />
+            <Route path="/lumi" element={<Chat />} />
+            <Route path="/chat" element={<Navigate to="/lumi" replace />} />
+            <Route path="/preferencias" element={<Preferencias />} />
             <Route path="/minha-jornada" element={<MinhaJornada />} />
             <Route path="/redacoes" element={<Redacoes />} />
             <Route path="/perfil" element={<Perfil />} />

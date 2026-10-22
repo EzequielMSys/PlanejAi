@@ -1,10 +1,13 @@
 import { Outlet } from 'react-router-dom'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useState, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import ConnectionStatus from '../components/ConnectionStatus'
 import Deferred from '../components/Deferred'
+import RouteLoading from '../components/RouteLoading'
+import '../components/LearningSurfaces.css'
+import '../components/WorkspaceUtilities.css'
 
 // Widgets secundários: não participam da primeira pintura. O lazy() tira o
 // código deles do bundle de entrada (index.js) e o Deferred garante que os
@@ -29,13 +32,15 @@ function Layout() {
   const { isAuthenticated } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  const closeSidebar = useCallback(() => setSidebarOpen(false), [])
+
   return (
-    <div className="app-shell min-h-screen">
+    <div className={`app-shell sd-workspace min-h-screen${sidebarOpen ? ' has-open-menu' : ''}`}>
       {isAuthenticated && (
         <>
           <Sidebar
             isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
+            onClose={closeSidebar}
           />
         </>
       )}
@@ -50,8 +55,8 @@ function Layout() {
 
         <main id="conteudo-principal" className="app-main" tabIndex="-1">
           <ConnectionStatus />
-          <div className="app-route-outlet">
-            <Outlet />
+          <div className="app-route-outlet sd-route">
+            <Suspense fallback={<RouteLoading embedded />}><Outlet /></Suspense>
           </div>
         </main>
         {isAuthenticated && (

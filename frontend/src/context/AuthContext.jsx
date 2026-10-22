@@ -206,6 +206,17 @@ export const AuthProvider = ({ children }) => {
     navigate("/");
   };
 
+  const changePassword = async (senhaAtual, novaSenha, confirmarSenha) => {
+    const response = await authService.alterarSenha(senhaAtual, novaSenha, confirmarSenha);
+    localStorage.setItem("token", response.token);
+    localStorage.setItem("user", JSON.stringify(response.usuario));
+    dispatch({ type: "LOGIN_SUCCESS", payload: {
+      token: response.token, user: response.usuario,
+      primeiro_acesso: state.primeiroAcesso, perfil_completo: state.perfilCompleto,
+    } });
+    return response;
+  };
+
   useEffect(() => {
     const handleExpiredSession = () => {
       clearOfflineData().catch(() => {});
@@ -256,6 +267,7 @@ export const AuthProvider = ({ children }) => {
 
     login,
     logout,
+    changePassword,
 
     updateUser,
     updatePerfilCompleto,

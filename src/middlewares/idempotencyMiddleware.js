@@ -27,10 +27,11 @@ function idempotency(operation, ttlHours = 24) {
         );
         if (existing?.status === "CONCLUIDA") {
           res.setHeader("Idempotency-Replayed", "true");
-          return res.status(existing.codigo_http || 200).json(existing.resposta);
+          const body = typeof existing.resposta === 'string' ? JSON.parse(existing.resposta) : existing.resposta;
+          return res.status(existing.codigo_http || 200).json(body);
         }
         if (existing?.status === "PROCESSANDO") {
-          return res.status(409).json({ error: "Esta operação já está em processamento." });
+          return res.status(409).json({ error: "Esta operação já está em processamento.", code: "IDEMPOTENCY_IN_PROGRESS" });
         }
         await pool.execute(
           "DELETE FROM idempotencia_api WHERE chave = ? AND id_usuario = ? AND operacao = ?",

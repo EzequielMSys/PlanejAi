@@ -1,235 +1,59 @@
-import { NavLink, useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useRef } from 'react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { navigationFor } from '../config/navigation'
+import Icon from './Icons'
 import Logo from './Logo'
 import Avatar from './Avatar'
-
-function LayoutIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-    </svg>
-  )
-}
-
-function DashboardIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-    </svg>
-  )
-}
-
-function CalendarIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-  )
-}
-
-function UserIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  )
-}
-
-function RedacaoIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-    </svg>
-  )
-}
-
-function UsersIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m8-4a4 4 0 100-8 4 4 0 000 8zM9 10a4 4 0 100-8 4 4 0 000 8z" />
-    </svg>
-  )
-}
-
-function CrownIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 16l-2-9 5 4 4-7 4 7 5-4-2 9H5zm0 0h14v3H5v-3z" />
-    </svg>
-  )
-}
-
-function CloseIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  )
-}
-
-function BellIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-    </svg>
-  )
-}
-
-function ExamIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12h14V7a2 2 0 00-2-2h-2M9 5a3 3 0 006 0M9 5a3 3 0 016 0M8 11l2 2 5-5M8 17h8" />
-    </svg>
-  )
-}
-
-function ChatIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={1.5}
-        d="M8 12h.01M12 12h.01M16 12h.01M9.05 21a7.5 7.5 0 1 1-5.06-12.75 5.5 5.5 0 0 1 8.3-.9L15.5 10a6 6 0 1 0-6.45 9.9"
-      />
-    </svg>
-  )
-}
+import LumiMark from './LumiMark'
 
 export default function Sidebar({ isOpen, onClose }) {
-  const navigate = useNavigate()
-  const { isAdmin, isDono, isGestor, user } = useAuth()
-
-  const navItems = [
-    { path: '/inicio', label: 'Visão geral', icon: LayoutIcon },
-    ...(user?.tipo === 'aluno' ? [{ path: '/minha-jornada', label: 'Minha jornada', icon: DashboardIcon }] : []),
-    { path: '/cronograma', label: 'Cronograma', icon: CalendarIcon },
-    { path: '/aprendizagem', label: 'Aprendizagem', icon: DashboardIcon },
-    { path: '/provas', label: 'Provas', icon: ExamIcon },
-    { path: '/chat', label: 'Assistente de IA', icon: ChatIcon },
-    { path: '/planejamento-inteligente', label: 'Planejamento', icon: CalendarIcon },
-    { path: '/redacoes', label: 'Redações', icon: RedacaoIcon },
-    ...(isGestor ? [{ path: '/turmas', label: 'Turmas', icon: UsersIcon }] : []),
-    ...(isGestor ? [{ path: '/atividades', label: 'Atividades', icon: RedacaoIcon }] : []),
-    ...(user?.tipo === 'aluno' ? [{ path: '/minhas-atividades', label: 'Minhas atividades', icon: RedacaoIcon }] : []),
-    // "Minhas turmas" aparece para todo aluno. Só quem gerencia vê /turmas,
-    // que é a tela de criação e acompanhamento de sala.
-    ...(user?.tipo === 'aluno' ? [{ path: '/minhas-turmas', label: 'Minhas turmas', icon: UsersIcon }] : []),
-    ...(user?.tipo === 'aluno' ? [{ path: '/avisos', label: 'Avisos', icon: BellIcon }] : []),
-    { path: '/perfil', label: 'Perfil', icon: UserIcon }
-  ]
-
-  const adminItems = [
-    ...(isAdmin || isDono || user?.tipo === 'docente'
-      ? [{ path: '/dashboard-gestor', label: 'Painel Gestor', icon: DashboardIcon }]
-      : []),
-    ...(isAdmin
-      ? [{ path: '/usuarios', label: 'Painel Admin', icon: UsersIcon }]
-      : []),
-    ...(isDono
-      ? [{ path: '/dono/usuarios', label: 'Painel Dono', icon: CrownIcon }]
-      : [])
-  ]
-
-  if (['dono', 'admin', 'adm', 'docente'].includes(user?.tipo)) {
-    adminItems.unshift({ path: '/materiais', label: 'Materiais', icon: RedacaoIcon })
-  }
-
-  const handleNavigateHome = () => {
-    navigate('/inicio')
-    onClose()
-  }
-
-  return (
-    <>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
-          />
-        )}
-      </AnimatePresence>
-
-      <motion.aside
-        initial={false}
-        animate={{
-          x: isOpen ? 0 : '-100%',
-          opacity: isOpen ? 1 : 0
-        }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="app-sidebar"
-      >
-        <div className="sidebar-brand-row">
-          <button
-            type="button"
-            className="sidebar-brand-button"
-            onClick={handleNavigateHome}
-          >
-            <motion.div
-              whileHover={{ rotate: -6, scale: 1.04 }}
-              className="sidebar-logo"
-            >
-              <Logo className="h-10 w-10" />
-            </motion.div>
-            <span className="sidebar-brand-copy"><strong>PlanejAI</strong><small>aprenda com direção</small></span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="sidebar-close"
-          >
-            <CloseIcon className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="sidebar-context"><span><i /> Espaço ativo</span><strong>{user?.tipo === 'aluno' ? 'Minha aprendizagem' : 'Central pedagógica'}</strong></div>
-
-        <nav className="sidebar-nav">
-          <p className="sidebar-section">Aprender</p>
-
-          {navItems.map((item) => (
-            <SidebarLink key={item.path} item={item} onClose={onClose} />
-          ))}
-
-          {adminItems.length > 0 && (
-            <>
-              <p className="sidebar-section sidebar-section--spaced">Gerenciar</p>
-
-              {adminItems.map((item) => (
-                <SidebarLink key={item.path} item={item} onClose={onClose} />
-              ))}
-            </>
-          )}
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="sidebar-account">
-            <Avatar src={user?.foto_url} nome={user?.apelido || user?.nome} tamanho={38} className="sidebar-avatar" />
-            <span><strong>{user?.apelido || user?.nome || 'Usuário'}</strong><small>{user?.tipo || 'aluno'} · online</small></span>
-            <i aria-hidden="true">•••</i>
-          </div>
-        </div>
-      </motion.aside>
-    </>
-  )
-}
-
-function SidebarLink({ item, onClose }) {
-  return (
-    <NavLink
-      to={item.path}
-      onClick={onClose}
-      className={({ isActive }) => `sidebar-link${isActive ? ' is-active' : ''}`}
-    >
-      <span className="sidebar-link-icon"><item.icon className="h-5 w-5" /></span>
-      <span>{item.label}</span>
-      <i aria-hidden="true">›</i>
-    </NavLink>
-  )
+  const { user } = useAuth()
+  const sidebarRef = useRef(null)
+  const { pathname } = useLocation()
+  const pages = navigationFor(user?.tipo || 'aluno')
+  const groups = [...new Set(pages.filter(page => page.path !== '/lumi' && page.group !== 'Preferências').map(page => page.group))]
+  useEffect(() => {
+    if (!isOpen) return
+    const previousFocus = document.activeElement
+    const previousOverflow = document.body.style.overflow
+    const mobile = window.matchMedia('(max-width: 1023px)').matches
+    if (!mobile) { onClose(); return }
+    const sidebar = sidebarRef.current
+    const workspace = sidebar?.parentElement?.querySelector('.app-workspace')
+    const previousInert = workspace?.inert
+    if (workspace) workspace.inert = true
+    document.body.style.overflow = 'hidden'
+    const focusable = () => [...sidebar.querySelectorAll('a[href], button:not([disabled])')]
+    focusable()[0]?.focus()
+    const close = event => {
+      if (event.key === 'Escape') { event.preventDefault(); onClose() }
+      if (event.key === 'Tab') {
+        const items = focusable(), first = items[0], last = items[items.length - 1]
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+      }
+    }
+    const resized = () => { if (!window.matchMedia('(max-width: 1023px)').matches) onClose() }
+    window.addEventListener('keydown', close)
+    window.addEventListener('resize', resized)
+    return () => {
+      window.removeEventListener('keydown', close)
+      window.removeEventListener('resize', resized)
+      document.body.style.overflow = previousOverflow
+      if (workspace) workspace.inert = previousInert || false
+      if (previousFocus?.isConnected) previousFocus.focus()
+    }
+  }, [isOpen, onClose])
+  return <>
+    {isOpen && <button className="sd-sidebar-shade" type="button" onClick={onClose} aria-label="Fechar navegação" />}
+    <aside ref={sidebarRef} id="app-sidebar" className={`app-sidebar sd-sidebar ${isOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
+      <div className="sd-brand-row"><Link to="/inicio" className="sd-brand" onClick={onClose}><Logo className="sd-brand-mark" animado={false} /><span>Planej<span>AI</span><small>espaço para aprender</small></span></Link><button className="sd-sidebar-close" type="button" onClick={onClose} aria-label="Fechar menu lateral"><Icon name="close" /></button></div>
+      <nav className="sd-navigation" aria-label="Páginas do PlanejAI">
+        {groups.map(group => <section key={group}><h2>{group}</h2>{pages.filter(page => page.group === group).map(page => <NavLink key={page.path} to={page.path} onClick={onClose} aria-current={page.path === '/inicio' && pathname === '/dashboard' ? 'page' : undefined} className={({ isActive }) => `sd-nav-link${isActive || page.path === '/inicio' && pathname === '/dashboard' ? ' is-active' : ''}`}><Icon name={page.icon} /><span>{page.title}</span></NavLink>)}</section>)}
+      </nav>
+      <Link to="/lumi" className={`sd-lumi-link${pathname === '/lumi' || pathname === '/chat' ? ' is-active' : ''}`} onClick={onClose}><LumiMark /><span><strong>Estude com a Lumi</strong><small>Uma dúvida pode virar descoberta.</small></span><Icon name="arrow" size={16} /></Link>
+      <div className="sd-sidebar-bottom"><NavLink className="sd-nav-link" to="/preferencias" onClick={onClose}><Icon name="palette" /><span>Meu espaço</span></NavLink><Link className="sd-account" to="/perfil" onClick={onClose}><Avatar src={user?.foto_url} nome={user?.apelido || user?.nome} tamanho={34} /><span><strong>{user?.apelido || user?.nome || 'Minha conta'}</strong><small>{user?.tipo === 'aluno' ? 'Estudante' : user?.tipo === 'docente' ? 'Docente' : 'Gestão'}</small></span><Icon name="settings" size={17} /></Link></div>
+    </aside>
+  </>
 }

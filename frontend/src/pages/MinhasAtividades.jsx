@@ -119,7 +119,7 @@ export default function MinhasAtividades() {
   return (
     <main className="learning-page">
       <div className="learning-shell">
-        <header className="learning-hero">
+        <header className="learning-hero student-page-heading">
           <div><p>PLANEJAI · SALA DE APRENDIZAGEM</p><h1>Suas missões de estudo</h1><span>Resolva atividades, acompanhe correções e transforme cada entrega em progresso real.</span></div>
           <div className="learning-hero-score"><strong>{itens.filter((item) => item.minha_resposta_status === 'CORRIGIDA').length}</strong><small>concluídas</small></div>
         </header>

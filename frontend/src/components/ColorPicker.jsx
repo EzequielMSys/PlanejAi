@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '../context/ThemeContext'
 import { PALETTES } from '../theme/palettes.js'
 import { oklchToHex } from '../theme/color.js'
@@ -64,15 +63,15 @@ export default function ColorPicker() {
         <span className="sr-only sm:not-sr-only">Mudar cor</span>
       </button>
 
-      <AnimatePresence>
+      <>
         {aberto && (
-          <motion.div
+          <div
             role="dialog"
             aria-label="Personalizar aparência"
-            initial={{ opacity: 0, y: -6, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.97 }}
-            transition={{ duration: 0.16 }}
+
+
+
+
             className="pn-folha"
             style={{
               position: 'absolute', right: 0, top: 'calc(100% + .5rem)',
@@ -138,9 +137,9 @@ export default function ColorPicker() {
                 Voltar para {paletas[paleta]?.nome}
               </button>
             )}
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
     </div>
   )
 }

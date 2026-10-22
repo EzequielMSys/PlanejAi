@@ -4,10 +4,15 @@ import "./Accessibility.css";
 
 const titles = {
   "/": "PlanejAI — Estude com direção",
+  "/lumi": "Lumi — Seu espaço para perguntar",
+  "/chat": "Lumi — PlanejAI",
+  "/preferencias": "Meu espaço — Cores e leitura",
   "/login": "Entrar — PlanejAI",
   "/register": "Criar conta — PlanejAI",
-  "/inicio": "Visão geral — PlanejAI",
-  "/dashboard": "Visão geral — PlanejAI",
+  "/esqueci-senha": "Recuperar acesso — PlanejAI",
+  "/redefinir-senha": "Nova senha — PlanejAI",
+  "/inicio": "Meu dia — PlanejAI",
+  "/dashboard": "Meu dia — PlanejAI",
   "/cronograma": "Meu cronograma — PlanejAI",
   "/aprendizagem": "Laboratório de aprendizagem — PlanejAI",
   "/provas": "Provas e simulados — PlanejAI",
@@ -67,7 +72,12 @@ export default function PageExperience() {
 
   return (
     <>
-      <a className="skip-link" href="#conteudo-principal">
+      <a className="skip-link" href="#conteudo-principal" onClick={event => {
+        event.preventDefault();
+        const main = document.getElementById('conteudo-principal');
+        main?.focus();
+        main?.scrollIntoView({ block: 'start' });
+      }}>
         Pular para o conteúdo
       </a>
       <span className="sr-route" aria-live="polite">

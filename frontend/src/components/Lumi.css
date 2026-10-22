@@ -1,0 +1,61 @@
+
+
+.lumi-page-heading { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.75rem; }
+.lumi-page-heading > div { display: flex; align-items: center; gap: 1rem; }
+.lumi-page-heading h1 { margin: .3rem 0; font-size: clamp(1.65rem, 2.5vw, 2.35rem); line-height: 1.2; font-weight: 730; letter-spacing: -.045em; }
+.lumi-page-heading p { color: var(--pn-texto-suave); font-size: .94rem; }
+.lumi-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 15.5rem; gap: 1.5rem; align-items: start; }
+.lumi-chat { display: flex; min-width: 0; min-height: 34rem; height: min(760px, calc(100dvh - 15rem)); flex-direction: column; overflow: hidden; border: 1px solid var(--pn-borda); border-radius: 1.25rem; background: var(--pn-superficie); color: var(--pn-texto); box-shadow: 0 4px 22px -18px rgb(0 0 0 / .25); }
+.lumi-chat-toolbar { display: flex; flex: none; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; border-bottom: 1px solid var(--pn-borda); padding: .8rem 1.1rem; }
+.lumi-chat-toolbar label { display: flex; align-items: center; gap: .5rem; color: var(--pn-texto-suave); font-size: .8rem; }
+.lumi-chat-toolbar select { max-width: 12rem; border: 0 !important; border-radius: .45rem; background: var(--pn-superficie-alt) !important; padding: .45rem; color: var(--pn-texto); }
+.lumi-chat-toolbar button { padding: .4rem .25rem; color: var(--pn-texto-suave); font-size: .76rem; text-decoration: underline; text-underline-offset: 3px; }
+.lumi-feed { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 1.5rem clamp(1rem, 3vw, 2.25rem); }
+.lumi-welcome { display: grid; justify-items: center; gap: 1rem; max-width: 42rem; margin: auto; padding: 1rem 0; text-align: center; }
+.lumi-welcome .sd-eyebrow { margin-top: .6rem; }
+.lumi-welcome h2 { font-size: clamp(1.65rem, 3vw, 2.3rem); font-weight: 700; letter-spacing: -.045em; line-height: 1.2; }
+.lumi-welcome > p { max-width: 47ch; margin: 0; color: var(--pn-texto-suave); font-size: .95rem; line-height: 1.75; }
+.lumi-starters { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: .6rem; }
+.lumi-starters button { position: relative; display: grid; gap: .55rem; border: 1px solid var(--pn-borda); border-radius: .9rem; background: var(--pn-superficie); padding: 1rem; color: var(--pn-texto); text-align: left; transition: background .15s, border-color .15s; }
+.lumi-starters button:hover { border-color: var(--pn-primaria-borda); background: var(--pn-primaria-suave); }
+.lumi-starters button > svg:first-child { color: var(--pn-primaria); }
+.lumi-starters button > svg:last-child { position: absolute; top: 1rem; right: 1rem; color: var(--pn-texto-suave); }
+.lumi-starters strong { font-size: .87rem; font-weight: 650; }
+.lumi-starters span { color: var(--pn-texto-suave); font-size: .78rem; line-height: 1.6; }
+.lumi-message { max-width: var(--study-width, 72ch); margin: 0 auto 1.75rem; padding: 1.1rem 1.3rem; border: 1px solid transparent; border-radius: 1rem; }
+.lumi-message--user { background: var(--pn-superficie-alt); border-color: var(--pn-borda); }
+.lumi-message--assistant { padding-inline: .2rem; }
+.lumi-message-author { display: flex; align-items: center; gap: .5rem; margin-bottom: .65rem; font: 650 .78rem/1.5 system-ui, sans-serif; color: var(--pn-texto-suave); }
+.lumi-prose { color: var(--pn-texto); font-family: var(--study-font, system-ui); font-size: 1rem; line-height: var(--a11y-line-height, 1.75); overflow-wrap: anywhere; }
+.lumi-prose p { margin: .65em 0; white-space: pre-wrap; }
+.lumi-prose h3 { margin: 1.2em 0 .55em; font-size: 1.1em; font-weight: 700; line-height: 1.4; }
+.lumi-prose :is(ul, ol) { margin: .8em 0; padding-left: 1.35em; }
+.lumi-prose ul { list-style: disc; }.lumi-prose ol { list-style: decimal; }.lumi-prose li { margin: .4em 0; }
+.lumi-prose pre { max-width: 100%; overflow-x: auto; border: 1px solid var(--pn-borda); border-radius: .75rem; background: var(--pn-superficie-alt); padding: 1rem; font: .85em/1.7 Consolas, monospace; }
+.lumi-prose :not(pre) > code { border-radius: .25rem; background: var(--pn-superficie-alt); padding: .1em .3em; font: .9em Consolas, monospace; }
+.lumi-prose strong { font-weight: 700; }
+.lumi-copy { display: flex; align-items: center; gap: .4rem; margin-top: .8rem; padding: .3rem; color: var(--pn-texto-suave); font-size: .73rem; }
+.lumi-thinking { display: flex; align-items: center; gap: .7rem; margin: 1rem 0; color: var(--pn-texto-suave); font-size: .85rem; }
+.lumi-thinking i { width: .45rem; height: .45rem; border-radius: 50%; background: var(--pn-primaria); animation: skeleton-breathe 1s infinite alternate; }
+.lumi-composer { flex: none; margin: .5rem 1rem .25rem; border: 1px solid var(--pn-borda-forte); border-radius: 1rem; background: var(--pn-superficie); padding: .85rem 1rem; }
+.lumi-composer:focus-within { border-color: var(--pn-primaria); box-shadow: 0 0 0 3px var(--pn-primaria-suave); }
+.lumi-composer textarea { display: block; width: 100%; max-height: 12rem; resize: vertical; border: 0 !important; background: transparent !important; padding: 0 !important; color: var(--pn-texto); font-family: var(--study-font, system-ui); font-size: .95rem; line-height: 1.65; outline: none !important; box-shadow: none !important; }
+.lumi-composer > div { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .65rem; }
+.lumi-composer > div > span { color: var(--pn-texto-suave); font-size: .7rem; }
+.lumi-footnote { flex: none; margin: .35rem 1rem .8rem; color: var(--pn-texto-suave); font-size: .68rem; text-align: center; line-height: 1.5; }
+.lumi-guide { padding: 1rem .4rem; }
+.lumi-guide h2 { margin-top: .6rem; font-size: 1.4rem; font-weight: 650; line-height: 1.35; letter-spacing: -.025em; }
+.lumi-guide ol { display: grid; gap: 1.4rem; margin: 1.5rem 0; counter-reset: lumi-guide; }
+.lumi-guide li { position: relative; padding-left: 1.8rem; counter-increment: lumi-guide; }
+.lumi-guide li::before { content: counter(lumi-guide, decimal-leading-zero); position: absolute; top: .15rem; left: 0; color: var(--pn-primaria); font-size: .65rem; font-weight: 750; }
+.lumi-guide li strong { font-size: .85rem; font-weight: 650; }.lumi-guide li p { margin-top: .35rem; color: var(--pn-texto-suave); font-size: .8rem; line-height: 1.7; }
+.lumi-guide > div { display: flex; gap: .7rem; border: 1px solid var(--pn-primaria-borda); border-radius: .85rem; background: var(--pn-primaria-suave); padding: 1rem; color: var(--pn-primaria); }
+.lumi-guide > div svg { flex: none; }.lumi-guide > div p { color: var(--pn-texto); font-size: .8rem; line-height: 1.75; }
+.lumi-guide > a { display: flex; gap: .5rem; align-items: center; margin-top: 1.25rem; color: var(--pn-primaria); font-size: .78rem; line-height: 1.6; }
+.lumi-notice { flex: none; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between; margin: .65rem 1rem 0; border: 1px solid var(--pn-borda); border-radius: .75rem; background: var(--pn-superficie-alt); padding: .75rem; font-size: .8rem; line-height: 1.6; }
+.lumi-notice--error { border-color: var(--ui-danger); }.lumi-notice p { margin: 0; }.lumi-notice small { width: 100%; color: var(--pn-texto-suave); }.lumi-notice button { color: var(--pn-primaria); font-weight: 650; text-decoration: underline; }
+.lumi-history-loading { display: grid; justify-items: center; gap: 1rem; padding: 3rem; color: var(--pn-texto-suave); }
+.lumi-chat--compact { height: 100%; min-height: 0; border: 0; border-radius: 0; }.lumi-chat--compact .lumi-feed { padding: 1rem; }.lumi-chat--compact .lumi-welcome { padding: .3rem 0; gap: .7rem; }.lumi-chat--compact .lumi-welcome h2 { font-size: 1.4rem; }.lumi-chat--compact .lumi-welcome > p { font-size: .83rem; }.lumi-chat--compact .lumi-starters { gap: .4rem; }.lumi-chat--compact .lumi-starters button { padding: .75rem; }.lumi-chat--compact .lumi-starters strong { font-size: .75rem; }.lumi-chat--compact .lumi-starters button > svg:last-child { display: none; }.lumi-chat--compact .lumi-composer small, .lumi-chat--compact .lumi-chat-toolbar label > span { display: none; }.lumi-chat--compact .lumi-prose { font-size: .9rem; }
+.lumi-widget-title { display: grid; gap: .2rem; color: var(--pn-texto); font-weight: 700; }.lumi-widget-title span { color: var(--pn-primaria); font-size: .65rem; font-weight: 500; }
+@media (max-width: 1100px) { .lumi-workspace { grid-template-columns: minmax(0, 1fr); }.lumi-guide { display: none; } }
+@media (max-width: 640px) { .lumi-page-heading { align-items: start; flex-direction: column; gap: 1rem; }.lumi-page-heading > div { align-items: start; }.lumi-page-heading .sd-eyebrow { font-size: .58rem; }.lumi-page-heading h1 { font-size: 1.6rem; }.lumi-chat { min-height: 35rem; height: calc(100dvh - 9rem); }.lumi-composer { margin-inline: .65rem; padding: .75rem; }.lumi-composer small { display: none; }.lumi-feed { padding: 1rem; }.lumi-starters { gap: .5rem; }.lumi-starters button { padding: .8rem; }.lumi-message { padding: .9rem; }.lumi-message--assistant { padding-inline: 0; }.lumi-chat-toolbar { padding: .65rem; }.lumi-chat-toolbar label > span { display: none; } }

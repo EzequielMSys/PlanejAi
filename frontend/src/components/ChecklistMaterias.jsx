@@ -131,11 +131,11 @@ export default function ChecklistMaterias({ value, onChange, max = 10 }) {
   const todasPadraoFlatten = MATERIAS_PADRAO.flatMap((g) => g.materias)
 
   return (
-    <div className="w-full rounded-2xl border border-[#E4E3F0] bg-[#FAFAFD] p-4 sm:p-5">
+    <div className="w-full rounded-2xl border border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-alt-rgb)/1)] p-4 sm:p-5">
       <div className="space-y-5">
         {MATERIAS_PADRAO.map((grupo) => (
           <div key={grupo.area}>
-            <p className="mb-2.5 text-[11px] font-black uppercase tracking-[0.16em] text-[#7774A4]">
+            <p className="mb-2.5 text-[11px] font-black uppercase tracking-[0.16em] text-[rgb(var(--pn-texto-rgb)/1)]">
               {grupo.area}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -149,8 +149,8 @@ export default function ChecklistMaterias({ value, onChange, max = 10 }) {
                     aria-pressed={ativa}
                     className={`rounded-xl border px-3.5 py-2 text-sm font-bold transition-all duration-200 ${
                       ativa
-                        ? 'border-[#6157D9] bg-[#6157D9] text-white shadow-md shadow-indigo-200'
-                        : 'border-[#DDDCEB] bg-white text-[#55526B] hover:-translate-y-0.5 hover:border-[#8B7CF6] hover:text-[#3F36A5]'
+                        ? 'border-[rgb(var(--pn-primaria-borda-rgb)/1)] bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white shadow-md shadow-indigo-200'
+                        : 'border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] hover:-translate-y-0.5 hover:border-[rgb(var(--pn-primaria-borda-rgb)/1)] hover:text-[rgb(var(--pn-primaria-rgb)/1)]'
                     }`}
                   >
                     {materia}
@@ -163,7 +163,7 @@ export default function ChecklistMaterias({ value, onChange, max = 10 }) {
       </div>
 
       {/* Opção "Outra" */}
-      <div className="mt-5 border-t border-[#E6E5F0] pt-4">
+      <div className="mt-5 border-t border-[rgb(var(--pn-borda-rgb)/1)] pt-4">
         <label className="flex items-center gap-3 cursor-pointer">
           <input
             type="checkbox"
@@ -171,7 +171,7 @@ export default function ChecklistMaterias({ value, onChange, max = 10 }) {
             onChange={toggleOutra}
             className="h-5 w-5 accent-[#6157D9]"
           />
-          <span className="text-sm font-bold text-[#34314D]">
+          <span className="text-sm font-bold text-[rgb(var(--pn-texto-rgb)/1)]">
             {OUTRA_LABEL} (digitar matérias que não estão na lista)
           </span>
         </label>
@@ -179,7 +179,7 @@ export default function ChecklistMaterias({ value, onChange, max = 10 }) {
         {mostrarOutra && (
           <input
             type="text"
-            className="mt-3 w-full rounded-xl border border-[#DADAF0] bg-white px-4 py-3 text-[#25233D] placeholder-black/35 outline-none transition focus:border-[#6157D9] focus:ring-4 focus:ring-indigo-100"
+            className="mt-3 w-full rounded-xl border border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-rgb)/1)] px-4 py-3 text-[rgb(var(--pn-texto-rgb)/1)] placeholder-black/35 outline-none transition focus:border-[rgb(var(--pn-primaria-borda-rgb)/1)] focus:ring-4 focus:ring-indigo-100"
             placeholder="Ex.: Artes, Educação Física, Informática"
             value={outrasText}
             onChange={(e) => handleOutrasChange(e.target.value)}
@@ -188,10 +188,10 @@ export default function ChecklistMaterias({ value, onChange, max = 10 }) {
       </div>
 
       {/* Contador / selecionadas */}
-      <div className="mt-4 flex items-center justify-between text-sm font-semibold text-[#77758F]">
+      <div className="mt-4 flex items-center justify-between text-sm font-semibold text-[rgb(var(--pn-texto-rgb)/1)]">
         {selecionadas.length > 0 ? (
           <>
-            <span className="font-black text-[#6157D9]">
+            <span className="font-black text-[rgb(var(--pn-primaria-rgb)/1)]">
               {selecionadas.length}
             </span>{' '}
             {selecionadas.length === 1 ? 'matéria selecionada' : 'matérias selecionadas'}
