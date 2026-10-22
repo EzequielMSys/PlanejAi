@@ -1,1 +1,39 @@
-.lumi-cat{display:inline-grid;flex:none;place-items:center;line-height:0}.lumi-cat svg{width:100%;height:100%;overflow:visible}.lumi-cat-head{transform-box:fill-box;transform-origin:center 76%;animation:lumi-cat-breathe 5s ease-in-out infinite}.lumi-cat-shadow{fill:#d9d3e1}.lumi-cat-fur{fill:#fffdfa;stroke:#29242e;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}.lumi-cat-patch{fill:#29242e}.lumi-cat-inner-ear{fill:#f4c5cb}.lumi-cat-ear-mark,.lumi-cat-forehead,.lumi-cat-mouth,.lumi-cat-whiskers,.lumi-cat-brows,.lumi-cat-lashes{fill:none;stroke:#29242e;stroke-linecap:round;stroke-linejoin:round}.lumi-cat-ear-mark{stroke-width:2.5}.lumi-cat-forehead{stroke-width:2;opacity:.35}.lumi-cat-mouth{stroke-width:3.2}.lumi-cat-whiskers{stroke-width:2.8}.lumi-cat-brows{stroke-width:4}.lumi-cat-eye-white{fill:#fff;stroke:#29242e;stroke-width:3.5;stroke-linejoin:round}.lumi-cat-iris{fill:#8070aa}.lumi-cat-pupil,.lumi-cat-nose{fill:#29242e}.lumi-cat-glint{fill:#fff}.lumi-cat-closed-eye{fill:none;stroke:#29242e;stroke-width:4.5;stroke-linecap:round}.lumi-cat-lashes{stroke-width:3}.lumi-cat-blush{fill:#efb9bf;opacity:.8}.lumi-cat-thought{fill:var(--pn-primaria,#725ac5)}.lumi-cat-spark{fill:#e9b95d}.lumi-cat-eyes{transform-box:fill-box;transform-origin:center;animation:lumi-cat-blink 7s ease-in-out infinite}.lumi-cat--feliz .lumi-cat-head{animation:lumi-cat-happy .7s ease-in-out 2}.lumi-cat--feliz .lumi-cat-eyes,.lumi-cat--sonolento .lumi-cat-eyes{animation:none}.lumi-cat--feliz .lumi-cat-spark{animation:lumi-cat-sparkle 1s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}.lumi-cat--raiva .lumi-cat-head{animation:lumi-cat-grumble .45s ease-in-out 2}.lumi-cat--pensando .lumi-cat-head{animation:lumi-cat-think 2.8s ease-in-out infinite alternate}.lumi-cat--surpreso .lumi-cat-head{animation:lumi-cat-surprise .6s ease-out 1}.lumi-cat--sonolento .lumi-cat-head{animation-duration:7s}.lumi-cat--small .lumi-cat-shadow,.lumi-cat--small .lumi-cat-forehead,.lumi-cat--small .lumi-cat-glint{display:none}@keyframes lumi-cat-breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-1px)}}@keyframes lumi-cat-blink{0%,91%,97%,100%{transform:scaleY(1)}94%,95%{transform:scaleY(.08)}}@keyframes lumi-cat-happy{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(3deg)}}@keyframes lumi-cat-grumble{0%,100%{transform:translateX(0)}25%{transform:translateX(-1.5px)}75%{transform:translateX(1.5px)}}@keyframes lumi-cat-think{from{transform:rotate(-2deg)}to{transform:rotate(2deg) translateY(-1px)}}@keyframes lumi-cat-surprise{0%{transform:scale(.94)}65%{transform:scale(1.04)}100%{transform:scale(1)}}@keyframes lumi-cat-sparkle{from{transform:scale(.85);opacity:.6}to{transform:scale(1.1);opacity:1}}@media(prefers-reduced-motion:reduce){.lumi-cat *{animation:none!important}}
+.lumi-cat{display:inline-grid;flex:none;place-items:center;line-height:0}
+.lumi-cat svg{width:100%;height:100%;overflow:visible}
+.lumi-cat-head{transform-box:fill-box;transform-origin:center 76%;animation:lumi-cat-breathe 6s ease-in-out infinite}
+.lumi-cat-shadow{fill:#e8e1e9}
+.lumi-cat-fur{fill:#fffdfa;stroke:#403846;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
+.lumi-cat-patch{fill:#332d3a}
+.lumi-cat-inner-ear{fill:#f4c7ce}
+.lumi-cat-ear-mark,.lumi-cat-mouth,.lumi-cat-whiskers,.lumi-cat-brows,.lumi-cat-lashes{fill:none;stroke:#403846;stroke-linecap:round;stroke-linejoin:round}
+.lumi-cat-ear-mark{stroke-width:2}
+.lumi-cat-mouth{stroke-width:2.8}
+.lumi-cat-whiskers{stroke-width:2.2}
+.lumi-cat-brows{stroke-width:3.5}
+.lumi-cat-eye-white{fill:#fff;stroke:#403846;stroke-width:2.8;stroke-linejoin:round}
+.lumi-cat-iris{fill:#8068a8}
+.lumi-cat-pupil,.lumi-cat-nose{fill:#332d3a}
+.lumi-cat-glint{fill:#fff}
+.lumi-cat-closed-eye{fill:none;stroke:#403846;stroke-width:3.8;stroke-linecap:round}
+.lumi-cat-lashes{stroke-width:2.4}
+.lumi-cat-cheeks{fill:#efb7c0;opacity:.48}
+.lumi-cat-cheeks--happy{opacity:.86}
+.lumi-cat-thought{fill:var(--pn-primaria,#725ac5)}
+.lumi-cat-spark{fill:#e9b95d}
+.lumi-cat-eyes{transform-box:fill-box;transform-origin:center;animation:lumi-cat-blink 8s ease-in-out infinite}
+.lumi-cat--feliz .lumi-cat-head{animation:lumi-cat-happy .8s ease-in-out 2}
+.lumi-cat--feliz .lumi-cat-eyes,.lumi-cat--sonolento .lumi-cat-eyes{animation:none}
+.lumi-cat--feliz .lumi-cat-spark{animation:lumi-cat-sparkle 1.2s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
+.lumi-cat--raiva .lumi-cat-head{animation:lumi-cat-grumble .45s ease-in-out 2}
+.lumi-cat--pensando .lumi-cat-head{animation:lumi-cat-think 2.8s ease-in-out infinite alternate}
+.lumi-cat--surpreso .lumi-cat-head{animation:lumi-cat-surprise .6s ease-out 1}
+.lumi-cat--sonolento .lumi-cat-head{animation-duration:7s}
+.lumi-cat--small .lumi-cat-shadow,.lumi-cat--small .lumi-cat-glint{display:none}
+@keyframes lumi-cat-breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-1px)}}
+@keyframes lumi-cat-blink{0%,91%,97%,100%{transform:scaleY(1)}94%,95%{transform:scaleY(.08)}}
+@keyframes lumi-cat-happy{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(2deg)}}
+@keyframes lumi-cat-grumble{0%,100%{transform:translateX(0)}25%{transform:translateX(-1.5px)}75%{transform:translateX(1.5px)}}
+@keyframes lumi-cat-think{from{transform:rotate(-1.5deg)}to{transform:rotate(1.5deg) translateY(-1px)}}
+@keyframes lumi-cat-surprise{0%{transform:scale(.96)}65%{transform:scale(1.03)}100%{transform:scale(1)}}
+@keyframes lumi-cat-sparkle{from{transform:scale(.9);opacity:.65}to{transform:scale(1.08);opacity:1}}
+@media(prefers-reduced-motion:reduce){.lumi-cat *{animation:none!important}}
