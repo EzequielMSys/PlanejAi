@@ -287,9 +287,11 @@ export default function Redacoes() {
           </section>}
 
           {isGestor && (
-            <div className="flex gap-2 mb-6 bg-study-paper p-1.5 rounded-full border border-study-line/20 w-fit shadow-xl">
+            <div className="redacoes-tabs" role="tablist" aria-label="Área de redações">
               <button
                 type="button"
+                role="tab"
+                aria-selected={aba === 'minhas'}
                 onClick={() => setAba('minhas')}
                 className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                   aba === 'minhas'
@@ -302,6 +304,8 @@ export default function Redacoes() {
 
               <button
                 type="button"
+                role="tab"
+                aria-selected={aba === 'gestor'}
                 onClick={() => setAba('gestor')}
                 className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                   aba === 'gestor'
@@ -480,6 +484,7 @@ export default function Redacoes() {
                 </section>
               ) : (
                 <section id="redacoes-historico" className="essay-records grid gap-4" aria-label="Redações enviadas">
+                  <div className="redacoes-history-heading"><div><span className="redacoes-eyebrow">SEU ARQUIVO</span><h2>{aba === 'gestor' ? 'Textos para acompanhar' : 'Textos que contam sua evolução'}</h2><p>Abra uma produção para reler o feedback e planejar a próxima versão.</p></div><strong>{redacoes.length} {redacoes.length === 1 ? 'redação' : 'redações'}</strong></div>
                   {redacoes.map((redacao) => {
                     const nota =
                       redacao.nota_manual ??

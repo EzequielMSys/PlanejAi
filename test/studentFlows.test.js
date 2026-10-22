@@ -154,6 +154,19 @@ test('writing guidance opens Lumi with an editable question about ENEM essays', 
     assert.match(input.value, /tese.*argumentos/i);
   } finally { await screen.close(); }
 });
+test('writing workshop opens staged fields without hiding the essay history', async () => {
+  const screen = await renderRoute('/redacoes');
+  try {
+    const open = button('Abrir oficina →');
+    assert.ok(open);
+    await act(async () => open.click());
+    assert.ok(document.querySelector('input[placeholder*="inclusão digital"]'));
+    const argumentsStep = [...document.querySelectorAll('.writing-workshop-body nav button')].find(item => item.textContent.includes('Argumentos'));
+    await act(async () => argumentsStep.click());
+    assert.ok(document.querySelector('textarea[placeholder*="primeira causa"]'));
+    assert.ok(document.getElementById('redacoes-historico'));
+  } finally { await screen.close(); }
+});
 test('Lumi starters prepare a question, then send one request and render safe structured text', async () => {
   failChat = false;
   const screen = await renderRoute('/lumi');
