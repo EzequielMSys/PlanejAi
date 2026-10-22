@@ -10,10 +10,11 @@
       "framework": "express",
       "entrypoint": "src/server.js",
       "buildCommand": "npm run vercel:prepare-api",
-      "includeFiles": [
-        "src/**",
-        "migrations/**"
-      ]
+      "functions": {
+        "src/server.js": {
+          "includeFiles": "{src/**,migrations/**}"
+        }
+      }
     }
   },
   "headers": [
