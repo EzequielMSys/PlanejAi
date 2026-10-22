@@ -13,6 +13,12 @@ const SUGESTOES_INICIO = [
 
 const DISCIPLINAS = ['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português', 'Inglês']
 
+function reacaoDaMensagem(texto) {
+  if (/\b(idiota|burra|burro|est[uú]pida|est[uú]pido|cale a boca|vai se ferrar)\b/i.test(texto)) return 'raiva'
+  if (/\b(obrigad[oa]|por favor|por gentileza|agrade[çc]o|valeu)\b/i.test(texto)) return 'feliz'
+  return 'pensando'
+}
+
 function formatarHora(data) {
   try {
     return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -56,8 +62,8 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
   const inputRef = useRef(null)
 
   useEffect(() => {
-    onEstadoChange?.(loading ? 'pensando' : humorLumi)
-  }, [humorLumi, loading, onEstadoChange])
+    onEstadoChange?.(humorLumi)
+  }, [humorLumi, onEstadoChange])
 
   useEffect(() => {
     inteligencia
@@ -93,6 +99,7 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
     const mensagem = (texto || input).trim()
     if (!mensagem || loading) return
     const envioId = Date.now() + Math.random()
+    const reacaoInicial = reacaoDaMensagem(mensagem)
     setSendError('')
     setMensagens((prev) => [...prev, {
       id: envioId,
@@ -103,7 +110,7 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
     }])
     setInput('')
     setLoading(true)
-    setHumorLumi('pensando')
+    setHumorLumi(reacaoInicial)
     try {
       const data = await inteligencia.chatSend(mensagem, materia || undefined, redacaoSelecionada?.id)
       if (data?.offline || data?.queued) {
@@ -116,19 +123,19 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
             content: m.conteudo,
             disciplina: m.disciplina,
             criado_em: m.criado_em,
-            reacao: index === data.mensagens.length - 1 ? data.reacao : undefined,
+            reacao: index === data.mensagens.length - 1 ? (data.reacao === 'neutro' ? reacaoInicial : data.reacao) : undefined,
           }))
         )
-        setHumorLumi(data.reacao || 'neutro')
+        setHumorLumi(data.reacao && data.reacao !== 'neutro' ? data.reacao : reacaoInicial)
       } else if (data?.conteudo) {
         append({
           role: 'assistant',
           content: data.conteudo,
           disciplina: materia || null,
           criado_em: new Date().toISOString(),
-          reacao: data.reacao,
+          reacao: data.reacao && data.reacao !== 'neutro' ? data.reacao : reacaoInicial,
         })
-        setHumorLumi(data.reacao || 'neutro')
+        setHumorLumi(data.reacao && data.reacao !== 'neutro' ? data.reacao : reacaoInicial)
       }
     } catch (error) {
       const aviso = error?.response?.data?.message || 'Não foi possível conversar com a Lumi agora.'

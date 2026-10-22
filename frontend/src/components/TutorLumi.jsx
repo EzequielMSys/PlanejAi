@@ -1,64 +1,33 @@
 import './TutorLumi.css'
 
-const HUMORES = new Set(['neutro', 'feliz', 'pensando', 'sonolento', 'surpreso'])
+const HUMORES = new Set(['neutro', 'feliz', 'pensando', 'sonolento', 'surpreso', 'raiva'])
 
-/** Lumi sentada; nos avatares pequenos o enquadramento mostra só o rosto. */
+/** Rosto felino da Lumi: a mesma personagem em todos os tamanhos da interface. */
 export default function TutorLumi({ tamanho = 40, humor = 'neutro', rotulo }) {
   const estado = HUMORES.has(humor) ? humor : 'neutro'
-  const compacto = tamanho <= 40
+  const feliz = estado === 'feliz'
+  const raiva = estado === 'raiva'
+  const surpreso = estado === 'surpreso'
+  const sonolento = estado === 'sonolento'
 
-  return (
-    <span
-      className={`lumi lumi-${compacto ? 'compacta' : 'inteira'} lumi-humor-${estado}`}
-      style={{ width: tamanho, height: tamanho }}
-      role={rotulo ? 'img' : undefined}
-      aria-label={rotulo || undefined}
-      aria-hidden={rotulo ? undefined : 'true'}
-    >
-      <svg viewBox={compacto ? '7 3 82 67' : '0 0 96 96'} fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
-        <g className="lumi-corpo">
-          <path className="lumi-cauda" d="M72 79 C85 84 91 74 87 64 C85 58 79 57 76 61" />
-          <path className="lumi-quadril" d="M34 61 C22 66 21 83 29 90 Q37 94 49 90 L67 91 Q78 82 68 65 Z" />
-          <path className="lumi-peito" d="M39 58 Q48 64 57 58 C63 68 60 80 56 87 L39 87 C35 78 34 67 39 58 Z" />
-          <path className="lumi-perna" d="M39 68 Q36 78 37 88 L47 89 L47 72 M56 69 Q59 79 57 88 L67 89 L65 72" />
-          <path className="lumi-pata" d="M34 87 Q38 84 46 86 Q50 88 48 92 L35 92 Q32 91 34 87 Z M55 86 Q63 84 69 87 Q72 91 69 92 L56 92 Q53 90 55 86 Z" />
-          <path className="lumi-dedos" d="M39 87 V91 M44 87 V91 M61 87 V91 M66 87 V91" />
-          <path className="lumi-coleira" d="M34 60 Q48 68 62 60" />
-          <path className="lumi-medalha" d="M48 65 L51 69 L48 73 L45 69 Z" />
+  return <span className={`lumi-cat lumi-cat--${estado}`} style={{ width: tamanho, height: tamanho }} role={rotulo ? 'img' : undefined} aria-label={rotulo || undefined} aria-hidden={rotulo ? undefined : 'true'}>
+    <svg viewBox="0 0 240 190" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">
+      <g className="lumi-cat-head">
+        <path className="lumi-cat-fur" d="M25 101 C23 66 35 31 52 17 Q64 11 82 42 Q119 38 157 42 Q173 10 190 17 C216 27 224 71 216 108 Q225 120 217 144 C208 172 163 180 121 180 C72 181 32 172 23 145 Q17 125 25 101 Z" />
+        <path className="lumi-cat-patch" d="M157 42 Q173 10 190 17 C216 27 224 71 216 108 L209 124 Q187 108 168 86 Q148 63 135 42 Z" />
+        <path className="lumi-cat-ear-detail" d="M48 68 Q49 40 58 30 Q67 24 73 58 M57 57 L54 49 M63 55 L61 42" />
+        <g className="lumi-cat-eyes">
+          {feliz ? <><path d="M44 112 Q66 89 92 112 M147 112 Q172 88 197 112" className="lumi-cat-eye-line" /><path d="M49 114 Q68 130 90 114 M150 114 Q172 130 193 114" className="lumi-cat-eye-soft" /></> :
+            sonolento ? <><path d="M45 111 Q67 119 92 110 M147 110 Q171 119 196 111" className="lumi-cat-eye-line" /></> :
+            <><path d={raiva ? 'M45 101 Q70 109 94 119 Q69 128 45 112 Z' : surpreso ? 'M48 103 Q68 87 92 103 Q86 126 69 128 Q53 123 48 103 Z' : 'M44 110 Q67 86 94 113 Q72 134 48 118 Z'} className="lumi-cat-eye-white" /><path d={raiva ? 'M146 119 Q170 108 196 101 L195 112 Q170 128 146 119 Z' : surpreso ? 'M148 103 Q171 86 193 103 Q188 126 172 128 Q154 123 148 103 Z' : 'M146 113 Q172 86 197 110 L193 118 Q169 134 146 113 Z'} className="lumi-cat-eye-white" /><path className="lumi-cat-pupil" d={surpreso ? 'M62 99 Q70 96 77 101 L77 122 Q70 129 63 119 Z M164 100 Q171 96 179 100 L178 122 Q172 129 165 119 Z' : 'M57 99 Q69 96 77 104 Q78 115 70 122 Q58 119 57 99 Z M163 104 Q172 96 185 99 Q184 119 173 122 Q164 115 163 104 Z'} /></>}
         </g>
-
-        <g className="lumi-cabeca-grupo">
-          <path className="lumi-orelha" d="M20 32 L16 7 Q16 4 19 6 L37 18 Q48 14 59 18 L77 6 Q80 4 80 7 L76 32 Z" />
-          <path className="lumi-orelha-interna" d="M23 24 L21 13 L33 22 Z M73 24 L75 13 L63 22 Z" />
-          <path className="lumi-cabeca" d="M18 31 Q23 17 48 17 Q73 17 78 31 L78 42 L82 47 L76 49 L79 54 L72 55 Q66 65 48 66 Q30 65 24 55 L17 54 L20 49 L14 47 L18 42 Z" />
-          <path className="lumi-face" d="M27 42 Q31 36 38 38 Q43 41 48 42 Q53 41 58 38 Q65 36 69 42 Q70 56 60 61 Q54 64 48 64 Q42 64 36 61 Q26 56 27 42 Z" />
-          <path className="lumi-listras" d="M40 24 L43 32 M48 22 V31 M56 24 L53 32 M24 35 L30 39 M72 35 L66 39" />
-
-          {estado === 'feliz' || estado === 'sonolento' ? (
-            <path className="lumi-olhos-fechados" d="M31 42 Q37 47 43 42 M53 42 Q59 47 65 42" />
-          ) : estado === 'surpreso' ? (
-            <g className="lumi-olhos"><ellipse className="lumi-iris" cx="37" cy="43" rx="5" ry="6" /><ellipse className="lumi-iris" cx="59" cy="43" rx="5" ry="6" /><ellipse className="lumi-pupila" cx="37" cy="43" rx="1.8" ry="4" /><ellipse className="lumi-pupila" cx="59" cy="43" rx="1.8" ry="4" /></g>
-          ) : (
-            <g className="lumi-olhos" transform={estado === 'pensando' ? 'translate(0 -2)' : undefined}>
-              <path className="lumi-iris" d="M29 43 Q36 37 44 42 Q39 49 32 46 Z M52 42 Q60 37 67 43 L64 46 Q57 49 52 42 Z" />
-              <ellipse className="lumi-pupila" cx="37" cy="43" rx="1.7" ry="3.5" />
-              <ellipse className="lumi-pupila" cx="59" cy="43" rx="1.7" ry="3.5" />
-            </g>
-          )}
-
-          <ellipse className="lumi-focinho" cx="42" cy="54" rx="8" ry="6" />
-          <ellipse className="lumi-focinho" cx="54" cy="54" rx="8" ry="6" />
-          <path className="lumi-nariz" d="M44 49 Q48 47 52 49 Q52 51 48 54 Q44 51 44 49 Z" />
-          <path className="lumi-filtro" d="M48 54 V57" />
-          {estado === 'surpreso' ? <ellipse className="lumi-boca-surpresa" cx="48" cy="60" rx="2" ry="2.5" /> :
-            <path className="lumi-boca" d={estado === 'feliz' ? 'M41 57 Q45 63 48 57 Q51 63 55 57' : 'M43 57 Q46 60 48 57 Q50 60 53 57'} />}
-          <path className="lumi-pontos" d="M38 52 H38.2 M40 56 H40.2 M58 52 H58.2 M56 56 H56.2" />
-          <path className="lumi-bigodes" d="M33 53 L10 48 M33 56 L10 57 M33 59 L13 65 M63 53 L86 48 M63 56 L86 57 M63 59 L83 65" />
-        </g>
-
-        {estado === 'feliz' && <path className="lumi-reacao" d="M84 22 L86 26 L90 28 L86 30 L84 34 L82 30 L78 28 L82 26 Z" />}
-        {estado === 'pensando' && <g className="lumi-reacao"><circle cx="80" cy="12" r="2" /><circle cx="86" cy="7" r="1" /></g>}
-      </svg>
-    </span>
-  )
+        <path className="lumi-cat-nose" d="M110 132 Q120 128 130 132 Q129 139 120 143 Q111 139 110 132 Z" />
+        <path className="lumi-cat-mouth" d={feliz ? 'M120 143 V151 Q109 166 97 151 M120 151 Q132 166 143 151' : raiva ? 'M120 143 V151 M108 159 Q120 148 132 159' : surpreso ? 'M120 143 V149 M113 158 Q120 151 127 158 Q127 167 120 169 Q113 167 113 158 Z' : 'M120 143 V155 M108 164 Q120 153 132 164'} />
+        <path className="lumi-cat-whiskers" d="M43 132 Q27 128 10 132 M44 144 Q24 142 12 150 M47 154 Q29 159 20 169 M197 132 Q213 128 230 132 M196 144 Q216 142 228 150 M193 154 Q211 159 220 169" />
+        {raiva && <path className="lumi-cat-brow" d="M47 88 Q68 98 88 102 M153 102 Q173 97 194 88" />}
+        {estado === 'pensando' && <g className="lumi-cat-thought"><circle cx="209" cy="31" r="5" /><circle cx="223" cy="17" r="3" /></g>}
+        {feliz && <path className="lumi-cat-spark" d="M216 30 L219 37 L226 40 L219 43 L216 50 L213 43 L206 40 L213 37 Z" />}
+      </g>
+    </svg>
+  </span>
 }

@@ -34,5 +34,6 @@ test('resposta inválida do provedor não vira avaliação', () => {
 
 test('reação da Lumi é removida da resposta visível e validada', () => {
   assert.deepEqual(ia.extrairReacao('Bom raciocínio.\n[LUMI:feliz]'), { conteudo: 'Bom raciocínio.', reacao: 'feliz' })
+  assert.deepEqual(ia.extrairReacao('Não posso ajudar com isso.\n[LUMI:raiva]'), { conteudo: 'Não posso ajudar com isso.', reacao: 'raiva' })
   assert.deepEqual(ia.extrairReacao('Vamos pensar. [LUMI:invalido]'), { conteudo: 'Vamos pensar. [LUMI:invalido]', reacao: 'neutro' })
 })

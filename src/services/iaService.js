@@ -106,7 +106,7 @@ function classificarErroApi(apiError) {
 
 function extrairReacao(conteudo) {
   const texto = typeof conteudo === 'string' ? conteudo.trim() : ''
-  const marcador = texto.match(/\s*\[LUMI:(feliz|pensando|surpreso|neutro)\]\s*$/i)
+  const marcador = texto.match(/\s*\[LUMI:(feliz|pensando|surpreso|raiva|neutro)\]\s*$/i)
   return {
     conteudo: marcador ? texto.slice(0, marcador.index).trim() : texto,
     reacao: marcador ? marcador[1].toLowerCase() : 'neutro',

@@ -8,7 +8,7 @@ export default function Chat() {
   const navigate = useNavigate()
   const location = useLocation()
   const [humorLumi, setHumorLumi] = useState('neutro')
-  const estados = { neutro: 'Pronta para conversar', feliz: 'Contente com seu progresso', pensando: 'Pensando com você', surpreso: 'Curiosa sobre a pergunta', sonolento: 'Em uma pausa tranquila' }
+  const estados = { neutro: 'Pronta para conversar', feliz: 'Feliz com a conversa', pensando: 'Pensando com você', surpreso: 'Surpresa com a pergunta', sonolento: 'Em uma pausa tranquila', raiva: 'Descontente com o tom da conversa' }
 
   return (
     <main className="lumi-page">
@@ -21,7 +21,7 @@ export default function Chat() {
 
       <div className="lumi-page-grid">
         <aside className="lumi-intro" aria-label="Sobre a Lumi">
-          <div className="lumi-portrait"><TutorLumi tamanho={112} humor={humorLumi} rotulo="Lumi, gata tutora de estudos" /></div>
+          <div className="lumi-portrait"><TutorLumi tamanho={150} humor={humorLumi} rotulo={`Lumi, gata tutora de estudos: ${estados[humorLumi]}`} /></div>
           <span className="lumi-intro-label">SUA COMPANHEIRA DE ESTUDOS</span>
           <h2>Oi, sou a Lumi.</h2>
           <span className="lumi-mood" aria-live="polite">{estados[humorLumi]}</span>

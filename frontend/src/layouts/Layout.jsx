@@ -17,7 +17,6 @@ import '../components/WorkspaceUtilities.css'
 const FocusTimer = lazy(() => import('../components/FocusTimer'))
 const InstallApp = lazy(() => import('../components/InstallApp'))
 const StudyAudioDockV2 = lazy(() => import('../components/StudyAudioDockV2'))
-const Chatbot = lazy(() => import('../components/Chatbot'))
 const AccessibilityToolbar = lazy(() => import('../components/AccessibilityToolbar'))
 
 /** Deferred + Suspense num só ponto: import lazy em si, sem indicador visível. */
@@ -70,7 +69,6 @@ function Layout() {
           <CarregadoAposPintura><FocusTimer /></CarregadoAposPintura>
           <CarregadoAposPintura><InstallApp /></CarregadoAposPintura>
           <CarregadoAposPintura><StudyAudioDockV2 /></CarregadoAposPintura>
-          <CarregadoAposPintura><Chatbot /></CarregadoAposPintura>
           </>
         )}
         <CarregadoAposPintura>

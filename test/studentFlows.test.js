@@ -264,6 +264,21 @@ test('Lumi starters prepare a question, then send one request and render safe st
     assert.ok(document.querySelector('.lumi-feed').textContent.includes('<script>unsafe()</script>'));
   } finally { await screen.close(); }
 });
+test('Lumi reacts to kindness and rudeness while the floating button stays absent', async () => {
+  const screen = await renderRoute('/lumi');
+  try {
+    assert.equal(button('Pergunte à Lumi'), undefined);
+    const textarea = document.getElementById('lumi-message');
+    await inputValue(textarea, 'Por favor, me explique frações. Obrigado!');
+    await act(async () => textarea.closest('form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true })));
+    await flush();
+    assert.ok(document.querySelector('.lumi-portrait .lumi-cat--feliz'));
+    await inputValue(textarea, 'Sua idiota, responda logo.');
+    await act(async () => textarea.closest('form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true })));
+    await flush();
+    assert.ok(document.querySelector('.lumi-portrait .lumi-cat--raiva'));
+  } finally { await screen.close(); }
+});
 test('a provider failure leaves the question available to retry', async () => {
   failChat = true;
   const screen = await renderRoute('/lumi');
