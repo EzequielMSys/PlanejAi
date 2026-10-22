@@ -124,9 +124,10 @@ function extrairReacao(conteudo) {
  *  5. persistir a resposta do assistente;
  *  6. devolver a conversa atualizada para sincronizar o cliente.
  */
-async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario) {
+async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, redacaoId) {
   const conteudo = validarEntrada(mensagem)
   const disciplinaNormalizada = disciplina ? String(disciplina).trim().slice(0, 100) : null
+  const idRedacao = Number.isSafeInteger(Number(redacaoId)) && Number(redacaoId) > 0 ? Number(redacaoId) : null
 
   if (iaConfig.dailyLimit > 0) {
     const hoje = await model.contagemMensagensDoDia(Number(idUsuario))
@@ -148,7 +149,10 @@ async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario) {
 
   const [historicoRows, perfil] = await Promise.all([
     model.listarMensagensChat(Number(idUsuario), iaConfig.historyTrim),
-    contextoDisponivel(Number(idUsuario)),
+    contextoDisponivel(Number(idUsuario), undefined, 1500, {
+      incluirTextoRedacao: /redaç|redac|texto que escrevi|meu texto|minha escrita/i.test(conteudo),
+      idRedacao,
+    }),
   ])
   const messages = montarMensagensParaApi(
     iaConfig.systemPrompt(nomeUsuario, disciplinaNormalizada, perfil),

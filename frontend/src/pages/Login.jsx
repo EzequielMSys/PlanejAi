@@ -44,21 +44,25 @@ const Login = () => {
 
   return (
     <AuthLayout
+      variant="login"
       title="Bem-vindo de volta"
-      subtitle="Entre para retomar o ponto exato onde você parou."
+      subtitle="Seu próximo passo começa exatamente de onde você parou."
       destaque={
         <>
-          <p className="study-auth-kicker">Seu mapa</p>
-          <h2>O que espera por você primeiro</h2>
-          <ul className="study-auth-lista">
-            <li>As aulas e provas que exigem atenção hoje.</li>
-            <li>Onde o cronograma parou e o que ficou para trás.</li>
-            <li>Suas redações recentes e o que elas apontaram.</li>
-          </ul>
+          <div className="study-login-note-top"><span>PLANEJAI / SEU ESPAÇO</span><span>01 — 03</span></div>
+          <p className="study-login-note-eyebrow">Uma página por vez</p>
+          <h2>Volte ao seu<br /><em>ritmo de aprender.</em></h2>
+          <p className="study-login-note-intro">Ao entrar, seus estudos continuam com contexto — do plano de hoje à próxima redação.</p>
+          <div className="study-login-note-steps">
+            <div><span>01</span><p><strong>Retome o plano</strong><small>Veja o próximo conteúdo da sua jornada.</small></p></div>
+            <div><span>02</span><p><strong>Pratique com direção</strong><small>Revisões e questões onde faz diferença.</small></p></div>
+            <div><span>03</span><p><strong>Escreva melhor</strong><small>Acompanhe suas redações e seu progresso.</small></p></div>
+          </div>
+          <div className="study-login-note-foot"><span>ESTUDAR É CONSTRUIR CONTINUIDADE</span><span>✦</span></div>
         </>
       }
       rodape={
-        <p className="study-auth-rodape">
+        <p>
           Não tem conta? <Link to="/register">Criar conta</Link>
         </p>
       }
@@ -82,7 +86,7 @@ const Login = () => {
         </div>
 
         <div>
-          <label htmlFor="senha" className="study-label ds-label">Senha</label>
+          <div className="study-login-password-head"><label htmlFor="senha" className="study-label ds-label">Senha</label><Link to="/esqueci-senha">Esqueci minha senha</Link></div>
           <div className="study-input-wrap">
             <input
               id="senha"
@@ -104,10 +108,6 @@ const Login = () => {
             </button>
           </div>
         </div>
-
-        <p className="study-form-quiet">
-          <Link to="/esqueci-senha">Esqueci minha senha</Link>
-        </p>
 
         <button
           type="submit"

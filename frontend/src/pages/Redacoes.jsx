@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import redacaoService from '../services/redacaoService'
@@ -560,6 +561,7 @@ export default function Redacoes() {
                             >
                               {selecionadaE ? 'Fechar' : 'Ver detalhes'}
                             </button>
+                            {!isGestor && <Link to="/chat" state={{ redacaoSelecionada: { id: redacao.id_redacao, tema: redacao.tema } }} className="rounded-full border border-study-line/40 px-4 py-2 text-sm font-bold text-study-accent hover:bg-study-accent/10">Conversar com a Lumi</Link>}
                           </div>
                         </div>
 

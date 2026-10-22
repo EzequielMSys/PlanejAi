@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import ColorPicker from '../components/ColorPicker'
 import ThemeToggle from '../components/ThemeToggle'
+import TutorLumi from '../components/TutorLumi'
 import './Landing.css'
 
 const recursos = [
@@ -11,11 +12,19 @@ const recursos = [
   ['04', 'Aprender também é compartilhar.', 'Atividades, materiais e avisos aproximam a sua rotina da turma e de quem ensina.', '/minhas-turmas', 'Encontrar minha turma'],
 ]
 
+function irParaSecao(id) {
+  const secao = document.getElementById(id)
+  if (!secao) return
+  const movimentoReduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  secao.scrollIntoView({ behavior: movimentoReduzido ? 'auto' : 'smooth', block: 'start' })
+  secao.focus({ preventScroll: true })
+}
+
 export default function Landing() {
   return <div className="study-landing">
     <header className="study-nav">
       <Link to="/" className="study-brand" aria-label="PlanejAI, página inicial"><Logo className="h-9 w-9" /><span>Planej<span className="brand-accent">AI</span></span></Link>
-      <nav aria-label="Navegação principal"><a href="#recursos">O que você encontra</a><a href="#como-funciona">Como começar</a></nav>
+      <nav aria-label="Navegação principal"><button type="button" className="study-anchor-button" onClick={() => irParaSecao('recursos')}>O que você encontra</button><button type="button" className="study-anchor-button" onClick={() => irParaSecao('como-funciona')}>Como começar</button></nav>
       <div className="study-nav-actions"><ColorPicker /><ThemeToggle /><Link to="/login" className="study-login">Entrar</Link></div>
     </header>
     <main id="conteudo-principal" tabIndex={-1}>
@@ -24,7 +33,7 @@ export default function Landing() {
           <p className="study-kicker">ESPAÇO PARA APRENDER · PLANEJAI</p>
           <h1>Seu futuro.<br />Uma página<br /><em>por vez.</em></h1>
           <p className="study-lead">Entre a vontade de aprender e o próximo passo, existe um lugar seu. Organize os estudos, tire dúvidas e veja o que já conquistou.</p>
-          <div className="study-actions"><Link to="/register" className="study-button">Começar meu caderno <span aria-hidden="true">↗</span></Link><a href="#como-funciona">Conhecer o PlanejAI <span aria-hidden="true">↓</span></a></div>
+          <div className="study-actions"><Link to="/register" className="study-button">Começar meu caderno <span aria-hidden="true">↗</span></Link><button type="button" className="study-anchor-button" onClick={() => irParaSecao('como-funciona')}>Conhecer o PlanejAI <span aria-hidden="true">↓</span></button></div>
           <p className="study-caption">No seu tempo. Do seu jeito. Com direção.</p>
         </div>
         <div className="study-desk" aria-label="Exemplo de organização de estudos">
@@ -44,11 +53,15 @@ export default function Landing() {
         </div>
       </section>
       <section className="study-manifesto"><span>APRENDER É UM PROCESSO</span><p>Um lugar para organizar.<br /><em>Liberdade para descobrir.</em></p><span>PLANEJAR / PRATICAR / EVOLUIR</span></section>
-      <section id="recursos" className="study-resources">
+      <section className="study-lumi" aria-labelledby="study-lumi-title">
+        <div className="study-lumi-copy"><p className="study-kicker">CONHEÇA A LUMI</p><h2 id="study-lumi-title">Toda pergunta merece<br /><em>uma conversa de verdade.</em></h2><p>Quando uma explicação não encaixa, tente outro caminho. A Lumi pode retomar suas lições, explorar suas dúvidas e seguir no seu ritmo.</p><Link to="/chat" className="study-lumi-link">Conversar com a Lumi <span aria-hidden="true">↗</span></Link></div>
+        <div className="study-lumi-example" aria-label="Exemplo de conversa com a Lumi"><div className="study-lumi-example-top"><TutorLumi tamanho={60} humor="feliz" rotulo="Lumi, gata tutora" /><div><strong>Lumi</strong><small>Sua parceira de estudos</small></div></div><p className="study-lumi-question">“Por que essa função muda de sinal?”</p><div className="study-lumi-answer"><strong>Vamos olhar juntos.</strong><p>O sinal muda quando o resultado passa por zero. Primeiro encontramos esse ponto; depois testamos um valor de cada lado para entender o que acontece.</p></div><span className="study-lumi-example-foot">UM EXEMPLO · CADA CONVERSA SEGUE A SUA DÚVIDA</span></div>
+      </section>
+      <section id="recursos" className="study-resources" tabIndex={-1}>
         <div className="study-section-heading"><p className="study-kicker">SEU ESTUDO, POR INTEIRO</p><h2>As ferramentas certas.<br /><em>O caminho é seu.</em></h2></div>
         <div className="study-resource-grid">{recursos.map(([number, title, text, route, label]) => <article key={number}><span className="study-resource-number">{number}</span><h3>{title}</h3><p>{text}</p><Link to={route}>{label}<span aria-hidden="true">↗</span></Link></article>)}</div>
       </section>
-      <section id="como-funciona" className="study-start">
+      <section id="como-funciona" className="study-start" tabIndex={-1}>
         <div><p className="study-kicker">SEM COMPLICAR</p><h2>Comece de onde<br /><em>você está.</em></h2><p>Não existe uma rotina perfeita. Existe a que funciona para você — e ela pode mudar.</p></div>
         <ol>{[['Conte o que você busca', 'Seu objetivo, suas matérias e o tempo disponível ajudam a montar o plano.'], ['Encontre seu ritmo', 'Estude, pratique e converse com o assistente quando precisar de outra explicação.'], ['Volte e perceba a diferença', 'Use seus resultados para revisar dificuldades e escolher os próximos passos.']].map(([title, text], i) => <li key={title}><span>0{i + 1}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol>
       </section>

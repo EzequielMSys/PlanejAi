@@ -15,9 +15,16 @@ test('Lumi só atribui nota quando as cinco competências e evidências são vá
   const avaliacao = validarAvaliacao({ competencias }, texto)
   assert.equal(avaliacao.notaFinal, 600)
   assert.equal(avaliacao.competencias[4].maximo, 200)
+  assert.match(avaliacao.referencia, /gov\.br\/inep/)
   assert.equal(validarAvaliacao({ competencias: competencias.slice(0, 4) }, texto), null)
   assert.equal(validarAvaliacao({ competencias: competencias.map((c, i) => i === 0 ? { ...c, evidencia: 'trecho inventado' } : c) }, texto), null)
   assert.equal(validarAvaliacao({ competencias: competencias.map((c, i) => i === 2 ? { ...c, nota: 133 } : c) }, texto), null)
+})
+
+test('evidência pode atravessar uma quebra de linha, mas não pode ser inventada', () => {
+  const comQuebra = 'A escola pode oferecer aulas\nde reforço para reduzir a desigualdade.'
+  assert.equal(validarAvaliacao({ competencias }, comQuebra).notaFinal, 600)
+  assert.equal(validarAvaliacao({ competencias }, 'Outro texto'), null)
 })
 
 test('resposta inválida do provedor não vira avaliação', () => {

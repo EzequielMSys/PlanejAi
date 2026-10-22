@@ -15,8 +15,14 @@ const questoesNoNivel = (item, dificuldade) => {
   const campos = { FACIL: 'questoes_faceis', MEDIA: 'questoes_medias', DIFICIL: 'questoes_dificeis' }
   return Number(item[dificuldade === 'TODAS' ? 'questoes_disponiveis' : campos[dificuldade]] || 0)
 }
+const niveis = [
+  { id: 'TODAS', nome: 'Equilibrado', descricao: '30% fundamentos · 40% intermediário · 30% avançado' },
+  { id: 'FACIL', nome: 'Fundamentos', descricao: 'Conceitos essenciais e aplicação direta' },
+  { id: 'MEDIA', nome: 'Intermediário', descricao: 'Interpretação e combinação de conceitos' },
+  { id: 'DIFICIL', nome: 'Avançado', descricao: 'Mais etapas e raciocínio aprofundado' }
+]
 
-export default function ExamArena() {
+export default function ExamArena({ onSessionChange }) {
   const [catalogo, setCatalogo] = useState([])
   const [historico, setHistorico] = useState([])
   const [config, setConfig] = useState({ idCatalogo: '', dificuldade: 'TODAS', quantidade: 45 })
@@ -24,6 +30,7 @@ export default function ExamArena() {
   const [respostas, setRespostas] = useState({})
   const [revisao, setRevisao] = useState([])
   const [resultado, setResultado] = useState(null)
+  const [indiceAtual, setIndiceAtual] = useState(0)
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
   const [saveStatus, setSaveStatus] = useState('salvo')
@@ -42,6 +49,7 @@ export default function ExamArena() {
   }
 
   useEffect(() => { carregar() }, [])
+  useEffect(() => { onSessionChange?.(Boolean(simulado)) }, [simulado, onSessionChange])
 
   useEffect(() => {
     if (!simulado || resultado) return undefined
@@ -73,6 +81,7 @@ export default function ExamArena() {
     setRespostas(data.respostas || {})
     setRevisao(data.revisao || [])
     setResultado(null)
+    setIndiceAtual(0)
     setSaveStatus('salvo')
     setAgora(Date.now())
   }
@@ -80,7 +89,8 @@ export default function ExamArena() {
   const gerar = async () => {
     try {
       setBusyId('novo')
-      const disponivel = Math.max(1, questoesNoNivel(catalogo.find((item) => String(item.id_catalogo) === String(config.idCatalogo)), config.dificuldade))
+      const disponivel = questoesNoNivel(catalogo.find((item) => String(item.id_catalogo) === String(config.idCatalogo)), config.dificuldade)
+      if (!disponivel) return toast.error('Essa coleção ainda não tem questões neste nível. Escolha outra.')
       const quantidade = Math.min(disponivel, Math.max(1, Number(config.quantidade) || 45))
       setConfig((atual) => ({ ...atual, quantidade }))
       iniciarSessao(await inteligencia.gerarSimulado({ ...config, quantidade }))
@@ -100,7 +110,8 @@ export default function ExamArena() {
   }
 
   const concluir = async () => {
-    if (Object.keys(respostas).length !== simulado.questoes.length) return toast.error('Responda todas as questões.')
+    const primeiraPendente = simulado.questoes.findIndex((item) => respostas[item.id_questao] === undefined)
+    if (primeiraPendente >= 0) { setIndiceAtual(primeiraPendente); return toast.error('Falta responder esta questão antes de corrigir.') }
     try {
       setBusyId('concluir')
       const data = await inteligencia.concluirSimulado(simulado.idSimulado, respostas, revisao)
@@ -118,6 +129,9 @@ export default function ExamArena() {
   const catalogoSelecionado = catalogo.find((item) => String(item.id_catalogo) === String(config.idCatalogo))
   const maximoSelecionado = Math.min(180, questoesNoNivel(catalogoSelecionado, config.dificuldade))
   const progresso = simulado?.questoes.length ? (respondidas / simulado.questoes.length) * 100 : 0
+  const questaoAtual = simulado?.questoes[indiceAtual]
+  const correcaoAtual = resultado?.correcoes.find((item) => Number(item.idQuestao) === Number(questaoAtual?.id_questao))
+  const indicesNavegacao = simulado ? [...new Set([0, simulado.questoes.length - 1, ...Array.from({ length: 7 }, (_, deslocamento) => indiceAtual + deslocamento - 3)].filter((indice) => indice >= 0 && indice < simulado.questoes.length))].sort((a, b) => a - b) : []
   const tempoDecorrido = useMemo(() => {
     if (!simulado?.iniciadoEm) return 0
     return Math.floor((agora - new Date(simulado.iniciadoEm).getTime()) / 1000)
@@ -134,20 +148,18 @@ export default function ExamArena() {
           {catalogo.map((item) => <button type="button" key={item.id_catalogo} data-selected={String(item.id_catalogo) === String(config.idCatalogo)} onClick={() => setConfig((atual) => ({ ...atual, idCatalogo: String(item.id_catalogo), quantidade: Math.min(Number(atual.quantidade) || 1, Math.max(1, questoesNoNivel(item, atual.dificuldade))) }))}><small>{item.instituicao} · {item.referencia_ano || 'Coleção'}</small><b>{item.titulo}</b><p>{item.descricao}</p><span>{item.questoes_disponiveis} questões disponíveis</span></button>)}
         </div>
         <div className="exam-builder">
-          <label>Nível<select value={config.dificuldade} onChange={(event) => { const dificuldade = event.target.value; setConfig((atual) => ({ ...atual, dificuldade, quantidade: Math.min(Number(atual.quantidade) || 1, Math.max(1, questoesNoNivel(catalogoSelecionado, dificuldade))) })) }}><option value="TODAS">Misturado</option><option value="FACIL">Fundamentos</option><option value="MEDIA">Intermediário</option><option value="DIFICIL">Avançado</option></select></label>
+          <div className="exam-levels" role="group" aria-label="Nível do simulado"><span>Escolha seu nível</span><div>{niveis.map((nivel) => { const disponiveis = questoesNoNivel(catalogoSelecionado, nivel.id); return <button type="button" key={nivel.id} aria-pressed={config.dificuldade === nivel.id} disabled={!disponiveis} onClick={() => setConfig((atual) => ({ ...atual, dificuldade: nivel.id, quantidade: Math.min(Number(atual.quantidade) || 1, disponiveis) }))}><strong>{nivel.nome}</strong><small>{nivel.descricao}</small><em>{disponiveis} questões</em></button> })}</div></div>
           <label>Questões<input type="number" min="1" max={maximoSelecionado} value={config.quantidade} onChange={(event) => setConfig({ ...config, quantidade: event.target.value })} /><small>até {maximoSelecionado} nesta coleção</small></label>
           <div className="exam-quantity-presets" aria-label="Quantidade de questões"><span>Formato</span>{[20, 45, 60, 90, 180].filter((quantidade) => quantidade <= maximoSelecionado).map((quantidade) => <button type="button" key={quantidade} data-selected={Number(config.quantidade) === quantidade} onClick={() => setConfig({ ...config, quantidade })}>{quantidade} questões</button>)}</div>
-          <button type="button" disabled={!config.idCatalogo || busyId === 'novo'} onClick={gerar}>{busyId === 'novo' ? 'Montando…' : 'Gerar minha prova'} <span>→</span></button>
+          <button type="button" disabled={!config.idCatalogo || maximoSelecionado === 0 || busyId === 'novo'} onClick={gerar}>{busyId === 'novo' ? 'Montando…' : maximoSelecionado === 0 ? 'Sem questões neste nível' : 'Gerar minha prova'} <span>→</span></button>
         </div>
         {historico.length > 0 && <div className="exam-history"><h3>Últimas tentativas</h3>{historico.slice(0, 5).map((item) => <div key={item.id_simulado}><span>{item.instituicao}</span><b>{item.titulo}</b><strong>{item.status === 'CONCLUIDO' ? `${Number(item.nota).toFixed(0)}%` : 'Em andamento'}</strong>{item.status === 'EM_ANDAMENTO' && <button type="button" disabled={busyId === item.id_simulado} onClick={() => retomar(item.id_simulado)}>{busyId === item.id_simulado ? 'Abrindo…' : 'Retomar'}</button>}</div>)}</div>}
       </> : <div className="exam-session">
         <div className="exam-session-title"><div><small>{simulado.catalogo.instituicao}</small><h3>{simulado.catalogo.titulo}</h3></div><div className="exam-session-metrics"><span>{respondidas}/{simulado.questoes.length} respondidas · {revisao.length} para revisar</span><b>{formatarTempo(tempoDecorrido)}</b><small className="exam-save-status" aria-live="polite">{saveStatus === 'salvando' ? 'Salvando…' : saveStatus === 'erro' ? 'Falha ao salvar' : 'Progresso salvo'}</small></div></div>
         <div className="exam-progress" aria-label={`${Math.round(progresso)}% respondido`}><i style={{ width: `${progresso}%` }} /></div>
-        <nav className="exam-question-nav" aria-label="Navegação entre questões">{simulado.questoes.map((questao, index) => <button type="button" key={questao.id_questao} data-answered={respostas[questao.id_questao] !== undefined} data-review={revisao.includes(questao.id_questao)} onClick={() => document.getElementById(`questao-${questao.id_questao}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>{index + 1}</button>)}</nav>
-        {simulado.questoes.map((questao, index) => {
-          const correcao = resultado?.correcoes.find((item) => Number(item.idQuestao) === Number(questao.id_questao))
-          return <fieldset id={`questao-${questao.id_questao}`} key={questao.id_questao} disabled={Boolean(resultado)} data-correct={correcao ? String(correcao.acertou) : undefined}><legend><span>{index + 1}</span><div><small>{questao.disciplina} · {questao.dificuldade}</small>{questao.enunciado}</div></legend><button type="button" className="exam-review-toggle" aria-pressed={revisao.includes(questao.id_questao)} onClick={() => marcarParaRevisao(questao.id_questao)}>{revisao.includes(questao.id_questao) ? '✓ Marcada para revisar' : 'Marcar para revisar'}</button><div>{questao.alternativas.map((alternativa, indice) => <label key={alternativa}><input type="radio" name={`exam-${questao.id_questao}`} checked={Number(respostas[questao.id_questao]) === indice} onChange={() => setRespostas((atuais) => ({ ...atuais, [questao.id_questao]: indice }))} /><span><i>{String.fromCharCode(65 + indice)}</i>{alternativa}</span></label>)}</div>{correcao && <p>{correcao.acertou ? 'Resposta correta.' : `Resposta correta: ${String.fromCharCode(65 + correcao.respostaCorreta)}.`} {correcao.explicacao}</p>}</fieldset>
-        })}
+        <nav className="exam-question-nav" aria-label="Navegação entre questões">{indicesNavegacao.map((index, posicao) => { const questao = simulado.questoes[index]; return <span key={questao.id_questao} className="exam-nav-item">{posicao > 0 && index - indicesNavegacao[posicao - 1] > 1 && <span aria-hidden="true">…</span>}<button type="button" aria-label={`Questão ${index + 1}${respostas[questao.id_questao] !== undefined ? ', respondida' : ''}${revisao.includes(questao.id_questao) ? ', marcada para revisão' : ''}`} aria-current={indiceAtual === index ? 'step' : undefined} data-current={indiceAtual === index} data-answered={respostas[questao.id_questao] !== undefined} data-review={revisao.includes(questao.id_questao)} onClick={() => setIndiceAtual(index)}>{index + 1}</button></span> })}</nav>
+        {questaoAtual && <fieldset key={questaoAtual.id_questao} disabled={Boolean(resultado)} data-correct={correcaoAtual ? String(correcaoAtual.acertou) : undefined}><legend><span>{indiceAtual + 1}</span><div><small>{questaoAtual.disciplina} · {questaoAtual.dificuldade}</small>{questaoAtual.enunciado}</div></legend><button type="button" className="exam-review-toggle" aria-pressed={revisao.includes(questaoAtual.id_questao)} onClick={() => marcarParaRevisao(questaoAtual.id_questao)}>{revisao.includes(questaoAtual.id_questao) ? '✓ Marcada para revisar' : 'Marcar para revisar'}</button><div>{questaoAtual.alternativas.map((alternativa, indice) => <label key={`${questaoAtual.id_questao}-${indice}`}><input type="radio" name={`exam-${questaoAtual.id_questao}`} checked={Number(respostas[questaoAtual.id_questao]) === indice} onChange={() => setRespostas((atuais) => ({ ...atuais, [questaoAtual.id_questao]: indice }))} /><span><i>{String.fromCharCode(65 + indice)}</i>{alternativa}</span></label>)}</div>{correcaoAtual && <p>{correcaoAtual.acertou ? 'Resposta correta.' : `Resposta correta: ${String.fromCharCode(65 + correcaoAtual.respostaCorreta)}.`} {correcaoAtual.explicacao}</p>}</fieldset>}
+        <div className="exam-session-actions"><button type="button" disabled={indiceAtual === 0} onClick={() => setIndiceAtual((atual) => atual - 1)}>← Anterior</button><button type="button" disabled={indiceAtual >= simulado.questoes.length - 1} onClick={() => setIndiceAtual((atual) => atual + 1)}>Próxima →</button></div>
         <footer>{resultado ? <><div><strong>{resultado.nota}%</strong><span>{resultado.acertos} de {resultado.total} acertos</span></div><div className="exam-result-breakdown"><b>Resultado por disciplina</b>{resultado.resumoPorDisciplina?.map((item) => <span key={item.disciplina}>{item.disciplina}: <strong>{item.percentual}%</strong> ({item.acertos}/{item.total})</span>)}</div><button type="button" onClick={() => { setSimulado(null); setResultado(null) }}>Novo simulado</button></> : <button type="button" disabled={busyId === 'concluir'} onClick={concluir}>{busyId === 'concluir' ? 'Corrigindo…' : 'Finalizar e corrigir'}</button>}</footer>
       </div>}
     </section>

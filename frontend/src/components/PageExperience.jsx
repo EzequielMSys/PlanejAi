@@ -77,7 +77,14 @@ export default function PageExperience() {
 
   return (
     <>
-      <a className="skip-link" href="#conteudo-principal">
+      <a className="skip-link" href="#conteudo-principal" onClick={(event) => {
+        event.preventDefault();
+        const principal = document.getElementById("conteudo-principal") || document.querySelector("main");
+        if (!principal) return;
+        if (!principal.hasAttribute("tabindex")) principal.setAttribute("tabindex", "-1");
+        principal.scrollIntoView({ block: "start" });
+        principal.focus({ preventScroll: true });
+      }}>
         Pular para o conteúdo
       </a>
       <span className="sr-route" aria-live="polite">

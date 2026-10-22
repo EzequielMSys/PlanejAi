@@ -13,11 +13,9 @@ import './AuthLayout.css'
  * apresentação. O painel lateral (`destaque`) é decorativo e fica fora do
  * fluxo de leitura (`aria-hidden`).
  */
-export default function AuthLayout({ title, subtitle, children, rodape, destaque }) {
+export default function AuthLayout({ title, subtitle, children, rodape, destaque, variant }) {
   return (
-    <div className="study-auth">
-      <a href="#conteudo-principal" className="pn-saltar">Pular para o conteúdo</a>
-
+    <div className={`study-auth${variant ? ` study-auth--${variant}` : ''}`}>
       <header className="study-auth-topo">
         <Link to="/" className="study-auth-marca" aria-label="PlanejAI, página inicial">
           {/* O aria-label do link cobre o conjunto inteiro; o do Logo ficaria

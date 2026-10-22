@@ -34,6 +34,7 @@ export default function Cronograma() {
   const [concluindo, setConcluindo] = useState(null)
   const [concluindoConteudo, setConcluindoConteudo] = useState(null)
   const [diasExpandidos, setDiasExpandidos] = useState({})
+  const [filtroDias, setFiltroDias] = useState('proximos')
   const [editando, setEditando] = useState(null)
   const [editLink, setEditLink] = useState('')
   const [enviandoMaterial, setEnviandoMaterial] = useState(null)
@@ -131,6 +132,21 @@ export default function Cronograma() {
 const proximoDia = dias.find((dia) => {
     return Number(dia.concluido) !== 1 && dia.status !== 'concluído'
   })
+  const primeiroPendente = dias.findIndex((dia) => Number(dia.concluido) !== 1 && dia.status !== 'concluído')
+  const focoIndex = primeiroPendente === -1 ? Math.max(0, dias.length - 1) : primeiroPendente
+  const inicioTrilha = Math.min(Math.max(0, focoIndex - 1), Math.max(0, dias.length - 3))
+  const diasTrilha = dias.slice(inicioTrilha, inicioTrilha + 3)
+  const filtroEfetivo = totalDias > 0 && diasConcluidos === totalDias && filtroDias === 'proximos' ? 'todos' : filtroDias
+  const diasVisiveis = dias.map((dia, index) => ({ dia, index })).filter(({ dia }) => {
+    const concluido = Number(dia.concluido) === 1 || dia.status === 'concluído'
+    return filtroEfetivo === 'todos' || (filtroEfetivo === 'concluidos' ? concluido : !concluido)
+  })
+
+  function abrirDia(idDia) {
+    setFiltroDias('todos')
+    setDiasExpandidos((atuais) => ({ ...atuais, [idDia]: true }))
+    requestAnimationFrame(() => document.getElementById(`schedule-day-${idDia}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
 
   // Dispara confetes quando o cronograma atinge 100% de conclusão
   useEffect(() => {
@@ -335,7 +351,7 @@ async function concluirDia(idDia) {
                 </h1>
 
                 <p className="text-lg text-white/85 max-w-2xl">
-                  Acompanhe seu plano personalizado, veja seu progresso e marque os estudos concluídos.
+                  Seu próximo passo, as atividades de hoje e o caminho que vem depois.
                 </p>
               </div>
 
@@ -396,51 +412,41 @@ async function concluirDia(idDia) {
             </section>
           ) : (
             <>
-              <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <CardStat titulo="Progresso" valor={`${progresso}%`} />
-                <CardStat titulo="Dias planejados" valor={totalDias} />
-                <CardStat titulo="Dias concluídos" valor={diasConcluidos} />
-                <CardStat titulo="Tempo previsto" valor={`${tempoTotal} min`} />
-              </section>
-
-              <section className="grid lg:grid-cols-3 gap-6 mb-8">
-                <div className="schedule-surface lg:col-span-2 bg-study-paper rounded-[2.5rem] p-6 shadow-xl border border-study-line/20">
-                  <div className="flex justify-between text-sm font-bold mb-2">
-                    <span>Progresso geral</span>
-                    <span>{progresso}%</span>
-                  </div>
-
-                  <div className="h-4 bg-study-canvas rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-study-accent rounded-full transition-all"
-                      style={{ width: `${progresso}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="schedule-surface bg-study-paper rounded-[2.5rem] p-6 shadow-xl border border-study-line/20">
-                  <p className="text-sm font-bold text-black/50 mb-1">
-                    Próximo estudo
-                  </p>
-
-                  <p className="text-lg font-black text-black capitalize">
-                    {proximoDia ? formatarData(proximoDia.data_estudo) : 'Tudo concluído'}
-                  </p>
-
-                  <p className="text-sm text-black/60 mt-1">
-                    {proximoDia
-                      ? `${proximoDia.tempo_previsto || 0} minutos previstos`
-                      : 'Parabéns pelo progresso!'}
-                  </p>
+              <section className="schedule-journey" aria-labelledby="schedule-journey-title">
+                <div className="schedule-journey-heading"><div><span>SEU CAMINHO DE ESTUDOS</span><h2 id="schedule-journey-title">Uma etapa de cada vez.</h2><p>Escolha uma atividade disponível ou veja como liberar a próxima.</p></div><strong>{diasConcluidos} / {totalDias} dias concluídos</strong></div>
+                <div className="schedule-journey-cards">
+                  {diasTrilha.map((dia, offset) => {
+                    const idDia = dia.id_dia || dia.id
+                    const indice = inicioTrilha + offset
+                    const concluido = Number(dia.concluido) === 1 || dia.status === 'concluído'
+                    const bloqueado = Boolean(dia.bloqueado)
+                    const conteudos = dia.conteudos || []
+                    const feitos = conteudos.filter((item) => Number(item.concluido) === 1).length
+                    const avaliacaoDia = cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? cronogramaAtual.avaliacao_em_andamento : null
+                    return <article key={idDia || indice} className={`schedule-journey-card ${concluido ? 'is-done' : bloqueado ? 'is-locked' : 'is-ready'}`}>
+                      <div className="schedule-journey-card-top"><span>ETAPA {String(indice + 1).padStart(2, '0')}</span><b>{concluido ? '✓ Concluída' : bloqueado ? '♢ Bloqueada' : '● Disponível'}</b></div>
+                      <h3>{formatarData(dia.data_estudo)}</h3>
+                      <p>{conteudos.length ? `${feitos} de ${conteudos.length} atividades feitas` : `${dia.tempo_previsto || 0} min planejados`}</p>
+                      <div className="schedule-journey-activities">{conteudos.slice(0, 2).map((item, itemIndex) => <div key={item.id || itemIndex}><span aria-hidden="true">{Number(item.concluido) === 1 ? '✓' : bloqueado ? '◇' : '→'}</span><span>{item.titulo || item.disciplina || 'Atividade de estudo'}</span></div>)}{conteudos.length > 2 && <small>+ {conteudos.length - 2} outras atividades</small>}{!conteudos.length && <small>Detalhes desta etapa no plano abaixo.</small>}</div>
+                      {bloqueado ? dia.requer_desafio ? <button type="button" onClick={() => avaliacaoDia ? retomarAvaliacao(avaliacaoDia.id_avaliacao) : iniciarDesafio(idDia)}>{avaliacaoDia ? 'Retomar mini prova' : 'Fazer mini prova para adiantar'} <span aria-hidden="true">→</span></button> : <p className="schedule-journey-wait">Conclua a etapa anterior para liberar.</p> : <button type="button" onClick={() => abrirDia(idDia)}>{concluido ? 'Rever atividades' : 'Ver atividades do dia'} <span aria-hidden="true">→</span></button>}
+                    </article>
+                  })}
                 </div>
               </section>
+              <section className="schedule-overview" aria-label="Resumo do cronograma">
+                <div className="schedule-overview-main"><span>VISÃO GERAL</span><div><strong>{progresso}%</strong><p>do caminho percorrido</p></div><div className="schedule-overview-bar" role="progressbar" aria-label="Progresso do cronograma" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progresso}><i style={{ width: `${progresso}%` }} /></div><small>{diasConcluidos} de {totalDias} dias concluídos</small></div>
+                <div className="schedule-overview-next"><span>{proximoDia ? 'PRÓXIMO ESTUDO' : 'PLANO CONCLUÍDO'}</span><h2>{proximoDia ? formatarData(proximoDia.data_estudo) : 'Todas as etapas feitas'}</h2><p>{proximoDia ? `${proximoDia.tempo_previsto || 0} min previstos · ${(proximoDia.conteudos || []).length} atividades` : 'Sua trilha de estudos está pronta para a etapa final.'}</p>{proximoDia ? <button type="button" onClick={() => abrirDia(proximoDia.id_dia || proximoDia.id)}>Abrir etapa <span aria-hidden="true">→</span></button> : cronogramaAtual.prova_final?.disponivel ? <button type="button" onClick={iniciarProvaFinal}>Ir para a prova final <span aria-hidden="true">→</span></button> : null}</div>
+                <div className="schedule-overview-facts"><div><span>DIAS NO PLANO</span><strong>{totalDias}</strong></div><div><span>TEMPO PLANEJADO</span><strong>{tempoTotal}<small> min</small></strong></div></div>
+              </section>
 
-              {cronogramaAtual.avaliacao_em_andamento && <section className="schedule-surface mb-8 rounded-[2rem] border border-study-line/30 bg-study-tint p-6 dark:bg-[#291D38]"><p className="text-xs font-black uppercase tracking-[.18em] text-study-accent">Avaliação em andamento</p><h2 className="mt-1 text-2xl font-black">{cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'Sua prova final está pronta para continuar.' : 'Seu desafio de avanço está pronto para continuar.'}</h2><p className="mt-2 text-sm text-black/65 dark:text-white/65">Você pode fechar a tela e voltar quando quiser. As questões permanecem as mesmas; neste aparelho, as escolhas também são preservadas.</p><div className="mt-4 flex flex-wrap gap-3"><button type="button" onClick={() => retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)} className="rounded-full bg-study-accent px-5 py-3 font-black text-white">Retomar {cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'prova final' : 'desafio'}</button><button type="button" onClick={() => abandonarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)} className="rounded-full border border-study-line px-5 py-3 font-bold text-study-accent">Descartar e iniciar outra</button></div></section>}
-              {cronogramaAtual.prova_final?.disponivel && !cronogramaAtual.avaliacao_em_andamento && <section className="schedule-surface mb-8 rounded-[2rem] border border-study-line/30 bg-study-tint p-6 dark:bg-[#291D38]"><p className="text-xs font-black uppercase tracking-[.18em] text-study-accent">Etapa final</p><h2 className="mt-1 text-2xl font-black">Seu cronograma foi concluído. Agora comprove seu domínio.</h2><p className="mt-2 text-sm text-black/65 dark:text-white/65">A prova final tem 20 questões das matérias estudadas. É necessário acertar ao menos 14 para concluir a trilha.</p><button type="button" onClick={iniciarProvaFinal} className="mt-4 rounded-full bg-study-accent px-5 py-3 font-black text-white">Iniciar prova final</button></section>}
-              {cronogramaAtual.prova_final?.concluida && <section className="schedule-surface mb-8 rounded-[2rem] border border-emerald-400/30 bg-emerald-50 p-6 text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-100"><b>Trilha certificada.</b> Você concluiu o cronograma e foi aprovado na prova final.</section>}
+              {cronogramaAtual.avaliacao_em_andamento && <section className="schedule-milestone"><span>AVALIAÇÃO EM ANDAMENTO</span><h2>{cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'Sua prova final está pronta para continuar.' : 'Seu desafio de avanço está pronto para continuar.'}</h2><p>Você pode voltar quando quiser. As questões permanecem as mesmas; neste aparelho, suas escolhas também são preservadas.</p><div><button type="button" onClick={() => retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)}>Retomar {cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'prova final' : 'desafio'} <b aria-hidden="true">→</b></button><button type="button" onClick={() => abandonarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)}>Descartar avaliação</button></div></section>}
+              {cronogramaAtual.prova_final?.disponivel && !cronogramaAtual.avaliacao_em_andamento && <section className="schedule-milestone"><span>ETAPA FINAL</span><h2>Você percorreu o plano. Agora mostre o que aprendeu.</h2><p>A prova final reúne 20 questões das matérias estudadas. São necessários 14 acertos para concluir a trilha.</p><div><button type="button" onClick={iniciarProvaFinal}>Iniciar prova final <b aria-hidden="true">→</b></button></div></section>}
+              {cronogramaAtual.prova_final?.concluida && <section className="schedule-milestone is-complete"><span>TRILHA CERTIFICADA</span><h2>Seu esforço virou conquista.</h2><p>Você concluiu o cronograma e foi aprovado na prova final.</p></section>}
 
-<section className="grid gap-4">
-                {dias.map((dia, index) => {
+              <section className="schedule-plan" aria-labelledby="schedule-plan-title">
+                <div className="schedule-plan-head"><div><span>PLANO COMPLETO</span><h2 id="schedule-plan-title">Suas etapas, em detalhe.</h2><p>Abra um dia para estudar, revisar materiais ou acompanhar o que já fez.</p></div><div className="schedule-plan-filters" role="group" aria-label="Filtrar dias do cronograma">{[['proximos', 'Próximos'], ['concluidos', 'Concluídos'], ['todos', 'Todos']].filter(([valor]) => valor !== 'proximos' || diasConcluidos < totalDias).map(([valor, rotulo]) => <button key={valor} type="button" aria-pressed={filtroEfetivo === valor} onClick={() => setFiltroDias(valor)}>{rotulo}</button>)}</div></div>
+                <div className="schedule-plan-list">
+                {diasVisiveis.map(({ dia, index }) => {
                   const idDia = dia.id_dia || dia.id
                   const concluido =
                     Number(dia.concluido) === 1 ||
@@ -457,10 +463,11 @@ async function concluirDia(idDia) {
                   return (
                     <div
                       key={idDia || index}
+                      id={`schedule-day-${idDia}`}
                       onDragOver={(event) => { event.preventDefault(); if (conteudoArrastado) setDiaAlvo(idDia) }}
                       onDragLeave={() => setDiaAlvo((current) => current === idDia ? null : current)}
                       onDrop={(event) => soltarConteudo(event, idDia)}
-                      className={`schedule-day group relative overflow-hidden rounded-[2rem] p-5 shadow-xl border before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 transition ${bloqueado ? 'border-study-line/15 bg-black/[.03] opacity-75 before:bg-[#8A769F]' : diaAlvo === idDia ? 'border-study-line bg-study-tint ring-4 ring-[#7C3AED]/10 before:bg-study-accent' : 'border-study-line/20 bg-study-paper before:bg-[#C4B5FD] hover:before:bg-study-accent'}`}
+                      className={`schedule-day group relative overflow-hidden rounded-[2rem] p-5 shadow-xl border before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 transition ${bloqueado ? 'is-locked border-study-line/15 bg-black/[.03] before:bg-[#8A769F]' : concluido ? 'is-done border-study-line/20 bg-study-paper before:bg-[#C4B5FD]' : diaAlvo === idDia ? 'is-target border-study-line bg-study-tint ring-4 ring-[#7C3AED]/10 before:bg-study-accent' : 'is-ready border-study-line/20 bg-study-paper before:bg-[#C4B5FD] hover:before:bg-study-accent'}`}
                     >
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex-1">
@@ -479,7 +486,7 @@ async function concluirDia(idDia) {
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="schedule-day-actions flex items-center gap-3">
                           <span
                             className={`px-4 py-2 rounded-full text-sm font-bold border ${
                               concluido
@@ -516,7 +523,7 @@ async function concluirDia(idDia) {
                       </div>
 
                       {expandido && conteudos.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-study-line/20 space-y-2">
+                        <div className="schedule-day-content mt-4 pt-4 border-t border-study-line/20 space-y-2">
                           <p className="text-xs uppercase tracking-[0.25em] font-black text-black/40 mb-2">
                             Materiais / Conteúdos do dia
                           </p>
@@ -529,7 +536,7 @@ async function concluirDia(idDia) {
                             return (
                               <div
                                 key={idConteudo}
-                                className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-[1.5rem] border ${
+                                className={`schedule-activity flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-[1.5rem] border ${
                                   conteudoConcluido
                                     ? 'bg-green-50 border-green-200'
                                     : 'bg-study-canvas border-study-line/20'
@@ -647,6 +654,8 @@ async function concluirDia(idDia) {
                     </div>
                   )
                 })}
+                {!diasVisiveis.length && <div className="schedule-plan-empty">{filtroDias === 'proximos' ? 'Nenhuma etapa pendente. Sua trilha está completa!' : 'Ainda não há etapas concluídas.'}</div>}
+                </div>
               </section>
             </>
           )}
@@ -657,20 +666,6 @@ async function concluirDia(idDia) {
       )}
       {avaliacao && <CronogramaAssessment key={avaliacao.id_avaliacao} assessment={avaliacao} onSubmit={enviarAvaliacao} onSaveAnswer={salvarRespostaAvaliacao} onClose={() => { setAvaliacao(null); carregarCronogramas() }} />}
       {recuperacao && <div className="fixed inset-0 z-[130] grid place-items-center bg-black/60 p-4"><section className="max-w-lg rounded-[2rem] bg-study-paper p-6 text-study-ink dark:bg-study-paper dark:text-white"><h2 className="text-2xl font-black">Plano de recuperação</h2><p className="mt-2 text-sm opacity-70">Há {recuperacao.dias_atrasados} dia(s) atrasado(s) e {recuperacao.conteudos_pendentes} conteúdo(s) pendente(s).</p><div className="mt-5 grid gap-3">{recuperacao.opcoes.map((opcao) => <button key={opcao.id} onClick={async () => { if (opcao.id === 'REDISTRIBUIR' || opcao.id === 'REDUZIR') await replanejar(); setRecuperacao(null); if (opcao.id === 'MANTER') toast('O cronograma foi mantido como está.'); }} className="rounded-2xl border p-4 text-left"><b>{opcao.titulo}</b><span className="mt-1 block text-sm opacity-65">{opcao.impacto}</span></button>)}</div><button onClick={() => setRecuperacao(null)} className="mt-5 text-sm font-bold underline">Fechar</button></section></div>}
-    </div>
-  )
-}
-
-function CardStat({ titulo, valor }) {
-  return (
-    <div className="schedule-surface bg-study-paper rounded-[2rem] p-6 shadow-xl border border-study-line/20">
-      <p className="text-sm font-bold text-black/50 mb-1">
-        {titulo}
-      </p>
-
-      <p className="text-3xl font-black text-study-accent">
-        {valor}
-      </p>
     </div>
   )
 }

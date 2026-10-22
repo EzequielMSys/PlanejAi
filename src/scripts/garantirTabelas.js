@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { isAlreadyAppliedError, readStatements, sortMigrations } = require('./migrationUtils');
+const { tipoCompatibilidade, verificarAvisosLegado } = require('./migrationCompatibility');
 const getDatabaseOptions = require('../config/databaseOptions');
 
 async function garantirTabelas() {
@@ -64,7 +65,11 @@ async function garantirTabelas() {
       const hash = crypto.createHash('sha256').update(contents).digest('hex');
       if (applied.has(file)) {
         if (applied.get(file) !== hash) {
-          throw new Error(`A migration já aplicada foi alterada: ${file}`);
+          const compatibilidade = tipoCompatibilidade(file, contents, applied.get(file));
+          if (!compatibilidade || (compatibilidade === 'avisos-legado' && !await verificarAvisosLegado(connection))) {
+            throw new Error(`A migration já aplicada foi alterada: ${file}`);
+          }
+          console.warn(`[MIGRATION] ${file}: versão aplicada compatível (${compatibilidade}); hash original preservado.`);
         }
         continue;
       }

@@ -1,4 +1,5 @@
 const pool = require('../config/db')
+const { distribuirQuestoes } = require('../utils/examDifficulty')
 
 const inicioSemana = () => {
   const data = new Date(); data.setHours(0, 0, 0, 0); data.setDate(data.getDate() - ((data.getDay() + 6) % 7)); return data.toISOString().slice(0, 10)
@@ -62,21 +63,29 @@ async function gerarSimulado(idUsuario, { idCatalogo, dificuldade = 'TODAS', qua
   const limite = Math.max(1, Math.min(180, Number(quantidade) || 45))
   const [[catalogo]] = await pool.execute('SELECT * FROM catalogo_provas WHERE id_catalogo=? AND ativo=1', [idCatalogo])
   if (!catalogo) throw new Error('Prova não encontrada no catálogo.')
-  const params = [idCatalogo]
-  let filtro = ''
-  if (nivel !== 'TODAS') { filtro = ' AND q.dificuldade=?'; params.push(nivel) }
-  const [disponiveis] = await pool.execute(`SELECT COUNT(*) AS total
+  const [disponiveis] = await pool.execute(`SELECT q.dificuldade, COUNT(*) AS total
     FROM catalogo_prova_questoes cp JOIN questoes_estudo q ON q.id_questao=cp.id_questao
-    WHERE cp.id_catalogo=? AND q.ativo=1${filtro}`, params)
-  const totalDisponivel = Number(disponiveis[0]?.total || 0)
+    WHERE cp.id_catalogo=? AND q.ativo=1 GROUP BY q.dificuldade`, [idCatalogo])
+  const porNivel = Object.fromEntries(disponiveis.map((item) => [item.dificuldade, Number(item.total)]))
+  const totalDisponivel = nivel === 'TODAS' ? Object.values(porNivel).reduce((total, valor) => total + valor, 0) : (porNivel[nivel] || 0)
   if (!totalDisponivel) throw new Error('Não há questões disponíveis para este nível.')
   if (limite > totalDisponivel) {
     throw new Error(`Esta coleção possui ${totalDisponivel} questão(ões) disponíveis para o nível escolhido. Ajuste a quantidade ou escolha outro nível.`)
   }
-  params.push(limite)
-  const [questoes] = await pool.execute(`SELECT q.id_questao,q.disciplina,q.competencia,q.enunciado,q.alternativas,q.dificuldade
-    FROM catalogo_prova_questoes cp JOIN questoes_estudo q ON q.id_questao=cp.id_questao
-    WHERE cp.id_catalogo=? AND q.ativo=1${filtro} ORDER BY RAND() LIMIT ?`, params)
+  const distribuicao = nivel === 'TODAS' ? distribuirQuestoes(limite, porNivel) : { [nivel]: limite }
+  const questoes = []
+  for (const [dificuldadeQuestao, quantidadeNivel] of Object.entries(distribuicao)) {
+    if (!quantidadeNivel) continue
+    const [selecionadas] = await pool.execute(`SELECT q.id_questao,q.disciplina,q.competencia,q.enunciado,q.alternativas,q.dificuldade
+      FROM catalogo_prova_questoes cp JOIN questoes_estudo q ON q.id_questao=cp.id_questao
+      WHERE cp.id_catalogo=? AND q.ativo=1 AND q.dificuldade=? ORDER BY RAND() LIMIT ?`, [idCatalogo, dificuldadeQuestao, quantidadeNivel])
+    questoes.push(...selecionadas)
+  }
+  if (questoes.length !== limite) throw new Error('O catálogo mudou durante a montagem. Tente gerar a prova novamente.')
+  for (let i = questoes.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[questoes[i], questoes[j]] = [questoes[j], questoes[i]]
+  }
   const ids = questoes.map((item) => item.id_questao)
   const [result] = await pool.execute(`INSERT INTO simulados_catalogo
     (id_usuario,id_catalogo,dificuldade,questoes,total_questoes) VALUES(?,?,?,?,?)`,
@@ -95,7 +104,7 @@ function normalizarRespostas(respostas, ids) {
   const lista = respostas && typeof respostas === 'object' && !Array.isArray(respostas) ? respostas : {}
   return Object.fromEntries(Object.entries(lista)
     .map(([id, resposta]) => [Number(id), Number(resposta)])
-    .filter(([id, resposta]) => permitidas.has(id) && Number.isInteger(resposta) && resposta >= 0 && resposta <= 3))
+    .filter(([id, resposta]) => permitidas.has(id) && Number.isInteger(resposta) && resposta >= 0 && resposta <= 4))
 }
 
 function normalizarRevisao(revisao, ids) {

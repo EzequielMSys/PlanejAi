@@ -1,0 +1,17 @@
+.lumi-message { overflow-wrap:anywhere; line-height:1.75; }
+.lumi-message > :first-child { margin-top:0; }
+.lumi-message > :last-child { margin-bottom:0; }
+.lumi-message p { margin:.5rem 0; }
+.lumi-message :is(h1,h2,h3,h4) { margin:1.2rem 0 .45rem; font:700 1em/1.35 'Segoe UI',system-ui,sans-serif; letter-spacing:0; }
+.lumi-message :is(ul,ol) { margin:.55rem 0; padding-left:1.45rem; }
+.lumi-message ul { list-style:disc; }
+.lumi-message ol { list-style:decimal; }
+.lumi-message li { margin:.25rem 0; padding-left:.15rem; }
+.lumi-message li > p { margin:.2rem 0; }
+.lumi-message blockquote { margin:.75rem 0; padding:.3rem .8rem; border-left:3px solid var(--pn-primaria); color:var(--pn-texto-suave); }
+.lumi-message code { padding:.1rem .25rem; border-radius:.25rem; background:var(--pn-superficie); font: .9em/1.5 ui-monospace,SFMono-Regular,Consolas,monospace; }
+.lumi-message pre { max-width:100%; overflow-x:auto; padding:.8rem; border-radius:.5rem; background:var(--pn-superficie); }
+.lumi-message pre code { padding:0; background:none; }
+.lumi-message table { display:block; max-width:100%; overflow-x:auto; border-collapse:collapse; }
+.lumi-message :is(th,td) { padding:.4rem .6rem; border:1px solid var(--pn-borda); text-align:left; }
+.lumi-message hr { margin:1rem 0; border:0; border-top:1px solid var(--pn-borda); }

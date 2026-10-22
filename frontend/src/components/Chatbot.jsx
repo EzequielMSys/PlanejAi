@@ -22,7 +22,7 @@ export default function Chatbot() {
   return (
     <div className="fixed bottom-36 right-4 z-[80] flex flex-col items-end">
       {open && (
-        <div className="chatbot-painel absolute bottom-full right-0 mb-3 grid w-80 sm:w-96">
+        <div className="chatbot-painel absolute bottom-full right-0 mb-3 grid">
           <div className="flex h-[34rem] max-h-[70vh] flex-col overflow-hidden rounded-2xl border border-study-line/25 bg-study-paper dark:bg-study-paper dark:text-white/90 shadow-[0_24px_70px_-30px_rgba(0,0,0,.55)]">
             <header className="flex items-center gap-2.5 border-b border-study-line/15 bg-study-tint dark:bg-study-paper px-4 py-2.5">
               <TutorLumi tamanho={30} />

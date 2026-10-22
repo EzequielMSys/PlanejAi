@@ -14,8 +14,10 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined
           if (/framer-motion|motion-dom|motion-utils/.test(id)) return 'motion'
-          if (id.includes('react')) return 'react'
-          return 'vendor'
+          // Apenas o runtime comum fica no carregamento inicial. Dependências
+          // usadas só pelo chat (como Markdown) seguem o import dinâmico dele.
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react'
+          return undefined
         },
       },
     },

@@ -7,15 +7,16 @@ import SimulatorSetup from '../components/SimulatorSetup'
 import EnemCompetencies from '../components/EnemCompetencies'
 
 import SimulationReport from '../components/SimulationReport'
+import './Aprendizagem.css'
 const tabs = [
   ['revisoes', 'Revisões'], ['simulado', 'Simulado'], ['erros', 'Caderno de erros'], ['dominio', 'Mapa de domínio']
 ]
 
 function Stat({ label, value, detail }) {
-  return <article className="rounded-2xl border border-study-line/15 bg-study-paper p-5 shadow-[0_20px_50px_-40px_rgba(44,22,85,.8)] dark:bg-study-paper">
-    <p className="text-[10px] font-black uppercase tracking-[.18em] text-study-accent dark:text-study-accent">{label}</p>
-    <strong className="mt-2 block text-3xl font-black text-study-ink dark:text-white">{value}</strong>
-    <span className="text-xs text-black/50 dark:text-white/55">{detail}</span>
+  return <article className="learning-stat">
+    <p>{label}</p>
+    <strong>{value}</strong>
+    <span>{detail}</span>
   </article>
 }
 
@@ -109,34 +110,38 @@ export default function Aprendizagem() {
 
   const questao = questoes[indice]
   const disciplinaCritica = useMemo(() => resumo?.porDisciplina?.[0], [resumo])
+  const totalRespostas = Number(resumo?.questoesRespondidas || 0)
+  const revisoesHoje = Number(resumo?.revisoesHoje || 0)
+  const errosPendentes = Number(resumo?.errosPendentes || 0)
+  const proximaAcao = revisoesHoje > 0
+    ? { titulo: 'Sua memória pede uma revisão.', texto: `${revisoesHoje} ${revisoesHoje === 1 ? 'conteúdo espera' : 'conteúdos esperam'} por você hoje.`, botao: 'Abrir revisões', aba: 'revisoes' }
+    : errosPendentes > 0
+      ? { titulo: 'Transforme um erro em avanço.', texto: `${errosPendentes} ${errosPendentes === 1 ? 'questão merece' : 'questões merecem'} uma nova tentativa.`, botao: 'Abrir caderno de erros', aba: 'erros' }
+      : { titulo: totalRespostas ? 'Mantenha o ritmo de prática.' : 'Seu mapa começa na primeira questão.', texto: totalRespostas ? 'Um simulado curto ajuda a revelar seu próximo foco.' : 'Responda algumas questões para descobrir onde começar.', botao: 'Preparar simulado', aba: 'simulado' }
   function imprimirRelatorio() { window.print() }
 
   if (carregando) return <div className="min-h-[60vh] grid place-items-center font-black text-study-accent">Preparando sua trilha…</div>
 
-  return <main className="min-h-screen bg-study-canvas px-4 py-6 text-study-ink dark:bg-study-canvas dark:text-white sm:px-8">
+  return <main className="learning-page min-h-screen bg-study-canvas px-4 py-6 text-study-ink dark:bg-study-canvas dark:text-white sm:px-8">
     <div className="mx-auto max-w-6xl">
-      <motion.header initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="workspace-hero relative overflow-hidden rounded-[2.2rem] border border-[#8052D5]/20 bg-study-paper p-7 dark:bg-study-paper sm:p-10">
-        <div className="max-w-2xl"><p className="text-[11px] font-black uppercase tracking-[.25em] text-study-accent dark:text-study-accent">PlanejAI / Laboratório de aprendizagem</p>
-          <h1 className="mt-3 text-4xl font-black tracking-[-.055em] sm:text-6xl">Estudar, testar, <span className="text-study-accent">lembrar.</span></h1>
-          <p className="mt-4 max-w-xl text-sm leading-6 text-black/60 dark:text-white/60">Uma fila viva que aprende com seus acertos, recupera o que ficou para trás e transforma erro em próximo passo.</p>
-        </div>
-        <div className="mt-7 flex flex-wrap gap-2"><button onClick={() => iniciarSimulado({ quantidade: 10, minutos: 15 })} className="rounded-full bg-study-accent px-6 py-3 text-sm font-black text-white shadow-lg shadow-[#6D3EC5]/20 transition hover:-translate-y-0.5">Começar simulado</button><button onClick={() => iniciarSimulado({ quantidade: 8, minutos: 15, adaptativo: true })} className="rounded-full border border-study-line px-6 py-3 text-sm font-black text-study-accent">Simulado adaptativo</button></div>
+      {!questao && <><motion.header initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="learning-hero">
+        <div className="learning-hero-copy"><span>PLANEJAI / LABORATÓRIO DE APRENDIZAGEM</span><h1>Aprender é<br /><em>voltar melhor.</em></h1><p>Pratique, entenda seus erros e volte ao que importa. Seu progresso ganha forma a cada resposta.</p><div className="learning-hero-actions"><button type="button" onClick={() => iniciarSimulado({ quantidade: 10, minutos: 15 })}>Começar simulado <span aria-hidden="true">→</span></button><button type="button" onClick={() => iniciarSimulado({ quantidade: 8, minutos: 15, adaptativo: true })}>Prática adaptativa</button></div></div>
+        <aside className="learning-next"><span>PRÓXIMO PASSO SUGERIDO</span><div aria-hidden="true">↗</div><h2>{proximaAcao.titulo}</h2><p>{proximaAcao.texto}</p><button type="button" onClick={() => setAba(proximaAcao.aba)}>{proximaAcao.botao} <span aria-hidden="true">→</span></button></aside>
       </motion.header>
+      <section className="learning-stats" aria-label="Seu progresso de aprendizagem">
+        <Stat label="Revisões hoje" value={revisoesHoje} detail={revisoesHoje ? 'na sua fila' : 'fila em dia'} />
+        <Stat label="Taxa de acerto" value={totalRespostas ? `${resumo?.taxaAcerto || 0}%` : '—'} detail={totalRespostas ? `${totalRespostas} respostas` : 'comece a praticar'} />
+        <Stat label="Erros para retomar" value={errosPendentes} detail={errosPendentes ? 'oportunidades de aprender' : 'nenhum pendente'} />
+        <Stat label="Domínio geral" value={totalRespostas ? `${resumo?.dominio || 0}%` : '—'} detail={totalRespostas ? 'baseado nas revisões' : 'ainda sem dados'} />
+      </section></>}
 
-      <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Revisões para hoje" value={resumo?.revisoesHoje || 0} detail="fila adaptativa" />
-        <Stat label="Taxa de acerto" value={`${resumo?.taxaAcerto || 0}%`} detail={`${resumo?.questoesRespondidas || 0} respostas`} />
-        <Stat label="Erros em aberto" value={resumo?.errosPendentes || 0} detail="prontos para retomar" />
-        <Stat label="Domínio geral" value={`${resumo?.dominio || 0}%`} detail="baseado em revisões" />
-      </section>
+      {!questao && <div className="learning-toolbar"><nav className="learning-tabs" aria-label="Seções de aprendizagem">
+        {tabs.map(([id, label]) => <button key={id} type="button" aria-pressed={aba === id} onClick={() => setAba(id)}>{label}</button>)}
+      </nav><button type="button" onClick={imprimirRelatorio} className="learning-print print:hidden">Imprimir relatório / PDF</button></div>}
 
-      <div className="mt-7 flex flex-wrap items-center justify-between gap-3"><nav className="flex gap-2 overflow-x-auto rounded-2xl border border-study-line/15 bg-study-paper p-2 dark:bg-study-paper" aria-label="Seções de aprendizagem">
-        {tabs.map(([id, label]) => <button key={id} onClick={() => setAba(id)} className={`whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-black transition ${aba === id ? 'bg-study-accent text-white' : 'text-black/55 hover:bg-study-tint dark:text-white/55 dark:hover:bg-study-paper'}`}>{label}</button>)}
-      </nav><button type="button" onClick={imprimirRelatorio} className="rounded-full border border-study-line px-4 py-2 text-sm font-black text-study-accent print:hidden">Imprimir relatório / PDF</button></div>
-
-      <section className="mt-4 rounded-[2rem] border border-study-line/15 bg-study-paper p-5 dark:bg-study-paper sm:p-8">
+      <section className="learning-workspace">
         {aba === 'revisoes' && <div><h2 className="text-2xl font-black">Fila de hoje</h2><p className="mt-1 text-sm text-black/55 dark:text-white/55">Diga honestamente como a lembrança veio. O intervalo se ajusta sozinho.</p>
-          <div className="mt-6 grid gap-4">{revisoes.length === 0 ? <Empty title="Fila limpa" text="Conclua conteúdos do cronograma e adicione-os à revisão para construir sua memória de longo prazo." /> : revisoes.map((item) => <article key={item.id_revisao} className="rounded-2xl border border-study-line/15 bg-study-canvas p-5 dark:bg-study-paper"><p className="text-xs font-black uppercase tracking-wider text-study-accent dark:text-study-accent">{item.disciplina}</p><h3 className="mt-1 text-xl font-black">{item.titulo}</h3><p className="mt-2 text-xs text-black/50 dark:text-white/50">Domínio {Number(item.nivel_dominio) * 10}% · última resposta {item.ultimo_resultado || 'ainda não avaliada'}</p><div className="mt-4 flex flex-wrap gap-2">{[['ESQUECI','Esqueci'],['DIFICIL','Foi difícil'],['LEMBREI','Lembrei'],['DOMINEI','Dominei']].map(([id,label]) => <button key={id} onClick={() => avaliar(item,id)} className="rounded-full border border-study-line/25 px-4 py-2 text-xs font-black hover:bg-study-accent hover:text-white">{label}</button>)}</div></article>)}</div></div>}
+          <div className="mt-6 grid gap-4">{revisoes.length === 0 ? <Empty title="Tudo em dia por aqui." text="Sua fila está limpa. Um simulado curto pode revelar o próximo conteúdo que vale revisar." action={() => setAba('simulado')} actionLabel="Preparar simulado" /> : revisoes.map((item) => <article key={item.id_revisao} className="learning-review rounded-2xl border border-study-line/15 bg-study-canvas p-5 dark:bg-study-paper"><p className="text-xs font-black uppercase tracking-wider text-study-accent dark:text-study-accent">{item.disciplina}</p><h3 className="mt-1 text-xl font-black">{item.titulo}</h3><p className="mt-2 text-xs text-black/50 dark:text-white/50">Domínio {Number(item.nivel_dominio) * 10}% · última resposta {item.ultimo_resultado || 'ainda não avaliada'}</p><div className="mt-4 flex flex-wrap gap-2">{[['ESQUECI','Esqueci'],['DIFICIL','Foi difícil'],['LEMBREI','Lembrei'],['DOMINEI','Dominei']].map(([id,label]) => <button key={id} onClick={() => avaliar(item,id)} className="rounded-full border border-study-line/25 px-4 py-2 text-xs font-black hover:bg-study-accent hover:text-white">{label}</button>)}</div></article>)}</div></div>}
 
         {aba === 'simulado' && (!questao ? (relatorio ? <SimulationReport report={relatorio} onRetry={() => iniciarSimulado({ quantidade: relatorio.total, minutos: 15 })} onClose={() => { setRelatorio(null); setAba('dominio') }} /> : <SimulatorSetup onStart={iniciarSimulado} errosPendentes={Number(resumo?.errosPendentes || 0)} />) : <div><div className="flex flex-wrap items-center justify-between gap-3"><span className="text-xs font-black uppercase tracking-wider text-study-accent dark:text-study-accent">{questao.disciplina} · {questao.competencia} · {questao.dificuldade}</span><div className="flex items-center gap-2"><b className="rounded-full bg-study-tint px-3 py-1.5 text-xs dark:bg-study-paper">{indice + 1}/{questoes.length}</b>{tempoRestante !== null && <b className={`rounded-full px-3 py-1.5 text-xs ${tempoRestante < 60 ? 'bg-red-100 text-red-700' : 'bg-study-accent text-white'}`}>⏱ {Math.floor(tempoRestante / 60)}:{String(tempoRestante % 60).padStart(2,'0')}</b>}</div></div><h2 className="mt-5 max-w-3xl text-xl font-black leading-8">{questao.enunciado}</h2><div className="mt-6 grid gap-3">{questao.alternativas.map((alt, i) => <button disabled={Boolean(feedback)} onClick={() => setResposta(i)} key={`${questao.id_questao}-${i}`} className={`rounded-2xl border p-4 text-left text-sm font-bold transition ${resposta === i ? 'border-study-line bg-[#EEE5FA] dark:bg-[#392653]' : 'border-black/10 hover:border-study-line/50 dark:border-white/10'}`}><span className="mr-3 text-study-accent">{String.fromCharCode(65+i)}</span>{alt}</button>)}</div>{!feedback && <div className="mt-4 flex flex-wrap items-center gap-2"><span className="text-xs font-black">Confiança:</span>{[['CHUTEI','Chutei'],['DUVIDA','Tenho dúvida'],['CERTEZA','Tenho certeza']].map(([id,label]) => <button type="button" key={id} onClick={() => setConfianca(id)} className={`rounded-full border px-3 py-2 text-xs font-bold ${confianca === id ? 'bg-study-accent text-white' : ''}`}>{label}</button>)}<button type="button" onClick={pedirPista} disabled={pistas.length >= 3} className="rounded-full border px-3 py-2 text-xs font-bold">Pedir pista ({pistas.length}/3)</button></div>}{pistas.map((pista, i) => <p key={pista} className="mt-2 rounded-xl bg-study-tint p-3 text-sm dark:bg-study-paper"><b>Pista {i + 1}:</b> {pista}</p>)}{feedback && <div className={`mt-5 rounded-2xl p-5 ${feedback.acertou ? 'bg-emerald-50 text-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-100' : 'bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100'}`}><b>{feedback.acertou ? 'Raciocínio confirmado' : `Resposta correta: ${String.fromCharCode(65 + Number(feedback.respostaCorreta))}`}</b><p className="mt-1 text-sm">{feedback.explicacao}</p>{feedback.dominio && <p className="mt-2 text-xs font-bold">Domínio atualizado: {feedback.dominio.dominio}%</p>}</div>}<button onClick={feedback ? proximaQuestao : confirmarResposta} className="mt-6 rounded-full bg-study-accent px-6 py-3 text-sm font-black text-white">{feedback ? 'Próxima questão' : 'Confirmar resposta'}</button></div>)}
 
@@ -151,5 +156,5 @@ export default function Aprendizagem() {
 }
 
 function Empty({ title, text, action, actionLabel }) {
-  return <div className="rounded-2xl border border-dashed border-study-line/25 bg-study-canvas p-8 text-center dark:bg-study-paper"><h3 className="text-xl font-black">{title}</h3><p className="mx-auto mt-2 max-w-xl text-sm text-black/55 dark:text-white/55">{text}</p>{action && <button onClick={action} className="mt-5 rounded-full bg-study-accent px-5 py-2.5 text-sm font-black text-white">{actionLabel}</button>}</div>
+  return <div className="learning-empty"><span aria-hidden="true">✦</span><h3>{title}</h3><p>{text}</p>{action && <button type="button" onClick={action}>{actionLabel} <span aria-hidden="true">→</span></button>}</div>
 }

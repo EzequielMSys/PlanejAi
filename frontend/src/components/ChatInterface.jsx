@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import inteligencia from '../services/inteligenciaService'
 import TutorLumi from './TutorLumi'
+import LumiMessage from './LumiMessage'
 
 const SUGESTOES_INICIO = [
   'Como estudar funções do 2º grau de forma prática?',
@@ -26,13 +27,13 @@ function Mensagem({ mensagem }) {
     <div className={`flex items-start gap-2 ${ehUsuario ? 'justify-end' : 'justify-start'}`}>
       {!ehUsuario && <TutorLumi tamanho={28} humor={mensagem.reacao || 'neutro'} />}
       <div
-        className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
+        className={`min-w-0 max-w-[88%] rounded-2xl px-4 py-3 text-[.94rem] shadow-sm sm:max-w-[82%] ${
           ehUsuario
             ? 'bg-study-accent text-white rounded-br-md'
             : 'bg-study-tint dark:bg-study-paper text-study-ink dark:text-white/90 border border-study-line/15 rounded-bl-md'
         }`}
       >
-        <p className="whitespace-pre-wrap leading-relaxed">{mensagem.content}</p>
+        {ehUsuario ? <p className="whitespace-pre-wrap break-words leading-relaxed">{mensagem.content}</p> : <LumiMessage content={mensagem.content} />}
         {mensagem.criado_em && (
           <time dateTime={mensagem.criado_em} className="block translate-y-0.5 text-[10px] opacity-50">
             {formatarHora(mensagem.criado_em)}
@@ -43,7 +44,7 @@ function Mensagem({ mensagem }) {
   )
 }
 
-export default function ChatInterface({ className = '' }) {
+export default function ChatInterface({ className = '', onEstadoChange, redacaoSelecionada }) {
   const [mensagens, setMensagens] = useState([])
   const [input, setInput] = useState('')
   const [materia, setMateria] = useState('')
@@ -52,6 +53,10 @@ export default function ChatInterface({ className = '' }) {
   const [contexto, setContexto] = useState(null)
   const fimRef = useRef(null)
   const inputRef = useRef(null)
+
+  useEffect(() => {
+    onEstadoChange?.(loading ? 'pensando' : humorLumi)
+  }, [humorLumi, loading, onEstadoChange])
 
   useEffect(() => {
     inteligencia
@@ -96,7 +101,7 @@ export default function ChatInterface({ className = '' }) {
     setLoading(true)
     setHumorLumi('pensando')
     try {
-      const data = await inteligencia.chatSend(mensagem, materia || undefined)
+      const data = await inteligencia.chatSend(mensagem, materia || undefined, redacaoSelecionada?.id)
       if (data?.offline || data?.queued) {
         toast(data.message || 'Sem conexão: a mensagem será enviada quando você ficar online.')
         setHumorLumi('neutro')
@@ -169,12 +174,21 @@ export default function ChatInterface({ className = '' }) {
         </button>
       </div>
 
-      {contexto && (contexto.areasFoco || contexto.licoes?.length > 0 || contexto.dificuldades?.length > 0) && (
+      {redacaoSelecionada?.id && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-study-line/10 px-3 py-2 text-xs">
+          <span className="text-study-ink/70 dark:text-white/70">Redação selecionada: <strong>{redacaoSelecionada.tema}</strong></span>
+          <button type="button" onClick={() => enviar('Quero revisar esta redação com você. Comece pela competência que mais precisa de atenção e cite um trecho específico.')} disabled={loading} className="font-bold text-study-accent disabled:opacity-50">Revisar com a Lumi</button>
+        </div>
+      )}
+
+      {contexto && (contexto.areasFoco || contexto.licoes?.length > 0 || contexto.dificuldades?.length > 0 || contexto.redacoes?.length > 0) && (
         <div className="border-b border-study-line/10 px-3 py-2 text-xs text-study-ink/70 dark:text-white/70" aria-label="Contexto de estudos disponível para a Lumi">
           <span className="font-bold">Lumi conhece seus estudos:</span>{' '}
           {contexto.areasFoco && <span>áreas de foco · </span>}
           {contexto.licoes?.length > 0 && <span>{contexto.licoes.length} lições recentes · </span>}
-          {contexto.dificuldades?.length > 0 && <span>{contexto.dificuldades.length} dificuldades identificadas</span>}
+          {contexto.cronograma?.total > 0 && <span>{contexto.cronograma.concluidas}/{contexto.cronograma.total} lições concluídas · </span>}
+          {contexto.dificuldades?.length > 0 && <span>{contexto.dificuldades.length} dificuldades identificadas · </span>}
+          {contexto.redacoes?.length > 0 && <span>{contexto.redacoes.length} redação(ões) recente(s)</span>}
         </div>
       )}
 
@@ -191,6 +205,7 @@ export default function ChatInterface({ className = '' }) {
             <div className="flex w-full flex-col gap-2">
               {contexto?.licoes?.[0]?.titulo && <button type="button" onClick={() => enviar(`Me ajude a estudar a lição ${contexto.licoes[0].titulo}. Comece pelo conceito principal.`)} className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white">Retomar minha lição: {contexto.licoes[0].titulo}</button>}
               {contexto?.dificuldades?.[0]?.disciplina && <button type="button" onClick={() => enviar(`Tenho tido dificuldade em ${contexto.dificuldades[0].disciplina}${contexto.dificuldades[0].competencia ? `, especialmente ${contexto.dificuldades[0].competencia}` : ''}. Explique de outra forma e proponha um exercício curto.`)} className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white">Trabalhar uma dificuldade em {contexto.dificuldades[0].disciplina}</button>}
+              {contexto?.redacoes?.[0]?.tema && <button type="button" onClick={() => enviar('Quero revisar minha redação mais recente. Mostre a competência mais fraca, cite um trecho do meu texto e sugira uma reescrita curta para eu tentar.')} className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white">Revisar minha redação: {contexto.redacoes[0].tema}</button>}
               {SUGESTOES_INICIO.map((sugestao) => (
                 <button
                   key={sugestao}
@@ -212,11 +227,12 @@ export default function ChatInterface({ className = '' }) {
         {loading && (
           <div className="flex items-start gap-2 justify-start" role="status" aria-label="Lumi está pensando na resposta">
             <TutorLumi tamanho={28} humor="pensando" />
-            <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-study-line/15 bg-study-tint px-4 py-3 dark:bg-study-paper">
+            <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-study-line/15 bg-study-tint px-4 py-3 dark:bg-study-paper">
+              <span className="text-xs text-study-ink/70 dark:text-white/70">Lumi está pensando</span>
               {[0, 1, 2].map((dot) => (
                 <span
                   key={dot}
-                  className="h-2 w-2 rounded-full bg-study-accent dark:bg-white/70 animate-bounce"
+                  className="h-2 w-2 rounded-full bg-study-accent motion-safe:animate-bounce dark:bg-white/70"
                   style={{ animationDelay: `${dot * 0.15}s` }}
                 />
               ))}

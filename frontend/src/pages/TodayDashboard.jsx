@@ -41,6 +41,9 @@ export default function TodayDashboard() {
   // A meta é uma preferência da conta, não do dispositivo. O resumo inicial a
   // hidrata a partir do banco para manter a mesma experiência em qualquer PC.
   const [weeklyGoal, setWeeklyGoal] = useState(180)
+  const [goalDraft, setGoalDraft] = useState('180')
+  const [editingGoal, setEditingGoal] = useState(false)
+  const [savingGoal, setSavingGoal] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -72,8 +75,9 @@ export default function TodayDashboard() {
   const agenda = (todayDay?.conteudos?.length ? todayDay.conteudos : nextDay?.conteudos || []).slice(0, 4)
   const completed = days.filter(done).length
   const progress = days.length ? Math.round((completed / days.length) * 100) : 0
-  const weeklyMinutes = Number(data.learning?.minutosSemana ?? localMinutes(true))
+  const weeklyMinutes = Math.max(0, Number(data.learning?.minutosSemana ?? localMinutes(true)) || 0)
   const weeklyProgress = Math.min(100, Math.round((weeklyMinutes / weeklyGoal) * 100))
+  const remainingMinutes = Math.max(0, weeklyGoal - weeklyMinutes)
   const pendingErrors = data.learning?.errosPendentes || data.errors.filter((item) => !item.resolvido).length || 0
   const reviews = data.learning?.revisoesHoje || data.reviews.length || 0
   const streak = streakOf(days)
@@ -81,15 +85,21 @@ export default function TodayDashboard() {
 
   const start = (content = nextContent, day = nextDay) => content ? navigate('/estudar', { state: { conteudo: content, dia: day } }) : navigate('/cronograma')
   const updateWeeklyGoal = async (event) => {
-    const nextGoal = Math.max(30, Math.min(1680, Number(event.target.value) || 30))
-    const previousGoal = weeklyGoal
-    setWeeklyGoal(nextGoal)
+    event.preventDefault()
+    const nextGoal = Number(goalDraft)
+    if (!Number.isInteger(nextGoal) || nextGoal < 30 || nextGoal > 1680) {
+      toast.error('Escolha uma meta entre 30 e 1680 minutos.')
+      return
+    }
+    setSavingGoal(true)
     try {
       const saved = await aprendizagemService.atualizarMetaSemanal(nextGoal)
       setWeeklyGoal(Number(saved?.minutosMeta) || nextGoal)
+      setEditingGoal(false)
     } catch {
-      setWeeklyGoal(previousGoal)
       toast.error('Não foi possível salvar a meta semanal. Tente novamente.')
+    } finally {
+      setSavingGoal(false)
     }
   }
   const date = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date())
@@ -119,9 +129,14 @@ export default function TodayDashboard() {
         </motion.article>
 
         <aside className="dash-v2-score">
-          <div className="dash-v2-ring" style={{ '--score': `${weeklyProgress * 3.6}deg` }}><span><strong>{weeklyProgress}%</strong><small>meta semanal</small></span></div>
-          <h2>{weeklyMinutes} de {weeklyGoal} min</h2><p>Consistência vale mais do que intensidade isolada.</p>
-          <label>AJUSTAR META <input type="number" min="30" max="1680" step="30" value={weeklyGoal} onChange={updateWeeklyGoal} /></label>
+          <div className="dash-v2-score-head"><span>META DA SEMANA</span><button type="button" onClick={() => { setGoalDraft(String(weeklyGoal)); setEditingGoal(!editingGoal) }} aria-expanded={editingGoal}>{editingGoal ? 'Fechar' : 'Editar meta'} <span aria-hidden="true">↗</span></button></div>
+          <div className="dash-v2-score-main">
+            <div className="dash-v2-ring" style={{ '--score': `${weeklyProgress * 3.6}deg` }} aria-hidden="true"><span><strong>{weeklyProgress}%</strong><small>concluído</small></span></div>
+            <div className="dash-v2-score-copy"><h2><strong>{weeklyMinutes}</strong><span>min estudados</span></h2><p>de {weeklyGoal} min planejados</p></div>
+          </div>
+          <div className="dash-v2-score-progress" role="progressbar" aria-label="Progresso da meta semanal" aria-valuemin="0" aria-valuemax="100" aria-valuenow={weeklyProgress}><span style={{ width: `${weeklyProgress}%` }} /></div>
+          <p className="dash-v2-score-message">{remainingMinutes === 0 ? 'Meta cumprida! Seu esforço desta semana já passou do planejado.' : weeklyMinutes === 0 ? `Faltam ${remainingMinutes} min. Que tal começar com uma sessão hoje?` : `Faltam ${remainingMinutes} min para fechar sua meta da semana.`}</p>
+          {editingGoal ? <form className="dash-v2-score-form" onSubmit={updateWeeklyGoal}><label htmlFor="weekly-goal">Nova meta semanal <span>(30 a 1680 min)</span></label><div><input id="weekly-goal" type="number" min="30" max="1680" step="1" value={goalDraft} onChange={(event) => setGoalDraft(event.target.value)} required /><button type="submit" disabled={savingGoal}>{savingGoal ? 'Salvando…' : 'Salvar'}</button></div></form> : <button type="button" className="dash-v2-score-cta" onClick={() => start()}>{nextContent ? 'Continuar estudando' : 'Montar cronograma'} <span aria-hidden="true">→</span></button>}
         </aside>
       </section>
 
