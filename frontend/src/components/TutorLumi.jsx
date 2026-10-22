@@ -24,10 +24,10 @@ export default function TutorLumi({ tamanho = 40, humor = 'neutro', rotulo }) {
           {olhosFechados ? <>
             <path className="lumi-cat-closed-eye" d={feliz ? 'M49 119 Q69 103 94 119 M146 119 Q171 103 191 119' : 'M49 116 Q70 126 94 117 M146 117 Q170 126 191 116'} />
           </> : <>
-            <path className="lumi-cat-eye-white" d={surpresa ? 'M48 119 Q63 99 88 108 Q98 116 92 131 Q71 143 53 131 Q49 126 48 119 Z' : raiva ? 'M49 111 Q70 115 96 124 Q84 139 62 135 Q51 130 49 111 Z' : 'M48 119 Q62 104 81 106 Q94 107 99 119 Q89 132 71 134 Q55 132 48 119 Z'} />
-            <path className="lumi-cat-eye-white" d={surpresa ? 'M152 108 Q177 99 192 119 Q191 126 187 131 Q169 143 148 131 Q142 116 152 108 Z' : raiva ? 'M144 124 Q170 115 191 111 Q189 130 178 135 Q158 139 144 124 Z' : 'M141 119 Q146 107 159 106 Q178 104 192 119 Q185 132 169 134 Q151 132 141 119 Z'} />
-            <path className="lumi-cat-eye-ink" d={surpresa ? 'M54 118 Q66 105 79 111 Q88 116 88 126 Q79 134 68 130 Q58 127 54 118 Z' : 'M54 118 Q65 108 75 110 Q86 112 89 121 Q82 130 71 130 Q60 128 54 118 Z'} transform={pensando ? 'translate(4 0)' : undefined} />
-            <path className="lumi-cat-eye-ink" d={surpresa ? 'M186 118 Q174 105 161 111 Q152 116 152 126 Q161 134 172 130 Q182 127 186 118 Z' : 'M186 118 Q175 108 165 110 Q154 112 151 121 Q158 130 169 130 Q180 128 186 118 Z'} transform={pensando ? 'translate(-4 0)' : undefined} />
+            <path className="lumi-cat-eye-white" d={surpresa ? 'M47 119 Q60 99 84 105 Q97 109 101 120 Q88 139 67 136 Q53 133 47 119 Z' : raiva ? 'M48 112 Q69 114 99 122 Q85 139 63 135 Q51 131 48 112 Z' : 'M48 119 Q61 105 78 105 Q92 105 101 120 Q89 133 72 133 Q57 132 48 119 Z'} />
+            <path className="lumi-cat-eye-white" d={surpresa ? 'M193 119 Q180 99 156 105 Q143 109 139 120 Q152 139 173 136 Q187 133 193 119 Z' : raiva ? 'M192 112 Q171 114 141 122 Q155 139 177 135 Q189 131 192 112 Z' : 'M192 119 Q179 105 162 105 Q148 105 139 120 Q151 133 168 133 Q183 132 192 119 Z'} />
+            <ellipse className="lumi-cat-eye-ink" cx={pensando ? '76' : '72'} cy={surpresa ? '119' : '120'} rx={surpresa ? '5.5' : '4.5'} ry={surpresa ? '10' : '8.5'} />
+            <ellipse className="lumi-cat-eye-ink" cx={pensando ? '164' : '168'} cy={surpresa ? '119' : '120'} rx={surpresa ? '5.5' : '4.5'} ry={surpresa ? '10' : '8.5'} />
             {surpresa && <><circle className="lumi-cat-glint" cx="65" cy="115" r="2.3" /><circle className="lumi-cat-glint" cx="175" cy="115" r="2.3" /></>}
             {raiva && <path className="lumi-cat-brows" d="M50 103 Q69 107 91 117 M149 117 Q171 107 190 103" />}
           </>}
