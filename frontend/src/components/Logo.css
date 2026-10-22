@@ -1,0 +1,8 @@
+.pn-logo-interactive{transform-origin:center;transition:transform .25s ease,filter .25s ease}
+.pn-logo-interactive .pn-logo-book,.pn-logo-interactive .pn-logo-route,.pn-logo-interactive .pn-logo-spark{transform-origin:center;transition:transform .28s ease,opacity .28s ease}
+.pn-logo-interactive:hover,.pn-logo-interactive:focus-visible{transform:translateY(-2px) rotate(-3deg);filter:drop-shadow(0 4px 7px rgb(var(--pn-primaria-rgb)/.25))}
+.pn-logo-interactive:hover .pn-logo-book,.pn-logo-interactive:focus-visible .pn-logo-book{transform:scale(1.04)}
+.pn-logo-interactive:hover .pn-logo-route,.pn-logo-interactive:focus-visible .pn-logo-route{transform:translate(1px,-1px)}
+.pn-logo-interactive:hover .pn-logo-spark,.pn-logo-interactive:focus-visible .pn-logo-spark{transform:scale(1.18)}
+@media(prefers-reduced-motion:reduce){.pn-logo-interactive,.pn-logo-interactive .pn-logo-book,.pn-logo-interactive .pn-logo-route,.pn-logo-interactive .pn-logo-spark{transition:none}.pn-logo-interactive:hover,.pn-logo-interactive:focus-visible,.pn-logo-interactive:hover .pn-logo-book,.pn-logo-interactive:hover .pn-logo-route,.pn-logo-interactive:hover .pn-logo-spark{transform:none}}
+.a11y-reduced-motion .pn-logo-interactive,.a11y-reduced-motion .pn-logo-interactive *{transition:none!important;transform:none!important}
