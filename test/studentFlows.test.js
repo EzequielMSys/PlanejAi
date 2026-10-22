@@ -27,6 +27,7 @@ const axios = requireFrontend('axios');
 let bundle;
 let requests = [];
 let failChat = false;
+let materialCatalogFixture = false;
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
@@ -50,6 +51,7 @@ function fixture(config) {
   if (url.endsWith('/turmas/minhas/1')) return { id_turma: 1, nome: 'Turma de teste', ano_letivo: 2026, pendentes: [], concluidas: [], avisos: [] };
   if (url.endsWith('/turmas')) return [{ id_turma: 2, nome: 'Terceiro A', codigo: '3A', ano_letivo: 2026, total_alunos: 3, disciplinas: [{ disciplina: 'Matemática' }] }];
   if (url.endsWith('/turmas/2')) return { id_turma: 2, nome: 'Terceiro A', codigo: '3A', docentes: [], alunos: [] };
+  if (materialCatalogFixture && url.endsWith('/conteudos')) return [{ id_conteudo: 7, titulo: 'Leis de Newton', disciplina: 'Física', nivel: 'BASICO', materiais: '[]', link: '' }];
   if (url.endsWith('/adaptativo/proxima-acao')) return { motivo: 'Uma sessão breve', titulo: 'Revisar' };
   if (url.endsWith('/adaptativo/sequencia')) return { semanas: 0 };
   return [];
@@ -109,6 +111,18 @@ test('activity management guides the first creation into the editor', async () =
     assert.ok(screen.container.textContent.includes('Nova atividade'));
     assert.ok(document.querySelector('.activity-question-editor'));
   } finally { await screen.close(); }
+});
+
+test('materials library opens a missing resource and allows adding a reference', async () => {
+  materialCatalogFixture = true;
+  const screen = await renderRoute('/materiais', 'docente');
+  try {
+    assert.ok(screen.container.textContent.includes('Precisa de material'));
+    await act(async () => document.querySelector('.materials-card').click());
+    assert.equal(document.querySelector('[role="dialog"] h2').textContent, 'Leis de Newton');
+    await act(async () => [...document.querySelectorAll('.materials-dialog button')].find(node => node.textContent.includes('Adicionar recurso')).click());
+    assert.equal(document.querySelectorAll('.materials-extra').length, 1);
+  } finally { await screen.close(); materialCatalogFixture = false; }
 });
 
 test('all student, teacher and owner pages render without runtime failures', async t => {
