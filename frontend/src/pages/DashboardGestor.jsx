@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import dashboardService from '../services/dashboardService'
 import avisoService from '../services/avisoService'
 import PedagogicalInterventions from '../components/PedagogicalInterventions'
+import './DashboardGestor.css'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -22,12 +24,9 @@ function formatarData(data) {
   })
 }
 
-function Card({ titulo, valor, cor }) {
+function Card({ titulo, valor, cor, legenda }) {
   return (
-    <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
-      <p className="text-sm font-bold text-[rgb(var(--pn-texto-rgb)/0.5)] dark:text-white/50 mb-1">{titulo}</p>
-      <p className="text-3xl font-black" style={{ color: cor || 'var(--pn-primaria)' }}>{valor}</p>
-    </div>
+    <article className="pedagogy-stat"><span>{titulo}</span><strong style={{ color: cor || 'var(--pn-primaria)' }}>{valor}</strong><small>{legenda}</small></article>
   )
 }
 
@@ -50,18 +49,19 @@ export default function DashboardGestor() {
 
   async function carregarDados() {
     try {
-      const [est, ent, des, apr, av] = await Promise.all([
+      const [est, ent, des, apr, av] = await Promise.allSettled([
         dashboardService.estatisticas(),
         dashboardService.entregasPendentes(),
         dashboardService.desempenho(),
         dashboardService.aprendizagem(),
         avisoService.listar()
       ])
-      setEstatisticas(est)
-      setEntregas(Array.isArray(ent) ? ent : [])
-      setDesempenho(Array.isArray(des) ? des : [])
-      setAprendizagem(Array.isArray(apr) ? apr : [])
-      setAvisos(Array.isArray(av) ? av : [])
+      if (est.status === 'fulfilled') setEstatisticas(est.value)
+      setEntregas(ent.status === 'fulfilled' && Array.isArray(ent.value) ? ent.value : [])
+      setDesempenho(des.status === 'fulfilled' && Array.isArray(des.value) ? des.value : [])
+      setAprendizagem(apr.status === 'fulfilled' && Array.isArray(apr.value) ? apr.value : [])
+      setAvisos(av.status === 'fulfilled' && Array.isArray(av.value) ? av.value : [])
+      if ([est, ent, des, apr, av].some(item => item.status === 'rejected')) toast.error('Parte dos indicadores não pôde ser carregada.')
     } catch {
       toast.error('Erro ao carregar dados do painel.')
     } finally {
@@ -72,10 +72,10 @@ export default function DashboardGestor() {
   const stats = useMemo(() => {
     if (!estatisticas) return []
     return [
-      { titulo: 'Usuários ativos', valor: estatisticas.totalUsuarios || 0, cor: 'var(--pn-primaria)' },
-      { titulo: 'Atividades publicadas', valor: estatisticas.totalAtividadesPublicadas || 0, cor: 'var(--pn-primaria)' },
-      { titulo: 'Entregas realizadas', valor: estatisticas.totalEntregas || 0, cor: 'var(--pn-primaria)' },
-      { titulo: 'Cronogramas ativos', valor: estatisticas.totalCronogramasAtivos || 0, cor: 'var(--pn-primaria)' }
+      { titulo: 'Pessoas na plataforma', valor: estatisticas.totalUsuarios || 0, legenda: 'contas acompanhadas' },
+      { titulo: 'Atividades publicadas', valor: estatisticas.totalAtividadesPublicadas || 0, legenda: 'propostas de estudo' },
+      { titulo: 'Entregas realizadas', valor: estatisticas.totalEntregas || 0, legenda: 'respostas recebidas' },
+      { titulo: 'Cronogramas ativos', valor: estatisticas.totalCronogramasAtivos || 0, legenda: 'planos em andamento' }
     ]
   }, [estatisticas])
 
@@ -129,28 +129,22 @@ export default function DashboardGestor() {
   }
 
   return (
-    <div className="min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] dark:text-white px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-72 h-72 bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)] rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] rounded-full blur-3xl" />
-
-      <div className="max-w-7xl mx-auto relative z-10 space-y-8">
+    <main className="pedagogy-page">
+      <div className="pedagogy-shell space-y-8">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <section className="workspace-hero bg-gradient-to-br from-[rgb(var(--pn-primaria-rgb)/1)] via-[rgb(var(--pn-primaria-rgb)/1)] to-[rgb(var(--pn-primaria-rgb)/1)] rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative overflow-hidden student-page-heading">
-            <div className="absolute inset-0 bg-black/20" />
-            <div className="relative z-10">
-              <p className="text-xs font-black uppercase tracking-[.3em] text-white/70">Painel pedagógico</p>
-              <h1 className="mt-2 text-3xl md:text-4xl font-black text-white tracking-tight">Olá, {user?.apelido || user?.nome || 'gestor'}</h1>
-              <p className="mt-2 text-white/85 max-w-2xl">Acompanhe entregas, desempenho e movimentação da plataforma em tempo real.</p>
-            </div>
+          <section className="pedagogy-hero" aria-labelledby="pedagogy-title">
+            <div><span>PLANEJAI · VISÃO PEDAGÓGICA</span><h1 id="pedagogy-title">Cada estudante merece um próximo passo.</h1><p>Olá, {user?.apelido || user?.nome || 'gestor'}. Veja quem precisa de atenção, acompanhe evidências e organize intervenções com clareza.</p><div className="pedagogy-hero-actions"><a href="#pedagogy-priorities">Ver prioridades <b aria-hidden="true">↓</b></a><Link to="/turmas">Gerenciar turmas <b aria-hidden="true">↗</b></Link></div></div>
+            <div className="pedagogy-hero-note" aria-hidden="true"><span>ACOMPANHAR É AGIR</span><strong>Observe.<br />Converse.<br /><em>Oriente.</em></strong></div>
           </section>
         </motion.div>
 
-        <motion.section variants={fadeUp} initial="hidden" animate="visible" className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.section variants={fadeUp} initial="hidden" animate="visible" className="pedagogy-stats" aria-label="Indicadores gerais">
           {stats.map((item) => <Card key={item.titulo} {...item} />)}
         </motion.section>
-        <PedagogicalInterventions />
+        <nav className="pedagogy-jumps" aria-label="Navegar pela visão pedagógica"><a href="#pedagogy-priorities">01 · Prioridades</a><a href="#pedagogy-evidence">02 · Evidências</a><a href="#pedagogy-notices">03 · Avisos</a></nav>
+        <section id="pedagogy-priorities" className="pedagogy-section"><header><span>ATENÇÃO AGORA</span><h2>Por onde começar hoje</h2><p>Alertas mostram sinais para investigar. Use as informações como ponto de partida para conversar com o estudante.</p></header><PedagogicalInterventions /></section>
 
-        <motion.section variants={fadeUp} initial="hidden" animate="visible" className="grid lg:grid-cols-3 gap-6">
+        <motion.section variants={fadeUp} initial="hidden" animate="visible" className="pedagogy-deliveries grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-[rgb(var(--pn-superficie-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
             <h2 className="text-xl font-black mb-4">Entregas pendentes de correção</h2>
             {entregas.length === 0 ? (
@@ -193,12 +187,13 @@ export default function DashboardGestor() {
             )}
           </div>
         </motion.section>
+        <div id="pedagogy-evidence" className="pedagogy-section"><header><span>EVIDÊNCIAS DE APRENDIZAGEM</span><h2>Leia os sinais com contexto</h2><p>Taxas e revisões ajudam a escolher uma intervenção; não definem o potencial de um estudante.</p></header>
         <motion.section variants={fadeUp} initial="hidden" animate="visible" className="rounded-[2.5rem] border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 shadow-xl dark:bg-[rgb(var(--pn-superficie-rgb)/1)]">
           <div className="mb-5"><p className="text-[10px] font-black uppercase tracking-[.2em] text-[rgb(var(--pn-primaria-rgb)/1)] dark:text-[rgb(var(--pn-primaria-rgb)/1)]">Sinais pedagógicos</p><h2 className="text-xl font-black">Quem precisa de uma intervenção</h2></div>
           {aprendizagem.length === 0 ? <p className="text-sm text-[rgb(var(--pn-texto-rgb)/0.55)] dark:text-white/55">Os indicadores aparecem depois das primeiras práticas.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[650px] text-left text-sm"><thead><tr className="border-b border-black/10 text-xs uppercase tracking-wider text-[rgb(var(--pn-texto-rgb)/0.45)] dark:border-white/10 dark:text-white/45"><th className="p-3">Aluno</th><th className="p-3">Acerto</th><th className="p-3">Erros</th><th className="p-3">Revisões vencidas</th><th className="p-3">Sinal</th></tr></thead><tbody>{aprendizagem.map((aluno)=>{const risco=Number(aluno.taxa_acerto)<50||Number(aluno.revisoes_atrasadas)>5;return <tr key={aluno.id_usuario} className="border-b border-black/5 dark:border-white/5"><td className="p-3"><b>{aluno.nome}</b><small className="block opacity-55">{aluno.email}</small></td><td className="p-3 font-black">{aluno.taxa_acerto}%</td><td className="p-3">{aluno.erros_pendentes}</td><td className="p-3">{aluno.revisoes_atrasadas}</td><td className="p-3"><span className={`rounded-full px-3 py-1 text-xs font-black ${risco?'bg-amber-100 text-amber-800':'bg-emerald-100 text-emerald-800'}`}>{risco?'Acompanhar':'No ritmo'}</span></td></tr>})}</tbody></table></div>}
-        </motion.section>
+        </motion.section></div>
 
-        <motion.section variants={fadeUp} initial="hidden" animate="visible" className="bg-[rgb(var(--pn-superficie-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
+        <motion.section id="pedagogy-notices" variants={fadeUp} initial="hidden" animate="visible" className="pedagogy-notices bg-[rgb(var(--pn-superficie-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-black">Avisos</h2>
             <button
@@ -269,6 +264,6 @@ export default function DashboardGestor() {
           )}
         </motion.section>
       </div>
-    </div>
+    </main>
   )
 }

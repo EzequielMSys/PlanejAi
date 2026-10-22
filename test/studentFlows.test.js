@@ -45,6 +45,8 @@ function fixture(config) {
   if (url.endsWith('/usuarios/me')) return person('aluno');
   if (url.endsWith('/usuarios')) return { usuarios: [person('aluno')], pagina: 1, total_registros: 17, total_paginas: 2, stats: { total: 17, ativos: 15, inativos: 2, donos: 1, admins: 2, docentes: 3, alunos: 11 } };
   if (url.endsWith('/dashboard/estatisticas')) return { totalUsuarios: 17, totalAtividadesPublicadas: 0, totalEntregas: 0, totalCronogramasAtivos: 0 };
+  if (url.endsWith('/colaborativo/gestao/alertas')) return [{ id_usuario: 31, nome: 'Aluno de teste', motivos: ['Revisões atrasadas'] }];
+  if (url.endsWith('/colaborativo/gestao/grupos/sugestoes')) return [{ disciplina: 'Matemática', competencia: 'Razão e proporção', aprendizes: [31], mentores: [] }];
   if (url.endsWith('/turmas/minhas/1')) return { id_turma: 1, nome: 'Turma de teste', ano_letivo: 2026, pendentes: [], concluidas: [], avisos: [] };
   if (url.endsWith('/adaptativo/proxima-acao')) return { motivo: 'Uma sessão breve', titulo: 'Revisar' };
   if (url.endsWith('/adaptativo/sequencia')) return { semanas: 0 };
@@ -179,6 +181,19 @@ test('progress page separates overview, goals and study tools without losing nav
     assert.ok(screen.container.textContent.includes('Flashcards'));
     await act(async () => button('Visão geral').click());
     assert.ok(screen.container.textContent.includes('Progresso que vira ação'));
+  } finally { await screen.close(); }
+});
+test('pedagogical view presents actionable alerts and prevents duplicate intervention', async () => {
+  const screen = await renderRoute('/dashboard-gestor', 'docente');
+  try {
+    assert.ok(screen.container.textContent.includes('Estudantes que pedem atenção'));
+    assert.ok(screen.container.textContent.includes('Aluno de teste'));
+    const action = button('Criar plano de intervenção →');
+    assert.ok(action);
+    await act(async () => action.click());
+    await flush();
+    assert.ok(button('Plano registrado →')?.disabled);
+    assert.ok(requests.some(item => item.url.endsWith('/colaborativo/gestao/intervencoes') && item.method === 'post'));
   } finally { await screen.close(); }
 });
 test('Lumi starters prepare a question, then send one request and render safe structured text', async () => {
