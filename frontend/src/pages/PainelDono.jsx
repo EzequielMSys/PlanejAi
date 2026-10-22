@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import usuarioService from '../services/usuarioService'
 import { toast } from 'react-hot-toast'
+import usuarioService from '../services/usuarioService'
+import './PainelDono.css'
+
+const numero = valor => Number(valor || 0)
 
 export default function PainelDono() {
   const navigate = useNavigate()
@@ -10,186 +13,33 @@ export default function PainelDono() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function carregarDados() {
-      try {
-        const data = await usuarioService.listar()
-        setUsuarios(Array.isArray(data) ? data : data.usuarios || [])
-        setTotais(data.stats || null)
-      } catch (error) {
-        toast.error('Erro ao carregar métricas do dono.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    carregarDados()
+    usuarioService.listar().then(data => {
+      setUsuarios(Array.isArray(data) ? data : data.usuarios || [])
+      setTotais(data.stats || null)
+    }).catch(() => toast.error('Erro ao carregar métricas do dono.')).finally(() => setLoading(false))
   }, [])
 
-  const stats = useMemo(() => {
-    if (totais) return totais
-    return {
-      total: usuarios.length,
-      ativos: usuarios.filter((u) => Number(u.ativo) === 1).length,
-      inativos: usuarios.filter((u) => Number(u.ativo) === 0).length,
-      donos: usuarios.filter((u) => u.tipo === 'dono').length,
-      admins: usuarios.filter((u) => u.tipo === 'admin').length,
-      docentes: usuarios.filter((u) => u.tipo === 'docente').length,
-      alunos: usuarios.filter((u) => u.tipo === 'aluno').length
-    }
-  }, [usuarios, totais])
+  const stats = useMemo(() => totais || ({
+    total: usuarios.length,
+    ativos: usuarios.filter(item => Number(item.ativo) === 1).length,
+    inativos: usuarios.filter(item => Number(item.ativo) === 0).length,
+    donos: usuarios.filter(item => item.tipo === 'dono').length,
+    admins: usuarios.filter(item => item.tipo === 'admin').length,
+    docentes: usuarios.filter(item => item.tipo === 'docente').length,
+    alunos: usuarios.filter(item => item.tipo === 'aluno').length
+  }), [usuarios, totais])
+  const proporcaoAtivos = numero(stats.total) ? Math.round(numero(stats.ativos) / numero(stats.total) * 100) : 0
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] flex items-center justify-center">
-        <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[3rem] p-10 shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] text-center">
-          <div className="h-14 w-14 border-b-4 border-[rgb(var(--pn-primaria-borda-rgb)/1)] rounded-full animate-spin mx-auto mb-4" />
-          <p className="font-bold text-[rgb(var(--pn-texto-rgb)/0.6)]">Carregando painel...</p>
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <main className="owner-page"><div className="owner-wrap"><h1>Operação da plataforma</h1><p className="owner-loading">Carregando indicadores de acesso…</p></div></main>
 
-  return (
-    <div className="min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] px-4 sm:px-6 lg:px-8 py-10">
-      <div className="max-w-7xl mx-auto">
-        <section className="workspace-hero bg-gradient-to-br from-[rgb(var(--pn-primaria-rgb)/1)] via-[rgb(var(--pn-primaria-rgb)/1)] to-[rgb(var(--pn-primaria-rgb)/1)] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden student-page-heading">
-          <div className="absolute inset-0 bg-black/20" />
+  return <main className="owner-page"><div className="owner-wrap">
+    <header className="owner-hero"><div><span className="owner-kicker">PLANEJAI · VISÃO DO DONO</span><h1>Operação da plataforma</h1><p>Um ponto de partida para acompanhar contas e chegar às áreas de gestão que mantêm a experiência de estudos funcionando.</p><button type="button" onClick={() => navigate('/dono/usuarios')}>Abrir pessoas e acessos <span aria-hidden="true">↗</span></button></div><aside><span>ACESSO À PLATAFORMA</span><strong>{proporcaoAtivos}%</strong><p>das contas cadastradas estão ativas</p><div role="img" aria-label={`${proporcaoAtivos}% das contas ativas`}><span style={{ width: `${proporcaoAtivos}%` }} /></div><small>{numero(stats.ativos)} ativas · {numero(stats.inativos)} inativas</small></aside></header>
 
-          <div className="relative z-10">
-            <p className="uppercase tracking-[0.35em] text-xs font-black text-white/80 mb-3">
-              PlanejAI Owner
-            </p>
+    <section className="owner-overview" aria-label="Indicadores de contas"><div className="owner-section-heading"><span className="owner-kicker">VISÃO GERAL</span><h2>A comunidade em números</h2><p>Indicadores de contas cadastradas, independentes da página atual do diretório.</p></div><div className="owner-stat-grid"><Stat label="Contas cadastradas" value={stats.total} hint="Pessoas na plataforma" /><Stat label="Contas ativas" value={stats.ativos} hint="Com acesso habilitado" /><Stat label="Contas inativas" value={stats.inativos} hint="Sem acesso no momento" /><Stat label="Administradores" value={stats.admins} hint="Gestão da plataforma" /></div></section>
 
-            <h1 className="text-3xl md:text-5xl font-black text-white mb-2">
-              Painel do Dono
-            </h1>
-
-            <p className="text-white/85 max-w-2xl">
-              Supervisão geral da plataforma, usuários, permissões e métricas principais.
-            </p>
-          </div>
-        </section>
-
-        <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <CardStat titulo="Usuários totais" valor={stats.total} />
-          <CardStat titulo="Usuários ativos" valor={stats.ativos} />
-          <CardStat titulo="Inativos" valor={stats.inativos} />
-          <CardStat titulo="Administradores" valor={stats.admins} />
-        </section>
-
-        <section className="grid md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
-            <h2 className="text-2xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-4">
-              Distribuição de tipos
-            </h2>
-
-            <div className="space-y-3">
-              <LinhaMetrica label="Dono" valor={stats.donos} total={stats.total} />
-              <LinhaMetrica label="Admins" valor={stats.admins} total={stats.total} />
-              <LinhaMetrica label="Docentes" valor={stats.docentes} total={stats.total} />
-              <LinhaMetrica label="Alunos" valor={stats.alunos} total={stats.total} />
-            </div>
-          </div>
-
-          <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
-            <h2 className="text-2xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-4">
-              Ações rápidas
-            </h2>
-
-            <div className="grid gap-3">
-              <button
-                onClick={() => navigate('/dono/usuarios')}
-                className="w-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white rounded-full px-6 py-3 font-bold hover:bg-black transition"
-              >
-                Gerenciar usuários
-              </button>
-
-              <button
-                onClick={() => navigate('/usuarios')}
-                className="w-full bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] rounded-full px-6 py-3 font-bold hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)] transition"
-              >
-                Abrir painel admin
-              </button>
-
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="w-full bg-[rgb(var(--pn-superficie-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] rounded-full px-6 py-3 font-bold hover:bg-[rgb(var(--pn-superficie-alt-rgb)/1)] transition"
-              >
-                Voltar ao dashboard
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
-          <h2 className="text-2xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-4">
-            Pessoas cadastradas
-          </h2>
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[650px]">
-              <thead className="bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)]">
-                <tr>
-                  <Th>Nome</Th>
-                  <Th>Email</Th>
-                  <Th>Tipo</Th>
-                  <Th>Status</Th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-[#9394CF]/20">
-                {usuarios.slice(0, 6).map((usuario) => (
-                  <tr key={usuario.id_usuario || usuario.id}>
-                    <td className="p-4 font-bold">{usuario.nome}</td>
-                    <td className="p-4 text-sm text-[rgb(var(--pn-texto-rgb)/0.6)] font-mono">{usuario.email}</td>
-                    <td className="p-4 capitalize">{usuario.tipo}</td>
-                    <td className="p-4">
-                      {Number(usuario.ativo) ? 'Ativo' : 'Inativo'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-    </div>
-  )
+    <div className="owner-panels"><section className="owner-panel"><span className="owner-kicker">QUEM PARTICIPA</span><h2>Composição da comunidade</h2><p>Distribuição dos perfis de acesso cadastrados.</p><div className="owner-role-list"><Role label="Estudantes" value={stats.alunos} total={stats.total} /><Role label="Docentes" value={stats.docentes} total={stats.total} /><Role label="Administradores" value={stats.admins} total={stats.total} /><Role label="Donos" value={stats.donos} total={stats.total} /></div></section><section className="owner-panel"><span className="owner-kicker">ÁREAS DE GESTÃO</span><h2>Seu próximo destino</h2><p>Entre diretamente na área que precisa da sua atenção.</p><nav className="owner-link-list" aria-label="Áreas de gestão"><button type="button" onClick={() => navigate('/dono/usuarios')}><span><strong>Pessoas e acessos</strong><small>Perfis, permissões e estado das contas</small></span><b aria-hidden="true">↗</b></button><button type="button" onClick={() => navigate('/dashboard-gestor')}><span><strong>Visão pedagógica</strong><small>Entregas, desempenho e intervenções</small></span><b aria-hidden="true">↗</b></button><button type="button" onClick={() => navigate('/turmas')}><span><strong>Turmas</strong><small>Participantes e espaços de aprendizagem</small></span><b aria-hidden="true">↗</b></button><button type="button" onClick={() => navigate('/atividades')}><span><strong>Atividades</strong><small>Publicações, rascunhos e correções</small></span><b aria-hidden="true">↗</b></button><button type="button" onClick={() => navigate('/materiais')}><span><strong>Biblioteca de materiais</strong><small>Recursos vinculados ao cronograma</small></span><b aria-hidden="true">↗</b></button></nav></section></div>
+  </div></main>
 }
 
-function CardStat({ titulo, valor }) {
-  return (
-    <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
-      <p className="text-sm font-bold text-[rgb(var(--pn-texto-rgb)/0.5)] mb-1">{titulo}</p>
-      <p className="text-3xl font-black text-[rgb(var(--pn-primaria-rgb)/1)]">{valor}</p>
-    </div>
-  )
-}
-
-function LinhaMetrica({ label, valor, total }) {
-  const porcentagem = total ? Math.round((valor / total) * 100) : 0
-
-  return (
-    <div>
-      <div className="flex justify-between text-sm font-bold mb-1">
-        <span>{label}</span>
-        <span>{valor} • {porcentagem}%</span>
-      </div>
-
-      <div className="h-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] rounded-full overflow-hidden">
-        <div
-          className="h-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] rounded-full"
-          style={{ width: `${porcentagem}%` }}
-        />
-      </div>
-    </div>
-  )
-}
-
-function Th({ children }) {
-  return (
-    <th className="text-left p-4 text-sm font-black text-[rgb(var(--pn-texto-rgb)/1)] border-b border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
-      {children}
-    </th>
-  )
-}
+function Stat({ label, value, hint }) { return <article className="owner-stat"><span>{label}</span><strong>{numero(value)}</strong><small>{hint}</small></article> }
+function Role({ label, value, total }) { const percent = numero(total) ? Math.round(numero(value) / numero(total) * 100) : 0; return <div className="owner-role"><div><strong>{label}</strong><span>{numero(value)} · {percent}%</span></div><div className="owner-role-track"><span style={{ width: `${percent}%` }} /></div></div> }

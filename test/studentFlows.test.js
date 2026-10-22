@@ -292,6 +292,16 @@ test('owner counters use totals instead of the paginated user slice', async () =
   finally { await screen.close(); }
 });
 
+test('owner operations panel opens the people directory', async () => {
+  const screen = await renderRoute('/dono', 'dono');
+  try {
+    assert.ok(screen.container.textContent.includes('Operação da plataforma'));
+    await act(async () => button('Abrir pessoas e acessos ↗').click());
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 350)); });
+    assert.ok(screen.container.textContent.includes('Diretório de pessoas'));
+  } finally { await screen.close(); }
+});
+
 test('focus mode always offers a direct way back to navigation', async () => {
   const screen = await renderRoute('/preferencias');
   try {
