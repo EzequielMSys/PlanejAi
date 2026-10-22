@@ -270,7 +270,6 @@ export default function Redacoes() {
               <p>Escreva no seu ritmo, revise com critérios do ENEM e acompanhe como cada texto evolui. A Lumi ajuda a enxergar o próximo ajuste.</p>
               <div className="redacoes-intro-actions">
                 <button type="button" onClick={() => setModoEscrita(true)}>{modoEscrita ? 'Voltar ao texto' : temRascunho ? 'Continuar rascunho' : 'Começar uma redação'} <span aria-hidden="true">↗</span></button>
-                {!modoEscrita && <a href="#redacoes-historico">Ver minhas produções</a>}
               </div>
               <div className="redacoes-intro-meta"><span><strong>{redacoes.length}</strong> {redacoes.length === 1 ? 'texto enviado' : 'textos enviados'}</span><span>{temRascunho ? 'Rascunho salvo neste dispositivo' : 'Um texto por vez, sem pressa'}</span></div>
             </div>
@@ -279,11 +278,10 @@ export default function Redacoes() {
 
           {!modoEscrita && aba === 'minhas' && <section className="redacoes-guidance" aria-label="Seu próximo passo na escrita">
             <div className="redacoes-path"><span className="redacoes-eyebrow">ESCOLHA UM CAMINHO</span><h2>Onde você quer avançar hoje?</h2><div className="redacoes-path-grid">
-              <button type="button" onClick={() => setModoEscrita(true)}><span>01 · ESCREVER</span><strong>{temRascunho ? 'Retome o que começou' : 'Tire a ideia do papel'}</strong><small>{temRascunho ? 'Seu rascunho está salvo neste navegador.' : 'Tema, estrutura e escrita no mesmo lugar.'}</small><b aria-hidden="true">↗</b></button>
-              <Link to="/lumi" state={{ perguntaInicial: 'Quero planejar uma redação no modelo ENEM. Ajude-me a definir uma tese, dois argumentos e uma proposta de intervenção sem escrever o texto por mim.' }}><span>02 · PENSAR COM A LUMI</span><strong>Destrave seu argumento</strong><small>Converse sobre tese, repertório e intervenção.</small><b aria-hidden="true">↗</b></Link>
-              <a href="#redacoes-historico"><span>03 · REVISAR</span><strong>Aprenda com seus textos</strong><small>Volte aos comentários e escolha um ajuste.</small><b aria-hidden="true">↗</b></a>
+              <Link to="/lumi" state={{ perguntaInicial: 'Quero planejar uma redação no modelo ENEM. Ajude-me a definir uma tese, dois argumentos e uma proposta de intervenção sem escrever o texto por mim.' }}><span>01 · PENSAR COM A LUMI</span><strong>Destrave seu argumento</strong><small>Converse sobre tese, repertório e intervenção.</small><b aria-hidden="true">↗</b></Link>
+              <a href="#redacoes-historico"><span>02 · REVISAR</span><strong>Aprenda com seus textos</strong><small>Volte aos comentários e escolha um ajuste.</small><b aria-hidden="true">↗</b></a>
             </div></div>
-            <div className="redacoes-lumi"><TutorLumi tamanho={62} humor="feliz" rotulo="Lumi, tutora de redação" /><span className="redacoes-eyebrow">LUMI NO ATELIÊ</span><h2>Uma dúvida pode virar uma tese melhor.</h2><p>Peça ajuda para organizar ideias ou compreender o feedback. No estúdio, a Lumi também faz uma pré-análise do seu rascunho antes do envio.</p><Link to="/lumi" state={{ perguntaInicial: 'Lumi, como posso melhorar minha redação para o ENEM? Quero orientações sobre as cinco competências e um primeiro passo concreto.' }}>Conversar com a Lumi <span aria-hidden="true">→</span></Link></div>
+            <div className="redacoes-lumi"><TutorLumi tamanho={62} humor="feliz" rotulo="Lumi, tutora de redação" /><span className="redacoes-eyebrow">LUMI NO ATELIÊ</span><h2>Uma dúvida pode virar uma tese melhor.</h2><p>Peça ajuda para organizar ideias ou compreender o feedback. No estúdio, a Lumi também faz uma pré-análise do seu rascunho antes do envio.</p></div>
           </section>}
 
           {isGestor && (
