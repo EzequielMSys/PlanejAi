@@ -31,7 +31,7 @@ export default function Chat() {
 
         <section className="lumi-chat-card" aria-label="Conversa com a Lumi">
           <div className="lumi-chat-heading"><span className="lumi-chat-status" aria-hidden="true" /><div><strong>Conversa com a Lumi</strong><small>Pergunte no seu ritmo</small></div></div>
-          <ChatInterface className="lumi-chat-body" onEstadoChange={setHumorLumi} redacaoSelecionada={location.state?.redacaoSelecionada} />
+          <ChatInterface className="lumi-chat-body" onEstadoChange={setHumorLumi} redacaoSelecionada={location.state?.redacaoSelecionada} perguntaInicial={location.state?.perguntaInicial} />
         </section>
       </div>
     </main>

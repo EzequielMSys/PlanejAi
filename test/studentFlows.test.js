@@ -142,6 +142,18 @@ test('owner can navigate through the main study and management links', async () 
     }
   } finally { await screen.close(); }
 });
+test('writing guidance opens Lumi with an editable question about ENEM essays', async () => {
+  const screen = await renderRoute('/redacoes');
+  try {
+    const link = [...document.querySelectorAll('a')].find(item => item.textContent.includes('Destrave seu argumento'));
+    assert.ok(link, 'writing guidance should link to Lumi');
+    await act(async () => link.click());
+    await flush();
+    const input = document.querySelector('.lumi-chat-body textarea, .lumi-chat-body input[type="text"]');
+    assert.ok(input, 'Lumi should show a message field');
+    assert.match(input.value, /tese.*argumentos/i);
+  } finally { await screen.close(); }
+});
 test('Lumi starters prepare a question, then send one request and render safe structured text', async () => {
   failChat = false;
   const screen = await renderRoute('/lumi');

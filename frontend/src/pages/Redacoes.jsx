@@ -10,6 +10,8 @@ import EssayVersions from '../components/EssayVersionsPro'
 import WritingWorkshop from '../components/WritingWorkshop'
 import PeerReview from '../components/PeerReview'
 import EssayPortfolio from '../components/EssayPortfolio'
+import TutorLumi from '../components/TutorLumi'
+import './RedacoesExperience.css'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -141,6 +143,9 @@ export default function Redacoes() {
     tema: '',
     texto: ''
   })
+  let rascunhoSalvo = null
+  try { rascunhoSalvo = JSON.parse(localStorage.getItem('planejai:redacao:rascunho:v2') || 'null') } catch { /* rascunho inválido será tratado pelo estúdio */ }
+  const temRascunho = Boolean(rascunhoSalvo?.tema || rascunhoSalvo?.texto)
 
   // Estado para sugestão de tema e repertório
   const [sugerindoTema, setSugerindoTema] = useState(false)
@@ -255,43 +260,31 @@ export default function Redacoes() {
   }
 
   return (
-    <div className="min-h-screen bg-study-canvas text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-72 h-72 bg-study-accent/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-study-accent/10 rounded-full blur-3xl" />
-
-      <div className="max-w-5xl mx-auto relative z-10">
+    <div className="redacoes-page min-h-screen px-4 sm:px-6 lg:px-8 py-10">
+      <div className="redacoes-shell max-w-6xl mx-auto">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <section className="workspace-hero bg-gradient-to-br from-study-accent via-study-accent to-study-accent rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
-            <div className="absolute inset-0 bg-black/20" />
-            <div className="absolute top-8 left-8 w-24 h-24 bg-study-paper rounded-full blur-xl" />
-            <div className="absolute bottom-8 right-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
-
-            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div>
-                <p className="uppercase tracking-[0.35em] text-xs font-black text-white/80 mb-3">
-                  PlanejAI
-                </p>
-
-                <h1 className="text-4xl md:text-5xl font-black text-white mb-3 tracking-tight">
-                  Redações
-                </h1>
-
-                <p className="text-lg text-white/85 max-w-2xl">
-                  Pratique a escrita, envie suas redações e receba feedback automático com análise de erros.
-                </p>
+          <section className="redacoes-intro" aria-labelledby="redacoes-title">
+            <div className="redacoes-intro-copy">
+              <span className="redacoes-eyebrow">PLANEJAI · ATELIÊ DE ESCRITA</span>
+              <h1 id="redacoes-title">Sua próxima versão começa aqui.</h1>
+              <p>Escreva no seu ritmo, revise com critérios do ENEM e acompanhe como cada texto evolui. A Lumi ajuda a enxergar o próximo ajuste.</p>
+              <div className="redacoes-intro-actions">
+                <button type="button" onClick={() => setModoEscrita(true)}>{modoEscrita ? 'Voltar ao texto' : temRascunho ? 'Continuar rascunho' : 'Começar uma redação'} <span aria-hidden="true">↗</span></button>
+                {!modoEscrita && <a href="#redacoes-historico">Ver minhas produções</a>}
               </div>
-
-              {!modoEscrita && (
-                <button
-                  type="button"
-                  onClick={() => setModoEscrita(true)}
-                  className="bg-study-paper text-study-accent px-7 py-3 rounded-full font-black shadow-xl hover:bg-black hover:text-white transition"
-                >
-                  Nova redação
-                </button>
-              )}
+              <div className="redacoes-intro-meta"><span><strong>{redacoes.length}</strong> {redacoes.length === 1 ? 'texto enviado' : 'textos enviados'}</span><span>{temRascunho ? 'Rascunho salvo neste dispositivo' : 'Um texto por vez, sem pressa'}</span></div>
             </div>
+            <div className="redacoes-intro-art" aria-hidden="true"><div className="redacoes-paper"><span>UM PROCESSO, NÃO UMA NOTA</span><i /><i /><i /><i /><b>ideia → argumento → revisão</b></div><span className="redacoes-art-mark">R.</span></div>
           </section>
+
+          {!modoEscrita && aba === 'minhas' && <section className="redacoes-guidance" aria-label="Seu próximo passo na escrita">
+            <div className="redacoes-path"><span className="redacoes-eyebrow">ESCOLHA UM CAMINHO</span><h2>Onde você quer avançar hoje?</h2><div className="redacoes-path-grid">
+              <button type="button" onClick={() => setModoEscrita(true)}><span>01 · ESCREVER</span><strong>{temRascunho ? 'Retome o que começou' : 'Tire a ideia do papel'}</strong><small>{temRascunho ? 'Seu rascunho está salvo neste navegador.' : 'Tema, estrutura e escrita no mesmo lugar.'}</small><b aria-hidden="true">↗</b></button>
+              <Link to="/lumi" state={{ perguntaInicial: 'Quero planejar uma redação no modelo ENEM. Ajude-me a definir uma tese, dois argumentos e uma proposta de intervenção sem escrever o texto por mim.' }}><span>02 · PENSAR COM A LUMI</span><strong>Destrave seu argumento</strong><small>Converse sobre tese, repertório e intervenção.</small><b aria-hidden="true">↗</b></Link>
+              <a href="#redacoes-historico"><span>03 · REVISAR</span><strong>Aprenda com seus textos</strong><small>Volte aos comentários e escolha um ajuste.</small><b aria-hidden="true">↗</b></a>
+            </div></div>
+            <div className="redacoes-lumi"><TutorLumi tamanho={62} humor="feliz" rotulo="Lumi, tutora de redação" /><span className="redacoes-eyebrow">LUMI NO ATELIÊ</span><h2>Uma dúvida pode virar uma tese melhor.</h2><p>Peça ajuda para organizar ideias ou compreender o feedback. No estúdio, a Lumi também faz uma pré-análise do seu rascunho antes do envio.</p><Link to="/lumi" state={{ perguntaInicial: 'Lumi, como posso melhorar minha redação para o ENEM? Quero orientações sobre as cinco competências e um primeiro passo concreto.' }}>Conversar com a Lumi <span aria-hidden="true">→</span></Link></div>
+          </section>}
 
           {isGestor && (
             <div className="flex gap-2 mb-6 bg-study-paper p-1.5 rounded-full border border-study-line/20 w-fit shadow-xl">
@@ -321,7 +314,7 @@ export default function Redacoes() {
             </div>
           )}
 
-          {!modoEscrita && aba === 'minhas' && <><EssayPortfolio /><WritingWorkshop /><PeerReview /></>}
+          {!modoEscrita && aba === 'minhas' && <><WritingWorkshop /><EssayPortfolio /><PeerReview /></>}
           {modoEscrita ? (<EssayStudio
             form={form}
             setForm={setForm}
@@ -454,7 +447,7 @@ export default function Redacoes() {
           ) : (
             <>
               {redacoes.length === 0 ? (
-                <section className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.85fr] lg:items-center">
+                <section id="redacoes-historico" className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.85fr] lg:items-center">
                   <div>
                   <span className="mb-5 inline-flex rounded-full border border-study-line bg-study-paper px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-study-accent dark:border-white/10 dark:bg-study-paper dark:text-[#C4B5FD]">Oficina de texto</span>
                   <h2 className="max-w-xl text-3xl font-black tracking-[-.04em] text-study-ink dark:text-white sm:text-4xl">
@@ -486,7 +479,7 @@ export default function Redacoes() {
                   </div>
                 </section>
               ) : (
-                <section className="essay-records grid gap-4">
+                <section id="redacoes-historico" className="essay-records grid gap-4" aria-label="Redações enviadas">
                   {redacoes.map((redacao) => {
                     const nota =
                       redacao.nota_manual ??

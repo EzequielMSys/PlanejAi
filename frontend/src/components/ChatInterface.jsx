@@ -44,9 +44,9 @@ function Mensagem({ mensagem }) {
   )
 }
 
-export default function ChatInterface({ className = '', onEstadoChange, redacaoSelecionada }) {
+export default function ChatInterface({ className = '', onEstadoChange, redacaoSelecionada, perguntaInicial = '' }) {
   const [mensagens, setMensagens] = useState([])
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(perguntaInicial)
   const [materia, setMateria] = useState('')
   const [loading, setLoading] = useState(false)
   const [humorLumi, setHumorLumi] = useState('neutro')
