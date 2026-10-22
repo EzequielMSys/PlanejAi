@@ -9,7 +9,6 @@
       "root": ".",
       "framework": "express",
       "entrypoint": "src/server.js",
-      "buildCommand": "npm run vercel:prepare-api",
       "functions": {
         "src/server.js": {
           "includeFiles": "{src/**,migrations/**}"

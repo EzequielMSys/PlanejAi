@@ -34,10 +34,11 @@ uma URL fixa, CORS adicional ou binding interno entre os dois serviços.
 | `BCRYPT_SALT_ROUNDS` | Recomendado | Use 12 ou mais. |
 | `TRUST_PROXY` | Sim | `true` na Vercel, para limites por IP funcionarem atrás do proxy. |
 
-Durante o build do serviço `api`, o comando `vercel:prepare-api` aplica as
-migrations com lock, insere somente os dados-base ausentes e repara links de
-conteúdo. Ele é idempotente e falha se uma migration já aplicada tiver sido
-alterada.
+O build da Vercel não precisa acessar o banco. Quando a API inicia, ela aplica
+as migrations com lock, insere somente os dados-base ausentes e repara links de
+conteúdo antes de aceitar requisições. Esse processo é idempotente e falha se
+uma migration já aplicada tiver sido alterada. Para preparar a base manualmente,
+use `npm run vercel:prepare-api` com as variáveis do banco configuradas.
 
 ## Conferência após o deploy
 
