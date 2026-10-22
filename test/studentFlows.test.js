@@ -125,6 +125,19 @@ test('materials library opens a missing resource and allows adding a reference',
   } finally { await screen.close(); materialCatalogFixture = false; }
 });
 
+test('people directory groups account actions without changing permissions', async () => {
+  const screen = await renderRoute('/usuarios', 'dono');
+  try {
+    assert.ok(screen.container.textContent.includes('Pessoas e acessos'));
+    const menu = document.querySelector('.users-actions');
+    assert.ok(menu);
+    await act(async () => menu.querySelector('summary').click());
+    assert.equal(menu.open, true);
+    assert.ok([...menu.querySelectorAll('button')].some(node => node.textContent.trim() === 'Definir senha'));
+    assert.ok(menu.querySelector('button').disabled);
+  } finally { await screen.close(); }
+});
+
 test('all student, teacher and owner pages render without runtime failures', async t => {
   const routes = ['/', '/login', '/register', '/primeiro-acesso', '/onboarding', '/esqueci-senha', '/redefinir-senha', '/inicio', '/cronograma', '/aprendizagem', '/provas', '/redacoes', '/minha-jornada', '/minhas-atividades', '/minhas-turmas', '/minhas-turmas/1', '/avisos', '/perfil', '/alterar-senha', '/planejamento-inteligente', '/estudar', '/status', '/lumi', '/chat', '/preferencias', '/pagina-inexistente'];
   for (const route of routes) await t.test(route, async () => { const screen = await renderRoute(route); try { assert.ok(document.querySelector('h1'), 'page must have a visible title'); assert.ok(!screen.container.textContent.includes('Algo não carregou como deveria.'), 'error boundary should not be shown'); } finally { await screen.close(); } });

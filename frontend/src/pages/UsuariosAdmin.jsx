@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import usuarioService from '../services/usuarioService'
 import { useAuth } from '../context/AuthContext'
 import { toast } from 'react-hot-toast'
+import './UsuariosAdmin.css'
 
 const tipoLabel = {
   dono: 'Dono',
@@ -45,6 +46,7 @@ export default function UsuariosAdmin() {
   const [novaSenha, setNovaSenha] = useState('')
   const [confirmarSenha, setConfirmarSenha] = useState('')
   const [salvandoSenha, setSalvandoSenha] = useState(false)
+  const [senhaTemporaria, setSenhaTemporaria] = useState(null)
 
   const carregarUsuarios = useCallback(async () => {
     setLoading(true)
@@ -159,7 +161,7 @@ export default function UsuariosAdmin() {
     try {
       const data = await usuarioService.resetarSenha(id)
 
-      alert(`Senha temporária: ${data.senha_temporaria}`)
+      setSenhaTemporaria({ nome: usuario.nome || usuario.email, senha: data.senha_temporaria })
       await carregarUsuarios()
     } catch (error) {
       toast.error(error.response?.data?.error || 'Erro ao resetar senha.')
@@ -241,44 +243,28 @@ export default function UsuariosAdmin() {
   }
 
   return (
-    <div className="min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] px-4 sm:px-6 lg:px-8 py-10">
+    <div className="users-admin-page min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] px-4 sm:px-6 lg:px-8 py-10">
       <div className="max-w-7xl mx-auto">
-        <section className="workspace-hero bg-gradient-to-br from-[rgb(var(--pn-primaria-rgb)/1)] via-[rgb(var(--pn-primaria-rgb)/1)] to-[rgb(var(--pn-primaria-rgb)/1)] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden student-page-heading">
-          <div className="absolute inset-0 bg-black/20" />
+        <header className="users-hero"><div><span className="users-kicker">PLANEJAI · GESTÃO DE ACESSOS</span><h1>Pessoas e acessos</h1><p>Consulte quem faz parte da plataforma e acompanhe as permissões de cada pessoa com clareza.</p></div><aside><span>CONTROLE DE ACESSO</span><p>{isDono ? 'Alterações de perfil e status são reservadas ao dono.' : 'Seu acesso administrativo permite consultar e gerenciar contas conforme sua permissão.'}</p><strong>{stats.ativos} de {stats.total} contas ativas</strong></aside></header>
 
-          <div className="relative z-10">
-            <p className="uppercase tracking-[0.35em] text-xs font-black text-white/80 mb-3">
-              PlanejAI
-            </p>
-
-            <h1 className="text-3xl md:text-5xl font-black text-white mb-2">
-              Painel de Usuários
-            </h1>
-
-            <p className="text-white/85">
-              Supervisione alunos, docentes, administradores e permissões.
-            </p>
-          </div>
-        </section>
-
-        <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <section className="users-stats grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" aria-label="Resumo das contas">
           <CardStat titulo="Total" valor={stats.total} />
           <CardStat titulo="Ativos" valor={stats.ativos} />
           <CardStat titulo="Alunos" valor={stats.alunos} />
           <CardStat titulo="Admins" valor={stats.admins} />
         </section>
 
-        <section className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-5 sm:p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] mb-6">
+        <section className="users-toolbar bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-5 sm:p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] mb-6">
           <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
             <div>
               <h2 className="text-2xl font-black text-[rgb(var(--pn-texto-rgb)/1)]">
-                Gerenciamento
+                Diretório de pessoas
               </h2>
 
               <p className="text-[rgb(var(--pn-texto-rgb)/0.6)]">
                 {isDono
-                  ? 'Você possui acesso total de dono.'
-                  : 'Você possui acesso administrativo limitado.'}
+                  ? 'Consulte contas e gerencie acessos conforme a necessidade.'
+                  : 'Consulte contas e use apenas as ações disponíveis ao seu perfil.'}
               </p>
             </div>
 
@@ -308,9 +294,9 @@ export default function UsuariosAdmin() {
           </div>
         </section>
 
-        <section className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] overflow-hidden">
+        <section className="users-table-shell bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1000px]">
+            <table className="w-full min-w-[850px]">
               <thead className="bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)]">
                 <tr>
                   <Th>Usuário</Th>
@@ -330,13 +316,7 @@ export default function UsuariosAdmin() {
                   return (
                     <tr key={id} className="hover:bg-[rgb(var(--pn-superficie-alt-rgb)/1)] transition-colors">
                       <td className="p-5">
-                        <div className="font-black text-[rgb(var(--pn-texto-rgb)/1)]">
-                          {usuario.nome || 'Sem nome'}
-                        </div>
-
-                        <div className="text-xs text-[rgb(var(--pn-texto-rgb)/0.5)]">
-                          ID #{id}
-                        </div>
+                        <div className="users-person"><span aria-hidden="true">{(usuario.nome || usuario.email || '?').charAt(0).toUpperCase()}</span><div><strong>{usuario.nome || 'Sem nome'}</strong><small>ID #{id}</small></div></div>
                       </td>
 
                       <td className="p-5 text-sm text-[rgb(var(--pn-texto-rgb)/0.65)] font-mono">
@@ -379,7 +359,7 @@ export default function UsuariosAdmin() {
                       </td>
 
                       <td className="p-5">
-                        <div className="flex flex-wrap gap-2">
+                        <details className="users-actions"><summary>Gerenciar <span aria-hidden="true">⌄</span></summary><div>
                           <button
                             type="button"
                             disabled={!isDono || !podeAlterar || acaoLoading === `status-${id}`}
@@ -406,7 +386,7 @@ export default function UsuariosAdmin() {
                           >
                             Definir senha
                           </button>
-                        </div>
+                        </div></details>
                       </td>
                     </tr>
                   )
@@ -554,13 +534,14 @@ export default function UsuariosAdmin() {
           </div>
         </div>
       )}
+      {senhaTemporaria && <div className="users-secret-backdrop" role="presentation"><section className="users-secret-dialog" role="dialog" aria-modal="true" aria-labelledby="users-secret-title"><span className="users-kicker">ACESSO TEMPORÁRIO</span><h2 id="users-secret-title">Senha redefinida</h2><p>Compartilhe esta senha com {senhaTemporaria.nome} por um canal seguro. Ela será mostrada apenas enquanto este aviso estiver aberto.</p><code>{senhaTemporaria.senha}</code><button type="button" onClick={() => setSenhaTemporaria(null)}>Concluir</button></section></div>}
     </div>
   )
 }
 
 function CardStat({ titulo, valor }) {
   return (
-    <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
+    <div className="users-stat bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
       <p className="text-sm font-bold text-[rgb(var(--pn-texto-rgb)/0.5)] mb-1">
         {titulo}
       </p>
