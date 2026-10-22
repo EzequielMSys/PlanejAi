@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 import { resolveBackendAsset } from '../config/api'
 import { validarSenha } from '../config/senha'
+import { fraseConviteLumi } from '../utils/pronounCopy'
 import './Perfil.css'
 
 const fadeUp = {
@@ -362,13 +363,11 @@ const handleSaveEstudos = async (e) => {
   const initials = (displayName.charAt(0) || 'U').toUpperCase()
 
   const tipoLabel =
-    user?.tipo === 'dono'
-      ? 'Dono'
-      : user?.tipo === 'admin'
-        ? 'Administrador'
-        : user?.tipo === 'docente'
-          ? 'Docente'
-          : 'Estudante'
+    user?.tipo === 'dono' || user?.tipo === 'admin'
+      ? 'Gestão'
+      : user?.tipo === 'docente'
+        ? 'Docência'
+        : 'Estudante'
 
   const dataCadastro = user?.data_cadastro
     ? new Date(user.data_cadastro).toLocaleDateString('pt-BR')
@@ -488,7 +487,7 @@ const handleSaveEstudos = async (e) => {
               <form onSubmit={handleSaveInfo} className="space-y-6">
                 <div className="profile-field-grid">
                   <label className="profile-field">Nome completo<input autoComplete="name" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} required /></label>
-                  <label className="profile-field">Como quer ser chamado<input value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Apelido (opcional)" /></label>
+                  <label className="profile-field">Como quer que a gente chame você?<input value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Nome de preferência (opcional)" /></label>
                 </div>
 
                 <label className="profile-field">Pronomes<select value={form.pronome} onChange={(e) => setForm((f) => ({ ...f, pronome: e.target.value }))}>
@@ -498,6 +497,8 @@ const handleSaveEstudos = async (e) => {
                   <option value="elu_delu">Elu / delu</option>
                   <option value="nome_proprio">Prefiro que use meu nome</option>
                 </select><small className="profile-field-hint">Essa preferência é opcional e serve para adaptar a linguagem da Lumi. Você pode alterá-la quando quiser.</small></label>
+
+                <div className="profile-pronoun-preview" aria-live="polite"><span>PRÉVIA DE TRATAMENTO</span><p>“{fraseConviteLumi(form.pronome)}”</p><small>A frase acompanha a opção selecionada e só muda no seu perfil quando você salvar.</small></div>
 
                 <label className="profile-field">Email da conta<input autoComplete="email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required /></label>
 

@@ -133,7 +133,7 @@ export default function DashboardGestor() {
       <div className="pedagogy-shell space-y-8">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <section className="pedagogy-hero" aria-labelledby="pedagogy-title">
-            <div><span>PLANEJAI · VISÃO PEDAGÓGICA</span><h1 id="pedagogy-title">Cada estudante merece um próximo passo.</h1><p>Olá, {user?.apelido || user?.nome || 'gestor'}. Veja quem precisa de atenção, acompanhe evidências e organize intervenções com clareza.</p><div className="pedagogy-hero-actions"><a href="#pedagogy-priorities">Ver prioridades <b aria-hidden="true">↓</b></a><Link to="/turmas">Gerenciar turmas <b aria-hidden="true">↗</b></Link></div></div>
+            <div><span>PLANEJAI · VISÃO PEDAGÓGICA</span><h1 id="pedagogy-title">Cada estudante merece um próximo passo.</h1><p>Olá, {user?.apelido || user?.nome || 'equipe de gestão'}. Veja quem precisa de atenção, acompanhe evidências e organize intervenções com clareza.</p><div className="pedagogy-hero-actions"><a href="#pedagogy-priorities">Ver prioridades <b aria-hidden="true">↓</b></a><Link to="/turmas">Gerenciar turmas <b aria-hidden="true">↗</b></Link></div></div>
             <div className="pedagogy-hero-note" aria-hidden="true"><span>ACOMPANHAR É AGIR</span><strong>Observe.<br />Converse.<br /><em>Oriente.</em></strong></div>
           </section>
         </motion.div>

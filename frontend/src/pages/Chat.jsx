@@ -2,14 +2,14 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ChatInterface from '../components/ChatInterface'
 import TutorLumi from '../components/TutorLumi'
+import { fraseConviteLumi } from '../utils/pronounCopy'
 import './Chat.css'
 
 export default function Chat() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
-  const formasJuntos = { ela_dela: 'juntas', ele_dele: 'juntos', elu_delu: 'juntes' }
-  const convite = formasJuntos[user?.pronome] ? `Vamos pensar ${formasJuntos[user.pronome]}?` : 'Vamos pensar nisso?'
+  const convite = fraseConviteLumi(user?.pronome)
 
   return (
     <main className="lumi-page">

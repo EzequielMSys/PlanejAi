@@ -27,7 +27,7 @@ export default function RedefinirSenha() {
   }
   return <AuthLayout title="Um novo acesso ao seu plano" subtitle="Crie uma senha que só você conhece para retomar seus estudos."
     rodape={<p className="pn-corpo"><Link to="/login">Voltar para entrar</Link></p>}
-    destaque={<><p className="pn-sobrancelha">Sua conta, protegida</p><h2 className="pn-secao">Pronto para recomeçar.</h2><ul className="pn-auth-lista"><li>Escolha uma senha diferente de outros sites.</li><li>As sessões anteriores serão encerradas.</li><li>Seu histórico de estudos permanece com você.</li></ul></>}>
+    destaque={<><p className="pn-sobrancelha">Sua conta, protegida</p><h2 className="pn-secao">Vamos recomeçar?</h2><ul className="pn-auth-lista"><li>Escolha uma senha diferente de outros sites.</li><li>As sessões anteriores serão encerradas.</li><li>Seu histórico de estudos permanece com você.</li></ul></>}>
     {!validLink ? <div className="pn-form"><p className="pn-erro" role="alert">Este link de recuperação está incompleto ou é inválido.</p><Link className="pn-btn pn-btn-primario" to="/esqueci-senha">Solicitar novo link</Link></div>
       : <form className="pn-form" onSubmit={submit} aria-busy={loading}>
         <PasswordFields value={value} onChange={setValue} includeCurrent={false} disabled={loading} />

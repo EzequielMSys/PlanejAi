@@ -289,8 +289,12 @@ test('profile saves the optional pronoun preference to the signed-in account', a
   try {
     const pronounSelect = [...document.querySelectorAll('select')].find(node => node.parentElement?.textContent.includes('Pronomes'));
     assert.ok(pronounSelect);
+    const preview = document.querySelector('.profile-pronoun-preview');
+    assert.ok(preview?.textContent.includes('Vamos pensar nisso?'));
     const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
     await act(async () => { setter.call(pronounSelect, 'elu_delu'); pronounSelect.dispatchEvent(new window.Event('change', { bubbles: true })); });
+    assert.ok(preview.textContent.includes('Vamos pensar juntes?'));
+    assert.ok(preview.textContent.includes('só muda no seu perfil quando você salvar'));
     await act(async () => button('Salvar alterações').click());
     await flush();
     assert.equal(JSON.parse(localStorage.getItem('user')).pronome, 'elu_delu');
