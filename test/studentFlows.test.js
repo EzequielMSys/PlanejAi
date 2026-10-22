@@ -48,6 +48,8 @@ function fixture(config) {
   if (url.endsWith('/colaborativo/gestao/alertas')) return [{ id_usuario: 31, nome: 'Aluno de teste', motivos: ['Revisões atrasadas'] }];
   if (url.endsWith('/colaborativo/gestao/grupos/sugestoes')) return [{ disciplina: 'Matemática', competencia: 'Razão e proporção', aprendizes: [31], mentores: [] }];
   if (url.endsWith('/turmas/minhas/1')) return { id_turma: 1, nome: 'Turma de teste', ano_letivo: 2026, pendentes: [], concluidas: [], avisos: [] };
+  if (url.endsWith('/turmas')) return [{ id_turma: 2, nome: 'Terceiro A', codigo: '3A', ano_letivo: 2026, total_alunos: 3, disciplinas: [{ disciplina: 'Matemática' }] }];
+  if (url.endsWith('/turmas/2')) return { id_turma: 2, nome: 'Terceiro A', codigo: '3A', docentes: [], alunos: [] };
   if (url.endsWith('/adaptativo/proxima-acao')) return { motivo: 'Uma sessão breve', titulo: 'Revisar' };
   if (url.endsWith('/adaptativo/sequencia')) return { semanas: 0 };
   return [];
@@ -86,6 +88,18 @@ async function renderRoute(route, role = 'aluno') {
 }
 function button(text) { return [...document.querySelectorAll('button')].find(node => node.textContent.trim() === text); }
 async function inputValue(element, value) { await act(async () => { const setter = Object.getOwnPropertyDescriptor(element.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype, 'value').set; setter.call(element, value); element.dispatchEvent(new window.Event('input', { bubbles: true })); }); }
+
+test('class management opens details and reveals creation on demand', async () => {
+  const screen = await renderRoute('/turmas', 'dono');
+  try {
+    assert.equal(document.querySelectorAll('.class-card').length, 1);
+    assert.equal(document.querySelector('.class-form'), null);
+    await act(async () => document.querySelector('.class-card').click());
+    assert.equal(document.querySelector('.class-details h2').textContent, 'Terceiro A');
+    await act(async () => button('Criar turma ↗').click());
+    assert.ok(document.querySelector('.class-form'));
+  } finally { await screen.close(); }
+});
 
 test('all student, teacher and owner pages render without runtime failures', async t => {
   const routes = ['/', '/login', '/register', '/primeiro-acesso', '/onboarding', '/esqueci-senha', '/redefinir-senha', '/inicio', '/cronograma', '/aprendizagem', '/provas', '/redacoes', '/minha-jornada', '/minhas-atividades', '/minhas-turmas', '/minhas-turmas/1', '/avisos', '/perfil', '/alterar-senha', '/planejamento-inteligente', '/estudar', '/status', '/lumi', '/chat', '/preferencias', '/pagina-inexistente'];
