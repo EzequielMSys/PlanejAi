@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { lazy, Suspense, useState, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
@@ -6,6 +6,7 @@ import Sidebar from '../components/Sidebar'
 import ConnectionStatus from '../components/ConnectionStatus'
 import Deferred from '../components/Deferred'
 import RouteLoading from '../components/RouteLoading'
+import ErrorBoundary from '../components/ErrorBoundary'
 import '../components/LearningSurfaces.css'
 import '../components/WorkspaceUtilities.css'
 
@@ -22,14 +23,17 @@ const AccessibilityToolbar = lazy(() => import('../components/AccessibilityToolb
 /** Deferred + Suspense num só ponto: import lazy em si, sem indicador visível. */
 function CarregadoAposPintura({ children }) {
   return (
-    <Deferred>
-      <Suspense fallback={null}>{children}</Suspense>
-    </Deferred>
+    <ErrorBoundary silent>
+      <Deferred>
+        <Suspense fallback={null}>{children}</Suspense>
+      </Deferred>
+    </ErrorBoundary>
   )
 }
 
 function Layout() {
   const { isAuthenticated } = useAuth()
+  const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), [])
@@ -56,16 +60,18 @@ function Layout() {
         <main id="conteudo-principal" className="app-main" tabIndex="-1">
           <ConnectionStatus />
           <div className="app-route-outlet sd-route">
-            <Suspense fallback={<RouteLoading embedded />}><Outlet /></Suspense>
+            <ErrorBoundary resetKey={location.pathname}>
+              <Suspense fallback={<RouteLoading embedded />}><Outlet /></Suspense>
+            </ErrorBoundary>
           </div>
         </main>
         {isAuthenticated && (
-          <CarregadoAposPintura>
-            <FocusTimer />
-            <InstallApp />
-            <StudyAudioDockV2 />
-            <Chatbot />
-          </CarregadoAposPintura>
+          <>
+          <CarregadoAposPintura><FocusTimer /></CarregadoAposPintura>
+          <CarregadoAposPintura><InstallApp /></CarregadoAposPintura>
+          <CarregadoAposPintura><StudyAudioDockV2 /></CarregadoAposPintura>
+          <CarregadoAposPintura><Chatbot /></CarregadoAposPintura>
+          </>
         )}
         <CarregadoAposPintura>
           <AccessibilityToolbar />
