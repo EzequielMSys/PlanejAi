@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 import { resolveBackendAsset } from '../config/api'
 import { validarSenha } from '../config/senha'
+import './Perfil.css'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -368,30 +369,25 @@ const handleSaveEstudos = async (e) => {
 
   const dataCadastro = user?.data_cadastro
     ? new Date(user.data_cadastro).toLocaleDateString('pt-BR')
-    : 'Não informado'
+    : null
 
   return (
-    <div className="profile-page min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-72 h-72 bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)] rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] rounded-full blur-3xl" />
-
-      <div className="max-w-4xl mx-auto relative z-10">
+    <div className="profile-page">
+      <div className="profile-shell">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <div className="workspace-hero profile-hero bg-gradient-to-br from-[rgb(var(--pn-primaria-rgb)/1)] via-[rgb(var(--pn-primaria-rgb)/1)] to-[rgb(var(--pn-primaria-rgb)/1)] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden student-page-heading">
-            <div className="absolute inset-0 bg-black/20" />
-
-            <div className="relative z-10 text-center">
-              <div className="relative inline-block">
-                <div className="w-28 h-28 rounded-full bg-[rgb(var(--pn-superficie-rgb)/0.85)] flex items-center justify-center shadow-2xl ring-4 ring-white/40 overflow-hidden mx-auto">
+          <header className="profile-hero">
+            <div className="profile-identity">
+              <div className="profile-avatar-wrap">
+                <div className="profile-avatar">
                   {avatarPreview ? (
                     <img
                       src={getFotoUrl(avatarPreview)}
                       alt="Foto de perfil"
-                      className="w-full h-full object-cover"
+                      className="profile-avatar-image"
                       onError={() => setAvatarPreview(null)}
                     />
                   ) : (
-                    <span className="text-5xl font-black text-[rgb(var(--pn-primaria-rgb)/1)]">
+                    <span className="profile-avatar-initial">
                       {initials}
                     </span>
                   )}
@@ -401,7 +397,7 @@ const handleSaveEstudos = async (e) => {
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={uploadingFoto}
-                  className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-[rgb(var(--pn-primaria-forte-rgb)/1)] transition-all shadow-xl disabled:opacity-50"
+                  className="profile-camera"
                   aria-label="Trocar foto de perfil"
                   title="Trocar foto"
                 >
@@ -412,7 +408,7 @@ const handleSaveEstudos = async (e) => {
                   ref={fileRef}
                   type="file"
                   accept="image/*"
-                  className="hidden"
+                  className="profile-file-input"
                   onChange={handleUploadFoto}
                 />
                 {avatarPreview && (
@@ -420,7 +416,7 @@ const handleSaveEstudos = async (e) => {
                     type="button"
                     onClick={handleRemoverFoto}
                     disabled={uploadingFoto || removingFoto}
-                    className="absolute bottom-0 left-0 rounded-full bg-[rgb(var(--pn-superficie-rgb)/1)] px-3 py-2 text-xs font-black text-[rgb(var(--pn-texto-rgb)/1)] shadow-xl transition hover:bg-[rgb(var(--pn-superficie-alt-rgb)/1)] disabled:opacity-50"
+                    className="profile-remove"
                     aria-label="Remover foto de perfil"
                   >
                     {removingFoto ? 'Removendo…' : 'Remover'}
@@ -428,20 +424,24 @@ const handleSaveEstudos = async (e) => {
                 )}
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-black text-white mt-5 tracking-tight">
-                {displayName}
-              </h1>
-
-              <p className="text-white/85 mt-1 font-semibold">
-                {tipoLabel} • Membro desde {dataCadastro}
-              </p>
+              <div className="profile-identity-copy">
+                <p className="profile-eyebrow">MINHA CONTA</p>
+                <h1>{displayName}</h1>
+                <p className="profile-identity-email">{form.email || user.email}</p>
+                <div className="profile-meta">
+                  <span>{tipoLabel}</span>
+                  {dataCadastro && <span>Membro desde {dataCadastro}</span>}
+                </div>
+              </div>
             </div>
-          </div>
+            <p className="profile-hero-note">Seu espaço para cuidar da conta e ajustar seu jeito de estudar.</p>
+          </header>
 
-          <div className="profile-tabs flex flex-wrap gap-2 mb-6 bg-[rgb(var(--pn-superficie-rgb)/1)] p-1.5 rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] w-fit mx-auto shadow-xl">
+          <nav className="profile-tabs" aria-label="Seções do perfil">
             <button
               type="button"
               onClick={() => setTab('info')}
+              aria-current={tab === 'info' ? 'page' : undefined}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                 tab === 'info'
                   ? 'bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white shadow-lg'
@@ -454,6 +454,7 @@ const handleSaveEstudos = async (e) => {
             <button
               type="button"
               onClick={() => setTab('seguranca')}
+              aria-current={tab === 'seguranca' ? 'page' : undefined}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                 tab === 'seguranca'
                   ? 'bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white shadow-lg'
@@ -466,6 +467,7 @@ const handleSaveEstudos = async (e) => {
             <button
               type="button"
               onClick={() => setTab('estudos')}
+              aria-current={tab === 'estudos' ? 'page' : undefined}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                 tab === 'estudos'
                   ? 'bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white shadow-lg'
@@ -474,19 +476,20 @@ const handleSaveEstudos = async (e) => {
             >
               <IconBook /> Estudos
             </button>
-          </div>
+          </nav>
 
           {tab === 'info' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card">
+              <div className="profile-section-head"><p className="profile-eyebrow">IDENTIDADE</p><h2>Informações pessoais</h2><p>Escolha como seu nome aparece e mantenha seu contato atualizado.</p></div>
               <form onSubmit={handleSaveInfo} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <input aria-label="Nome completo" className="w-full rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)]" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome completo" required />
-                  <input aria-label="Apelido" className="w-full rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)]" value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Apelido" />
+                <div className="profile-field-grid">
+                  <label className="profile-field">Nome completo<input autoComplete="name" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} required /></label>
+                  <label className="profile-field">Como quer ser chamado<input value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Apelido (opcional)" /></label>
                 </div>
 
-                <input aria-label="Email" className="w-full rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)]" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email" required />
+                <label className="profile-field">Email da conta<input autoComplete="email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required /></label>
 
-                <button type="submit" disabled={saving} className="bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                <button type="submit" disabled={saving} className="profile-primary-button">
                   {saving ? 'Salvando...' : 'Salvar alterações'}
                 </button>
               </form>
@@ -494,23 +497,21 @@ const handleSaveEstudos = async (e) => {
           )}
 
           {tab === 'seguranca' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
-              <h2 className="text-xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-6 flex items-center gap-2">
-                <IconLock /> Alterar senha
-              </h2>
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card">
+              <div className="profile-section-head"><p className="profile-eyebrow">PROTEÇÃO</p><h2>Segurança da conta</h2><p>Atualize sua senha para manter seu acesso protegido.</p></div>
 
-              <form onSubmit={handleSaveSenha} className="space-y-5 max-w-lg">
-                <input type="password" value={senhaForm.senhaAtual} onChange={(e) => setSenhaForm((f) => ({ ...f, senhaAtual: e.target.value }))} placeholder="Senha atual" className="w-full rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)]" required />
-                <input type="password" value={senhaForm.novaSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, novaSenha: e.target.value }))} placeholder="Nova senha" className="w-full rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)]" required />
-                <input type="password" value={senhaForm.confirmarSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, confirmarSenha: e.target.value }))} placeholder="Confirmar nova senha" className="w-full rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)]" required />
+              <form onSubmit={handleSaveSenha} className="profile-security-form">
+                <label className="profile-field">Senha atual<input type="password" autoComplete="current-password" value={senhaForm.senhaAtual} onChange={(e) => setSenhaForm((f) => ({ ...f, senhaAtual: e.target.value }))} required /></label>
+                <label className="profile-field">Nova senha<input type="password" autoComplete="new-password" value={senhaForm.novaSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, novaSenha: e.target.value }))} required /></label>
+                <label className="profile-field">Confirme a nova senha<input type="password" autoComplete="new-password" value={senhaForm.confirmarSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, confirmarSenha: e.target.value }))} required /></label>
 
                 {senhaErro && (
-                  <div className="p-4 rounded-[1.5rem] bg-red-100 border border-red-300 text-red-700 text-sm font-semibold">
+                  <div role="alert" className="p-4 rounded-[1.5rem] bg-red-100 border border-red-300 text-red-700 text-sm font-semibold">
                     {senhaErro}
                   </div>
                 )}
 
-                <button disabled={saving} className="bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                <button disabled={saving} className="profile-primary-button">
                   {saving ? 'Salvando...' : 'Alterar senha'}
                 </button>
               </form>
@@ -518,32 +519,26 @@ const handleSaveEstudos = async (e) => {
           )}
 
           {tab === 'estudos' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
-              <h2 className="text-xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-2 flex items-center gap-2">
-                <IconBook /> Perfil de estudo
-              </h2>
-
-              <p className="text-[rgb(var(--pn-texto-rgb)/0.6)] mb-6">
-                Atualize suas preferências para melhorar a geração do cronograma.
-              </p>
+            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card">
+              <div className="profile-section-head"><p className="profile-eyebrow">SEU RITMO</p><h2>Perfil de estudo</h2><p>Essas escolhas ajudam a organizar seu cronograma.</p></div>
 
               <form onSubmit={handleSaveEstudos} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <select value={estudoForm.ano_escolar} onChange={(e) => setEstudoForm((f) => ({ ...f, ano_escolar: e.target.value }))} className="w-full rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)]" required>
+                <div className="profile-field-grid">
+                  <label className="profile-field">Ano escolar<select value={estudoForm.ano_escolar} onChange={(e) => setEstudoForm((f) => ({ ...f, ano_escolar: e.target.value }))} required>
                     <option value="">Ano escolar</option>
                     <option value="9º">9º ano</option>
                     <option value="1º EM">1º ano EM</option>
                     <option value="2º EM">2º ano EM</option>
                     <option value="3º EM">3º ano EM</option>
-                  </select>
+                  </select></label>
 
-                  <select value={estudoForm.objetivo} onChange={(e) => setEstudoForm((f) => ({ ...f, objetivo: e.target.value }))} className="w-full rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)]" required>
+                  <label className="profile-field">Objetivo<select value={estudoForm.objetivo} onChange={(e) => setEstudoForm((f) => ({ ...f, objetivo: e.target.value }))} required>
                     <option value="">Objetivo</option>
                     <option value="ENEM">ENEM</option>
                     <option value="VESTIBULAR">Vestibular</option>
                     <option value="OBMEP">OBMEP</option>
                     <option value="CURSO">Curso</option>
-                  </select>
+                  </select></label>
                 </div>
 
 <ChecklistMaterias
@@ -553,28 +548,28 @@ const handleSaveEstudos = async (e) => {
                   }
                 />
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <input type="number" min="30" max="480" value={estudoForm.tempo_diario_min} onChange={(e) => setEstudoForm((f) => ({ ...f, tempo_diario_min: Number(e.target.value) }))} className="w-full rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)]" />
+                <div className="profile-field-grid">
+                  <label className="profile-field">Tempo diário (minutos)<input type="number" min="30" max="480" value={estudoForm.tempo_diario_min} onChange={(e) => setEstudoForm((f) => ({ ...f, tempo_diario_min: Number(e.target.value) }))} /></label>
 
-                  <select value={estudoForm.prazo_estimado} onChange={(e) => setEstudoForm((f) => ({ ...f, prazo_estimado: Number(e.target.value) }))} className="w-full rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)]">
+                  <label className="profile-field">Horizonte do planejamento<select value={estudoForm.prazo_estimado} onChange={(e) => setEstudoForm((f) => ({ ...f, prazo_estimado: Number(e.target.value) }))}>
                     <option value={30}>Mensal</option>
                     <option value={90}>Trimestral</option>
                     <option value={180}>Semestral</option>
                     <option value={365}>Anual</option>
-                  </select>
+                  </select></label>
                 </div>
 
-                <div className="space-y-3 pt-4 border-t border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
+                <div className="profile-availability"><h3>Disponibilidade semanal</h3><p>Selecione os dias em que você pode estudar.</p>
                   {disponibilidade.map((dia, index) => (
-                    <div key={dia.dia_semana} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] rounded-[2rem] border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
-                      <label className="flex items-center gap-4 font-bold">
+                    <div key={dia.dia_semana} className="profile-day">
+                      <label className="profile-day-toggle">
                         <input type="checkbox" checked={!dia.ocupado} onChange={() => toggleDiaEstudo(index)} className="w-5 h-5 accent-[#4B4C9D]" />
                         {dia.label}
                       </label>
 
                       {!dia.ocupado && (
                         <div className="flex items-center gap-2">
-                          <input type="time" value={dia.hora_inicio} onChange={(e) => {
+                          <input aria-label={`Início de ${dia.label}`} type="time" value={dia.hora_inicio} onChange={(e) => {
                             const novosDias = [...disponibilidade]
                             novosDias[index].hora_inicio = e.target.value
                             setDisponibilidade(novosDias)
@@ -582,7 +577,7 @@ const handleSaveEstudos = async (e) => {
 
                           <span>às</span>
 
-                          <input type="time" value={dia.hora_fim} onChange={(e) => {
+                          <input aria-label={`Fim de ${dia.label}`} type="time" value={dia.hora_fim} onChange={(e) => {
                             const novosDias = [...disponibilidade]
                             novosDias[index].hora_fim = e.target.value
                             setDisponibilidade(novosDias)
@@ -590,15 +585,14 @@ const handleSaveEstudos = async (e) => {
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
+                  ))}</div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button type="submit" disabled={loadingEstudos} className="bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                  <button type="submit" disabled={loadingEstudos} className="profile-primary-button">
                     {loadingEstudos ? 'Salvando...' : 'Salvar perfil de estudo'}
                   </button>
 
-                  <button type="button" onClick={handleRegenerarCronograma} disabled={regenerando} className="bg-black text-white px-8 py-3 rounded-full font-bold shadow-xl">
+                  <button type="button" onClick={handleRegenerarCronograma} disabled={regenerando} className="profile-secondary-button">
                     {regenerando ? 'Gerando...' : 'Regenerar cronograma'}
                   </button>
                 </div>
