@@ -5,19 +5,20 @@
 .lumi-cat-fur{fill:#fffdfa;stroke:#403846;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
 .lumi-cat-patch{fill:#332d3a}
 .lumi-cat-inner-ear{fill:#f4c7ce}
-.lumi-cat-ear-mark,.lumi-cat-mouth,.lumi-cat-whiskers,.lumi-cat-brows,.lumi-cat-lashes{fill:none;stroke:#403846;stroke-linecap:round;stroke-linejoin:round}
+.lumi-cat-ear-mark,.lumi-cat-mouth,.lumi-cat-whiskers,.lumi-cat-brows{fill:none;stroke:#403846;stroke-linecap:round;stroke-linejoin:round}
 .lumi-cat-ear-mark{stroke-width:2}
 .lumi-cat-mouth{stroke-width:2.8}
 .lumi-cat-whiskers{stroke-width:2.2}
 .lumi-cat-brows{stroke-width:3.5}
 .lumi-cat-eye-white{fill:#fff;stroke:#403846;stroke-width:2.8;stroke-linejoin:round}
 .lumi-cat-iris{fill:#8068a8}
-.lumi-cat-pupil,.lumi-cat-nose{fill:#332d3a}
+.lumi-cat-pupil{fill:#332d3a}
+.lumi-cat-nose{fill:#d98c9c}
 .lumi-cat-glint{fill:#fff}
 .lumi-cat-closed-eye{fill:none;stroke:#403846;stroke-width:3.8;stroke-linecap:round}
-.lumi-cat-lashes{stroke-width:2.4}
-.lumi-cat-cheeks{fill:#efb7c0;opacity:.48}
-.lumi-cat-cheeks--happy{opacity:.86}
+.lumi-cat-muzzle{fill:#faf3f3}
+.lumi-cat-freckles{fill:#665c68;opacity:.72}
+.lumi-cat-cheeks{fill:#efb7c0;opacity:.62}
 .lumi-cat-thought{fill:var(--pn-primaria,#725ac5)}
 .lumi-cat-spark{fill:#e9b95d}
 .lumi-cat-eyes{transform-box:fill-box;transform-origin:center;animation:lumi-cat-blink 8s ease-in-out infinite}

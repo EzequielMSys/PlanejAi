@@ -24,24 +24,24 @@ export default function TutorLumi({ tamanho = 40, humor = 'neutro', rotulo }) {
         <g className="lumi-cat-eyes">
           {olhosFechados ? <>
             <path className="lumi-cat-closed-eye" d={feliz ? 'M50 120 Q70 103 91 120 M149 120 Q170 103 190 120' : 'M50 119 Q71 125 92 118 M148 118 Q169 125 190 119'} />
-            {feliz && <path className="lumi-cat-lashes" d="M51 119 L47 114 M189 119 L193 114" />}
           </> : <>
-            <path className="lumi-cat-eye-white" d={surpresa ? 'M48 119 Q63 99 88 108 Q98 116 92 131 Q71 143 53 131 Q49 126 48 119 Z' : raiva ? 'M49 111 Q70 115 92 124 Q82 139 62 135 Q51 130 49 111 Z' : 'M48 119 Q62 101 84 105 Q96 108 94 122 Q91 135 74 138 Q55 137 48 119 Z'} />
-            <path className="lumi-cat-eye-white" d={surpresa ? 'M152 108 Q177 99 192 119 Q191 126 187 131 Q169 143 148 131 Q142 116 152 108 Z' : raiva ? 'M148 124 Q170 115 191 111 Q189 130 178 135 Q158 139 148 124 Z' : 'M146 122 Q144 108 156 105 Q178 101 192 119 Q185 137 166 138 Q149 135 146 122 Z'} />
-            <ellipse className="lumi-cat-iris" cx={pensando ? '74' : '71'} cy={surpresa ? '118' : '120'} rx={surpresa ? '10' : '11'} ry={surpresa ? '14' : '13'} />
-            <ellipse className="lumi-cat-iris" cx={pensando ? '166' : '169'} cy={surpresa ? '118' : '120'} rx={surpresa ? '10' : '11'} ry={surpresa ? '14' : '13'} />
-            <ellipse className="lumi-cat-pupil" cx={pensando ? '74' : '71'} cy={surpresa ? '118' : '120'} rx="5" ry="9" />
-            <ellipse className="lumi-cat-pupil" cx={pensando ? '166' : '169'} cy={surpresa ? '118' : '120'} rx="5" ry="9" />
-            <circle className="lumi-cat-glint" cx={pensando ? '70' : '67'} cy="115" r="3.2" />
-            <circle className="lumi-cat-glint" cx={pensando ? '162' : '165'} cy="115" r="3.2" />
+            <path className="lumi-cat-eye-white" d={surpresa ? 'M48 119 Q63 99 88 108 Q98 116 92 131 Q71 143 53 131 Q49 126 48 119 Z' : raiva ? 'M49 111 Q70 115 92 124 Q82 139 62 135 Q51 130 49 111 Z' : 'M48 119 Q62 104 81 106 Q93 107 96 116 Q88 132 71 134 Q55 132 48 119 Z'} />
+            <path className="lumi-cat-eye-white" d={surpresa ? 'M152 108 Q177 99 192 119 Q191 126 187 131 Q169 143 148 131 Q142 116 152 108 Z' : raiva ? 'M148 124 Q170 115 191 111 Q189 130 178 135 Q158 139 148 124 Z' : 'M144 116 Q147 107 159 106 Q178 104 192 119 Q185 132 169 134 Q152 132 144 116 Z'} />
+            <ellipse className="lumi-cat-iris" cx={pensando ? '74' : '71'} cy={surpresa ? '118' : '120'} rx={surpresa ? '10' : '9'} ry={surpresa ? '14' : '11'} />
+            <ellipse className="lumi-cat-iris" cx={pensando ? '166' : '169'} cy={surpresa ? '118' : '120'} rx={surpresa ? '10' : '9'} ry={surpresa ? '14' : '11'} />
+            <ellipse className="lumi-cat-pupil" cx={pensando ? '74' : '71'} cy={surpresa ? '118' : '120'} rx={surpresa ? '3.2' : '2.4'} ry={surpresa ? '8' : '7.5'} />
+            <ellipse className="lumi-cat-pupil" cx={pensando ? '166' : '169'} cy={surpresa ? '118' : '120'} rx={surpresa ? '3.2' : '2.4'} ry={surpresa ? '8' : '7.5'} />
+            {surpresa && <><circle className="lumi-cat-glint" cx="67" cy="113" r="2.5" /><circle className="lumi-cat-glint" cx="165" cy="113" r="2.5" /></>}
             {raiva && <path className="lumi-cat-brows" d="M50 102 Q70 104 91 112 M149 112 Q170 104 190 102" />}
           </>}
         </g>
 
-        <g className={`lumi-cat-cheeks${feliz ? ' lumi-cat-cheeks--happy' : ''}`}><ellipse cx="51" cy="143" rx={feliz ? '12' : '8'} ry={feliz ? '5' : '3'} /><ellipse cx="189" cy="143" rx={feliz ? '12' : '8'} ry={feliz ? '5' : '3'} /></g>
-        <path className="lumi-cat-nose" d="M114 140 Q120 136 126 140 Q126 145 120 149 Q114 145 114 140 Z" />
-        <path className="lumi-cat-mouth" d={feliz ? 'M120 149 V156 Q113 167 105 158 M120 156 Q127 167 135 158' : raiva ? 'M120 149 V157 M110 168 Q120 160 130 168' : surpresa ? 'M120 149 V154 M113 163 Q120 157 127 163 Q127 173 120 175 Q113 173 113 163 Z' : 'M120 149 V156 Q113 164 107 158 M120 156 Q127 164 133 158'} />
-        <path className="lumi-cat-whiskers" d="M48 142 Q29 136 12 139 M47 151 Q27 150 11 155 M49 159 Q31 164 18 171 M192 142 Q211 136 228 139 M193 151 Q213 150 229 155 M191 159 Q209 164 222 171" />
+        <g className="lumi-cat-muzzle"><ellipse cx="104" cy="146" rx="14" ry="8" /><ellipse cx="136" cy="146" rx="14" ry="8" /></g>
+        {feliz && <g className="lumi-cat-cheeks"><ellipse cx="69" cy="143" rx="8" ry="3.5" /><ellipse cx="171" cy="143" rx="8" ry="3.5" /></g>}
+        <path className="lumi-cat-nose" d="M113 140 Q120 136 127 140 Q124 146 120 148 Q116 146 113 140 Z" />
+        <g className="lumi-cat-freckles"><circle cx="94" cy="145" r="1.15" /><circle cx="101" cy="148" r="1.15" /><circle cx="108" cy="145" r="1.15" /><circle cx="132" cy="145" r="1.15" /><circle cx="139" cy="148" r="1.15" /><circle cx="146" cy="145" r="1.15" /></g>
+        <path className="lumi-cat-mouth" d={feliz ? 'M120 148 V154 Q114 161 109 156 M120 154 Q126 161 131 156' : raiva ? 'M120 148 V155 M112 164 Q120 157 128 164' : surpresa ? 'M120 148 V153 M114 160 Q120 155 126 160 Q126 169 120 171 Q114 169 114 160 Z' : 'M120 148 V154 Q115 160 110 156 M120 154 Q125 160 130 156'} />
+        <path className="lumi-cat-whiskers" d="M70 141 Q49 134 31 136 M69 148 Q48 147 29 151 M70 155 Q51 161 36 169 M170 141 Q191 134 209 136 M171 148 Q192 147 211 151 M170 155 Q189 161 204 169" />
         {pensando && <g className="lumi-cat-thought"><circle cx="211" cy="36" r="5" /><circle cx="225" cy="21" r="2.8" /></g>}
         {feliz && <path className="lumi-cat-spark" d="M213 44 L217 52 L225 56 L217 60 L213 68 L209 60 L201 56 L209 52 Z" />}
       </g>
