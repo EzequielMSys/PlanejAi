@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import Logo from './Logo'
 import ThemeToggle from './ThemeToggle'
 import './AuthLayout.css'
+import './AuthJourneyPreview.css'
 
 /**
  * Moldura comum das telas de autenticação (Login, Register, recuperação).
@@ -26,7 +27,7 @@ export default function AuthLayout({ title, subtitle, children, rodape, destaque
           {children}
           {rodape && <div className="study-auth-rodape">{rodape}</div>}
         </section>
-        {destaque && <aside className="study-auth-lateral" aria-hidden="true"><div className="study-auth-caderno">{destaque}</div></aside>}
+        {destaque && <aside className="study-auth-lateral" aria-label="Conheça o espaço de estudos"><div className="study-auth-showcase">{destaque}</div></aside>}
       </main>
     </div>
   }

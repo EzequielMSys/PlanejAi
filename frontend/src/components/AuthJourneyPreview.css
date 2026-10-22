@@ -1,0 +1,48 @@
+.study-auth--login,.study-auth--register { min-height:100dvh; background:radial-gradient(circle at 83% 17%,var(--pn-primaria-suave),transparent 38%),var(--pn-fundo); }
+.study-auth--login .study-auth-topo,.study-auth--register .study-auth-topo { width:min(1180px,calc(100% - 3rem)); min-height:76px; border-bottom:1px solid var(--pn-borda); }
+.study-auth--login .study-auth-corpo,.study-auth--register .study-auth-corpo { width:min(1180px,calc(100% - 3rem)); grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr); gap:clamp(2rem,5vw,5rem); margin:auto; padding:clamp(2rem,5vh,4rem) 0; align-items:center; }
+.study-auth--login .study-auth-formulario,.study-auth--register .study-auth-formulario { width:100%; max-width:470px; margin-inline:auto; border:0; border-radius:0; background:transparent; padding:0; box-shadow:none; }
+.study-auth--login .study-auth-formulario::before { content:'BEM-VINDO AO SEU ESPAÇO'; margin-bottom:1.1rem; }
+.study-auth--register .study-auth-formulario::before { content:'COMECE A SUA JORNADA'; display:block; margin-bottom:1.1rem; color:var(--pn-primaria-forte); font-size:.67rem; font-weight:800; letter-spacing:.16em; }
+.study-auth--login .study-auth-formulario h1,.study-auth--register .study-auth-formulario h1 { max-width:12ch; font:400 clamp(2.75rem,4.2vw,4rem)/1.04 Georgia,serif; letter-spacing:-.055em; color:var(--pn-texto); }
+.study-auth--login .study-auth-sub,.study-auth--register .study-auth-sub { max-width:34rem; margin-top:1rem; font-size:.95rem; line-height:1.6; }
+.study-auth--login .study-form,.study-auth--register .study-form { display:grid; gap:1.1rem; margin-top:2rem; }
+.study-auth--login .study-label,.study-auth--register .study-label { margin-bottom:.48rem; color:var(--pn-texto); font-size:.7rem; font-weight:780; letter-spacing:.1em; }
+.study-auth--login .study-input,.study-auth--register .study-input { min-height:54px; border:1px solid var(--pn-borda-forte,var(--pn-borda)); border-radius:.75rem; background:var(--pn-superficie); padding-inline:1rem; box-shadow:0 2px 8px color-mix(in srgb,var(--pn-texto) 3%,transparent); }
+.study-auth--login .study-input:hover,.study-auth--register .study-input:hover { border-color:var(--pn-primaria); }
+.study-auth--login .study-input:focus-visible,.study-auth--register .study-input:focus-visible { outline:3px solid var(--pn-primaria-borda,var(--pn-primaria-suave)); outline-offset:1px; }
+.study-auth--login .study-eye,.study-auth--register .study-eye { right:.45rem; border-radius:.55rem; }
+.study-auth--login .study-submit,.study-auth--register .study-submit { min-height:54px; margin-top:.3rem; border-radius:.75rem; font-weight:800; box-shadow:0 12px 26px color-mix(in srgb,var(--pn-primaria) 25%,transparent); }
+.study-auth--login .study-submit:hover:not(:disabled),.study-auth--register .study-submit:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 16px 30px color-mix(in srgb,var(--pn-primaria) 30%,transparent); }
+.study-auth--login .study-auth-rodape,.study-auth--register .study-auth-rodape { margin-top:1.6rem; padding-top:1.1rem; border-top:1px solid var(--pn-borda); text-align:left; }
+.study-auth--login .study-auth-lateral,.study-auth--register .study-auth-lateral { display:block; min-width:0; padding:0; }
+.study-auth--login .study-auth-lateral::before,.study-auth--login .study-auth-lateral::after { display:none; }
+.study-auth--login .study-auth-caderno,.study-auth--register .study-auth-caderno { min-height:0; border:0; border-radius:1.4rem; background:transparent; padding:0; box-shadow:none; transform:none; }
+.auth-journey { position:relative; display:flex; flex-direction:column; min-height:580px; overflow:hidden; border-radius:1.45rem; background:linear-gradient(145deg,var(--pn-primaria-forte),var(--pn-primaria)); padding:clamp(1.4rem,2.8vw,2.5rem); color:var(--pn-on-primaria); isolation:isolate; box-shadow:0 24px 60px color-mix(in srgb,var(--pn-primaria) 21%,transparent); }
+.auth-journey::before { content:''; position:absolute; z-index:-1; width:27rem; height:27rem; right:-9rem; top:-12rem; border:1px solid color-mix(in srgb,var(--pn-on-primaria) 18%,transparent); border-radius:50%; box-shadow:0 0 0 4rem color-mix(in srgb,var(--pn-on-primaria) 3%,transparent),0 0 0 8rem color-mix(in srgb,var(--pn-on-primaria) 3%,transparent); }
+.auth-journey-top { display:flex; justify-content:space-between; gap:1rem; font-size:.64rem; font-weight:800; letter-spacing:.13em; opacity:.85; }
+.auth-journey-copy { margin-top:clamp(2rem,5vh,3.5rem); animation:auth-journey-enter .28s ease-out both; }
+.auth-journey-kicker { font-size:.72rem; font-weight:750; letter-spacing:.08em; }
+.auth-journey-copy h2 { max-width:14ch; margin:.55rem 0 .8rem; color:inherit; font:400 clamp(2.2rem,3.2vw,3.2rem)/1.08 Georgia,serif; letter-spacing:-.04em; }
+.auth-journey-copy p { max-width:42ch; font-size:.83rem; line-height:1.65; opacity:.9; }
+.auth-journey-card { width:min(100%,460px); margin:1.7rem 0 1.5rem auto; border:1px solid var(--pn-borda); border-radius:1rem; background:var(--pn-superficie); padding:1rem 1.15rem; color:var(--pn-texto); box-shadow:0 14px 35px color-mix(in srgb,var(--pn-texto) 13%,transparent); }
+.auth-journey-card-head { display:flex; align-items:center; gap:.55rem; font-size:.74rem; font-weight:800; }
+.auth-journey-card-head span:last-child { margin-left:auto; color:var(--pn-primaria); font-size:1rem; }
+.auth-journey-mark { display:grid; width:1.9rem; height:1.9rem; place-items:center; border-radius:.55rem; background:var(--pn-primaria-suave); color:var(--pn-primaria-forte); }
+.auth-journey-progress { height:.35rem; overflow:hidden; margin:1rem 0 .35rem; border-radius:99px; background:var(--pn-fundo-alt); }
+.auth-journey-progress span { display:block; height:100%; border-radius:inherit; background:var(--pn-primaria); transition:width .35s ease; }
+.auth-journey-card ul { padding:0; list-style:none; }
+.auth-journey-card li { display:flex; align-items:center; gap:.75rem; padding:.5rem 0; border-bottom:1px solid var(--pn-borda); font-size:.75rem; }
+.auth-journey-card li:last-child { border:0; }
+.auth-journey-card li span:first-child { color:var(--pn-primaria-forte); font:italic .82rem Georgia,serif; }
+.auth-journey-card li span:last-child { margin-left:auto; color:var(--pn-primaria); }
+.auth-journey-tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.4rem; margin-top:auto; }
+.auth-journey-tabs button { display:flex; align-items:center; gap:.45rem; min-height:44px; border:1px solid color-mix(in srgb,var(--pn-on-primaria) 30%,transparent); border-radius:.65rem; padding:.55rem .65rem; color:inherit; font-size:.74rem; font-weight:750; text-align:left; transition:background .15s ease,transform .15s ease; }
+.auth-journey-tabs button[aria-pressed=true] { background:var(--pn-superficie); border-color:var(--pn-superficie); color:var(--pn-primaria-forte); }
+.auth-journey-tabs button:hover { transform:translateY(-2px); }
+.auth-journey-tabs button span { font:italic .85rem Georgia,serif; }
+.auth-journey-foot { margin-top:1rem; font-size:.67rem; opacity:.75; }
+@keyframes auth-journey-enter { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+@media(max-width:900px) { .study-auth--login .study-auth-corpo,.study-auth--register .study-auth-corpo { grid-template-columns:1fr; width:min(540px,calc(100% - 2rem)); gap:2rem; padding-block:2rem 4rem; } .study-auth--login .study-auth-lateral,.study-auth--register .study-auth-lateral { display:block; } .auth-journey { min-height:0; } .auth-journey-copy { margin-top:1.5rem; } .auth-journey-card { margin:1.25rem 0; } }
+@media(max-width:520px) { .study-auth--login .study-auth-topo,.study-auth--register .study-auth-topo { width:calc(100% - 2rem); } .study-auth--login .study-auth-formulario h1,.study-auth--register .study-auth-formulario h1 { font-size:2.65rem; } .auth-journey { padding:1.25rem; } .auth-journey-copy h2 { font-size:2.1rem; } .auth-journey-card { display:none; } .auth-journey-tabs { margin-top:1.4rem; } .auth-journey-tabs button { justify-content:center; font-size:.68rem; } }
+@media(prefers-reduced-motion:reduce) { .auth-journey-copy { animation:none; } .auth-journey-progress span,.auth-journey-tabs button,.study-auth .study-submit { transition:none; } .auth-journey-tabs button:hover,.study-auth .study-submit:hover { transform:none; } }

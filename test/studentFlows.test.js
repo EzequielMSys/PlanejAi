@@ -113,6 +113,20 @@ test('reading controls apply, persist and reset preferences', async () => {
     }
   } finally { await screen.close(); }
 });
+test('login and registration previews switch study stages without submitting forms', async () => {
+  for (const route of ['/login', '/register']) {
+    const screen = await renderRoute(route);
+    try {
+      const tabs = [...document.querySelectorAll('.auth-journey-tabs button')];
+      assert.equal(tabs.length, 3);
+      assert.equal(tabs[0].getAttribute('aria-pressed'), 'true');
+      await act(async () => tabs[1].click());
+      assert.equal(tabs[1].getAttribute('aria-pressed'), 'true');
+      assert.match(document.querySelector('.auth-journey-copy h2').textContent, /Prática/);
+      assert.equal(requests.filter(request => request.method === 'post').length, 0);
+    } finally { await screen.close(); }
+  }
+});
 test('Lumi starters prepare a question, then send one request and render safe structured text', async () => {
   failChat = false;
   const screen = await renderRoute('/lumi');

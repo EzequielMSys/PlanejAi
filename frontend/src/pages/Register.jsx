@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import authService from '../services/authService'
 import AuthLayout from '../components/AuthLayout'
+import AuthJourneyPreview from '../components/AuthJourneyPreview'
 import { SENHA_MINIMA, REQUISITOS_SENHA, validarSenha } from '../config/senha'
 
 const EyeIcon = ({ open }) => (
@@ -102,17 +103,7 @@ const Register = () => {
       variant="register"
       title="Criar sua conta"
       subtitle="Em menos de um minuto o primeiro mapa de estudos fica pronto."
-      destaque={
-        <>
-          <p className="study-auth-kicker">Suas escolhas</p>
-          <h2 className="study-auth-titulo">Veja onde você está. Depois, para onde ir.</h2>
-          <ul className="study-auth-lista">
-            <li>Seu cronograma se monta sozinho, semana por semana.</li>
-            <li>Provas e redações revelam o que já está firme.</li>
-            <li>Turma, docente e você no mesmo mapa.</li>
-          </ul>
-        </>
-      }
+      destaque={<AuthJourneyPreview variant="register" />}
       rodape={
         <p className="study-auth-rodape">
           Já tem conta? <Link to="/login" className="study-link">Entrar</Link>

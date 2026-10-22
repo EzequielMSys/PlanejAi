@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import AuthLayout from '../components/AuthLayout'
+import AuthJourneyPreview from '../components/AuthJourneyPreview'
 
 const EyeIcon = ({ open }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -47,20 +48,7 @@ const Login = () => {
       variant="login"
       title="Bem-vindo de volta"
       subtitle="Seu próximo passo começa exatamente de onde você parou."
-      destaque={
-        <>
-          <div className="study-login-note-top"><span>PLANEJAI / SEU ESPAÇO</span><span>01 — 03</span></div>
-          <p className="study-login-note-eyebrow">Uma página por vez</p>
-          <h2>Volte ao seu<br /><em>ritmo de aprender.</em></h2>
-          <p className="study-login-note-intro">Ao entrar, seus estudos continuam com contexto — do plano de hoje à próxima redação.</p>
-          <div className="study-login-note-steps">
-            <div><span>01</span><p><strong>Retome o plano</strong><small>Veja o próximo conteúdo da sua jornada.</small></p></div>
-            <div><span>02</span><p><strong>Pratique com direção</strong><small>Revisões e questões onde faz diferença.</small></p></div>
-            <div><span>03</span><p><strong>Escreva melhor</strong><small>Acompanhe suas redações e seu progresso.</small></p></div>
-          </div>
-          <div className="study-login-note-foot"><span>ESTUDAR É CONSTRUIR CONTINUIDADE</span><span>✦</span></div>
-        </>
-      }
+      destaque={<AuthJourneyPreview variant="login" />}
       rodape={
         <p>
           Não tem conta? <Link to="/register">Criar conta</Link>
