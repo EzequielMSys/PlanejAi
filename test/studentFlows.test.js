@@ -251,6 +251,8 @@ test('Lumi starters prepare a question, then send one request and render safe st
   failChat = false;
   const screen = await renderRoute('/lumi');
   try {
+    assert.ok(screen.container.textContent.includes('EXPLORAR UMA DÚVIDA'));
+    assert.equal(document.querySelectorAll('.lumi-starters button').length, 4);
     const starter = [...document.querySelectorAll('.lumi-starters button')][0];
     await act(async () => starter.click());
     const textarea = document.getElementById('lumi-message');

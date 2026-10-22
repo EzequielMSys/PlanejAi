@@ -14,23 +14,21 @@ export default function Chat() {
     <main className="lumi-page">
       <header className="lumi-page-heading">
         <button type="button" onClick={() => navigate(-1)} aria-label="Voltar à página anterior" className="lumi-back">← Voltar</button>
-        <div className="lumi-page-kicker">PLANEJAI / UM ESPAÇO PARA PERGUNTAR</div>
-        <h1>Aprender fica mais leve<br />quando a conversa continua.</h1>
-        <p>Uma dúvida simples, uma ideia difícil ou um plano para hoje: a Lumi acompanha o seu raciocínio e adapta a explicação ao seu estudo.</p>
+        <div className="lumi-page-heading-row"><div><span className="lumi-page-kicker">SEU ESPAÇO DE ESTUDOS</span><h1>Converse com a Lumi.</h1></div><p>Retome uma lição, teste uma ideia ou peça outra explicação. A conversa acompanha o seu ritmo.</p></div>
       </header>
 
       <div className="lumi-page-grid">
         <aside className="lumi-intro" aria-label="Sobre a Lumi">
           <div className="lumi-portrait"><TutorLumi tamanho={150} humor={humorLumi} rotulo={`Lumi, gata tutora de estudos: ${estados[humorLumi]}`} /></div>
-          <span className="lumi-intro-label">SUA COMPANHEIRA DE ESTUDOS</span>
-          <h2>Oi, sou a Lumi.</h2>
+          <span className="lumi-intro-label">COMPANHEIRA DE ESTUDOS</span>
+          <h2>Vamos pensar juntas?</h2>
           <span className="lumi-mood" aria-live="polite">{estados[humorLumi]}</span>
-          <p>Posso explicar de outro jeito, propor um exercício e ajudar você a retomar uma lição. Diga o que já tentou; assim seguimos do ponto certo.</p>
-          <div className="lumi-intro-note"><strong>Uma conversa sua</strong><span>Quando houver dados na sua conta, uso matérias, andamento do cronograma, revisões e redações para dar contexto à resposta.</span></div>
+          <p>Explique onde travou ou o que já tentou. Posso propor um exercício, revisar uma redação e ajudar a retomar seu plano.</p>
+          <div className="lumi-intro-note"><strong>Uma conversa com contexto</strong><span>Quando disponíveis, suas matérias, lições e redações ajudam a tornar a resposta mais útil.</span></div>
         </aside>
 
         <section className="lumi-chat-card" aria-label="Conversa com a Lumi">
-          <div className="lumi-chat-heading"><span className="lumi-chat-status" aria-hidden="true" /><div><strong>Conversa com a Lumi</strong><small>Pergunte no seu ritmo</small></div></div>
+          <div className="lumi-chat-heading"><span className="lumi-chat-status" aria-hidden="true" /><div><strong>Sua conversa</strong><small>Um passo de cada vez</small></div><span className="lumi-chat-heading-tip">Lumi está aqui para estudar com você</span></div>
           <ChatInterface className="lumi-chat-body" onEstadoChange={setHumorLumi} redacaoSelecionada={location.state?.redacaoSelecionada} perguntaInicial={location.state?.perguntaInicial} />
         </section>
       </div>

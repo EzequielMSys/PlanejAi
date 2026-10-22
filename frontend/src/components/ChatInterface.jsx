@@ -209,29 +209,24 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
 
       <div className="lumi-feed flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-live="polite">
         {!mensagens.length && !loading && (
-          <div className="mx-auto flex max-w-md flex-col items-center gap-3 py-6 text-center">
-            <TutorLumi tamanho={76} humor={humorLumi} />
-            <p className="text-base font-black text-study-accent dark:text-white">
-              Olá! Eu sou a Lumi, sua parceira de estudos.
-            </p>
-            <p className="text-sm text-black/60 dark:text-white/60">
-              Posso explicar matérias, retomar suas lições e praticar o que está difícil.
-            </p>
-            <div className="lumi-starters flex w-full flex-col gap-2">
-              {contexto?.licoes?.[0]?.titulo && <button type="button" onClick={() => enviar(`Me ajude a estudar a lição ${contexto.licoes[0].titulo}. Comece pelo conceito principal.`)} className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white">Retomar minha lição: {contexto.licoes[0].titulo}</button>}
-              {contexto?.dificuldades?.[0]?.disciplina && <button type="button" onClick={() => enviar(`Tenho tido dificuldade em ${contexto.dificuldades[0].disciplina}${contexto.dificuldades[0].competencia ? `, especialmente ${contexto.dificuldades[0].competencia}` : ''}. Explique de outra forma e proponha um exercício curto.`)} className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white">Trabalhar uma dificuldade em {contexto.dificuldades[0].disciplina}</button>}
-              {contexto?.redacoes?.[0]?.tema && <button type="button" onClick={() => enviar('Quero revisar minha redação mais recente. Mostre a competência mais fraca, cite um trecho do meu texto e sugira uma reescrita curta para eu tentar.')} className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white">Revisar minha redação: {contexto.redacoes[0].tema}</button>}
+          <div className="lumi-welcome-content">
+            <div className="lumi-welcome-top"><TutorLumi tamanho={64} humor={humorLumi} /><div><strong>Por onde começamos?</strong><span>Escolha um caminho ou escreva sua própria pergunta abaixo.</span></div></div>
+            {(contexto?.licoes?.[0]?.titulo || contexto?.dificuldades?.[0]?.disciplina || contexto?.redacoes?.[0]?.tema) && <div className="lumi-starter-section"><span>CONTINUAR MEUS ESTUDOS</span><div className="lumi-starters">
+              {contexto?.licoes?.[0]?.titulo && <button type="button" data-personalized="true" onClick={() => enviar(`Me ajude a estudar a lição ${contexto.licoes[0].titulo}. Comece pelo conceito principal.`)}>Retomar lição: {contexto.licoes[0].titulo}</button>}
+              {contexto?.dificuldades?.[0]?.disciplina && <button type="button" data-personalized="true" onClick={() => enviar(`Tenho tido dificuldade em ${contexto.dificuldades[0].disciplina}${contexto.dificuldades[0].competencia ? `, especialmente ${contexto.dificuldades[0].competencia}` : ''}. Explique de outra forma e proponha um exercício curto.`)}>Praticar {contexto.dificuldades[0].disciplina}</button>}
+              {contexto?.redacoes?.[0]?.tema && <button type="button" data-personalized="true" onClick={() => enviar('Quero revisar minha redação mais recente. Mostre a competência mais fraca, cite um trecho do meu texto e sugira uma reescrita curta para eu tentar.')}>Revisar redação: {contexto.redacoes[0].tema}</button>}
+            </div></div>}
+            <div className="lumi-starter-section"><span>EXPLORAR UMA DÚVIDA</span><div className="lumi-starters">
               {SUGESTOES_INICIO.map((sugestao) => (
                 <button
                   key={sugestao}
                   type="button"
                   onClick={() => { setInput(sugestao); inputRef.current?.focus() }}
-                  className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white dark:hover:bg-[#3a2a50]"
                 >
                   {sugestao}
                 </button>
               ))}
-            </div>
+            </div></div>
           </div>
         )}
 
