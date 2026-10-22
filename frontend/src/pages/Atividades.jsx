@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import atividadeService from '../services/atividadeService'
 import { motion, AnimatePresence } from 'framer-motion'
 import MaterialViewer from '../components/MaterialViewer'
-import { Button, PageHeader } from '../components/ui/PlanejUI'
+import { Button } from '../components/ui/PlanejUI'
 import './Atividades.css'
 
 const novaQuestao = () => ({ id: `q-${Date.now()}-${Math.random().toString(16).slice(2)}`, enunciado: '', tipo: 'MULTIPLA_ESCOLHA', opcoes: ['', ''], pares: [{ esquerda: '', direita: '' }, { esquerda: '', direita: '' }], resposta_correta: '', pontos: 1, disciplina: '', dificuldade: 'MEDIA', explicacao: '', rubrica: [] })
@@ -64,6 +64,8 @@ export default function Atividades() {
   const [banco, setBanco] = useState([])
   const [bancoAberto, setBancoAberto] = useState(false)
   const [autosaveStatus, setAutosaveStatus] = useState('parado')
+  const [busca, setBusca] = useState('')
+  const [filtro, setFiltro] = useState('TODAS')
   const fileRef = useRef(null)
   const draftIdRef = useRef(null)
 
@@ -247,16 +249,15 @@ export default function Atividades() {
     } catch (error) { toast.error(error.response?.data?.message || 'Revise a nota informada.') }
   }
 
+  const publicadas = itens.filter(item => item.status === 'PUBLICADA').length
+  const rascunhos = itens.filter(item => item.status === 'RASCUNHO').length
+  const totalEntregas = itens.reduce((total, item) => total + Number(item.entregas || 0), 0)
+  const itensVisiveis = itens.filter(item => (filtro === 'TODAS' || item.status === filtro) && `${item.titulo || item.pergunta || ''} ${item.descricao || ''}`.toLocaleLowerCase('pt-BR').includes(busca.trim().toLocaleLowerCase('pt-BR')))
+
   return (
     <main className="pj-page activities-page">
       <div className="pj-wrap">
-        <PageHeader
-          eyebrow="Atividades 2.0"
-          title="Crie experiências que ensinam."
-          description="Combine questões, arquivos, rubricas e correção automática. Seus rascunhos ficam salvos enquanto você trabalha."
-          icon="A+"
-          actions={isGestor && <Button variant={aberto ? 'secondary' : 'primary'} onClick={() => aberto ? setAberto(false) : abrirNovo()}>{aberto ? 'Fechar editor' : 'Criar atividade'}</Button>}
-        />
+        <header className="activities-hero"><div><span className="activities-kicker">PLANEJAI · OFICINA DE ATIVIDADES</span><h1>Uma boa atividade começa com uma ideia.</h1><p>Transforme um tema em questões, materiais e devolutivas que ajudam a turma a avançar.</p><div className="activities-hero-stats"><span><strong>{itens.length}</strong> atividades</span><span><strong>{publicadas}</strong> publicadas</span><span><strong>{totalEntregas}</strong> entregas</span></div></div><aside><span>DO PLANEJAMENTO À PRÁTICA</span><p>Crie no seu ritmo. O rascunho é salvo enquanto você escreve.</p>{isGestor && <button type="button" onClick={() => aberto ? setAberto(false) : abrirNovo()}>{aberto ? 'Fechar editor' : 'Criar atividade'} <span aria-hidden="true">↗</span></button>}</aside></header>
 
         <AnimatePresence>
           {aberto && (
@@ -424,13 +425,14 @@ export default function Atividades() {
           )}
         </AnimatePresence>
 
-        <section className="grid gap-5 md:grid-cols-2">
-          {itens.map((item) => (
+        {itens.length > 0 && <section className="activities-library" aria-label="Atividades cadastradas"><div className="activities-library-heading"><div><span className="activities-kicker">SUA BIBLIOTECA</span><h2>Atividades em andamento</h2><p>{rascunhos ? `${rascunhos} rascunho${rascunhos === 1 ? '' : 's'} aguardando seu próximo passo.` : 'Organize, revise e acompanhe as entregas.'}</p></div><label>Buscar atividade<input type="search" value={busca} onChange={event => setBusca(event.target.value)} placeholder="Título ou descrição" /></label></div><div className="activities-filters" role="group" aria-label="Filtrar por status">{[['TODAS', 'Todas', itens.length], ['PUBLICADA', 'Publicadas', publicadas], ['RASCUNHO', 'Rascunhos', rascunhos]].map(([id, label, count]) => <button type="button" key={id} className={filtro === id ? 'is-active' : ''} aria-pressed={filtro === id} onClick={() => setFiltro(id)}>{label} <span>{count}</span></button>)}</div></section>}
+        <section className="activities-card-grid">
+          {itensVisiveis.map((item) => (
             <motion.article
               key={item.id_atividade}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-[2.5rem] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 shadow-xl dark:bg-[rgb(var(--pn-superficie-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]"
+              className="activity-library-card"
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)] px-3 py-1 text-xs font-black">{item.status}</span>
@@ -453,16 +455,9 @@ export default function Atividades() {
             </motion.article>
           ))}
         </section>
+        {itens.length > 0 && !itensVisiveis.length && <p className="activities-no-results">Nenhuma atividade corresponde a este filtro. Experimente outra busca ou escolha “Todas”.</p>}
         {!itens.length && !aberto && (
-          <section className="pj-panel activity-empty-state">
-            <span className="activity-empty-mark">+</span>
-            <div>
-              <p className="pj-eyebrow">Primeiro desafio</p>
-              <h2>Crie uma experiência de aprendizagem.</h2>
-              <p>Combine contexto, arquivos e questões. O PlanejAI organiza as entregas e deixa a correção automática ou manual no mesmo fluxo.</p>
-            </div>
-            {isGestor && <button type="button" className="pj-button pj-button--primary" onClick={() => setAberto(true)}>Criar primeira atividade</button>}
-          </section>
+          <section className="activities-first-step"><div><span className="activities-kicker">COMECE POR AQUI</span><h2>Sua primeira atividade, passo a passo.</h2><p>Escolha um assunto e monte um desafio que faça sentido para seus alunos. Você pode voltar ao rascunho antes de publicar.</p>{isGestor && <button type="button" onClick={abrirNovo}>Montar primeira atividade <span aria-hidden="true">→</span></button>}</div><ol><li><b>01</b><span><strong>Apresente o contexto</strong><small>Defina o objetivo e as instruções.</small></span></li><li><b>02</b><span><strong>Crie o desafio</strong><small>Use questões e materiais de apoio.</small></span></li><li><b>03</b><span><strong>Acompanhe as respostas</strong><small>Publique, corrija e devolva orientações.</small></span></li></ol></section>
         )}
         {entregas && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 p-4" onMouseDown={() => setEntregas(null)}><section className="activity-correction-modal" onMouseDown={(e) => e.stopPropagation()}><header className="flex justify-between gap-3"><div><p className="text-xs font-black text-[rgb(var(--pn-primaria-rgb)/1)]">CORREÇÃO HÍBRIDA</p><h2 className="text-2xl font-black">{entregas.atividade.titulo}</h2></div><button onClick={() => setEntregas(null)} className="text-2xl">×</button></header>{!entregas.itens.length ? <p className="mt-8 rounded-xl bg-[rgb(var(--pn-superficie-alt-rgb)/1)] p-6 text-center">Ainda não há entregas.</p> : <div className="mt-5 grid gap-4">{entregas.itens.map((resposta) => { const formCorrecao = correcoes[resposta.id_resposta] || { nota: resposta.nota ?? '', feedback: resposta.feedback || '' }; return <article key={resposta.id_resposta} className="activity-delivery"><div className="flex justify-between"><div><b>{resposta.nome}</b><p className="text-xs opacity-60">{resposta.email}</p></div><span className="text-xs font-bold">{resposta.status}</span></div><DeliveryAnswers atividade={entregas.atividade} entrega={resposta} /><div className="mt-3 grid gap-2 sm:grid-cols-[100px_1fr_auto]"><input type="number" min="0" max="100" value={formCorrecao.nota} onChange={(e) => setCorrecoes({ ...correcoes, [resposta.id_resposta]: { ...formCorrecao, nota: e.target.value } })} placeholder="Nota" /><input value={formCorrecao.feedback} onChange={(e) => setCorrecoes({ ...correcoes, [resposta.id_resposta]: { ...formCorrecao, feedback: e.target.value } })} placeholder="Feedback ao aluno" /><Button onClick={() => corrigir(resposta)}>Liberar correção</Button></div></article>})}</div>}</section></div>}
         {historicoVersoes && <div className="fixed inset-0 z-[100] grid place-items-center bg-black/60 p-4" onMouseDown={() => setHistoricoVersoes(null)}><section className="activity-version-modal" onMouseDown={(e) => e.stopPropagation()}><header><div><span>HISTÓRICO SEGURO</span><h2>{historicoVersoes.atividade.titulo}</h2></div><button type="button" onClick={() => setHistoricoVersoes(null)}>×</button></header><div>{historicoVersoes.itens.map((item) => <article key={item.id_versao}><strong>Versão {item.numero_versao}</strong><span>{new Date(item.criado_em).toLocaleString('pt-BR')}</span></article>)}</div></section></div>}

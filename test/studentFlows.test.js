@@ -101,6 +101,16 @@ test('class management opens details and reveals creation on demand', async () =
   } finally { await screen.close(); }
 });
 
+test('activity management guides the first creation into the editor', async () => {
+  const screen = await renderRoute('/atividades', 'docente');
+  try {
+    assert.ok(screen.container.textContent.includes('Sua primeira atividade, passo a passo.'));
+    await act(async () => button('Montar primeira atividade →').click());
+    assert.ok(screen.container.textContent.includes('Nova atividade'));
+    assert.ok(document.querySelector('.activity-question-editor'));
+  } finally { await screen.close(); }
+});
+
 test('all student, teacher and owner pages render without runtime failures', async t => {
   const routes = ['/', '/login', '/register', '/primeiro-acesso', '/onboarding', '/esqueci-senha', '/redefinir-senha', '/inicio', '/cronograma', '/aprendizagem', '/provas', '/redacoes', '/minha-jornada', '/minhas-atividades', '/minhas-turmas', '/minhas-turmas/1', '/avisos', '/perfil', '/alterar-senha', '/planejamento-inteligente', '/estudar', '/status', '/lumi', '/chat', '/preferencias', '/pagina-inexistente'];
   for (const route of routes) await t.test(route, async () => { const screen = await renderRoute(route); try { assert.ok(document.querySelector('h1'), 'page must have a visible title'); assert.ok(!screen.container.textContent.includes('Algo não carregou como deveria.'), 'error boundary should not be shown'); } finally { await screen.close(); } });
