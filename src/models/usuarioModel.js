@@ -143,7 +143,10 @@ async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '' } =
     COUNT(*) AS total,
     SUM(ativo = 1) AS ativos,
     SUM(tipo = 'aluno') AS alunos,
-    SUM(tipo = 'admin') AS admins
+    SUM(tipo IN ('admin', 'adm')) AS admins,
+    SUM(ativo = 0) AS inativos,
+    SUM(tipo = 'docente') AS docentes,
+    SUM(tipo = 'dono') AS donos
     FROM usuarios`)
   const [rows] = await pool.execute(
     `SELECT 
@@ -264,7 +267,7 @@ async function trocarSenha(id, senhaHash) {
   await pool.execute(
     `UPDATE usuarios
      SET senha = ?,
-         senha_temporaria = 0, 
+         senha_temporaria = 0,
          versao_sessao = versao_sessao + 1,
          atualizado_em = CURRENT_TIMESTAMP
      WHERE id_usuario = ?`,
@@ -306,7 +309,7 @@ async function buscarPorTokenRecuperacao(tokenHash) {
 
 async function redefinirSenhaComToken(id, tokenHash, senhaHash) {
   const [result] = await pool.execute(
-    `UPDATE usuarios SET senha = ?, senha_temporaria = 0, versao_sessao = versao_sessao + 1, token_recuperacao = NULL,
+    `UPDATE usuarios SET senha = ?, senha_temporaria = 0,versao_sessao = versao_sessao + 1, token_recuperacao = NULL,
        token_expiracao = NULL, atualizado_em = CURRENT_TIMESTAMP
      WHERE id_usuario = ? AND token_recuperacao = ? AND token_expiracao > CURRENT_TIMESTAMP`,
     [senhaHash, id, tokenHash]

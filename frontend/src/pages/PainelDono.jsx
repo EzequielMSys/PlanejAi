@@ -6,13 +6,15 @@ import { toast } from 'react-hot-toast'
 export default function PainelDono() {
   const navigate = useNavigate()
   const [usuarios, setUsuarios] = useState([])
+  const [totais, setTotais] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function carregarDados() {
       try {
         const data = await usuarioService.listar()
-        setUsuarios(data)
+        setUsuarios(Array.isArray(data) ? data : data.usuarios || [])
+        setTotais(data.stats || null)
       } catch (error) {
         toast.error('Erro ao carregar métricas do dono.')
       } finally {
@@ -24,6 +26,7 @@ export default function PainelDono() {
   }, [])
 
   const stats = useMemo(() => {
+    if (totais) return totais
     return {
       total: usuarios.length,
       ativos: usuarios.filter((u) => Number(u.ativo) === 1).length,
@@ -33,23 +36,23 @@ export default function PainelDono() {
       docentes: usuarios.filter((u) => u.tipo === 'docente').length,
       alunos: usuarios.filter((u) => u.tipo === 'aluno').length
     }
-  }, [usuarios])
+  }, [usuarios, totais])
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-study-canvas flex items-center justify-center">
-        <div className="bg-study-paper rounded-[3rem] p-10 shadow-2xl border border-study-line/20 text-center">
-          <div className="h-14 w-14 border-b-4 border-study-line rounded-full animate-spin mx-auto mb-4" />
-          <p className="font-bold text-black/60">Carregando painel...</p>
+      <div className="min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] flex items-center justify-center">
+        <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[3rem] p-10 shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] text-center">
+          <div className="h-14 w-14 border-b-4 border-[rgb(var(--pn-primaria-borda-rgb)/1)] rounded-full animate-spin mx-auto mb-4" />
+          <p className="font-bold text-[rgb(var(--pn-texto-rgb)/0.6)]">Carregando painel...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-study-canvas text-black px-4 sm:px-6 lg:px-8 py-10">
+    <div className="min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] px-4 sm:px-6 lg:px-8 py-10">
       <div className="max-w-7xl mx-auto">
-        <section className="workspace-hero bg-gradient-to-br from-study-accent via-study-accent to-study-accent rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+        <section className="workspace-hero bg-gradient-to-br from-[rgb(var(--pn-primaria-rgb)/1)] via-[rgb(var(--pn-primaria-rgb)/1)] to-[rgb(var(--pn-primaria-rgb)/1)] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden student-page-heading">
           <div className="absolute inset-0 bg-black/20" />
 
           <div className="relative z-10">
@@ -75,8 +78,8 @@ export default function PainelDono() {
         </section>
 
         <section className="grid md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-study-paper rounded-[2.5rem] p-6 shadow-xl border border-study-line/20">
-            <h2 className="text-2xl font-black text-black mb-4">
+          <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
+            <h2 className="text-2xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-4">
               Distribuição de tipos
             </h2>
 
@@ -88,29 +91,29 @@ export default function PainelDono() {
             </div>
           </div>
 
-          <div className="bg-study-paper rounded-[2.5rem] p-6 shadow-xl border border-study-line/20">
-            <h2 className="text-2xl font-black text-black mb-4">
+          <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
+            <h2 className="text-2xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-4">
               Ações rápidas
             </h2>
 
             <div className="grid gap-3">
               <button
                 onClick={() => navigate('/dono/usuarios')}
-                className="w-full bg-study-accent text-white rounded-full px-6 py-3 font-bold hover:bg-black transition"
+                className="w-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white rounded-full px-6 py-3 font-bold hover:bg-black transition"
               >
                 Gerenciar usuários
               </button>
 
               <button
                 onClick={() => navigate('/usuarios')}
-                className="w-full bg-study-canvas text-black border border-study-line/40 rounded-full px-6 py-3 font-bold hover:bg-study-accent/20 transition"
+                className="w-full bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] rounded-full px-6 py-3 font-bold hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)] transition"
               >
                 Abrir painel admin
               </button>
 
               <button
                 onClick={() => navigate('/dashboard')}
-                className="w-full bg-study-paper text-black border border-study-line/40 rounded-full px-6 py-3 font-bold hover:bg-study-canvas transition"
+                className="w-full bg-[rgb(var(--pn-superficie-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] rounded-full px-6 py-3 font-bold hover:bg-[rgb(var(--pn-superficie-alt-rgb)/1)] transition"
               >
                 Voltar ao dashboard
               </button>
@@ -118,14 +121,14 @@ export default function PainelDono() {
           </div>
         </section>
 
-        <section className="bg-study-paper rounded-[2.5rem] p-6 shadow-xl border border-study-line/20">
-          <h2 className="text-2xl font-black text-black mb-4">
-            Últimos usuários cadastrados
+        <section className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
+          <h2 className="text-2xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-4">
+            Pessoas cadastradas
           </h2>
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[650px]">
-              <thead className="bg-study-accent/20">
+              <thead className="bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)]">
                 <tr>
                   <Th>Nome</Th>
                   <Th>Email</Th>
@@ -138,7 +141,7 @@ export default function PainelDono() {
                 {usuarios.slice(0, 6).map((usuario) => (
                   <tr key={usuario.id_usuario || usuario.id}>
                     <td className="p-4 font-bold">{usuario.nome}</td>
-                    <td className="p-4 text-sm text-black/60 font-mono">{usuario.email}</td>
+                    <td className="p-4 text-sm text-[rgb(var(--pn-texto-rgb)/0.6)] font-mono">{usuario.email}</td>
                     <td className="p-4 capitalize">{usuario.tipo}</td>
                     <td className="p-4">
                       {Number(usuario.ativo) ? 'Ativo' : 'Inativo'}
@@ -156,9 +159,9 @@ export default function PainelDono() {
 
 function CardStat({ titulo, valor }) {
   return (
-    <div className="bg-study-paper rounded-[2rem] p-6 shadow-xl border border-study-line/20">
-      <p className="text-sm font-bold text-black/50 mb-1">{titulo}</p>
-      <p className="text-3xl font-black text-study-accent">{valor}</p>
+    <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
+      <p className="text-sm font-bold text-[rgb(var(--pn-texto-rgb)/0.5)] mb-1">{titulo}</p>
+      <p className="text-3xl font-black text-[rgb(var(--pn-primaria-rgb)/1)]">{valor}</p>
     </div>
   )
 }
@@ -173,9 +176,9 @@ function LinhaMetrica({ label, valor, total }) {
         <span>{valor} • {porcentagem}%</span>
       </div>
 
-      <div className="h-3 bg-study-canvas rounded-full overflow-hidden">
+      <div className="h-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] rounded-full overflow-hidden">
         <div
-          className="h-full bg-study-accent rounded-full"
+          className="h-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] rounded-full"
           style={{ width: `${porcentagem}%` }}
         />
       </div>
@@ -185,7 +188,7 @@ function LinhaMetrica({ label, valor, total }) {
 
 function Th({ children }) {
   return (
-    <th className="text-left p-4 text-sm font-black text-black border-b border-study-line/20">
+    <th className="text-left p-4 text-sm font-black text-[rgb(var(--pn-texto-rgb)/1)] border-b border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
       {children}
     </th>
   )

@@ -1,57 +1,61 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { apiUrl } from '../config/api'
-import { listQueue, syncQueue } from '../utils/offlineStore'
+import { currentUser, listQueue, syncQueue } from '../utils/offlineStore'
 
 export default function ConnectionStatus() {
   const [status, setStatus] = useState('checking')
   const [pending, setPending] = useState(0)
   const [conflicts, setConflicts] = useState(0)
-
-  const checkConnection = useCallback(async () => {
-    if (!window.navigator.onLine) {
-      setStatus('offline')
-      return
-    }
-
-    try {
-      const controller = new window.AbortController()
-      const timeout = window.setTimeout(() => controller.abort(), 6000)
-      const response = await fetch(apiUrl('/api/health'), { signal: controller.signal })
-      window.clearTimeout(timeout)
-      setStatus(response.ok ? 'online' : 'server')
-      if(response.ok)await syncQueue()
-    } catch {
-      setStatus('server')
-    }
+  const checking = useRef(false)
+  const controller = useRef(null)
+  const refreshQueue = useCallback(async () => {
+    const owner = currentUser()
+    const items = await listQueue().catch(() => [])
+    setPending(items.filter(i => i.owner === owner && i.status === 'PENDING').length)
+    setConflicts(items.filter(i => i.owner === owner && i.status === 'CONFLICT').length)
   }, [])
-
-  useEffect(()=>{const refresh=()=>listQueue().then(items=>{setPending(items.filter(i=>i.status==='PENDING').length);setConflicts(items.filter(i=>i.status==='CONFLICT').length)}).catch(()=>{});refresh();window.addEventListener('planejai:offline-sync',refresh);return()=>window.removeEventListener('planejai:offline-sync',refresh)},[])
-
+  const checkConnection = useCallback(async () => {
+    if (checking.current) return
+    if (!window.navigator.onLine) { setStatus('offline'); return }
+    checking.current = true
+    controller.current = new window.AbortController()
+    const activeController = controller.current
+    const timeout = window.setTimeout(() => activeController.abort(), 6000)
+    try {
+      const response = await fetch(apiUrl('/api/health'), { signal: activeController.signal, cache: 'no-store' })
+      if (controller.current !== activeController) return
+      setStatus(response.ok ? 'online' : 'server')
+      if (response.ok) await syncQueue()
+    } catch { if (controller.current === activeController) setStatus('server') }
+    finally { window.clearTimeout(timeout); if (controller.current === activeController) checking.current = false }
+  }, [])
   useEffect(() => {
+    refreshQueue()
+    window.addEventListener('planejai:offline-change', refreshQueue)
+    return () => window.removeEventListener('planejai:offline-change', refreshQueue)
+  }, [refreshQueue])
+  useEffect(() => {
+    const checkVisible = () => { if (!document.hidden) checkConnection() }
     checkConnection()
-    const interval = window.setInterval(checkConnection, 30000)
+    const interval = window.setInterval(checkVisible, 30000)
     window.addEventListener('online', checkConnection)
     window.addEventListener('offline', checkConnection)
+    document.addEventListener('visibilitychange', checkVisible)
     return () => {
+      controller.current?.abort()
+      controller.current = null
+      checking.current = false
       window.clearInterval(interval)
       window.removeEventListener('online', checkConnection)
       window.removeEventListener('offline', checkConnection)
+      document.removeEventListener('visibilitychange', checkVisible)
     }
   }, [checkConnection])
-
   if ((status === 'checking' || status === 'online') && pending === 0 && conflicts === 0) return null
-
-  return (
-    <div className="connection-alert" role="status">
-      <span className="connection-alert-dot" />
-      <p>
-        <strong>{conflicts>0?`${conflicts} item(ns) precisam de revisão antes de sincronizar.`:status === 'online' ? `${pending} item(ns) aguardando sincronização.` : status === 'offline' ? 'Você está sem internet.' : 'Servidor indisponível.'}</strong>{' '}
-        {status === 'offline'
-          ? 'Seu trabalho compatível ficará salvo neste aparelho e será enviado depois.'
-          : 'Verifique o backend e a conexão com o banco.'}
-      </p>
-      <button type="button" onClick={checkConnection}>Tentar novamente</button>
-      <a href="#/status">Ver diagnóstico</a>
-    </div>
-  )
+  return <div className="connection-alert" role="status"><span className="connection-alert-dot" />
+    <p><strong>{conflicts > 0 ? `${conflicts} item(ns) precisam de revisão antes de sincronizar.` : status === 'online' ? `${pending} item(ns) aguardando sincronização.` : status === 'offline' ? 'Você está sem internet.' : 'Servidor indisponível.'}</strong>{' '}
+      {status === 'offline' ? 'Seu trabalho compatível ficará salvo neste aparelho e será enviado depois.' : status === 'online' ? 'Os envios salvos serão sincronizados automaticamente.' : 'Verifique o backend e a conexão com o banco.'}</p>
+    <button type="button" onClick={checkConnection}>Tentar novamente</button><Link to="/status">Ver diagnóstico</Link>
+  </div>
 }

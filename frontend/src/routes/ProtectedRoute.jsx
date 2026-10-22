@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import RouteLoading from '../components/RouteLoading'
 
 const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false, gestorOnly = false }) => {
   const {
@@ -15,13 +16,7 @@ const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false, gestorO
 
   const location = useLocation()
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
-      </div>
-    )
-  }
+  if (loading) return <RouteLoading label="Restaurando sua sessão…" />
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />

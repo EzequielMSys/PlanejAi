@@ -39,9 +39,9 @@ export default function Onboarding() {
   const [disponibilidade, setDisponibilidade] = useState(diasPadrao)
 
   const inputClass =
-    'w-full rounded-2xl px-4 py-3.5 bg-[#F8F8FC] border border-study-line text-study-ink placeholder-black/35 focus:bg-study-paper focus:ring-4 focus:ring-[#6366F1]/10 focus:border-[#6366F1] focus:outline-none transition-all duration-200'
+    'w-full rounded-2xl px-4 py-3.5 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-borda-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] placeholder-black/35 focus:bg-[rgb(var(--pn-superficie-rgb)/1)] focus:ring-4 focus:ring-[rgb(var(--pn-primaria-borda-rgb)/0.1)] focus:border-[rgb(var(--pn-primaria-borda-rgb)/1)] focus:outline-none transition-all duration-200'
 
-  const labelClass = 'block text-sm font-bold text-study-ink mb-2'
+  const labelClass = 'block text-sm font-bold text-[rgb(var(--pn-texto-rgb)/1)] mb-2'
 
   const handlePerfilSubmit = async (e) => {
     e.preventDefault()
@@ -117,17 +117,17 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
   }
 
   return (
-    <div className="min-h-screen px-4 py-8 text-study-ink sm:px-6 lg:px-10 lg:py-10 relative overflow-hidden">
+    <div className="min-h-screen px-4 py-8 text-[rgb(var(--pn-texto-rgb)/1)] sm:px-6 lg:px-10 lg:py-10 relative overflow-hidden">
       <div className="absolute -top-24 right-[8%] h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
       <div className="absolute bottom-0 left-[15%] h-96 w-96 rounded-full bg-violet-400/10 blur-3xl" />
 
       <div className="max-w-6xl mx-auto relative z-10">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <div className="mb-7 overflow-hidden rounded-[2rem] border border-white/10 bg-[#1C1A38] p-6 shadow-[0_24px_80px_-30px_rgba(31,27,72,.65)] sm:p-8 lg:p-10 relative">
-            <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[#7C6CF2]/35 blur-2xl" />
+          <div className="mb-7 overflow-hidden rounded-[2rem] border border-white/10 bg-[rgb(var(--pn-primaria-forte-rgb)/1)] p-6 shadow-[0_24px_80px_-30px_rgba(31,27,72,.65)] sm:p-8 lg:p-10 relative">
+            <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/0.35)] blur-2xl" />
             <div className="absolute bottom-0 right-[24%] h-24 w-48 bg-cyan-300/10 blur-2xl" />
             <div className="relative z-10 flex items-center gap-5">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-study-paper shadow-xl backdrop-blur-sm sm:h-16 sm:w-16">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-[rgb(var(--pn-superficie-rgb)/0.1)] shadow-xl backdrop-blur-sm sm:h-16 sm:w-16">
                 <svg className="h-7 w-7 text-[#A7F3D0] sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -141,8 +141,8 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
           </div>
 
           <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-            <aside className="rounded-[1.75rem] border border-[#E5E5F2] bg-study-paper p-5 shadow-[0_18px_50px_-35px_rgba(32,28,75,.45)] backdrop-blur-xl lg:sticky lg:top-24">
-              <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.18em] text-[#7778A8]">Configuração</p>
+            <aside className="rounded-[1.75rem] border border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-rgb)/0.75)] p-5 shadow-[0_18px_50px_-35px_rgba(32,28,75,.45)] backdrop-blur-xl lg:sticky lg:top-24">
+              <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.18em] text-[rgb(var(--pn-texto-rgb)/1)]">Configuração</p>
               {[
                 { number: 1, title: 'Seu foco', text: 'Objetivos e matérias' },
                 { number: 2, title: 'Sua semana', text: 'Dias e horários' }
@@ -151,27 +151,27 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
                 const done = step > item.number
                 return (
                   <div key={item.number} className="relative flex gap-3 pb-5 last:pb-0">
-                    {item.number === 1 && <span className="absolute left-[17px] top-9 h-8 w-px bg-[#DDDCEF]" />}
-                    <span className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black transition ${active ? 'bg-study-accent text-white shadow-lg shadow-indigo-300/40' : done ? 'bg-emerald-100 text-emerald-700' : 'bg-[#F0EFF8] text-[#7778A8]'}`}>{done ? '✓' : item.number}</span>
-                    <span><strong className="block text-sm text-[#23213B]">{item.title}</strong><small className="text-xs text-[#85839D]">{item.text}</small></span>
+                    {item.number === 1 && <span className="absolute left-[17px] top-9 h-8 w-px bg-[rgb(var(--pn-superficie-alt-rgb)/1)]" />}
+                    <span className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black transition ${active ? 'bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white shadow-lg shadow-indigo-300/40' : done ? 'bg-emerald-100 text-emerald-700' : 'bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)]'}`}>{done ? '✓' : item.number}</span>
+                    <span><strong className="block text-sm text-[rgb(var(--pn-texto-rgb)/1)]">{item.title}</strong><small className="text-xs text-[rgb(var(--pn-texto-rgb)/1)]">{item.text}</small></span>
                   </div>
                 )
               })}
-              <div className="mt-5 rounded-2xl bg-[#F3F2FA] p-4 text-sm leading-relaxed text-[#686681]">Leva menos de <strong className="text-study-ink">2 minutos</strong>. Você poderá mudar tudo depois no perfil.</div>
+              <div className="mt-5 rounded-2xl bg-[rgb(var(--pn-superficie-alt-rgb)/1)] p-4 text-sm leading-relaxed text-[rgb(var(--pn-texto-rgb)/1)]">Leva menos de <strong className="text-[rgb(var(--pn-texto-rgb)/1)]">2 minutos</strong>. Você poderá mudar tudo depois no perfil.</div>
             </aside>
 
             <div>
               <div className="mb-4 flex items-center justify-between px-1">
-                <span className="text-sm font-bold text-study-muted">Etapa {step} de 2</span>
-                <span className="text-sm font-black text-study-accent">{step * 50}%</span>
+                <span className="text-sm font-bold text-[rgb(var(--pn-texto-rgb)/1)]">Etapa {step} de 2</span>
+                <span className="text-sm font-black text-[rgb(var(--pn-primaria-rgb)/1)]">{step * 50}%</span>
               </div>
-              <div className="mb-5 h-2 overflow-hidden rounded-full bg-[#E8E7F3]"><div className="h-full rounded-full bg-gradient-to-r from-study-accent to-[#8B7CF6] transition-all duration-500" style={{ width: `${step * 50}%` }} /></div>
+              <div className="mb-5 h-2 overflow-hidden rounded-full bg-[rgb(var(--pn-superficie-alt-rgb)/1)]"><div className="h-full rounded-full bg-gradient-to-r from-[rgb(var(--pn-primaria-rgb)/1)] to-[rgb(var(--pn-primaria-suave-rgb)/1)] transition-all duration-500" style={{ width: `${step * 50}%` }} /></div>
 
           {step === 1 && (
             <form onSubmit={handlePerfilSubmit}>
-              <div className="rounded-[2rem] border border-study-line bg-study-paper p-6 shadow-[0_24px_70px_-42px_rgba(35,31,77,.55)] sm:p-8 lg:p-10">
-                <h2 className="text-2xl font-black tracking-tight text-study-ink">Qual é a sua meta?</h2>
-                <p className="mb-7 mt-1 text-sm text-study-muted">Use essas respostas para personalizarmos o ritmo do cronograma.</p>
+              <div className="rounded-[2rem] border border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 shadow-[0_24px_70px_-42px_rgba(35,31,77,.55)] sm:p-8 lg:p-10">
+                <h2 className="text-2xl font-black tracking-tight text-[rgb(var(--pn-texto-rgb)/1)]">Qual é a sua meta?</h2>
+                <p className="mb-7 mt-1 text-sm text-[rgb(var(--pn-texto-rgb)/1)]">Use essas respostas para personalizarmos o ritmo do cronograma.</p>
 
                 <div className="space-y-4">
                   <div>
@@ -256,7 +256,7 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-8 w-full rounded-2xl bg-study-accent px-5 py-4 font-extrabold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-study-accent hover:shadow-xl active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-8 w-full rounded-2xl bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-5 py-4 font-extrabold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-[rgb(var(--pn-primaria-forte-rgb)/1)] hover:shadow-xl active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? 'Salvando...' : 'Próximo: Disponibilidade'}
                 </button>
@@ -266,10 +266,10 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
 
           {step === 2 && (
             <form onSubmit={handleDisponibilidadeSubmit}>
-              <div className="rounded-[2rem] border border-study-line bg-study-paper p-6 shadow-[0_24px_70px_-42px_rgba(35,31,77,.55)] sm:p-8 lg:p-10">
-                <h2 className="text-2xl font-black tracking-tight text-study-ink">Como é a sua semana?</h2>
+              <div className="rounded-[2rem] border border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 shadow-[0_24px_70px_-42px_rgba(35,31,77,.55)] sm:p-8 lg:p-10">
+                <h2 className="text-2xl font-black tracking-tight text-[rgb(var(--pn-texto-rgb)/1)]">Como é a sua semana?</h2>
 
-                <p className="text-black/60 mb-6">
+                <p className="text-[rgb(var(--pn-texto-rgb)/0.6)] mb-6">
                   Marque os dias em que você pode estudar.
                 </p>
 
@@ -277,7 +277,7 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
                   {disponibilidade.map((dia, index) => (
                     <div
                       key={dia.dia_semana}
-                      className={`flex flex-col gap-4 rounded-2xl border p-4 transition sm:flex-row sm:items-center sm:justify-between ${dia.ocupado ? 'border-[#ECEBF4] bg-[#FAFAFC] opacity-65' : 'border-[#DCD9F5] bg-[#F7F6FE]'}`}
+                      className={`flex flex-col gap-4 rounded-2xl border p-4 transition sm:flex-row sm:items-center sm:justify-between ${dia.ocupado ? 'border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-alt-rgb)/1)] opacity-65' : 'border-[rgb(var(--pn-primaria-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-alt-rgb)/1)]'}`}
                     >
                       <label className="flex items-center gap-4">
                         <input
@@ -287,20 +287,20 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
                           className="w-5 h-5 accent-[#4B4C9D]"
                         />
 
-                        <span className="text-black font-bold">
+                        <span className="text-[rgb(var(--pn-texto-rgb)/1)] font-bold">
                           {dia.label}
                         </span>
                       </label>
 
                       {!dia.ocupado && (
-                        <div className="flex items-center gap-2 text-sm text-black/60">
+                        <div className="flex items-center gap-2 text-sm text-[rgb(var(--pn-texto-rgb)/0.6)]">
                           <input
                             type="time"
                             value={dia.hora_inicio}
                             onChange={(e) =>
                               atualizarHorario(index, 'hora_inicio', e.target.value)
                             }
-                            className="bg-study-paper border border-study-line/40 rounded-full px-3 py-2 text-xs text-black focus:ring-2 focus:ring-[#9394CF] focus:outline-none"
+                            className="bg-[rgb(var(--pn-superficie-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] rounded-full px-3 py-2 text-xs text-[rgb(var(--pn-texto-rgb)/1)] focus:ring-2 focus:ring-[rgb(var(--pn-primaria-borda-rgb)/1)] focus:outline-none"
                           />
 
                           <span>às</span>
@@ -311,7 +311,7 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
                             onChange={(e) =>
                               atualizarHorario(index, 'hora_fim', e.target.value)
                             }
-                            className="bg-study-paper border border-study-line/40 rounded-full px-3 py-2 text-xs text-black focus:ring-2 focus:ring-[#9394CF] focus:outline-none"
+                            className="bg-[rgb(var(--pn-superficie-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] rounded-full px-3 py-2 text-xs text-[rgb(var(--pn-texto-rgb)/1)] focus:ring-2 focus:ring-[rgb(var(--pn-primaria-borda-rgb)/1)] focus:outline-none"
                           />
                         </div>
                       )}
@@ -323,7 +323,7 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="flex-1 rounded-2xl border border-[#DDDBEA] bg-study-paper py-3.5 font-bold text-study-ink transition hover:bg-[#F8F7FC]"
+                    className="flex-1 rounded-2xl border border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-rgb)/1)] py-3.5 font-bold text-[rgb(var(--pn-texto-rgb)/1)] transition hover:bg-[rgb(var(--pn-superficie-alt-rgb)/1)]"
                   >
                     Voltar
                   </button>
@@ -331,7 +331,7 @@ if (!formData.ano_escolar || !formData.objetivo || !formData.areas_foco.trim()) 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 rounded-2xl bg-study-accent py-3.5 font-extrabold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-study-accent disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex-1 rounded-2xl bg-[rgb(var(--pn-primaria-forte-rgb)/1)] py-3.5 font-extrabold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-[rgb(var(--pn-primaria-forte-rgb)/1)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? 'Finalizando...' : 'Concluir Configuração'}
                   </button>

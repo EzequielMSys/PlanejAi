@@ -1,7 +1,65 @@
-export default function Logo({ className = 'w-9 h-9', title = 'PlanejAI' }) {
-  return <svg viewBox="0 0 40 40" className={className} role="img" aria-label={title}>
-    <rect x="1" y="1" width="38" height="38" rx="9" fill="var(--pn-primaria)" />
-    <path d="M11 11h9a8 8 0 0 1 0 16h-3v4h-6V11Zm6 5v6h3a3 3 0 0 0 0-6h-3Z" fill="var(--pn-on-primaria)" />
-    <path d="m26 10 4-3v8" fill="none" stroke="var(--pn-on-primaria)" strokeWidth="1.5" />
-  </svg>
+import { useId } from 'react'
+
+/**
+ * Marca do PlanejAI — "Atlas".
+ *
+ * A metáfora é o conhecimento como território: uma bússola apoiada sobre um
+ * mapa, com a rota pontilhada ligando o ponto de partida ao destino. A
+ * agulha aponta o norte (o próximo passo) e o mapa representa tudo o que ainda
+ * falta explorar.
+ *
+ * Usa apenas os tokens --pn-*, então acompanha a cor escolhida pelo usuário sem
+ * precisar de variantes. O `id` do gradiente é único por instância: dois SVGs
+ * com o mesmo id fariam o segundo reaproveitar o gradiente do primeiro.
+ */
+export default function Logo({ className = 'w-9 h-9', title = 'PlanejAI', animado = true }) {
+  const id = `pn-atlas-${useId().replace(/:/g, '')}`
+
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      className={`${className}${animado ? ' pn-logo-interactive' : ''}`}
+      role="img"
+      aria-label={title}
+    >
+      <defs>
+        <linearGradient id={id} x1="8" y1="6" x2="40" y2="42" gradientUnits="userSpaceOnUse">
+          <stop stopColor="var(--pn-primaria)" />
+          <stop offset="1" stopColor="var(--pn-primaria-hover)" />
+        </linearGradient>
+      </defs>
+
+      {/* Disco do mapa */}
+      <circle cx="24" cy="24" r="20" fill={`url(#${id})`} />
+
+      {/* Linha do horizonte e o meridiano: dá leitura de "mapa" */}
+      <g stroke="var(--pn-superficie)" strokeWidth="1.3" opacity=".38" strokeLinecap="round" fill="none">
+        <path d="M6 24h36" />
+        <path d="M24 5.5c6 6 6 31 0 37" />
+        <path d="M24 5.5c-6 6-6 31 0 37" />
+      </g>
+
+      {/* Rota: a linha pontilhada do início ao destino */}
+      <path
+        d="M14 32c4-9 10-9 14-14s6-2 7-2"
+        fill="none"
+        stroke="var(--pn-superficie)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray="3 3.5"
+        opacity=".75"
+        className={animado ? 'pn-tracar' : undefined}
+      />
+
+      {/* Agulha da bússola, apontando o norte */}
+      <path d="M24 10.5 28.4 25 24 22.2 19.6 25Z" fill="var(--pn-superficie)" />
+
+      {/* Centro da bússola */}
+      <circle cx="24" cy="24" r="2.6" fill="var(--pn-primaria)" />
+      <circle cx="24" cy="24" r="1" fill="var(--pn-superficie)" />
+
+      {/* Origem: onde o estudo começa */}
+      <circle cx="13" cy="33" r="2.4" fill="var(--pn-superficie)" fillOpacity=".9" />
+    </svg>
+  )
 }

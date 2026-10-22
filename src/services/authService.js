@@ -13,6 +13,15 @@ const { getJwtSecret } = require("../config/jwtConfig");
 const { enviarRecuperacaoSenha } = require("./emailService");
 const jobQueue = require("./jobQueue");
 
+function sessionFor(usuario) {
+  const id = usuario.id_usuario || usuario.id;
+  return {
+    token: jwt.sign({ id, id_usuario: id, tipo: usuario.tipo, sv: Number(usuario.versao_sessao || 0) },
+      getJwtSecret(), { expiresIn: process.env.JWT_EXPIRATION || "8h" }),
+    usuario: sanitizeUser(usuario),
+  };
+}
+
 class AuthService {
   async registrar(dados) {
     const nome = String(dados.nome || "").trim();
@@ -146,7 +155,7 @@ class AuthService {
       enviarRecuperacaoSenha({
         email: usuario.email,
         nome: usuario.nome,
-        resetUrl: `${appUrl}/redefinir-senha?token=${encodeURIComponent(token)}`,
+        resetUrl: `${appUrl.split('#')[0].replace(/\/$/, '')}/#/redefinir-senha?token=${encodeURIComponent(token)}`,
       }),
     );
   }
@@ -218,9 +227,9 @@ class AuthService {
 
     const novaSenhaHash = await bcrypt.hash(novaSenha, getBcryptRounds());
 
-    await usuarioModel.alterarSenha(usuarioId, novaSenhaHash);
+    const atualizado = await usuarioModel.alterarSenha(usuarioId, novaSenhaHash);
 
-    return { message: "Senha alterada com sucesso." };
+    return { message: "Senha alterada com sucesso.", ...sessionFor(atualizado) };
   }
 }
 

@@ -24,7 +24,7 @@ function formatarHora(data) {
 function Mensagem({ mensagem }) {
   const ehUsuario = mensagem.role === 'user'
   return (
-    <div className={`flex items-start gap-2 ${ehUsuario ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex items-start gap-2 ${ehUsuario ? 'lumi-message--user justify-end' : 'justify-start'}`}>
       {!ehUsuario && <TutorLumi tamanho={28} humor={mensagem.reacao || 'neutro'} />}
       <div
         className={`min-w-0 max-w-[88%] rounded-2xl px-4 py-3 text-[.94rem] shadow-sm sm:max-w-[82%] ${
@@ -51,6 +51,7 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
   const [loading, setLoading] = useState(false)
   const [humorLumi, setHumorLumi] = useState('neutro')
   const [contexto, setContexto] = useState(null)
+  const [sendError, setSendError] = useState('')
   const fimRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -77,7 +78,7 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
   }, [])
 
   useEffect(() => {
-    fimRef.current?.scrollIntoView({ block: 'end' })
+    if (mensagens.length) fimRef.current?.scrollIntoView({ block: 'end' })
   }, [mensagens, loading])
 
   useEffect(() => {
@@ -91,12 +92,15 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
   async function enviar(texto) {
     const mensagem = (texto || input).trim()
     if (!mensagem || loading) return
-    append({
+    const envioId = Date.now() + Math.random()
+    setSendError('')
+    setMensagens((prev) => [...prev, {
+      id: envioId,
       role: 'user',
       content: mensagem,
       disciplina: materia || null,
       criado_em: new Date().toISOString(),
-    })
+    }])
     setInput('')
     setLoading(true)
     setHumorLumi('pensando')
@@ -127,7 +131,11 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
         setHumorLumi(data.reacao || 'neutro')
       }
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Não foi possível conversar com a Lumi agora.')
+      const aviso = error?.response?.data?.message || 'Não foi possível conversar com a Lumi agora.'
+      setMensagens((atuais) => atuais.filter((item) => item.id !== envioId))
+      setInput(mensagem)
+      setSendError(aviso)
+      toast.error(aviso)
       setHumorLumi('neutro')
     } finally {
       setLoading(false)
@@ -192,7 +200,7 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
         </div>
       )}
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-live="polite">
+      <div className="lumi-feed flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-live="polite">
         {!mensagens.length && !loading && (
           <div className="mx-auto flex max-w-md flex-col items-center gap-3 py-6 text-center">
             <TutorLumi tamanho={76} humor={humorLumi} />
@@ -202,7 +210,7 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
             <p className="text-sm text-black/60 dark:text-white/60">
               Posso explicar matérias, retomar suas lições e praticar o que está difícil.
             </p>
-            <div className="flex w-full flex-col gap-2">
+            <div className="lumi-starters flex w-full flex-col gap-2">
               {contexto?.licoes?.[0]?.titulo && <button type="button" onClick={() => enviar(`Me ajude a estudar a lição ${contexto.licoes[0].titulo}. Comece pelo conceito principal.`)} className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white">Retomar minha lição: {contexto.licoes[0].titulo}</button>}
               {contexto?.dificuldades?.[0]?.disciplina && <button type="button" onClick={() => enviar(`Tenho tido dificuldade em ${contexto.dificuldades[0].disciplina}${contexto.dificuldades[0].competencia ? `, especialmente ${contexto.dificuldades[0].competencia}` : ''}. Explique de outra forma e proponha um exercício curto.`)} className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white">Trabalhar uma dificuldade em {contexto.dificuldades[0].disciplina}</button>}
               {contexto?.redacoes?.[0]?.tema && <button type="button" onClick={() => enviar('Quero revisar minha redação mais recente. Mostre a competência mais fraca, cite um trecho do meu texto e sugira uma reescrita curta para eu tentar.')} className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white">Revisar minha redação: {contexto.redacoes[0].tema}</button>}
@@ -210,7 +218,7 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
                 <button
                   key={sugestao}
                   type="button"
-                  onClick={() => enviar(sugestao)}
+                  onClick={() => { setInput(sugestao); inputRef.current?.focus() }}
                   className="rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-left text-sm font-semibold text-study-accent transition hover:bg-study-tint dark:bg-study-paper dark:text-white dark:hover:bg-[#3a2a50]"
                 >
                   {sugestao}
@@ -242,6 +250,8 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
         <div ref={fimRef} />
       </div>
 
+      {sendError && <p role="alert" className="px-3 text-xs text-red-700 dark:text-red-300">{sendError}</p>}
+
       <form
         onSubmit={(event) => {
           event.preventDefault()
@@ -250,6 +260,7 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
         className="flex items-end gap-2 border-t border-study-line/15 p-3"
       >
         <textarea
+          id="lumi-message"
           ref={inputRef}
           value={input}
           onChange={(event) => setInput(event.target.value)}

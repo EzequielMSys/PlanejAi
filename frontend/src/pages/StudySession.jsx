@@ -155,7 +155,7 @@ export default function StudySession() {
 
   return <main className="session-page pj-page">
     <div className="pj-wrap">
-      <header className="session-topbar">
+      <header className="session-topbar student-page-heading">
         <button type="button" className="session-back" onClick={() => navigate(-1)}>← Voltar</button>
         <div><span className="pj-eyebrow">PlanejAI / Sala de estudo</span><h1>{content.titulo || 'Sessão de estudo'}</h1><p>{content.disciplina || content.area || 'Geral'} {day?.data_estudo ? `· ${new Date(`${String(day.data_estudo).slice(0,10)}T12:00:00`).toLocaleDateString('pt-BR')}` : ''}</p></div>
         <button type="button" className="pj-button pj-button--primary" disabled={finishing} onClick={finish}>{finishing ? 'Salvando…' : 'Concluir sessão'}</button>

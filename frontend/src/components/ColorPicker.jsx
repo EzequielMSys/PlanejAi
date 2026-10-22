@@ -63,11 +63,15 @@ export default function ColorPicker() {
         <span className="sr-only sm:not-sr-only">Mudar cor</span>
       </button>
 
-
+      <>
         {aberto && (
           <div
             role="dialog"
             aria-label="Personalizar aparência"
+
+
+
+
             className="pn-folha"
             style={{
               position: 'absolute', right: 0, top: 'calc(100% + .5rem)',
@@ -135,7 +139,7 @@ export default function ColorPicker() {
             )}
           </div>
         )}
-
+      </>
     </div>
   )
 }

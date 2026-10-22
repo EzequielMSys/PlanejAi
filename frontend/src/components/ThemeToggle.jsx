@@ -17,14 +17,12 @@ export default function ThemeToggle({ className = '' }) {
 
   return (
     <button
+
       onClick={toggleTheme}
       aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
       title={isDark ? 'Modo claro' : 'Modo escuro'}
-      className={`relative inline-flex items-center justify-center w-10 h-10 rounded-xl
-        bg-study-paper dark:bg-study-paper backdrop-blur-xl border border-study-line dark:border-white/10
-        text-study-accent dark:text-study-accent hover:scale-105
-        hover:bg-study-accent/20 dark:hover:bg-study-paper
-        transition-all duration-300 ${className}`}
+      type="button"
+      className={`theme-toggle ${className}`}
     >
       <AnimateIcon key={isDark ? 'dark' : 'light'} isDark={isDark} />
     </button>
@@ -35,6 +33,9 @@ function AnimateIcon({ isDark }) {
   return (
     <span
       key={isDark ? 'dark' : 'light'}
+
+
+
       className="flex items-center justify-center"
     >
       {isDark ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}

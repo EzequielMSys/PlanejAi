@@ -12,9 +12,9 @@ const tipoLabel = {
 
 const tipoBadge = {
   dono: 'bg-black text-white border-black',
-  admin: 'bg-study-accent text-white border-study-line',
-  docente: 'bg-study-accent/25 text-black border-study-line',
-  aluno: 'bg-study-canvas text-black border-study-line/40'
+  admin: 'bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white border-[rgb(var(--pn-primaria-borda-rgb)/1)]',
+  docente: 'bg-[rgb(var(--pn-primaria-forte-rgb)/0.25)] text-[rgb(var(--pn-texto-rgb)/1)] border-[rgb(var(--pn-primaria-borda-rgb)/1)]',
+  aluno: 'bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] border-[rgb(var(--pn-primaria-borda-rgb)/0.4)]'
 }
 
 const USUARIOS_POR_PAGINA = 10
@@ -231,19 +231,19 @@ export default function UsuariosAdmin() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-study-canvas flex items-center justify-center">
-        <div className="bg-study-paper rounded-[3rem] p-10 shadow-2xl border border-study-line/20 text-center">
-          <div className="h-14 w-14 border-b-4 border-study-line rounded-full animate-spin mx-auto mb-4" />
-          <p className="font-bold text-black/60">Carregando usuários...</p>
+      <div className="min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] flex items-center justify-center">
+        <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[3rem] p-10 shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] text-center">
+          <div className="h-14 w-14 border-b-4 border-[rgb(var(--pn-primaria-borda-rgb)/1)] rounded-full animate-spin mx-auto mb-4" />
+          <p className="font-bold text-[rgb(var(--pn-texto-rgb)/0.6)]">Carregando usuários...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-study-canvas text-black px-4 sm:px-6 lg:px-8 py-10">
+    <div className="min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] px-4 sm:px-6 lg:px-8 py-10">
       <div className="max-w-7xl mx-auto">
-        <section className="workspace-hero bg-gradient-to-br from-study-accent via-study-accent to-study-accent rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
+        <section className="workspace-hero bg-gradient-to-br from-[rgb(var(--pn-primaria-rgb)/1)] via-[rgb(var(--pn-primaria-rgb)/1)] to-[rgb(var(--pn-primaria-rgb)/1)] rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden student-page-heading">
           <div className="absolute inset-0 bg-black/20" />
 
           <div className="relative z-10">
@@ -268,14 +268,14 @@ export default function UsuariosAdmin() {
           <CardStat titulo="Admins" valor={stats.admins} />
         </section>
 
-        <section className="bg-study-paper rounded-[2.5rem] p-5 sm:p-6 shadow-xl border border-study-line/20 mb-6">
+        <section className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-5 sm:p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] mb-6">
           <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-2xl font-black text-black">
+              <h2 className="text-2xl font-black text-[rgb(var(--pn-texto-rgb)/1)]">
                 Gerenciamento
               </h2>
 
-              <p className="text-black/60">
+              <p className="text-[rgb(var(--pn-texto-rgb)/0.6)]">
                 {isDono
                   ? 'Você possui acesso total de dono.'
                   : 'Você possui acesso administrativo limitado.'}
@@ -289,14 +289,14 @@ export default function UsuariosAdmin() {
                 onChange={(e) => atualizarBusca(e.target.value)}
                 placeholder="Buscar por nome ou email..."
                 aria-label="Buscar usuário por nome ou email"
-                className="rounded-full px-5 py-3 bg-study-canvas border border-study-line/40 outline-none focus:ring-2 focus:ring-[#9394CF]"
+                className="rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] outline-none focus:ring-2 focus:ring-[rgb(var(--pn-primaria-borda-rgb)/1)]"
               />
 
               <select
                 value={tipoFiltro}
                 onChange={(e) => atualizarTipoFiltro(e.target.value)}
                 aria-label="Filtrar usuários por tipo"
-                className="rounded-full px-5 py-3 bg-study-canvas border border-study-line/40 outline-none focus:ring-2 focus:ring-[#9394CF]"
+                className="rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] outline-none focus:ring-2 focus:ring-[rgb(var(--pn-primaria-borda-rgb)/1)]"
               >
                 <option value="">Todos</option>
                 <option value="dono">Dono</option>
@@ -308,10 +308,10 @@ export default function UsuariosAdmin() {
           </div>
         </section>
 
-        <section className="bg-study-paper rounded-[2.5rem] shadow-2xl border border-study-line/20 overflow-hidden">
+        <section className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1000px]">
-              <thead className="bg-study-accent/20">
+              <thead className="bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)]">
                 <tr>
                   <Th>Usuário</Th>
                   <Th>Email</Th>
@@ -328,18 +328,18 @@ export default function UsuariosAdmin() {
                   const podeAlterar = podeMexer(usuario)
 
                   return (
-                    <tr key={id} className="hover:bg-study-canvas transition-colors">
+                    <tr key={id} className="hover:bg-[rgb(var(--pn-superficie-alt-rgb)/1)] transition-colors">
                       <td className="p-5">
-                        <div className="font-black text-black">
+                        <div className="font-black text-[rgb(var(--pn-texto-rgb)/1)]">
                           {usuario.nome || 'Sem nome'}
                         </div>
 
-                        <div className="text-xs text-black/50">
+                        <div className="text-xs text-[rgb(var(--pn-texto-rgb)/0.5)]">
                           ID #{id}
                         </div>
                       </td>
 
-                      <td className="p-5 text-sm text-black/65 font-mono">
+                      <td className="p-5 text-sm text-[rgb(var(--pn-texto-rgb)/0.65)] font-mono">
                         {usuario.email}
                       </td>
 
@@ -374,7 +374,7 @@ export default function UsuariosAdmin() {
                         </span>
                       </td>
 
-                      <td className="p-5 text-sm text-black/60">
+                      <td className="p-5 text-sm text-[rgb(var(--pn-texto-rgb)/0.6)]">
                         {formatarData(usuario.data_cadastro || usuario.data_criacao || usuario.criado_em)}
                       </td>
 
@@ -384,7 +384,7 @@ export default function UsuariosAdmin() {
                             type="button"
                             disabled={!isDono || !podeAlterar || acaoLoading === `status-${id}`}
                             onClick={() => alterarStatus(usuario)}
-                            className="px-4 py-2 rounded-full bg-study-canvas border border-study-line/40 text-sm font-bold disabled:opacity-40 hover:bg-study-accent/20 transition"
+                            className="px-4 py-2 rounded-full bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] text-sm font-bold disabled:opacity-40 hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)] transition"
                           >
                             {Number(usuario.ativo) ? 'Desativar' : 'Ativar'}
                           </button>
@@ -393,7 +393,7 @@ export default function UsuariosAdmin() {
                             type="button"
                             disabled={!podeAlterar || acaoLoading === `senha-${id}`}
                             onClick={() => resetarSenha(usuario)}
-                            className="px-4 py-2 rounded-full bg-study-accent text-white text-sm font-bold disabled:opacity-40 hover:bg-black transition"
+                            className="px-4 py-2 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white text-sm font-bold disabled:opacity-40 hover:bg-black transition"
                           >
                             Resetar senha
                           </button>
@@ -402,7 +402,7 @@ export default function UsuariosAdmin() {
                             type="button"
                             disabled={!isDono || !podeAlterar}
                             onClick={() => abrirModalSenha(usuario)}
-                            className="px-4 py-2 rounded-full bg-black text-white text-sm font-bold disabled:opacity-40 hover:bg-study-accent transition"
+                            className="px-4 py-2 rounded-full bg-black text-white text-sm font-bold disabled:opacity-40 hover:bg-[rgb(var(--pn-primaria-forte-rgb)/1)] transition"
                           >
                             Definir senha
                           </button>
@@ -417,11 +417,11 @@ export default function UsuariosAdmin() {
 
           {usuarios.length === 0 && (
             <div className="text-center py-16">
-              <h3 className="text-2xl font-black text-black mb-2">
+              <h3 className="text-2xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-2">
                 Nenhum usuário encontrado
               </h3>
 
-              <p className="text-black/60">
+              <p className="text-[rgb(var(--pn-texto-rgb)/0.6)]">
                 Tente ajustar a busca ou o filtro.
               </p>
             </div>
@@ -430,21 +430,21 @@ export default function UsuariosAdmin() {
           {usuarios.length > 0 && (
             <nav
               aria-label="Paginação de usuários"
-              className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-study-line/20 px-5 py-5"
+              className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] px-5 py-5"
             >
-              <p className="text-sm text-black/60">
+              <p className="text-sm text-[rgb(var(--pn-texto-rgb)/0.6)]">
                 Mostrando{' '}
-                <strong className="text-black">
+                <strong className="text-[rgb(var(--pn-texto-rgb)/1)]">
                   {(paginaAtual - 1) * USUARIOS_POR_PAGINA + 1}
                 </strong>{' '}
                 a{' '}
-                <strong className="text-black">
+                <strong className="text-[rgb(var(--pn-texto-rgb)/1)]">
                   {Math.min(
                     paginaAtual * USUARIOS_POR_PAGINA,
                     totalRegistros
                   )}
                 </strong>{' '}
-                de <strong className="text-black">{totalRegistros}</strong>
+                de <strong className="text-[rgb(var(--pn-texto-rgb)/1)]">{totalRegistros}</strong>
               </p>
 
               <div className="flex flex-wrap items-center justify-center gap-2">
@@ -452,7 +452,7 @@ export default function UsuariosAdmin() {
                   type="button"
                   disabled={paginaAtual === 1}
                   onClick={() => setPaginaAtual((pagina) => pagina - 1)}
-                  className="px-4 py-2 rounded-full border border-study-line/40 font-bold text-sm hover:bg-study-accent/15 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  className="px-4 py-2 rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] font-bold text-sm hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.15)] disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
                   Anterior
                 </button>
@@ -466,8 +466,8 @@ export default function UsuariosAdmin() {
                     onClick={() => setPaginaAtual(pagina)}
                     className={`h-10 min-w-10 px-3 rounded-full font-black text-sm transition ${
                       pagina === paginaAtual
-                        ? 'bg-study-accent text-white shadow-lg'
-                        : 'bg-study-canvas border border-study-line/30 text-black hover:bg-study-accent/20'
+                        ? 'bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white shadow-lg'
+                        : 'bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.3)] text-[rgb(var(--pn-texto-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)]'
                     }`}
                   >
                     {pagina}
@@ -478,7 +478,7 @@ export default function UsuariosAdmin() {
                   type="button"
                   disabled={paginaAtual === totalPaginas}
                   onClick={() => setPaginaAtual((pagina) => pagina + 1)}
-                  className="px-4 py-2 rounded-full border border-study-line/40 font-bold text-sm hover:bg-study-accent/15 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  className="px-4 py-2 rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] font-bold text-sm hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.15)] disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
                   Próxima
                 </button>
@@ -490,21 +490,21 @@ export default function UsuariosAdmin() {
 
       {modalSenha && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-study-paper rounded-[2.5rem] shadow-2xl border border-study-line/20 p-8">
+          <div className="w-full max-w-md bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] p-8">
             <div className="mb-6">
-              <p className="text-xs uppercase tracking-[0.3em] text-study-accent font-black mb-2">
+              <p className="text-xs uppercase tracking-[0.3em] text-[rgb(var(--pn-primaria-rgb)/1)] font-black mb-2">
                 PlanejAI
               </p>
 
-              <h2 className="text-3xl font-black text-black mb-2">
+              <h2 className="text-3xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-2">
                 Definir senha
               </h2>
 
-              <p className="text-black/60">
+              <p className="text-[rgb(var(--pn-texto-rgb)/0.6)]">
                 Defina uma nova senha para:
               </p>
 
-              <p className="font-black text-study-accent mt-2">
+              <p className="font-black text-[rgb(var(--pn-primaria-rgb)/1)] mt-2">
                 {modalSenha.nome || modalSenha.email}
               </p>
             </div>
@@ -516,7 +516,7 @@ export default function UsuariosAdmin() {
                 aria-label="Nova senha"
                 value={novaSenha}
                 onChange={(e) => setNovaSenha(e.target.value)}
-                className="w-full rounded-2xl px-5 py-4 bg-study-canvas border border-study-line/30 outline-none focus:ring-2 focus:ring-[#9394CF]"
+                className="w-full rounded-2xl px-5 py-4 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.3)] outline-none focus:ring-2 focus:ring-[rgb(var(--pn-primaria-borda-rgb)/1)]"
               />
 
               <input
@@ -525,11 +525,11 @@ export default function UsuariosAdmin() {
                 aria-label="Confirmar nova senha"
                 value={confirmarSenha}
                 onChange={(e) => setConfirmarSenha(e.target.value)}
-                className="w-full rounded-2xl px-5 py-4 bg-study-canvas border border-study-line/30 outline-none focus:ring-2 focus:ring-[#9394CF]"
+                className="w-full rounded-2xl px-5 py-4 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.3)] outline-none focus:ring-2 focus:ring-[rgb(var(--pn-primaria-borda-rgb)/1)]"
               />
             </div>
 
-            <p className="text-xs text-black/50 mt-3">
+            <p className="text-xs text-[rgb(var(--pn-texto-rgb)/0.5)] mt-3">
               A senha será salva criptografada no banco. A senha anterior não pode ser visualizada.
             </p>
 
@@ -537,7 +537,7 @@ export default function UsuariosAdmin() {
               <button
                 type="button"
                 onClick={fecharModalSenha}
-                className="flex-1 py-3 rounded-full bg-study-canvas border border-study-line/30 font-bold hover:bg-study-accent/10 transition"
+                className="flex-1 py-3 rounded-full bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.3)] font-bold hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] transition"
               >
                 Cancelar
               </button>
@@ -546,7 +546,7 @@ export default function UsuariosAdmin() {
                 type="button"
                 disabled={salvandoSenha}
                 onClick={definirSenha}
-                className="flex-1 py-3 rounded-full bg-study-accent text-white font-black hover:bg-black transition disabled:opacity-60"
+                className="flex-1 py-3 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white font-black hover:bg-black transition disabled:opacity-60"
               >
                 {salvandoSenha ? 'Salvando...' : 'Salvar senha'}
               </button>
@@ -560,12 +560,12 @@ export default function UsuariosAdmin() {
 
 function CardStat({ titulo, valor }) {
   return (
-    <div className="bg-study-paper rounded-[2rem] p-6 shadow-xl border border-study-line/20">
-      <p className="text-sm font-bold text-black/50 mb-1">
+    <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2rem] p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
+      <p className="text-sm font-bold text-[rgb(var(--pn-texto-rgb)/0.5)] mb-1">
         {titulo}
       </p>
 
-      <p className="text-3xl font-black text-study-accent">
+      <p className="text-3xl font-black text-[rgb(var(--pn-primaria-rgb)/1)]">
         {valor}
       </p>
     </div>
@@ -574,7 +574,7 @@ function CardStat({ titulo, valor }) {
 
 function Th({ children }) {
   return (
-    <th className="text-left p-5 text-sm font-black text-black border-b border-study-line/20">
+    <th className="text-left p-5 text-sm font-black text-[rgb(var(--pn-texto-rgb)/1)] border-b border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
       {children}
     </th>
   )

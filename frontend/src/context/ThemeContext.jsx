@@ -7,9 +7,13 @@ const CHAVE_TEMA = "planejai:tema";
 const CHAVE_PALETA = "planejai:paleta";
 const CHAVE_COR = "planejai:cor-custom";
 
+function lerStorage(chave) {
+  try { return localStorage.getItem(chave); } catch { return null; }
+}
+
 function getInitialTheme() {
   // 1. Preferência salva pelo usuário
-  const saved = localStorage.getItem("theme");
+  const saved = lerStorage("theme");
   if (saved === "light" || saved === "dark") return saved;
 
   // 2. Preferência do sistema operacional
@@ -25,19 +29,20 @@ function getInitialTheme() {
 
 function lerAjuste() {
   try {
-    return JSON.parse(localStorage.getItem(CHAVE_TEMA) || "{}");
+    const valor = JSON.parse(lerStorage(CHAVE_TEMA) || "{}");
+    return valor && typeof valor === "object" && !Array.isArray(valor) ? valor : {};
   } catch {
     return {};
   }
 }
 
 function lerPaleta() {
-  const salva = localStorage.getItem(CHAVE_PALETA);
+  const salva = lerStorage(CHAVE_PALETA);
   return salva && PALETTES[salva] ? salva : PALETA_PADRAO;
 }
 
 function lerCorCustom() {
-  const salva = localStorage.getItem(CHAVE_COR);
+  const salva = lerStorage(CHAVE_COR);
   return salva && /^#[0-9a-f]{6}$/i.test(salva) ? salva : null;
 }
 
@@ -61,15 +66,13 @@ export function paletaDeCor(hex, base = PALETA_PADRAO) {
 function aplicarTokens(tokens) {
   const root = document.documentElement;
   for (const [nome, hex] of Object.entries(tokens)) {
-    root.style.setProperty(`--pn-${nome}`, hex);
-    // CSS usa nomes com hífen; consumidores JS também recebem camelCase.
-    const cssName = nome.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-    root.style.setProperty(`--pn-${cssName}`, hex);
-    // Também publica em RGB separado, para o Tailwind usar com alpha:
-    // rgb(var(--pn-primaria-rgb) / 0.2)
     const [r, g, b] = hexToRgb(hex);
-    root.style.setProperty(`--pn-${nome}-rgb`, `${r} ${g} ${b}`);
-    root.style.setProperty(`--pn-${cssName}-rgb`, `${r} ${g} ${b}`);
+    // Componentes antigos usam camelCase; o CSS compartilhado usa kebab-case.
+    // Publicar os dois nomes mantém todas as superfícies ligadas à mesma paleta.
+    for (const alias of new Set([nome, nome.replace(/[A-Z]/g, letra => `-${letra.toLowerCase()}`)])) {
+      root.style.setProperty(`--pn-${alias}`, hex);
+      root.style.setProperty(`--pn-${alias}-rgb`, `${r} ${g} ${b}`);
+    }
   }
 }
 
@@ -101,11 +104,13 @@ export const ThemeProvider = ({ children }) => {
       ajustes.contraste === 'alto' || (ajustes.contraste === 'auto' && ajustes.fundoTorrido);
     root.classList.toggle('pn-alto-contraste', Boolean(querContrasteAlto));
 
+    try {
     localStorage.setItem("theme", theme);
     localStorage.setItem(CHAVE_PALETA, paleta);
     if (corCustom) localStorage.setItem(CHAVE_COR, corCustom);
     else localStorage.removeItem(CHAVE_COR);
     localStorage.setItem(CHAVE_TEMA, JSON.stringify(ajustes));
+    } catch { /* A aparência continua funcionando sem armazenamento disponível. */ }
 
     // Aplica só o conjunto do modo atual.
     aplicarTokens(tokens[theme === "dark" ? "escuro" : "claro"]);

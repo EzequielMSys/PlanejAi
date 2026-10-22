@@ -264,7 +264,7 @@ export default function Atividades() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="mb-10 space-y-6 rounded-[2.5rem] bg-study-paper p-6 sm:p-8 shadow-2xl dark:bg-study-paper"
+              className="mb-10 space-y-6 rounded-[2.5rem] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 sm:p-8 shadow-2xl dark:bg-[rgb(var(--pn-superficie-rgb)/1)]"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-2xl font-black">{editandoId ? 'Editar atividade' : 'Nova atividade'}</h2>
@@ -275,14 +275,14 @@ export default function Atividades() {
                 value={form.titulo}
                 onChange={(e) => setForm({ ...form, titulo: e.target.value })}
                 placeholder="Título da atividade"
-                className="w-full rounded-2xl border border-study-line/40 bg-study-canvas px-5 py-3 text-black dark:text-white"
+                className="w-full rounded-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] bg-[rgb(var(--pn-superficie-alt-rgb)/1)] px-5 py-3 text-[rgb(var(--pn-texto-rgb)/1)] dark:text-white"
               />
 
               <textarea
                 value={form.descricao}
                 onChange={(e) => setForm({ ...form, descricao: e.target.value })}
                 placeholder="Instruções ou situação-problema"
-                className="h-32 w-full rounded-2xl border border-study-line/40 bg-study-canvas px-5 py-3 text-black dark:text-white"
+                className="h-32 w-full rounded-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] bg-[rgb(var(--pn-superficie-alt-rgb)/1)] px-5 py-3 text-[rgb(var(--pn-texto-rgb)/1)] dark:text-white"
               />
 
               <div className="grid sm:grid-cols-2 gap-4">
@@ -290,7 +290,7 @@ export default function Atividades() {
                   type="datetime-local"
                   value={form.prazo}
                   onChange={(e) => setForm({ ...form, prazo: e.target.value })}
-                  className="rounded-2xl border border-study-line/40 bg-study-canvas px-5 py-3 text-black dark:text-white"
+                  className="rounded-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] bg-[rgb(var(--pn-superficie-alt-rgb)/1)] px-5 py-3 text-[rgb(var(--pn-texto-rgb)/1)] dark:text-white"
                 />
                 <div>
                   <input
@@ -304,7 +304,7 @@ export default function Atividades() {
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     disabled={enviandoImagem}
-                    className="w-full rounded-2xl border border-dashed border-study-line bg-study-canvas px-5 py-3 font-bold text-study-accent hover:bg-study-accent/10 transition disabled:opacity-50"
+                    className="w-full rounded-2xl border border-dashed border-[rgb(var(--pn-primaria-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-alt-rgb)/1)] px-5 py-3 font-bold text-[rgb(var(--pn-primaria-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] transition disabled:opacity-50"
                   >
                     {enviandoImagem ? 'Enviando...' : 'Anexar arquivo'}
                   </button>
@@ -317,37 +317,37 @@ export default function Atividades() {
               </div>
 
               {isGestor && (
-                <div className="rounded-2xl border border-study-line/30 bg-study-canvas p-5 dark:bg-study-paper space-y-3">
-                  <p className="text-xs font-black uppercase tracking-[0.25em] text-study-accent">Atribuição</p>
+                <div className="rounded-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.3)] bg-[rgb(var(--pn-superficie-alt-rgb)/1)] p-5 dark:bg-[rgb(var(--pn-superficie-rgb)/0.05)] space-y-3">
+                  <p className="text-xs font-black uppercase tracking-[0.25em] text-[rgb(var(--pn-primaria-rgb)/1)]">Atribuição</p>
                   <select
                     value={form.atribuicao}
                     onChange={(e) => setForm((f) => ({ ...f, atribuicao: e.target.value, destinatarios: e.target.value === 'TODOS' ? [] : f.destinatarios }))}
-                    className="w-full rounded-xl border border-study-line/40 bg-study-paper px-4 py-2 text-sm font-bold text-black dark:bg-study-paper dark:text-white"
+                    className="w-full rounded-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] bg-[rgb(var(--pn-superficie-rgb)/1)] px-4 py-2 text-sm font-bold text-[rgb(var(--pn-texto-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] dark:text-white"
                   >
                     <option value="TODOS">Todos os alunos</option>
                     <option value="SELECIONADOS">Alunos selecionados</option>
                   </select>
 
                   {form.atribuicao === 'SELECIONADOS' && (
-                    <div className="max-h-48 overflow-y-auto rounded-xl border border-study-line/30 bg-study-paper p-3 dark:bg-study-paper">
+                    <div className="max-h-48 overflow-y-auto rounded-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.3)] bg-[rgb(var(--pn-superficie-rgb)/1)] p-3 dark:bg-[rgb(var(--pn-superficie-rgb)/1)]">
                       {carregandoAlunos ? (
-                        <p className="text-sm text-black/60 dark:text-white/60">Carregando alunos...</p>
+                        <p className="text-sm text-[rgb(var(--pn-texto-rgb)/0.6)] dark:text-white/60">Carregando alunos...</p>
                       ) : alunos.length === 0 ? (
-                        <p className="text-sm text-black/60 dark:text-white/60">Nenhum aluno disponível.</p>
+                        <p className="text-sm text-[rgb(var(--pn-texto-rgb)/0.6)] dark:text-white/60">Nenhum aluno disponível.</p>
                       ) : (
                         <div className="space-y-2">
                           {alunos.map((aluno) => {
                             const id = String(aluno.id_usuario || aluno.id)
                             const marcado = (form.destinatarios || []).includes(id)
                             return (
-                              <label key={id} className="flex items-center gap-3 text-sm font-semibold text-black dark:text-white">
+                              <label key={id} className="flex items-center gap-3 text-sm font-semibold text-[rgb(var(--pn-texto-rgb)/1)] dark:text-white">
                                 <input
                                   type="checkbox"
                                   checked={marcado}
                                   onChange={() => toggleDestinatario(id)}
                                   className="w-4 h-4 accent-[#4B4C9D]"
                                 />
-                                {aluno.nome} <span className="text-black/50 dark:text-white/50">• {aluno.email}</span>
+                                {aluno.nome} <span className="text-[rgb(var(--pn-texto-rgb)/0.5)] dark:text-white/50">• {aluno.email}</span>
                               </label>
                             )
                           })}
@@ -366,7 +366,7 @@ export default function Atividades() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="relative inline-block"
                   >
-                    <img src={uploadPreview} alt="Prévia do anexo" className="h-40 w-auto rounded-2xl border border-study-line/30 object-cover" />
+                    <img src={uploadPreview} alt="Prévia do anexo" className="h-40 w-auto rounded-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.3)] object-cover" />
                     <button
                       type="button"
                       onClick={() => removerAnexo(0)}
@@ -381,7 +381,7 @@ export default function Atividades() {
               {form.anexos.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {form.anexos.map((anexo, i) => (
-                    <span key={i} className="flex items-center gap-2 rounded-full bg-study-accent/10 px-3 py-1 text-xs font-bold text-study-accent">
+                    <span key={i} className="flex items-center gap-2 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] px-3 py-1 text-xs font-bold text-[rgb(var(--pn-primaria-rgb)/1)]">
                       {anexo.nome || anexo.url}
                       <button type="button" onClick={() => removerAnexo(i)} className="hover:text-red-500">×</button>
                     </span>
@@ -399,7 +399,7 @@ export default function Atividades() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <button type="button" onClick={adicionarQuestao} className="rounded-full border border-study-line px-5 py-2 text-sm font-black text-study-accent hover:bg-study-accent/10 transition">
+                <button type="button" onClick={adicionarQuestao} className="rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/1)] px-5 py-2 text-sm font-black text-[rgb(var(--pn-primaria-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] transition">
                   + Adicionar questão
                 </button>
               </div>
@@ -408,14 +408,14 @@ export default function Atividades() {
                 <button
                   onClick={() => salvar('RASCUNHO')}
                   disabled={salvando}
-                  className="rounded-full border border-study-line px-6 py-3 font-bold text-study-accent hover:bg-study-accent/10 transition disabled:opacity-50"
+                  className="rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/1)] px-6 py-3 font-bold text-[rgb(var(--pn-primaria-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] transition disabled:opacity-50"
                 >
                   {salvando ? 'Salvando...' : 'Salvar rascunho'}
                 </button>
                 <button
                   onClick={() => salvar('PUBLICADA')}
                   disabled={salvando}
-                  className="rounded-full bg-study-accent px-6 py-3 font-bold text-white shadow-xl hover:bg-black transition disabled:opacity-50"
+                  className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-6 py-3 font-bold text-white shadow-xl hover:bg-black transition disabled:opacity-50"
                 >
                   {salvando ? 'Publicando...' : 'Publicar atividade'}
                 </button>
@@ -430,25 +430,25 @@ export default function Atividades() {
               key={item.id_atividade}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-[2.5rem] bg-study-paper p-6 shadow-xl dark:bg-study-paper border border-study-line/20"
+              className="rounded-[2.5rem] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 shadow-xl dark:bg-[rgb(var(--pn-superficie-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]"
             >
               <div className="flex items-center justify-between mb-4">
-                <span className="rounded-full bg-study-accent/20 px-3 py-1 text-xs font-black">{item.status}</span>
-                <span className="text-xs font-bold text-black/50 dark:text-white/50">v{item.versao || 1} · {item.questoes?.length || 0} questões</span>
+                <span className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)] px-3 py-1 text-xs font-black">{item.status}</span>
+                <span className="text-xs font-bold text-[rgb(var(--pn-texto-rgb)/0.5)] dark:text-white/50">v{item.versao || 1} · {item.questoes?.length || 0} questões</span>
               </div>
 
               <h2 className="text-xl font-black mb-2">{item.titulo || item.pergunta}</h2>
-              <p className="text-sm text-black/60 dark:text-white/60 line-clamp-2">{item.descricao}</p>
+              <p className="text-sm text-[rgb(var(--pn-texto-rgb)/0.6)] dark:text-white/60 line-clamp-2">{item.descricao}</p>
 
               {item.anexos?.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {item.anexos.map((anexo, idx) => <button type="button" key={`${anexo.url}-${idx}`} onClick={() => setMaterial({ ...anexo, titulo: anexo.nome || 'Anexo' })} className="rounded-full border px-3 py-2 text-xs font-bold text-[#3157d5]">Abrir {anexo.nome || `anexo ${idx + 1}`}</button>)}
+                  {item.anexos.map((anexo, idx) => <button type="button" key={`${anexo.url}-${idx}`} onClick={() => setMaterial({ ...anexo, titulo: anexo.nome || 'Anexo' })} className="rounded-full border px-3 py-2 text-xs font-bold text-[rgb(var(--pn-primaria-rgb)/1)]">Abrir {anexo.nome || `anexo ${idx + 1}`}</button>)}
                 </div>
               )}
 
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                <span className="text-sm font-bold text-study-accent">{isGestor ? `${item.entregas || 0} entregas` : 'Ver atividade'}</span>
-                <div className="flex gap-2"><button type="button" onClick={() => abrirVersoes(item)} className="rounded-full border px-3 py-1 text-xs font-bold">Versões</button><button type="button" onClick={() => editar(item)} className="rounded-full border px-3 py-1 text-xs font-bold">Editar</button><button type="button" onClick={() => abrirEntregas(item)} className="rounded-full bg-study-accent px-3 py-1 text-xs font-bold text-white">Corrigir</button></div>
+                <span className="text-sm font-bold text-[rgb(var(--pn-primaria-rgb)/1)]">{isGestor ? `${item.entregas || 0} entregas` : 'Ver atividade'}</span>
+                <div className="flex gap-2"><button type="button" onClick={() => abrirVersoes(item)} className="rounded-full border px-3 py-1 text-xs font-bold">Versões</button><button type="button" onClick={() => editar(item)} className="rounded-full border px-3 py-1 text-xs font-bold">Editar</button><button type="button" onClick={() => abrirEntregas(item)} className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-3 py-1 text-xs font-bold text-white">Corrigir</button></div>
               </div>
             </motion.article>
           ))}
@@ -464,7 +464,7 @@ export default function Atividades() {
             {isGestor && <button type="button" className="pj-button pj-button--primary" onClick={() => setAberto(true)}>Criar primeira atividade</button>}
           </section>
         )}
-        {entregas && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 p-4" onMouseDown={() => setEntregas(null)}><section className="activity-correction-modal" onMouseDown={(e) => e.stopPropagation()}><header className="flex justify-between gap-3"><div><p className="text-xs font-black text-study-accent">CORREÇÃO HÍBRIDA</p><h2 className="text-2xl font-black">{entregas.atividade.titulo}</h2></div><button onClick={() => setEntregas(null)} className="text-2xl">×</button></header>{!entregas.itens.length ? <p className="mt-8 rounded-xl bg-slate-50 p-6 text-center">Ainda não há entregas.</p> : <div className="mt-5 grid gap-4">{entregas.itens.map((resposta) => { const formCorrecao = correcoes[resposta.id_resposta] || { nota: resposta.nota ?? '', feedback: resposta.feedback || '' }; return <article key={resposta.id_resposta} className="activity-delivery"><div className="flex justify-between"><div><b>{resposta.nome}</b><p className="text-xs opacity-60">{resposta.email}</p></div><span className="text-xs font-bold">{resposta.status}</span></div><DeliveryAnswers atividade={entregas.atividade} entrega={resposta} /><div className="mt-3 grid gap-2 sm:grid-cols-[100px_1fr_auto]"><input type="number" min="0" max="100" value={formCorrecao.nota} onChange={(e) => setCorrecoes({ ...correcoes, [resposta.id_resposta]: { ...formCorrecao, nota: e.target.value } })} placeholder="Nota" /><input value={formCorrecao.feedback} onChange={(e) => setCorrecoes({ ...correcoes, [resposta.id_resposta]: { ...formCorrecao, feedback: e.target.value } })} placeholder="Feedback ao aluno" /><Button onClick={() => corrigir(resposta)}>Liberar correção</Button></div></article>})}</div>}</section></div>}
+        {entregas && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 p-4" onMouseDown={() => setEntregas(null)}><section className="activity-correction-modal" onMouseDown={(e) => e.stopPropagation()}><header className="flex justify-between gap-3"><div><p className="text-xs font-black text-[rgb(var(--pn-primaria-rgb)/1)]">CORREÇÃO HÍBRIDA</p><h2 className="text-2xl font-black">{entregas.atividade.titulo}</h2></div><button onClick={() => setEntregas(null)} className="text-2xl">×</button></header>{!entregas.itens.length ? <p className="mt-8 rounded-xl bg-[rgb(var(--pn-superficie-alt-rgb)/1)] p-6 text-center">Ainda não há entregas.</p> : <div className="mt-5 grid gap-4">{entregas.itens.map((resposta) => { const formCorrecao = correcoes[resposta.id_resposta] || { nota: resposta.nota ?? '', feedback: resposta.feedback || '' }; return <article key={resposta.id_resposta} className="activity-delivery"><div className="flex justify-between"><div><b>{resposta.nome}</b><p className="text-xs opacity-60">{resposta.email}</p></div><span className="text-xs font-bold">{resposta.status}</span></div><DeliveryAnswers atividade={entregas.atividade} entrega={resposta} /><div className="mt-3 grid gap-2 sm:grid-cols-[100px_1fr_auto]"><input type="number" min="0" max="100" value={formCorrecao.nota} onChange={(e) => setCorrecoes({ ...correcoes, [resposta.id_resposta]: { ...formCorrecao, nota: e.target.value } })} placeholder="Nota" /><input value={formCorrecao.feedback} onChange={(e) => setCorrecoes({ ...correcoes, [resposta.id_resposta]: { ...formCorrecao, feedback: e.target.value } })} placeholder="Feedback ao aluno" /><Button onClick={() => corrigir(resposta)}>Liberar correção</Button></div></article>})}</div>}</section></div>}
         {historicoVersoes && <div className="fixed inset-0 z-[100] grid place-items-center bg-black/60 p-4" onMouseDown={() => setHistoricoVersoes(null)}><section className="activity-version-modal" onMouseDown={(e) => e.stopPropagation()}><header><div><span>HISTÓRICO SEGURO</span><h2>{historicoVersoes.atividade.titulo}</h2></div><button type="button" onClick={() => setHistoricoVersoes(null)}>×</button></header><div>{historicoVersoes.itens.map((item) => <article key={item.id_versao}><strong>Versão {item.numero_versao}</strong><span>{new Date(item.criado_em).toLocaleString('pt-BR')}</span></article>)}</div></section></div>}
         {material && <MaterialViewer material={material} onClose={() => setMaterial(null)} />}
       </div>

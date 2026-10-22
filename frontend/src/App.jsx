@@ -1,7 +1,6 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { AuthProvider } from './context/AuthContext'
-import { UserProvider } from './context/UserContext'
 
 import ProtectedRoute from './routes/ProtectedRoute'
 import RouteLoading from './components/RouteLoading'
@@ -37,13 +36,15 @@ const MinhasTurmas = lazy(() => import('./pages/MinhasTurmas'))
 const MinhasTurmasDetalhe = lazy(() => import('./pages/MinhasTurmasDetalhe'))
 const Provas = lazy(() => import('./pages/Provas'))
 const Chat = lazy(() => import('./pages/Chat'))
+const Preferencias = lazy(() => import('./pages/Preferencias'))
 
 function App() {
   return (
     <AuthProvider>
-      <UserProvider>
-        <Suspense fallback={<RouteLoading />}>
-        <Routes>
+      <Suspense
+        fallback={<RouteLoading />}
+      >
+      <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -62,7 +63,9 @@ function App() {
             <Route path="/aprendizagem" element={<Aprendizagem />} />
             <Route path="/planejamento-inteligente" element={<PlanejamentoInteligente />} />
                         <Route path="/provas" element={<Provas />} />
-            <Route path="/chat" element={<Chat />} />
+            <Route path="/lumi" element={<Chat />} />
+            <Route path="/chat" element={<Navigate to="/lumi" replace />} />
+            <Route path="/preferencias" element={<Preferencias />} />
             <Route path="/minha-jornada" element={<MinhaJornada />} />
             <Route path="/redacoes" element={<Redacoes />} />
             <Route path="/perfil" element={<Perfil />} />
@@ -102,7 +105,6 @@ function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
-      </UserProvider>
     </AuthProvider>
   )
 }

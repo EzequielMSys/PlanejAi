@@ -46,7 +46,7 @@ export default function MinhaJornada() {
   const name = user?.apelido || user?.nome?.split(' ')[0] || 'estudante'
 
   return <main className="pj-page journey-page"><div className="pj-wrap">
-    <header className="journey-hero pj-panel">
+    <header className="journey-hero pj-panel student-page-heading">
       <div><span className="pj-eyebrow">Minha jornada</span><h1>Quanto tempo você tem, <em>{name}</em>?</h1><p>O PlanejAI combina revisões, dificuldades e cronograma em uma sessão possível de terminar.</p></div>
       <div className="journey-time-box"><div>{presets.map((value) => <button type="button" key={value} className={minutes === value ? 'is-active' : ''} onClick={() => generate(value)}>{value}<small>min</small></button>)}</div><label>Outro tempo<input aria-label="Tempo personalizado em minutos" type="number" min="10" max="180" value={minutes} onChange={(event) => setMinutes(event.target.value)} onBlur={() => generate(minutes)} /></label></div>
     </header>

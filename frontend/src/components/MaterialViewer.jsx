@@ -33,7 +33,7 @@ export default function MaterialViewer({ material, onClose }) {
   if (!material) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#100A18]/80 p-3 backdrop-blur-md sm:p-6" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgb(var(--pn-primaria-forte-rgb)/0.8)] p-3 backdrop-blur-md sm:p-6" onMouseDown={onClose}>
       <section className="material-viewer" onMouseDown={(event) => event.stopPropagation()} aria-modal="true" role="dialog" aria-label={material.titulo}>
         <header className="material-viewer-header">
           <div>

@@ -23,15 +23,21 @@ async function evolucaoEnem(idUsuario) {
 
 async function alertasPedagogicos() {
   const [rows] = await pool.execute(`SELECT u.id_usuario, u.nome,
-      COALESCE(ROUND(AVG(t.acertou)*100),0) AS taxa_acerto,
-      COUNT(DISTINCT CASE WHEN ce.resolvido=0 THEN ce.id_erro END) AS erros,
-      COUNT(DISTINCT CASE WHEN r.proxima_revisao<CURRENT_DATE THEN r.id_revisao END) AS revisoes,
-      MAX(COALESCE(t.criado_em, s.concluida_em, u.ultimo_login)) AS ultima_atividade
-    FROM usuarios u LEFT JOIN tentativas_questoes t ON t.id_usuario=u.id_usuario
-    LEFT JOIN caderno_erros ce ON ce.id_usuario=u.id_usuario
-    LEFT JOIN revisoes_estudo r ON r.id_usuario=u.id_usuario
-    LEFT JOIN sessoes_estudo s ON s.id_usuario=u.id_usuario
-    WHERE u.tipo='aluno' AND u.ativo=1 GROUP BY u.id_usuario`);
+      COALESCE(t.taxa_acerto,0) AS taxa_acerto,
+      COALESCE(ce.erros,0) AS erros,
+      COALESCE(r.revisoes,0) AS revisoes,
+      NULLIF(GREATEST(COALESCE(t.ultima_tentativa,'1000-01-01'),
+        COALESCE(s.ultima_sessao,'1000-01-01'), COALESCE(u.ultimo_login,'1000-01-01')), '1000-01-01') AS ultima_atividade
+    FROM usuarios u
+    LEFT JOIN (SELECT id_usuario, ROUND(AVG(acertou)*100) taxa_acerto, MAX(criado_em) ultima_tentativa
+      FROM tentativas_questoes GROUP BY id_usuario) t ON t.id_usuario=u.id_usuario
+    LEFT JOIN (SELECT id_usuario, COUNT(*) erros FROM caderno_erros WHERE resolvido=0
+      GROUP BY id_usuario) ce ON ce.id_usuario=u.id_usuario
+    LEFT JOIN (SELECT id_usuario, COUNT(*) revisoes FROM revisoes_estudo WHERE proxima_revisao<CURRENT_DATE
+      GROUP BY id_usuario) r ON r.id_usuario=u.id_usuario
+    LEFT JOIN (SELECT id_usuario, MAX(concluida_em) ultima_sessao FROM sessoes_estudo
+      GROUP BY id_usuario) s ON s.id_usuario=u.id_usuario
+    WHERE u.tipo='aluno' AND u.ativo=1`);
   return rows.map((r) => { const motivos=[]; if(Number(r.taxa_acerto)<50) motivos.push('taxa de acerto abaixo de 50%'); if(Number(r.erros)>=5) motivos.push(`${r.erros} erros pendentes`); if(Number(r.revisoes)>=5) motivos.push(`${r.revisoes} revisões atrasadas`); const dias = r.ultima_atividade ? Math.floor((Date.now()-new Date(r.ultima_atividade).getTime())/86400000) : 999; if(dias>=7) motivos.push(`${dias} dias sem prática`); return {...r, nivel: motivos.length>=3?'ALTO':motivos.length>=1?'ATENCAO':'ESTAVEL', motivos}; }).filter((r)=>r.motivos.length).sort((a,b)=>b.motivos.length-a.motivos.length);
 }
 
