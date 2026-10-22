@@ -9,8 +9,9 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { AccessibilityProvider } from "./context/AccessibilityContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageExperience from "./components/PageExperience";
-import { registerServiceWorker } from "./registerServiceWorker";
+import { registerServiceWorker, registerChunkRecovery } from "./registerServiceWorker";
 
+registerChunkRecovery();
 registerServiceWorker();
 
 ReactDOM.createRoot(document.getElementById("root")).render(

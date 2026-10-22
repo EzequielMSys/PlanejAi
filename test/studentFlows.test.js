@@ -89,6 +89,7 @@ test('all student, teacher and owner pages render without runtime failures', asy
   const routes = ['/', '/login', '/register', '/primeiro-acesso', '/onboarding', '/esqueci-senha', '/redefinir-senha', '/inicio', '/cronograma', '/aprendizagem', '/provas', '/redacoes', '/minha-jornada', '/minhas-atividades', '/minhas-turmas', '/minhas-turmas/1', '/avisos', '/perfil', '/alterar-senha', '/planejamento-inteligente', '/estudar', '/status', '/lumi', '/chat', '/preferencias', '/pagina-inexistente'];
   for (const route of routes) await t.test(route, async () => { const screen = await renderRoute(route); try { assert.ok(document.querySelector('h1'), 'page must have a visible title'); assert.ok(!screen.container.textContent.includes('Algo não carregou como deveria.'), 'error boundary should not be shown'); } finally { await screen.close(); } });
   for (const [route, role] of [['/dashboard-gestor', 'docente'], ['/turmas', 'docente'], ['/atividades', 'docente'], ['/materiais', 'docente'], ['/usuarios', 'admin'], ['/dono', 'dono'], ['/dono/usuarios', 'dono']]) await t.test(`${role}: ${route}`, async () => { const screen = await renderRoute(route, role); try { assert.ok(document.querySelector('h1')); assert.ok(!screen.container.textContent.includes('Algo não carregou como deveria.')); } finally { await screen.close(); } });
+  for (const route of ['/inicio', '/cronograma', '/aprendizagem', '/provas', '/redacoes', '/planejamento-inteligente', '/dashboard-gestor', '/turmas', '/atividades', '/materiais', '/usuarios', '/dono', '/lumi', '/preferencias', '/perfil']) await t.test(`dono: ${route}`, async () => { const screen = await renderRoute(route, 'dono'); try { assert.ok(document.querySelector('h1')); assert.ok(!screen.container.textContent.includes('Algo não carregou como deveria.')); } finally { await screen.close(); } });
 });
 test('reading controls apply, persist and reset preferences', async () => {
   const screen = await renderRoute('/preferencias');
@@ -126,6 +127,20 @@ test('login and registration previews switch study stages without submitting for
       assert.equal(requests.filter(request => request.method === 'post').length, 0);
     } finally { await screen.close(); }
   }
+});
+test('owner can navigate through the main study and management links', async () => {
+  const screen = await renderRoute('/inicio', 'dono');
+  try {
+    for (const path of ['/cronograma', '/aprendizagem', '/provas', '/redacoes', '/planejamento-inteligente', '/dashboard-gestor', '/turmas', '/atividades', '/materiais', '/usuarios', '/dono']) {
+      const link = document.querySelector(`#app-sidebar a[href="${path}"]`);
+      assert.ok(link, `missing navigation link ${path}`);
+      await act(async () => link.click());
+      await flush();
+      if (path === '/usuarios') await act(async () => { await new Promise(resolve => setTimeout(resolve, 350)); });
+      assert.ok(document.querySelector('h1'), `missing title at ${path}: ${screen.container.textContent.slice(0, 300)}`);
+      assert.ok(!screen.container.textContent.includes('Algo não carregou como deveria.'), `error boundary at ${path}`);
+    }
+  } finally { await screen.close(); }
 });
 test('Lumi starters prepare a question, then send one request and render safe structured text', async () => {
   failChat = false;

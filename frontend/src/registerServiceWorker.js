@@ -21,3 +21,14 @@ export function registerServiceWorker() {
       .catch((error) => console.warn('[PWA] Service worker não registrado:', error.message))
   })
 }
+
+export function registerChunkRecovery() {
+  window.addEventListener('vite:preloadError', (event) => {
+    const key = 'planejai:last-chunk-retry'
+    const previous = Number(window.sessionStorage.getItem(key) || 0)
+    if (Date.now() - previous < 30_000) return
+    event.preventDefault()
+    window.sessionStorage.setItem(key, String(Date.now()))
+    window.location.reload()
+  })
+}
