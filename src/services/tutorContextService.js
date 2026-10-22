@@ -6,7 +6,7 @@ function competenciasRedacao(valor) {
   try {
     const itens = typeof valor === 'string' ? JSON.parse(valor) : valor
     return Array.isArray(itens) ? itens.filter((item) => Number.isInteger(Number(item.codigo)) && Number.isFinite(Number(item.nota)))
-      .slice(0, 5).map((item) => ({ codigo: Number(item.codigo), nota: Number(item.nota), feedback: texto(item.feedback, 180) })) : []
+      .slice(0, 5).map((item) => ({ codigo: Number(item.codigo), nota: Number(item.nota), evidencia: texto(item.evidencia, 260), feedback: texto(item.feedback, 180) })) : []
   } catch { return [] }
 }
 
@@ -48,8 +48,8 @@ async function carregarContexto(idUsuario, executar = pool.execute.bind(pool), o
       WHERE r.id_usuario = ? AND r.proxima_revisao <= CURRENT_DATE()
       ORDER BY r.proxima_revisao LIMIT 6`],
     ['redacoes', 'SELECT tema, nota_estimada, competencias_enem, enviada_em FROM redacoes WHERE id_usuario = ? ORDER BY enviada_em DESC LIMIT 3'],
-    ...(opcoes.idRedacao ? [['ultimaRedacao', 'SELECT tema, texto, feedback_ia FROM redacoes WHERE id_redacao = ? AND id_usuario = ? LIMIT 1', [opcoes.idRedacao, idUsuario]]] :
-      opcoes.incluirTextoRedacao ? [['ultimaRedacao', 'SELECT tema, texto, feedback_ia FROM redacoes WHERE id_usuario = ? ORDER BY enviada_em DESC LIMIT 1']] : []),
+    ...(opcoes.idRedacao ? [['ultimaRedacao', 'SELECT tema, texto, feedback_ia, nota_estimada, competencias_enem FROM redacoes WHERE id_redacao = ? AND id_usuario = ? LIMIT 1', [opcoes.idRedacao, idUsuario]]] :
+      opcoes.incluirTextoRedacao ? [['ultimaRedacao', 'SELECT tema, texto, feedback_ia, nota_estimada, competencias_enem FROM redacoes WHERE id_usuario = ? ORDER BY enviada_em DESC LIMIT 1']] : []),
   ]
   const resultados = await Promise.allSettled(consultas.map(async ([, sql, params]) => {
     const [rows] = await executar({ sql, timeout: 1200 }, params || [idUsuario])
@@ -76,6 +76,8 @@ async function carregarContexto(idUsuario, executar = pool.execute.bind(pool), o
       tema: texto(ultimaRedacao.tema, 180),
       texto: texto(ultimaRedacao.texto, 6000),
       feedback: texto(ultimaRedacao.feedback_ia, 1200),
+      notaEstimada: ultimaRedacao.nota_estimada == null ? null : Number(ultimaRedacao.nota_estimada),
+      competencias: competenciasRedacao(ultimaRedacao.competencias_enem),
     } } : {}),
   }
 }

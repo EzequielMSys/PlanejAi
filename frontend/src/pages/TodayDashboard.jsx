@@ -83,7 +83,19 @@ export default function TodayDashboard() {
   const streak = streakOf(days)
   const name = user?.apelido || user?.nome?.split(' ')[0] || 'estudante'
 
+  const weakSubject = data.learning?.porDisciplina?.find((item) => Number(item.tentativas) >= 3 && Number(item.acerto) < 70)
+  const firstReview = data.reviews[0]
+  const nextAction = firstReview || reviews > 0
+    ? { kind: 'review', title: firstReview?.titulo || 'Revisar o que já estudou', subject: firstReview?.disciplina || 'Revisão', reason: `${reviews} revisão${reviews === 1 ? '' : 'ões'} pronta${reviews === 1 ? '' : 's'} para hoje, conforme seu histórico de estudo.`, duration: 'Sessão curta', label: 'Começar revisão', route: '/aprendizagem' }
+    : weakSubject
+      ? { kind: 'practice', title: `Praticar ${weakSubject.disciplina}`, subject: weakSubject.disciplina, reason: `${weakSubject.acerto}% de acerto em ${weakSubject.tentativas} tentativas registradas nessa matéria.`, duration: 'No seu ritmo', label: 'Praticar agora', route: '/aprendizagem' }
+      : nextContent
+        ? { kind: 'lesson', title: nextContent.titulo, subject: nextContent.disciplina || nextContent.area || 'Plano de estudos', reason: todayDay && !done(todayDay) ? 'Conteúdo pendente no seu planejamento de hoje.' : 'Próximo conteúdo pendente no seu planejamento.', duration: nextDay?.tempo_previsto ? `${nextDay.tempo_previsto} min previstos para o dia` : 'No seu ritmo', label: 'Começar lição' }
+        : { kind: 'plan', title: 'Organize seu próximo ciclo de estudos', subject: 'Planejamento', reason: days.length ? 'Não há conteúdo pendente no plano atual.' : 'Ainda não há um cronograma ativo.', duration: 'No seu ritmo', label: 'Abrir planejamento', route: '/cronograma' }
+
   const start = (content = nextContent, day = nextDay) => content ? navigate('/estudar', { state: { conteudo: content, dia: day } }) : navigate('/cronograma')
+  const openNextAction = () => nextAction.kind === 'lesson' ? start() : navigate(nextAction.route, nextAction.kind === 'practice' ? { state: { aba: 'simulado', disciplina: weakSubject?.disciplina } } : undefined)
+  const askLumiAboutNextAction = () => navigate('/lumi', { state: { perguntaInicial: `Meu próximo passo sugerido é ${nextAction.title}. O dado disponível é: ${nextAction.reason} Me ajude a começar com uma atividade curta e explique como você usou esse dado, sem presumir outras dificuldades.` } })
   const updateWeeklyGoal = async (event) => {
     event.preventDefault()
     const nextGoal = Number(goalDraft)
@@ -123,9 +135,9 @@ export default function TodayDashboard() {
 
       <section className="dash-v2-spotlight">
         <motion.article className="dash-v2-focus" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="dash-v2-focus-top"><span>UM PASSO DE CADA VEZ</span><small>{nextContent?.disciplina || nextContent?.area || 'Plano de estudos'}</small></div>
-          <div className="dash-v2-focus-copy"><p>{nextContent ? 'Continue de onde seu plano recomenda' : 'Seu espaço de aprendizagem está pronto'}</p><h2>{nextContent?.titulo || 'Organize seu próximo ciclo de estudos'}</h2><div><span>{nextContent?.tipo || 'Planejamento'}</span><span>{nextDay?.tempo_previsto ? `${nextDay.tempo_previsto} min` : 'No seu ritmo'}</span></div></div>
-          <footer><button type="button" onClick={() => start()}>{nextContent ? 'Começar agora' : 'Montar cronograma'} <b>→</b></button><span>{progress}% do plano concluído</span></footer>
+          <div className="dash-v2-focus-top"><span>SEU PRÓXIMO PASSO</span><small>{nextAction.subject}</small></div>
+          <div className="dash-v2-focus-copy"><p>Uma ação possível para agora</p><h2>{nextAction.title}</h2><p className="dash-v2-reason"><strong>Por quê?</strong> {nextAction.reason}</p><div><span>{nextAction.duration}</span><span>{progress}% do plano concluído</span></div></div>
+          <footer><button type="button" onClick={openNextAction}>{nextAction.label} <b>→</b></button><button type="button" className="dash-v2-lumi-action" onClick={askLumiAboutNextAction}>Planejar com a Lumi</button></footer>
         </motion.article>
 
         <aside className="dash-v2-score">
@@ -136,7 +148,7 @@ export default function TodayDashboard() {
           </div>
           <div className="dash-v2-score-progress" role="progressbar" aria-label="Progresso da meta semanal" aria-valuemin="0" aria-valuemax="100" aria-valuenow={weeklyProgress}><span style={{ width: `${weeklyProgress}%` }} /></div>
           <p className="dash-v2-score-message">{remainingMinutes === 0 ? 'Meta cumprida! Seu esforço desta semana já passou do planejado.' : weeklyMinutes === 0 ? `Faltam ${remainingMinutes} min. Que tal começar com uma sessão hoje?` : `Faltam ${remainingMinutes} min para fechar sua meta da semana.`}</p>
-          {editingGoal ? <form className="dash-v2-score-form" onSubmit={updateWeeklyGoal}><label htmlFor="weekly-goal">Nova meta semanal <span>(30 a 1680 min)</span></label><div><input id="weekly-goal" type="number" min="30" max="1680" step="1" value={goalDraft} onChange={(event) => setGoalDraft(event.target.value)} required /><button type="submit" disabled={savingGoal}>{savingGoal ? 'Salvando…' : 'Salvar'}</button></div></form> : <button type="button" className="dash-v2-score-cta" onClick={() => start()}>{nextContent ? 'Continuar estudando' : 'Montar cronograma'} <span aria-hidden="true">→</span></button>}
+          {editingGoal ? <form className="dash-v2-score-form" onSubmit={updateWeeklyGoal}><label htmlFor="weekly-goal">Nova meta semanal <span>(30 a 1680 min)</span></label><div><input id="weekly-goal" type="number" min="30" max="1680" step="1" value={goalDraft} onChange={(event) => setGoalDraft(event.target.value)} required /><button type="submit" disabled={savingGoal}>{savingGoal ? 'Salvando…' : 'Salvar'}</button></div></form> : <button type="button" className="dash-v2-score-cta" onClick={openNextAction}>{nextAction.label} <span aria-hidden="true">→</span></button>}
         </aside>
       </section>
 

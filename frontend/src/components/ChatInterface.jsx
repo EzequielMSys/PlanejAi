@@ -196,14 +196,16 @@ export default function ChatInterface({ className = '', onEstadoChange, redacaoS
         </div>
       )}
 
-      {contexto && (contexto.areasFoco || contexto.licoes?.length > 0 || contexto.dificuldades?.length > 0 || contexto.redacoes?.length > 0) && (
-        <div className="border-b border-study-line/10 px-3 py-2 text-xs text-study-ink/70 dark:text-white/70" aria-label="Contexto de estudos disponível para a Lumi">
-          <span className="font-bold">Lumi conhece seus estudos:</span>{' '}
-          {contexto.areasFoco && <span>áreas de foco · </span>}
-          {contexto.licoes?.length > 0 && <span>{contexto.licoes.length} lições recentes · </span>}
-          {contexto.cronograma?.total > 0 && <span>{contexto.cronograma.concluidas}/{contexto.cronograma.total} lições concluídas · </span>}
-          {contexto.dificuldades?.length > 0 && <span>{contexto.dificuldades.length} dificuldades identificadas · </span>}
-          {contexto.redacoes?.length > 0 && <span>{contexto.redacoes.length} redação(ões) recente(s)</span>}
+      {contexto && (contexto.areasFoco || contexto.licoes?.length > 0 || contexto.revisoes?.length > 0 || contexto.dificuldades?.length > 0 || contexto.redacoes?.length > 0) && (
+        <div className="lumi-context-evidence border-b border-study-line/10 px-3 py-2 text-xs text-study-ink/70 dark:text-white/70" aria-label="Dados dos seus estudos disponíveis para a Lumi">
+          <strong>Contexto disponível para a Lumi</strong>
+          <div>
+            {contexto.licoes?.[0] && <span>Plano: {contexto.licoes[0].titulo}{contexto.licoes[0].concluida ? ' (concluída)' : ' (pendente)'}</span>}
+            {contexto.revisoes?.[0] && <span>Revisão: {contexto.revisoes[0].titulo}</span>}
+            {contexto.dificuldades?.[0] && <span>Questões: {contexto.dificuldades[0].erros} erro(s) em {contexto.dificuldades[0].disciplina} nos últimos 60 dias</span>}
+            {contexto.redacoes?.[0] && <span>Redação: {contexto.redacoes[0].tema} (avaliação estimada)</span>}
+            {!contexto.licoes?.length && !contexto.revisoes?.length && !contexto.dificuldades?.length && !contexto.redacoes?.length && contexto.areasFoco && <span>Matérias escolhidas no perfil</span>}
+          </div>
         </div>
       )}
 

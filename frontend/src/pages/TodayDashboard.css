@@ -15,8 +15,11 @@
 .dash-v2-focus-copy > p { color:var(--ui-muted); font-size:.8rem; }
 .dash-v2-focus-copy h2 { max-width:25ch; margin-top:.65rem; font:400 clamp(1.8rem,3vw,2.6rem)/1.15 Georgia,serif; letter-spacing:-.04em; }
 .dash-v2-focus-copy > div { display:flex; flex-wrap:wrap; gap:1rem; margin-top:1rem; color:var(--ui-muted); font-size:.75rem; }
+.dash-v2-focus-copy .dash-v2-reason { max-width:56ch; margin-top:1rem; line-height:1.55; color:var(--pn-texto); font-size:.84rem; }
+.dash-v2-reason strong { color:var(--ui-purple); }
 .dash-v2-focus footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; margin-top:auto; }
 .dash-v2-focus footer button { display:flex; align-items:center; gap:2rem; padding:.8rem 1rem; border-radius:5px; background:var(--ui-purple); color:var(--pn-on-primaria); font-size:.85rem; }
+.dash-v2-focus footer .dash-v2-lumi-action { background:transparent; border:1px solid var(--ui-line); color:var(--ui-purple); font-weight:700; }
 .dash-v2-focus footer > span { color:var(--ui-muted); font-size:.7rem; }
 .dash-v2-score { display:flex; flex-direction:column; min-width:0; padding:1.5rem; border:1px solid var(--ui-line); border-radius:12px; background:linear-gradient(145deg,var(--ui-surface-2),var(--ui-surface)); box-shadow:0 12px 32px rgba(35,23,74,.055); }
 .dash-v2-score-head { display:flex; justify-content:space-between; align-items:center; gap:.75rem; }

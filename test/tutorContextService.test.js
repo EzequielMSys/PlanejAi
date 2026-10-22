@@ -33,14 +33,16 @@ test('Lumi recebe progresso e competências somente da conta solicitada', async 
   const executar = async ({ sql }, params) => {
     assert.deepEqual(params, [42])
     if (sql.includes('AS concluidas')) return [[{ total: 10, concluidas: 6, atrasadas: 2, hoje: 1 }]]
-    if (sql.includes('competencias_enem')) return [[{ tema: 'Educação', nota_estimada: 720, competencias_enem: JSON.stringify([{ codigo: 3, nota: 120, feedback: 'Aprofunde a tese.' }]) }]]
-    if (sql.includes('SELECT tema, texto')) return [[{ tema: 'Educação', texto: 'Meu texto de treino', feedback_ia: 'Revisar C3' }]]
+    if (sql.includes('SELECT tema, texto')) return [[{ tema: 'Educação', texto: 'Meu texto de treino', feedback_ia: 'Revisar C3', nota_estimada: 720, competencias_enem: JSON.stringify([{ codigo: 3, nota: 120, evidencia: 'Meu texto', feedback: 'Aprofunde a tese.' }]) }]]
+    if (sql.includes('competencias_enem')) return [[{ tema: 'Educação', nota_estimada: 720, competencias_enem: JSON.stringify([{ codigo: 3, nota: 120, evidencia: 'Meu texto', feedback: 'Aprofunde a tese.' }]) }]]
     return [[]]
   }
   const contexto = await carregarContexto(42, executar, { incluirTextoRedacao: true })
   assert.deepEqual(contexto.cronograma, { total: 10, concluidas: 6, atrasadas: 2, hoje: 1 })
   assert.equal(contexto.redacoes[0].competencias[0].nota, 120)
   assert.equal(contexto.ultimaRedacao.texto, 'Meu texto de treino')
+  assert.equal(contexto.ultimaRedacao.competencias[0].evidencia, 'Meu texto')
+  assert.equal(contexto.ultimaRedacao.notaEstimada, 720)
 })
 
 test('redação selecionada exige ID e proprietário na mesma consulta', async () => {

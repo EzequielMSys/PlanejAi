@@ -2,8 +2,8 @@ import { useState } from 'react'
 
 const DISCIPLINAS = ['Matemática', 'Física', 'Química', 'Biologia', 'Português', 'Literatura', 'História', 'Geografia', 'Sociologia', 'Filosofia', 'Inglês']
 
-export default function SimulatorSetup({ onStart, errosPendentes = 0 }) {
-  const [opcoes, setOpcoes] = useState({ quantidade: 10, disciplina: '', dificuldade: '', minutos: 15, origem: '' })
+export default function SimulatorSetup({ onStart, errosPendentes = 0, initialDisciplina = '' }) {
+  const [opcoes, setOpcoes] = useState({ quantidade: 10, disciplina: DISCIPLINAS.includes(initialDisciplina) ? initialDisciplina : '', dificuldade: '', minutos: 15, origem: '' })
   const alterar = (campo, valor) => setOpcoes((atual) => ({ ...atual, [campo]: valor }))
 
   return <div>
@@ -17,4 +17,3 @@ export default function SimulatorSetup({ onStart, errosPendentes = 0 }) {
     <button type="button" onClick={() => onStart(opcoes)} className="mt-7 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-7 py-3 text-sm font-black text-white shadow-lg shadow-[#6D3EC5]/20">Iniciar sessão personalizada</button>
   </div>
 }
-

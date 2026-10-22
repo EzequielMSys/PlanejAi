@@ -28,6 +28,7 @@ let bundle;
 let requests = [];
 let failChat = false;
 let materialCatalogFixture = false;
+let dashboardLearningFixture = null;
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
@@ -40,7 +41,7 @@ function fixture(config) {
     return [];
   }
   if (url.endsWith('/aprendizagem/jornada')) return { blocks: [], plannedMinutes: 25, summary: { reviews: 0, errors: 0, weeklyMinutes: 0, weeklyGoal: 180, criticalDiscipline: null } };
-  if (url.endsWith('/aprendizagem/resumo')) return { metaSemanal: 180, minutosSemana: 0, revisoesHoje: 0, errosPendentes: 0, porDisciplina: [], porDificuldade: [], recomendacoes: [], competenciasEnem: [] };
+  if (url.endsWith('/aprendizagem/resumo')) return dashboardLearningFixture || { metaSemanal: 180, minutosSemana: 0, revisoesHoje: 0, errosPendentes: 0, porDisciplina: [], porDificuldade: [], recomendacoes: [], competenciasEnem: [] };
   if (url.endsWith('/perfil')) return { perfil: { areas_foco: 'Matemática', objetivo: 'ENEM', ano_escolar: '3', tempo_diario_min: 60 }, disponibilidade: [] };
   if (url.endsWith('/inteligencia/privacidade')) return { visibilidade: 'RESUMO' };
   if (url.endsWith('/usuarios/me')) return person('aluno');
@@ -362,6 +363,22 @@ test('search trigger focuses the page search input', async () => {
     assert.equal(document.activeElement, document.querySelector('.sd-search input'));
     assert.ok(document.getElementById('page-search-results'));
   } finally { await screen.close(); }
+});
+
+test('daily panel explains a practice recommendation using recorded attempts', async () => {
+  dashboardLearningFixture = { metaSemanal: 180, minutosSemana: 0, revisoesHoje: 0, errosPendentes: 0, porDisciplina: [{ disciplina: 'Matemática', tentativas: 5, acerto: 40 }] };
+  const screen = await renderRoute('/inicio');
+  try {
+    assert.equal(document.querySelector('.dash-v2-focus h2')?.textContent, 'Praticar Matemática');
+    assert.ok(document.querySelector('.dash-v2-reason')?.textContent.includes('40% de acerto em 5 tentativas'));
+    assert.ok(button('Praticar agora →'));
+    assert.ok(button('Planejar com a Lumi'));
+    await act(async () => button('Praticar agora →').click());
+    await flush();
+    assert.ok(screen.container.textContent.includes('Simulado sob medida'));
+    assert.equal(document.querySelector('.learning-tabs button[aria-pressed="true"]')?.textContent.trim(), 'Simulado');
+    assert.equal([...document.querySelectorAll('select')].find(node => node.parentElement?.textContent.includes('Disciplina'))?.value, 'Matemática');
+  } finally { await screen.close(); dashboardLearningFixture = null; }
 });
 
 
