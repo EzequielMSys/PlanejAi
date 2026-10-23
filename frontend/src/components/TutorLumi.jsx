@@ -1,10 +1,10 @@
 import './TutorLumi.css'
 
-const lumiOriginal = `${import.meta.env.BASE_URL}images/lumi-original.png`
+const lumiTransparent = `${import.meta.env.BASE_URL}images/lumi-transparent.png`
 
-/** Retrato original da Lumi, sem expressões reativas ou animações. */
+/** Retrato da Lumi com transparência real ao redor do rosto. */
 export default function TutorLumi({ tamanho = 40, rotulo }) {
   return <span className="lumi-cat" style={{ width: tamanho, height: tamanho }} aria-hidden={rotulo ? undefined : 'true'}>
-    <img src={lumiOriginal} alt={rotulo || ''} width={tamanho} height={tamanho} />
+    <img src={lumiTransparent} alt={rotulo || ''} width={tamanho} height={tamanho} />
   </span>
 }

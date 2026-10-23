@@ -276,7 +276,7 @@ test('Lumi keeps the original portrait without reactions or a floating button', 
   const screen = await renderRoute('/lumi');
   try {
     assert.equal(button('Pergunte à Lumi'), undefined);
-    assert.ok(document.querySelector('.lumi-portrait img[src$="images/lumi-original.png"]'));
+    assert.ok(document.querySelector('.lumi-portrait img[src$="images/lumi-transparent.png"]'));
     assert.equal(document.querySelector('.lumi-mood'), null);
     assert.equal(document.querySelector('[class*="lumi-cat--feliz"], [class*="lumi-cat--raiva"]'), null);
   } finally { await screen.close(); }
