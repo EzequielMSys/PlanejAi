@@ -205,7 +205,9 @@ async function trilhas(idUsuario) {
 async function listarMensagensChat(idUsuario, limite = 20) {
   const numLimite = Number(limite)
   const safeLimite = Number.isFinite(numLimite) && numLimite > 0 && numLimite <= 200 ? numLimite : 20
-  const [rows] = await pool.execute(
+  // query serializa LIMIT como inteiro; execute envia números como DOUBLE,
+  // rejeitado pelo MySQL 8.4 em parâmetros de LIMIT.
+  const [rows] = await pool.query(
     `SELECT role, conteudo, disciplina, criado_em FROM mensagens_chat_ia WHERE id_usuario = ? ORDER BY id_mensagem DESC LIMIT ?`,
     [Number(idUsuario), safeLimite]
   )
