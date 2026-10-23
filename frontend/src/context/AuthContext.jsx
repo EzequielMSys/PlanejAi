@@ -8,6 +8,18 @@ import { clearOfflineData } from "../utils/offlineStore";
 
 export const AuthContext = createContext();
 
+async function checkPerfilCompleto(token) {
+  const response = await fetch(apiUrl("/api/perfil"), {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error("Não foi possível consultar seu perfil salvo. Tente entrar novamente.");
+  }
+  const { perfil, disponibilidade } = await response.json();
+  return Boolean(perfil?.areas_foco?.trim() && Array.isArray(disponibilidade) && disponibilidade.length > 0);
+}
+
 const initialState = {
   user: null,
   token: null,
@@ -63,65 +75,57 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const user = localStorage.getItem("user");
-    const primeiroAcesso = localStorage.getItem("primeiro_acesso") === "true";
+    let cancelled = false;
+    const restore = async () => {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("user");
+      const primeiroAcesso = localStorage.getItem("primeiro_acesso") === "true";
 
-    const perfilCompleto = localStorage.getItem("perfil_completo") === "true";
+      const perfilCompleto = localStorage.getItem("perfil_completo") === "true";
 
-    if (token && user && !isTokenExpired(token)) {
-      try {
-        const parsedUser = JSON.parse(user);
+      if (token && user && !isTokenExpired(token)) {
+        try {
+          const parsedUser = JSON.parse(user);
 
-        dispatch({
-          type: "LOGIN_SUCCESS",
-          payload: {
-            token,
-            user: parsedUser,
-            primeiro_acesso: primeiroAcesso,
-            perfil_completo: perfilCompleto,
-          },
-        });
-      } catch (error) {
-        console.error("Erro ao restaurar sessão:", error);
+          // O banco é a fonte de verdade; um cache antigo não deve repetir o onboarding.
+          let completo = perfilCompleto;
+          const isGestor = ["dono", "admin", "adm", "docente"].includes(parsedUser.tipo);
+          try {
+            completo = isGestor || await checkPerfilCompleto(token);
+          } catch (error) {
+            console.error("Erro ao consultar perfil salvo:", error);
+            // Uma indisponibilidade da API não apaga o estado já confirmado.
+          }
+          if (cancelled || localStorage.getItem("token") !== token) return;
+          localStorage.setItem("perfil_completo", completo ? "true" : "false");
 
+          dispatch({
+            type: "LOGIN_SUCCESS",
+            payload: {
+              token,
+              user: parsedUser,
+              primeiro_acesso: primeiroAcesso,
+              perfil_completo: completo,
+            },
+          });
+        } catch (error) {
+          console.error("Erro ao restaurar sessão:", error);
+
+          clearStoredSession();
+        }
+      } else if (token || user) {
         clearStoredSession();
       }
-    } else if (token || user) {
-      clearStoredSession();
-    }
 
-    dispatch({
-      type: "LOADING",
-      payload: false,
-    });
-  }, []);
-
-  const checkPerfilCompleto = async (usuarioId, token) => {
-    try {
-      const response = await fetch(apiUrl("/api/perfil"), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      if (cancelled) return;
+      dispatch({
+        type: "LOADING",
+        payload: false,
       });
-
-      if (!response.ok) {
-        return false;
-      }
-
-      const { perfil, disponibilidade } = await response.json();
-
-      return Boolean(
-        perfil &&
-          perfil.areas_foco &&
-          disponibilidade &&
-          disponibilidade.length > 0,
-      );
-    } catch (error) {
-      console.error("Erro ao verificar perfil:", error);
-      return false;
-    }
-  };
+    };
+    restore();
+    return () => { cancelled = true; };
+  }, []);
 
   const login = async (email, senha) => {
     try {
@@ -132,14 +136,12 @@ export const AuthProvider = ({ children }) => {
 
       const response = await authService.login(email, senha);
 
-      const usuarioId = response.usuario.id_usuario || response.usuario.id;
-
       const isGestor = ["dono", "admin", "adm", "docente"].includes(
         response.usuario.tipo,
       );
       const perfilCompleto = isGestor
         ? true
-        : await checkPerfilCompleto(usuarioId, response.token);
+        : await checkPerfilCompleto(response.token);
 
       localStorage.setItem("token", response.token);
 
@@ -182,7 +184,7 @@ export const AuthProvider = ({ children }) => {
           error.response?.data?.message ||
           (error.response
             ? `Não foi possível entrar (HTTP ${error.response.status}).`
-            : "Não foi possível conectar à API. Verifique se o servidor está ativo."),
+            : error.message || "Não foi possível conectar à API. Verifique se o servidor está ativo."),
       );
 
       throw error;

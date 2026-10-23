@@ -89,7 +89,7 @@ async function obterDisponibilidade(req, res) {
     const usuarioId = req.usuario.id
 
     const disponibilidade =
-      await dispModel.obterDisponibilidade(usuarioId)
+      await dispModel.obterDisponibilidadePorUsuario(usuarioId)
 
     return res.json(disponibilidade)
   } catch (error) {
@@ -109,7 +109,7 @@ async function obterPerfilCompleto(req, res) {
       await perfilModel.obterPerfilPorUsuario(usuarioId)
 
     const disponibilidade =
-      await dispModel.obterDisponibilidade(usuarioId)
+      await dispModel.obterDisponibilidadePorUsuario(usuarioId)
 
     return res.json({
       perfil,

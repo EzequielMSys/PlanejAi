@@ -1,7 +1,8 @@
 const pool = require('../config/db');
 const perfilModel = require('./perfilEstudoModel');
 
-const ORDEM_DIAS = '"DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"';
+// Literais SQL usam aspas simples, inclusive quando o servidor ativa ANSI_QUOTES.
+const ORDEM_DIAS = "'DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'";
 
 const mapaDias = {
   domingo: 'DOM',

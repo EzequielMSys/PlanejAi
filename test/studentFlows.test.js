@@ -18,7 +18,10 @@ global.requestAnimationFrame = window.requestAnimationFrame.bind(window);
 global.cancelAnimationFrame = window.cancelAnimationFrame.bind(window);
 global.IntersectionObserver = class { observe() {} unobserve() {} disconnect() {} };
 global.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
-global.fetch = async () => ({ ok: true, status: 200, json: async () => ({ status: 'OK', database: 'connected' }) });
+let setupCompleteFixture = true;
+global.fetch = async url => ({ ok: true, status: 200, json: async () => String(url).endsWith('/api/perfil')
+  ? { perfil: setupCompleteFixture ? { areas_foco: 'Matemática' } : null, disponibilidade: setupCompleteFixture ? [{ dia_semana: 'SEG' }] : [] }
+  : { status: 'OK', database: 'connected' } });
 const React = requireFrontend('react');
 const { act } = React;
 const { createRoot } = requireFrontend('react-dom/client');
@@ -78,6 +81,7 @@ async function getBundle() {
 }
 async function flush() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); }); }
 async function renderRoute(route, role = 'aluno', userOverrides = {}) {
+  setupCompleteFixture = route !== '/onboarding';
   localStorage.clear();
   const token = [Buffer.from('{"alg":"HS256"}').toString('base64'), Buffer.from(JSON.stringify({ id: 900001, exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64'), 'fixture'].join('.');
   for (const [key, value] of Object.entries({ token, user: JSON.stringify({ ...person(role), ...userOverrides }), perfil_completo: route === '/onboarding' ? 'false' : 'true', primeiro_acesso: route === '/primeiro-acesso' ? 'true' : 'false', theme: 'light' })) localStorage.setItem(key, value);
