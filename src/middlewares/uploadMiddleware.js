@@ -5,7 +5,7 @@ const crypto = require("crypto");
 // O disco de funções serverless não é persistente. Quando um Blob privado foi
 // conectado ao projeto, o Multer mantém o arquivo em memória para que o
 // controlador valide a assinatura e o envie ao armazenamento durável.
-const useMemoryStorage = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+const useMemoryStorage = Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

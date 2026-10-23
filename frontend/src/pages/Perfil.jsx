@@ -195,7 +195,7 @@ export default function Perfil() {
       setAvatarPreview(usuarioAtualizado.foto_url || null)
     } catch (error) {
       setAvatarPreview(fotoAnterior)
-      toast.error(error.response?.data?.error || 'Erro ao enviar foto.')
+      toast.error(error.response?.data?.error || error.response?.data?.message || 'Erro ao enviar foto.')
     } finally {
       setUploadingFoto(false)
       e.target.value = ''

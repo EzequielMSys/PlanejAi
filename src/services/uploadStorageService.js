@@ -15,7 +15,7 @@ function uploadsRoot() {
 }
 
 function garantirPastas() {
-  if (usarBlobPrivado()) return []
+  if (usarBlobPrivado() || process.env.VERCEL) return []
   const raiz = uploadsRoot()
   const criadas = []
   for (const categoria of ['', ...CATEGORIAS]) {
@@ -49,6 +49,11 @@ async function armazenarArquivo(file, categoria, userId) {
   const relative = caminhoRelativo(categoria, filename)
 
   if (!usarBlobPrivado()) {
+    if (process.env.VERCEL) {
+      const error = new Error('O armazenamento de arquivos ainda não está configurado. Tente novamente mais tarde.')
+      error.status = 503
+      throw error
+    }
     return { filename, relative, url: `/uploads/${relative}` }
   }
 

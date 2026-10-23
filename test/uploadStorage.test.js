@@ -46,3 +46,19 @@ test('o nome do arquivo de perfil começa com perfil-', () => {
 test('o caminho relativo usa barra e a categoria correta', () => {
   assert.equal(caminhoRelativo('perfis', 'perfil-1.jpg'), 'perfis/perfil-1.jpg')
 })
+
+test('Vercel without Blob returns a clear error instead of writing to a read-only disk', async () => {
+  const vm = require('node:vm')
+  const context = {
+    module: { exports: {} }, process: { env: { VERCEL: '1' } }, Buffer, console,
+    require: key => key === 'fs' ? { mkdirSync: () => { throw new Error('Must not write serverless disk') } } : require(key),
+  }
+  vm.runInNewContext(fs.readFileSync(require.resolve('../src/services/uploadStorageService'), 'utf8'), context)
+  const storage = context.module.exports
+  assert.equal(storage.garantirPastas().length, 0)
+  await assert.rejects(storage.armazenarArquivo({ filename: 'perfil-test.png' }, 'perfis', 24), error => {
+    assert.equal(error.status, 503)
+    assert.match(error.message, /armazenamento.*configurado/)
+    return true
+  })
+})
