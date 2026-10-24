@@ -12,6 +12,7 @@ import './Cronograma.css'
 import DailyPlanActions from '../components/DailyPlanActions'
 import { localStudyDate } from '../utils/dailyStudy'
 import RecoveryState from '../components/RecoveryState'
+import '../components/StudyRecommendations.css'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -454,6 +455,7 @@ async function concluirDia(idDia) {
               {cronogramaAtual.prova_final?.disponivel && !cronogramaAtual.avaliacao_em_andamento && <section className="schedule-milestone"><span>ETAPA FINAL</span><h2>Você percorreu o plano. Agora mostre o que aprendeu.</h2><p>A prova final reúne 20 questões das matérias estudadas. São necessários 14 acertos para concluir a trilha.</p><div><button type="button" onClick={iniciarProvaFinal}>Iniciar prova final <b aria-hidden="true">→</b></button></div></section>}
               {cronogramaAtual.prova_final?.concluida && <section className="schedule-milestone is-complete"><span>TRILHA CERTIFICADA</span><h2>Seu esforço virou conquista.</h2><p>Você concluiu o cronograma e foi aprovado na prova final.</p></section>}
 
+              <details className="study-recommendation"><summary>Como este plano escolhe as atividades?</summary><p>Na geração, as matérias vêm das áreas de foco do perfil. Os conteúdos são distribuídos nos dias livres, em blocos de aproximadamente 30 minutos; a ordem pode priorizar os pesos da próxima prova cadastrada. O tempo de cada dia é uma previsão, não uma obrigação.</p><p>As revisões ficam em Aprendizagem: a próxima data muda conforme sua avaliação do conteúdo. Este cronograma não pressupõe dificuldade só porque uma atividade ficou pendente.</p><div className="study-recommendation-actions"><a href="#/perfil">Ajustar matérias e disponibilidade</a><a href="#/aprendizagem">Conferir e ajustar revisões</a></div><p>Alterar o perfil não reescreve o plano atual. Para mudar só o dia, use “Seu dia mudou?”. Para gerar outra distribuição, confira a opção de novo cronograma.</p></details>
               <section className="schedule-plan" aria-labelledby="schedule-plan-title">
                 <div className="schedule-legend" aria-label="Estados das etapas"><span><b aria-hidden="true">○</b>Disponível para estudar</span><span><b aria-hidden="true">◇</b>Aguardando liberação</span><span><b aria-hidden="true">✓</b>Concluído</span></div>
                 <div className="schedule-plan-head"><div><span>PLANO COMPLETO</span><h2 id="schedule-plan-title">Suas etapas, em detalhe.</h2><p>Abra um dia para estudar, revisar materiais ou acompanhar o que já fez.</p></div><div className="schedule-plan-filters" role="group" aria-label="Filtrar dias do cronograma">{[['proximos', 'Próximos'], ['concluidos', 'Concluídos'], ['todos', 'Todos']].filter(([valor]) => valor !== 'proximos' || diasConcluidos < totalDias).map(([valor, rotulo]) => <button key={valor} type="button" aria-pressed={filtroEfetivo === valor} onClick={() => setFiltroDias(valor)}>{rotulo}</button>)}</div></div>

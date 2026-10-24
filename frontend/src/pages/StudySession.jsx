@@ -15,6 +15,7 @@ import SaveFeedback from '../components/SaveFeedback'
 import continuity from '../services/studyContinuityService'
 import { scopedCacheKey } from '../utils/offlineStore'
 import RouteLoading from '../components/RouteLoading'
+import '../components/StudyRecommendations.css'
 
 const sessionKey = () => scopedCacheKey('active-study-content')
 
@@ -80,6 +81,7 @@ export default function StudySession() {
   const initial = location.state?.conteudo ? { conteudo: location.state.conteudo, dia: location.state.dia } : loadSavedContent()
   const [content, setContent] = useState(initial?.conteudo || null)
   const [day, setDay] = useState(initial?.dia || null)
+  const [shortReturn, setShortReturn] = useState(Boolean(location.state?.retomadaCurta))
   const [resuming, setResuming] = useState(!initial?.conteudo)
   const [resumeError, setResumeError] = useState(false)
   const [continuityStatus, setContinuityStatus] = useState('ready')
@@ -153,6 +155,7 @@ export default function StudySession() {
         <button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : 'Concluir sessão'}</button>
       </header>
 
+      {shortReturn && <section className="study-short-return" aria-labelledby="short-return-title"><h2 id="short-return-title">Cinco minutos já são um começo.</h2><p>Uma sugestão de ritmo, sem cronômetro obrigatório. A sessão só será concluída quando você escolher concluir.</p><ol><li><strong>1 minuto:</strong> releia suas anotações ou a ideia principal.</li><li><strong>3 minutos:</strong> tente explicar um conceito com suas palavras.</li><li><strong>1 minuto:</strong> anote uma dúvida ou o próximo passo para depois.</li></ol><button type="button" onClick={() => { setTab('notes'); setShortReturn(false) }}>Abrir minhas anotações</button></section>}
       <section className="session-layout">
         <div className="session-workspace pj-panel">
           <nav className="session-tabs" aria-label="Ferramentas da sessão"><button className={tab === 'guide' ? 'is-active' : ''} onClick={() => setTab('guide')}>Guia de estudo</button><button className={tab === 'material' ? 'is-active' : ''} onClick={() => setTab('material')}>{materialUrl ? 'Fonte principal' : 'Material'}</button><button className={tab === 'notes' ? 'is-active' : ''} onClick={() => setTab('notes')}>Anotações <span>{noteStatus === 'saved' ? 'na conta' : noteStatus === 'local' ? 'neste aparelho' : ''}</span></button></nav>

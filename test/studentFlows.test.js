@@ -39,6 +39,9 @@ let dashboardLearningFixture = null;
 let dailySchedulesFixture = [];
 let evolutionFixture = [];
 let continuityFixture = null;
+let continuityFailure = false;
+let reviewQueueFixture = [];
+let postponeFailure = false;
 let onboardingProfileFixture = null;
 let incompleteAccount = false;
 let failLearningLoad = false;
@@ -56,7 +59,16 @@ function fixture(config) {
     if (essayMode === 'failure') throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: { message: 'Envio temporariamente indisponível.' } });
     if (essayMode === 'queued') return { offline: true, queued: true, queueId: 123 };
   }
-  if (url.endsWith('/aprendizagem/estudo-em-andamento')) return config.method === 'get' ? continuityFixture : { salvo: true };
+  if (url.endsWith('/aprendizagem/estudo-em-andamento')) {
+    if (continuityFailure && config.method === 'get') throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
+    return config.method === 'get' ? continuityFixture : { salvo: true };
+  }
+  if (url.endsWith('/aprendizagem/revisoes')) return reviewQueueFixture;
+  if (/\/aprendizagem\/revisoes\/\d+\/adiar$/.test(url)) {
+    if (postponeFailure) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
+    reviewQueueFixture = [];
+    return { message: 'Revisão reagendada.' };
+  }
   if (url.endsWith('/cronograma')) return dailySchedulesFixture;
   if (url.endsWith('/aprendizagem/evolucao')) return evolutionFixture;
   if (/\/dias\/\d+\/ajustar$/.test(url)) return { message: 'Seu dia foi ajustado e salvo.' };
@@ -1003,4 +1015,57 @@ test('login keeps typed credentials during a server outage and checks recovery w
     assert.equal(submissions, 1);
     assert.equal(checks, 1);
   } finally { global.fetch = previousFetch; await act(async () => root.unmount()); }
+});
+
+test('a review explains actual difficulty evidence and postpones without grading it', async () => {
+  reviewQueueFixture = [{ id_revisao: 84, id_conteudo: 7, titulo: 'Revisão de frações', disciplina: 'Matemática', ultimo_resultado: 'DIFICIL', nivel_dominio: 2 }];
+  const screen = await renderRoute('/aprendizagem');
+  try {
+    assert.ok(screen.container.textContent.includes('Você marcou este conteúdo como difícil'));
+    assert.equal(requests.filter(request => request.url.endsWith('/adiar')).length, 0);
+    await act(async () => document.querySelector('.study-recommendation summary').click());
+    await act(async () => button('Confirmar nova data').click());
+    await flush();
+    const saved = requests.find(request => request.url.endsWith('/revisoes/84/adiar'));
+    assert.equal(JSON.parse(saved.data).dias, 1);
+    assert.ok(!requests.some(request => request.url.endsWith('/avaliar')));
+    assert.ok(!document.querySelector('.learning-review'));
+  } finally { reviewQueueFixture = []; await screen.close(); }
+});
+
+test('a failed postponement keeps the review in the queue and does not claim success', async () => {
+  reviewQueueFixture = [{ id_revisao: 84, id_conteudo: 7, titulo: 'Revisão preservada', disciplina: 'Matemática' }];
+  postponeFailure = true;
+  const screen = await renderRoute('/aprendizagem');
+  try {
+    await act(async () => document.querySelector('.study-recommendation summary').click());
+    await act(async () => button('Confirmar nova data').click());
+    assert.ok(document.querySelector('.learning-review'));
+    assert.ok(screen.container.textContent.includes('Não foi possível atualizar a fila'));
+    assert.ok(!screen.container.textContent.includes('Reagendamento salvo na sua conta'));
+  } finally { reviewQueueFixture = []; postponeFailure = false; await screen.close(); }
+});
+
+test('today opens a gentle five-minute return without completing the pending lesson', async () => {
+  continuityFixture = { conteudo: { id: 51, id_conteudo: 9, titulo: 'Retomar Física', disciplina: 'Física' }, dia: { id_dia: 3, data_estudo: '2026-10-24' }, atualizadoEm: '2026-10-23T15:00:00Z' };
+  const screen = await renderRoute('/inicio');
+  try {
+    assert.ok(screen.container.textContent.includes('Esta foi sua última sessão aberta, em 23/10/2026'));
+    await act(async () => button('Retomar por 5 minutos').click());
+    await flush();
+    assert.ok(screen.container.textContent.includes('Cinco minutos já são um começo'));
+    assert.ok(screen.container.textContent.includes('Retomar Física'));
+    assert.ok(!requests.some(request => request.method === 'post' && /sessoes|concluir/.test(request.url)));
+  } finally { continuityFixture = null; window.sessionStorage.clear(); await screen.close(); }
+});
+
+test('a continuity outage is recoverable rather than presented as an empty history', async () => {
+  continuityFailure = true;
+  const screen = await renderRoute('/inicio');
+  try {
+    assert.ok(screen.container.textContent.includes('Seu histórico não foi apagado'));
+    continuityFailure = false;
+    await act(async () => button('Consultar minha retomada').click());
+    assert.ok(!screen.container.textContent.includes('Não conseguimos consultar sua última sessão'));
+  } finally { continuityFailure = false; await screen.close(); }
 });

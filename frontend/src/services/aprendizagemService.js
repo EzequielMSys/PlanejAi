@@ -10,6 +10,7 @@ export default {
   erros: () => api.get('/erros').then((r) => r.data),
   atualizarErro: (id, dados) => api.patch(`/erros/${id}`, dados).then((r) => r.data),
   revisoes: () => api.get('/revisoes').then((r) => r.data),
+  adiarRevisao: (id, dias) => api.post(`/revisoes/${id}/adiar`, { dias }).then((r) => r.data),
   adicionarRevisao: (idConteudo) => api.post(`/revisoes/${idConteudo}`).then((r) => r.data),
   avaliarRevisao: (idConteudo, resultado) => api.post(`/revisoes/${idConteudo}/avaliar`, { resultado }).then((r) => r.data),
   registrarSessao: (dados) => api.post('/sessoes', dados, { offlineQueue: true }).then((r) => r.data),

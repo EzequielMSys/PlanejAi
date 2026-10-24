@@ -19,6 +19,10 @@ router.post('/questoes/:idQuestao/responder', idempotency('RESPONDER_QUESTAO'), 
 router.get('/erros', controller.erros);
 router.patch('/erros/:idErro', controller.atualizarErro);
 router.get('/revisoes', controller.revisoes);
+router.post('/revisoes/:idRevisao/adiar', async (req, res) => {
+  try { res.json(await require('../services/reviewPlanningService').postpone(req.usuario.id_usuario || req.usuario.id, req.params.idRevisao, req.body?.dias)); }
+  catch (error) { const expected = [400, 404].includes(error.status); res.status(expected ? error.status : 503).json({ message: expected ? error.message : 'Não foi possível confirmar o reagendamento. Atualize a fila antes de tentar novamente.' }); }
+});
 router.post('/revisoes/:idConteudo', controller.adicionarRevisao);
 router.post('/revisoes/:idConteudo/avaliar', controller.avaliarRevisao);
 router.post('/sessoes', idempotency('REGISTRAR_SESSAO'), controller.registrarSessao);
