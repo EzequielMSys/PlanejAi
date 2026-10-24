@@ -26,3 +26,9 @@
 .study-login-password-head a:hover { text-decoration:underline; text-underline-offset:3px; }
 @media(max-width:900px) { .study-auth-corpo { grid-template-columns:1fr; width:min(540px,calc(100% - 2rem)); } }
 @media(prefers-reduced-motion:reduce) { .study-submit { transition:none; } }
+.study-login-recovery { padding:1rem; border:1px solid var(--pn-borda); border-left:3px solid var(--pn-primaria); border-radius:.7rem; background:var(--pn-superficie); line-height:1.6; overflow-wrap:anywhere; }
+.study-login-recovery strong { font-size:.95rem; }
+.study-login-recovery p { margin:.4rem 0; color:var(--pn-texto-suave); font-size:.88rem; }
+.study-login-recovery button { min-height:44px; padding:.4rem .65rem; margin-left:-.65rem; text-decoration:underline; text-underline-offset:3px; color:var(--pn-link,var(--pn-primaria-forte)); font-weight:700; }
+.study-login-recovery button:disabled { opacity:.65; }
+@media(max-width:540px) { .study-form .study-input { font-size:1rem; } .study-login-password-head { flex-wrap:wrap; gap:.25rem .8rem; } .study-auth--login .study-auth-lateral { display:none; } .study-auth--login .study-auth-corpo { margin-block:0; padding-block:2rem; } }

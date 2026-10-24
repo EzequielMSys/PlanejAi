@@ -96,7 +96,7 @@ async function getBundle() {
   if (bundle) return bundle;
   const esbuild = requireFrontend('esbuild');
   const result = await esbuild.build({
-    stdin: { contents: `export { default as App } from './src/App'; export { default as RouteLoading } from './src/components/RouteLoading'; export { default as PageExperience } from './src/components/PageExperience'; export { ThemeProvider } from './src/context/ThemeContext'; export { AccessibilityProvider } from './src/context/AccessibilityContext'; export { default as ErrorBoundary } from './src/components/ErrorBoundary';`, resolveDir: frontendDir, loader: 'jsx' },
+    stdin: { contents: `export { default as Login } from './src/pages/Login'; export { AuthContext } from './src/context/AuthContext'; export { default as App } from './src/App'; export { default as RouteLoading } from './src/components/RouteLoading'; export { default as PageExperience } from './src/components/PageExperience'; export { ThemeProvider } from './src/context/ThemeContext'; export { AccessibilityProvider } from './src/context/AccessibilityContext'; export { default as ErrorBoundary } from './src/components/ErrorBoundary';`, resolveDir: frontendDir, loader: 'jsx' },
     bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic', loader: { '.css': 'empty' },
     define: { 'import.meta.env': JSON.stringify({ VITE_API_URL: 'http://fixture.invalid', BASE_URL: '/', DEV: true }) },
     plugins: [{ name: 'defer-nonessential-widgets', setup(build) { build.onResolve({ filter: /LumiMessage$/ }, () => ({ path: 'lumi-message-test', namespace: 'test' })); build.onResolve({ filter: /Deferred$/ }, () => ({ path: 'deferred-test', namespace: 'test' })); build.onLoad({ filter: /lumi-message-test/, namespace: 'test' }, () => ({ contents: "import React from 'react'; export default function LumiMessage({ content }) { return React.createElement('div', { className: 'lumi-message' }, content) }", loader: 'js', resolveDir: frontendDir })); build.onLoad({ filter: /deferred-test/, namespace: 'test' }, () => ({ contents: 'export default function Deferred(){ return null }', loader: 'js' })); } }],
@@ -980,4 +980,27 @@ test('navigation shortcuts leave typed text alone and still work outside form fi
     await act(async () => window.dispatchEvent(new window.KeyboardEvent('keydown', { bubbles: true, cancelable: true, altKey: true, key: 'c' })));
     assert.equal(document.getElementById('path-probe').textContent, '/cronograma');
   } finally { await act(async () => root.unmount()); }
+});
+
+test('login keeps typed credentials during a server outage and checks recovery without resubmitting them', async () => {
+  const { Login, AuthContext, ThemeProvider } = await getBundle();
+  const container = document.getElementById('root');
+  const root = createRoot(container);
+  const previousFetch = global.fetch;
+  let submissions = 0, checks = 0;
+  global.fetch = async () => { checks++; return { ok: true, json: async () => ({ database: 'connected' }) }; };
+  const login = async () => { submissions++; throw { response: { status: 503 } }; };
+  try {
+    await act(async () => root.render(React.createElement(MemoryRouter, null, React.createElement(ThemeProvider, null, React.createElement(AuthContext.Provider, { value: { login } }, React.createElement(Login))))));
+    await inputValue(document.getElementById('email'), 'fixture@example.invalid');
+    await inputValue(document.getElementById('senha'), 'fixture-password');
+    await act(async () => container.querySelector('form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true })));
+    assert.ok(container.querySelector('[role="alert"]').textContent.includes('Seus dados de acesso continuam aqui'));
+    assert.equal(document.getElementById('email').value, 'fixture@example.invalid');
+    assert.equal(document.getElementById('senha').value, 'fixture-password');
+    await act(async () => button('Verificar conexão').click());
+    assert.ok(container.textContent.includes('A conexão voltou'));
+    assert.equal(submissions, 1);
+    assert.equal(checks, 1);
+  } finally { global.fetch = previousFetch; await act(async () => root.unmount()); }
 });
