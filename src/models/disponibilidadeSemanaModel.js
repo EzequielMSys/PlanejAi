@@ -1,5 +1,4 @@
 const pool = require('../config/db');
-const perfilModel = require('./perfilEstudoModel');
 
 // Literais SQL usam aspas simples, inclusive quando o servidor ativa ANSI_QUOTES.
 const ORDEM_DIAS = "'DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'";
@@ -31,46 +30,25 @@ function normalizarDia(dia) {
   return mapaDias[diaTratado] || String(dia).trim().toUpperCase();
 }
 
-async function resolverIdPerfil(idPerfilOrUsuarioId) {
-  const perfil = await perfilModel.obterPerfilPorUsuario(idPerfilOrUsuarioId);
-
-  if (perfil) {
-    return perfil.id_perfil;
+async function salvarDisponibilidade(usuarioId, dias) {
+  if (!Array.isArray(dias) || dias.length > 7) throw new Error('Informe até sete dias da semana.');
+  const normalized = dias.map(day => ({ ...day, dia_semana: normalizarDia(day.dia_semana), ocupado: Number(day.ocupado) === 1 ? 1 : 0 }));
+  const time = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
+  if (new Set(normalized.map(day => day.dia_semana)).size !== normalized.length || normalized.some(day =>
+    !['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'].includes(day.dia_semana) ||
+    (!day.ocupado && (!time.test(day.hora_inicio || '') || !time.test(day.hora_fim || '') || day.hora_inicio >= day.hora_fim)))) {
+    throw new Error('Confira os dias e horários informados.');
   }
-
-  return idPerfilOrUsuarioId;
-}
-
-async function salvarDisponibilidade(idPerfilOrUsuarioId, dias) {
-  const idPerfil = await resolverIdPerfil(idPerfilOrUsuarioId);
-
-  await pool.execute(
-    'DELETE FROM disponibilidade_semana WHERE id_perfil = ?',
-    [idPerfil]
-  );
-
-  if (!dias || dias.length === 0) {
-    return;
-  }
-
-  const values = dias
-    .map((d) => [
-      idPerfil,
-      normalizarDia(d.dia_semana),
-      d.hora_inicio || '08:00:00',
-      d.hora_fim || '18:00:00',
-      d.ocupado ? 1 : 0
-    ])
-    .filter((d) => d[1]);
-
-  if (values.length > 0) {
-    await pool.query(
-      `INSERT INTO disponibilidade_semana 
-        (id_perfil, dia_semana, hora_inicio, hora_fim, ocupado) 
-       VALUES ?`,
-      [values]
-    );
-  }
+  const db = await pool.getConnection();
+  try {
+    await db.beginTransaction();
+    const [[perfil]] = await db.execute('SELECT id_perfil FROM perfil_estudo WHERE id_usuario = ? FOR UPDATE', [usuarioId]);
+    if (!perfil) throw new Error('Salve primeiro suas matérias de estudo.');
+    await db.execute('DELETE FROM disponibilidade_semana WHERE id_perfil = ?', [perfil.id_perfil]);
+    if (normalized.length) await db.query('INSERT INTO disponibilidade_semana (id_perfil, dia_semana, hora_inicio, hora_fim, ocupado) VALUES ?', [normalized.map(day => [perfil.id_perfil, day.dia_semana, day.hora_inicio || '08:00', day.hora_fim || '18:00', day.ocupado])]);
+    await db.commit();
+  } catch (error) { await db.rollback(); throw error; }
+  finally { db.release(); }
 }
 
 async function obterDisponibilidade(idPerfilOrUsuario) {

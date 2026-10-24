@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import AuthLayout from '../components/AuthLayout'
 import AuthJourneyPreview from '../components/AuthJourneyPreview'
@@ -25,6 +25,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false)
   const submittingRef = useRef(false)
   const { login } = useAuth()
+  const location = useLocation()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -33,7 +34,7 @@ const Login = () => {
     submittingRef.current = true
     setLoading(true)
     try {
-      await login(formData.email, formData.senha)
+      await login(formData.email, formData.senha, location.state?.from)
       // Redirect will be handled by ProtectedRoute based on user state
     } catch (error) {
       // Error toast handled by AuthContext

@@ -28,7 +28,7 @@ function formatarData(data) {
 
 export default function Cronograma() {
   const navigate = useNavigate()
-  const { isGestor } = useAuth()
+  const { isGestor, perfilCompleto } = useAuth()
   const [cronogramas, setCronogramas] = useState([])
   const [loading, setLoading] = useState(true)
   const [gerando, setGerando] = useState(false)
@@ -211,6 +211,7 @@ const proximoDia = dias.find((dia) => {
   }, [progresso, totalDias])
 
   async function gerarNovoCronograma() {
+    if (!perfilCompleto) { navigate('/onboarding'); return }
     setGerando(true)
 
     try {

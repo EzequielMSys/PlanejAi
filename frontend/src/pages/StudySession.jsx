@@ -12,18 +12,21 @@ import './Chat.css'
 import './StudySession.css'
 import useStudyNotes from '../hooks/useStudyNotes'
 import SaveFeedback from '../components/SaveFeedback'
+import continuity from '../services/studyContinuityService'
+import { scopedCacheKey } from '../utils/offlineStore'
+import RouteLoading from '../components/RouteLoading'
 
-const SESSION_CONTENT_KEY = 'planejai:active-study-content'
+const sessionKey = () => scopedCacheKey('active-study-content')
 
 function loadSavedContent() {
-  try { return JSON.parse(window.sessionStorage.getItem(SESSION_CONTENT_KEY) || 'null') } catch { return null }
+  try { return JSON.parse(window.sessionStorage.getItem(sessionKey()) || 'null') } catch { return null }
 }
 
 function saveStudyHistory(content, minutes, difficulty) {
   try {
-    const list = JSON.parse(localStorage.getItem('planejai:study-sessions') || '[]')
+    const list = JSON.parse(localStorage.getItem(scopedCacheKey('study-sessions')) || '[]')
     list.unshift({ id: content.id, idConteudo: content.id_conteudo, title: content.titulo, minutes, difficulty, finishedAt: new Date().toISOString() })
-    localStorage.setItem('planejai:study-sessions', JSON.stringify(list.slice(0, 90)))
+    localStorage.setItem(scopedCacheKey('study-sessions'), JSON.stringify(list.slice(0, 90)))
   } catch { /* histórico local é complementar */ }
 }
 
@@ -75,8 +78,17 @@ export default function StudySession() {
   const location = useLocation()
   const navigate = useNavigate()
   const initial = location.state?.conteudo ? { conteudo: location.state.conteudo, dia: location.state.dia } : loadSavedContent()
-  const [content] = useState(initial?.conteudo || null)
-  const [day] = useState(initial?.dia || null)
+  const [content, setContent] = useState(initial?.conteudo || null)
+  const [day, setDay] = useState(initial?.dia || null)
+  const [resuming, setResuming] = useState(!initial?.conteudo)
+  const [resumeError, setResumeError] = useState(false)
+  const [continuityStatus, setContinuityStatus] = useState('ready')
+  useEffect(() => {
+    if (initial?.conteudo) return
+    let active = true
+    continuity.current().then(saved => { if (active && saved?.conteudo) { setContent(saved.conteudo); setDay(saved.dia) } }).catch(() => { if (active) setResumeError(true) }).finally(() => { if (active) setResuming(false) })
+    return () => { active = false }
+  }, [])
   const [tab, setTab] = useState('guide')
   const [finishing, setFinishing] = useState(false)
   const [difficulty, setDifficulty] = useState('LEMBREI')
@@ -88,7 +100,13 @@ export default function StudySession() {
 
   const { notes, setNotes, status: noteStatus, retry: retryNotes, loading: loadingNotes, flush: flushNotes } = useStudyNotes(content?.id_conteudo, content?.id)
   useEffect(() => {
-    if (content) window.sessionStorage.setItem(SESSION_CONTENT_KEY, JSON.stringify({ conteudo: content, dia: day }))
+    if (!content) return
+    try { window.sessionStorage.setItem(sessionKey(), JSON.stringify({ conteudo: content, dia: day })) } catch { /* A conta ainda pode confirmar a retomada. */ }
+    if (!content.id) return
+    let active = true
+    setContinuityStatus('saving')
+    continuity.save(content.id).then(() => { if (active) setContinuityStatus('saved') }).catch(() => { if (active) setContinuityStatus('local') })
+    return () => { active = false }
   }, [content, day])
 
   async function finish() {
@@ -111,6 +129,8 @@ export default function StudySession() {
       if (sessionResult?.offline || sessionResult?.queued) toast('O registro desta sessão ficou na fila deste aparelho e será enviado quando a conexão voltar.')
       else toast.success('Sessão concluída e próxima revisão agendada.')
       if (!noteResult.confirmed && !noteResult.unchanged) toast('As anotações ficaram apenas neste aparelho. Reabra este conteúdo para tentar enviá-las à sua conta.')
+      try { window.sessionStorage.removeItem(sessionKey()) } catch { /* Complemento local. */ }
+      continuity.clear(content.id).catch(() => {})
       navigate('/inicio')
     } catch {
       saveStudyHistory(content, minutes, difficulty)
@@ -118,12 +138,14 @@ export default function StudySession() {
     } finally { setFinishing(false) }
   }
 
-  if (!content) return <main className="pj-page"><div className="session-missing pj-panel"><span className="pj-eyebrow">Sala de estudo</span><h1>Nenhum conteúdo foi escolhido.</h1><p>Abra o cronograma e escolha “Começar sessão” em um dos materiais.</p><button className="pj-button pj-button--primary" onClick={() => navigate('/cronograma')}>Ir ao cronograma</button></div></main>
+  if (resuming) return <RouteLoading label="Buscando sua sessão em andamento…" />
+  if (!content) return <main className="pj-page"><div className="session-missing pj-panel"><span className="pj-eyebrow">Sala de estudo</span><h1>{resumeError ? 'Não conseguimos consultar sua sessão.' : 'Nenhum conteúdo foi escolhido.'}</h1><p>Seu progresso continua na conta. Escolha um conteúdo no cronograma para estudar.</p>{resumeError && <button type="button" onClick={() => window.location.reload()}>Tentar novamente</button>}<button className="pj-button pj-button--primary" onClick={() => navigate('/cronograma')}>Ir ao cronograma</button></div></main>
 
   const materialUrl = content.link || content.url || ''
   const estudoAtual = { titulo: content.titulo || 'Este conteúdo', disciplina: content.disciplina || content.area || '', data: day?.data_estudo ? String(day.data_estudo).slice(0, 10) : '' }
 
   return <main className="session-page pj-page">
+    {content.id && <SaveFeedback status={continuityStatus} message={continuityStatus === 'saved' ? 'Retomada desta sessão salva na sua conta. Você pode continuar em outro aparelho.' : continuityStatus === 'local' ? 'A retomada em outro aparelho ainda não foi confirmada. Suas anotações têm um aviso próprio de salvamento.' : 'Confirmando a retomada na sua conta…'} onRetry={() => { setContinuityStatus('saving'); continuity.save(content.id).then(() => setContinuityStatus('saved')).catch(() => setContinuityStatus('local')) }} />}
     <div className="pj-wrap">
       <header className="session-topbar student-page-heading">
         <button type="button" className="session-back" onClick={() => navigate(-1)}>← Voltar</button>

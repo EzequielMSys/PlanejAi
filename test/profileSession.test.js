@@ -67,3 +67,12 @@ test('an actually incomplete profile still opens setup', async () => {
   const view = await screen(true, async () => ({ ok: true, json: async () => ({ perfil: null, disponibilidade: [] }) }));
   try { assert.equal(view.text(), 'incomplete'); } finally { await view.close(); }
 });
+
+test('a revoked server session clears cached authentication instead of trusting the local profile', async () => {
+  const view = await screen(true, async () => ({ ok: false, status: 401 }));
+  try {
+    assert.equal(localStorage.getItem('token'), null);
+    assert.equal(localStorage.getItem('user'), null);
+    assert.equal(view.text(), 'incomplete');
+  } finally { await view.close(); }
+});

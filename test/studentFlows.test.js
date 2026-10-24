@@ -35,10 +35,14 @@ let materialCatalogFixture = false;
 let dashboardLearningFixture = null;
 let dailySchedulesFixture = [];
 let evolutionFixture = [];
+let continuityFixture = null;
+let onboardingProfileFixture = null;
+let incompleteAccount = false;
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data });
+  if (url.endsWith('/aprendizagem/estudo-em-andamento')) return config.method === 'get' ? continuityFixture : { salvo: true };
   if (url.endsWith('/cronograma')) return dailySchedulesFixture;
   if (url.endsWith('/aprendizagem/evolucao')) return evolutionFixture;
   if (/\/dias\/\d+\/ajustar$/.test(url)) return { message: 'Seu dia foi ajustado e salvo.' };
@@ -51,7 +55,7 @@ function fixture(config) {
   }
   if (url.endsWith('/aprendizagem/jornada')) return { blocks: [], plannedMinutes: 25, summary: { reviews: 0, errors: 0, weeklyMinutes: 0, weeklyGoal: 180, criticalDiscipline: null } };
   if (url.endsWith('/aprendizagem/resumo')) return dashboardLearningFixture || { metaSemanal: 180, minutosSemana: 0, revisoesHoje: 0, errosPendentes: 0, porDisciplina: [], porDificuldade: [], recomendacoes: [], competenciasEnem: [] };
-  if (url.endsWith('/perfil')) return { perfil: { areas_foco: 'Matemática', objetivo: 'ENEM', ano_escolar: '3', tempo_diario_min: 60 }, disponibilidade: [] };
+  if (url.endsWith('/perfil')) return { perfil: onboardingProfileFixture || (setupCompleteFixture ? { areas_foco: 'Matemática', objetivo: 'ENEM', ano_escolar: '3', tempo_diario_min: 60 } : null), disponibilidade: [] };
   if (url.endsWith('/inteligencia/privacidade')) return { visibilidade: 'RESUMO' };
   if (url.endsWith('/usuarios/me')) return person('aluno');
   if (url.endsWith('/usuarios')) return { usuarios: [person('aluno')], pagina: 1, total_registros: 17, total_paginas: 2, stats: { total: 17, ativos: 15, inativos: 2, donos: 1, admins: 2, docentes: 3, alunos: 11 } };
@@ -86,7 +90,7 @@ async function getBundle() {
 }
 async function flush() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); }); }
 async function renderRoute(route, role = 'aluno', userOverrides = {}) {
-  setupCompleteFixture = route !== '/onboarding';
+  setupCompleteFixture = route !== '/onboarding' && !incompleteAccount;
   localStorage.clear();
   const token = [Buffer.from('{"alg":"HS256"}').toString('base64'), Buffer.from(JSON.stringify({ id: 900001, exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64'), 'fixture'].join('.');
   for (const [key, value] of Object.entries({ token, user: JSON.stringify({ ...person(role), ...userOverrides }), perfil_completo: route === '/onboarding' ? 'false' : 'true', primeiro_acesso: route === '/primeiro-acesso' ? 'true' : 'false', theme: 'light' })) localStorage.setItem(key, value);
@@ -402,7 +406,7 @@ test('profile accepts custom pronouns without making the field required', async 
   } finally { await screen.close(); }
 });
 test('study room teaches the scheduled topic and gives Lumi its subject context', async () => {
-  window.sessionStorage.setItem('planejai:active-study-content', JSON.stringify({ conteudo: { id: 51, id_conteudo: 9, titulo: 'Leis de Newton', disciplina: 'Física' }, dia: { data_estudo: '2026-10-22' } }));
+  window.sessionStorage.setItem('900001:active-study-content', JSON.stringify({ conteudo: { id: 51, id_conteudo: 9, titulo: 'Leis de Newton', disciplina: 'Física' }, dia: { data_estudo: '2026-10-22' } }));
   const screen = await renderRoute('/estudar');
   try {
     assert.ok(screen.container.textContent.includes('O que você precisa aprender'));
@@ -416,7 +420,7 @@ test('study room teaches the scheduled topic and gives Lumi its subject context'
     const request = requests.find(item => item.method === 'post' && item.url.endsWith('/inteligencia/chat'));
     assert.deepEqual(JSON.parse(request.data).estudoAtual, { titulo: 'Leis de Newton', disciplina: 'Física', data: '2026-10-22' });
     assert.equal(JSON.parse(request.data).disciplina, 'Física');
-  } finally { await screen.close(); window.sessionStorage.removeItem('planejai:active-study-content'); }
+  } finally { await screen.close(); window.sessionStorage.removeItem('900001:active-study-content'); }
 });
 test('a provider failure leaves the question available to retry', async () => {
   failChat = true;
@@ -433,7 +437,7 @@ test('a provider failure leaves the question available to retry', async () => {
 });
 
 test('session Lumi shortcuts stay available and send the current topic exactly once', async () => {
-  window.sessionStorage.setItem('planejai:active-study-content', JSON.stringify({ conteudo: { id: 51, id_conteudo: 9, titulo: 'Leis de Newton', disciplina: 'Física' }, dia: { data_estudo: '2026-10-22' } }));
+  window.sessionStorage.setItem('900001:active-study-content', JSON.stringify({ conteudo: { id: 51, id_conteudo: 9, titulo: 'Leis de Newton', disciplina: 'Física' }, dia: { data_estudo: '2026-10-22' } }));
   const screen = await renderRoute('/estudar');
   try {
     for (const label of ['Explique de outro jeito', 'Dê um exemplo', 'Confira se entendi']) {
@@ -449,7 +453,7 @@ test('session Lumi shortcuts stay available and send the current topic exactly o
       if (label === 'Confira se entendi') assert.ok(payload.mensagem.includes('Não revele a resposta agora'));
       assert.ok(button(label), 'shortcuts remain after a reply');
     }
-  } finally { await screen.close(); window.sessionStorage.removeItem('planejai:active-study-content'); }
+  } finally { await screen.close(); window.sessionStorage.removeItem('900001:active-study-content'); }
 });
 
 test('a student cannot open management pages through a direct URL', async () => {
@@ -592,7 +596,7 @@ test('curated sources filter free access and keep the original providers visible
 });
 
 test('a quiz carries the selected answer into Lumi without sending a message or a hidden answer key', async () => {
-  window.sessionStorage.setItem('planejai:active-study-content', JSON.stringify({ conteudo: { id: 51, id_conteudo: 9, titulo: 'Leis de Newton', disciplina: 'Física' } }));
+  window.sessionStorage.setItem('900001:active-study-content', JSON.stringify({ conteudo: { id: 51, id_conteudo: 9, titulo: 'Leis de Newton', disciplina: 'Física' } }));
   const screen = await renderRoute('/estudar');
   try {
     assert.ok(screen.container.textContent.includes('Repouso ou velocidade vetorial constante'));
@@ -614,7 +618,7 @@ test('a quiz carries the selected answer into Lumi without sending a message or 
     await act(async () => button('Ver resolução comentada').click());
     await flush();
     assert.equal(JSON.parse(requests.filter(item => item.method === 'post' && item.url.endsWith('/inteligencia/chat')).at(-1).data).pratica.modo, 'resolucao');
-  } finally { await screen.close(); window.sessionStorage.removeItem('planejai:active-study-content'); }
+  } finally { await screen.close(); window.sessionStorage.removeItem('900001:active-study-content'); }
 });
 
 test('a failed tutoring request preserves the attempt and never unlocks the full solution', async () => {
@@ -633,17 +637,17 @@ test('a failed tutoring request preserves the attempt and never unlocks the full
 });
 
 test('unsupported subjects are clearly labelled as general study methods', async () => {
-  window.sessionStorage.setItem('planejai:active-study-content', JSON.stringify({ conteudo: { id: 51, titulo: 'Tema ainda sem aula', disciplina: 'Geral' } }));
+  window.sessionStorage.setItem('900001:active-study-content', JSON.stringify({ conteudo: { id: 51, titulo: 'Tema ainda sem aula', disciplina: 'Geral' } }));
   const screen = await renderRoute('/estudar');
   try {
     assert.ok(screen.container.textContent.includes('ROTEIRO GERAL DE ESTUDO'));
     assert.ok(screen.container.textContent.includes('ainda não há uma aula específica'));
     assert.ok(screen.container.textContent.includes('não o domínio do tema indicado'));
-  } finally { await screen.close(); window.sessionStorage.removeItem('planejai:active-study-content'); }
+  } finally { await screen.close(); window.sessionStorage.removeItem('900001:active-study-content'); }
 });
 
 test('external reading opens at the original source instead of an iframe that may be blocked', async () => {
-  window.sessionStorage.setItem('planejai:active-study-content', JSON.stringify({ conteudo: { id: 51, titulo: 'Ecologia', disciplina: 'Biologia', link: 'https://brasilescola.uol.com.br/biologia/cadeia-alimentar.htm' } }));
+  window.sessionStorage.setItem('900001:active-study-content', JSON.stringify({ conteudo: { id: 51, titulo: 'Ecologia', disciplina: 'Biologia', link: 'https://brasilescola.uol.com.br/biologia/cadeia-alimentar.htm' } }));
   const screen = await renderRoute('/estudar');
   try {
     await act(async () => button('Fonte principal').click());
@@ -653,5 +657,62 @@ test('external reading opens at the original source instead of an iframe that ma
     assert.equal(source?.target, '_blank');
     assert.ok(source?.href.includes('/biologia/cadeia-alimentar.htm'));
     assert.ok(screen.container.textContent.includes('do organismo que serve de alimento para quem o consome'));
-  } finally { await screen.close(); window.sessionStorage.removeItem('planejai:active-study-content'); }
+  } finally { await screen.close(); window.sessionStorage.removeItem('900001:active-study-content'); }
+});
+
+test('an incomplete account can explore sources without marking setup complete', async () => {
+  incompleteAccount = true;
+  const screen = await renderRoute('/fontes-estudo');
+  try {
+    assert.ok(screen.container.textContent.includes('Uma boa pergunta'));
+    assert.ok(screen.container.textContent.includes('Preparar meu plano'));
+    assert.equal(localStorage.getItem('perfil_completo'), 'false');
+    assert.equal(requests.some(request => request.method === 'post' && request.url.endsWith('/cronograma/gerar')), false);
+  } finally { incompleteAccount = false; await screen.close(); }
+});
+
+test('first setup makes school year optional and offers exploration before generating anything', async () => {
+  const screen = await renderRoute('/onboarding');
+  try {
+    assert.equal(document.getElementById('setup-year').required, false);
+    assert.equal(document.getElementById('setup-goal').value, 'ENEM');
+    assert.ok(button('Explorar primeiro →'));
+    await act(async () => button('Explorar primeiro →').click());
+    await flush();
+    assert.ok(screen.container.textContent.includes('Seu primeiro passo pode ser pequeno'));
+    assert.equal(localStorage.getItem('perfil_completo'), 'false');
+  } finally { await screen.close(); }
+});
+
+test('returning to an unfinished setup recovers the server profile instead of requesting subjects again', async () => {
+  onboardingProfileFixture = { areas_foco: 'Física', objetivo: 'VESTIBULAR', tempo_diario_min: 45, ano_escolar: '', prazo_estimado: 30 };
+  const screen = await renderRoute('/onboarding');
+  try {
+    assert.ok(screen.container.textContent.includes('Etapa 2 de 2'));
+    await act(async () => button('Voltar').click());
+    assert.equal(document.getElementById('setup-minutes').value, '45');
+    assert.equal(document.getElementById('setup-goal').value, 'VESTIBULAR');
+  } finally { onboardingProfileFixture = null; await screen.close(); }
+});
+
+test('a new device resumes a pending session from the account without local session storage', async () => {
+  window.sessionStorage.clear();
+  continuityFixture = { conteudo: { id: 51, id_conteudo: 9, titulo: 'Sessão recuperada da conta', disciplina: 'Física' }, dia: { id_dia: 3, data_estudo: '2026-10-24' } };
+  const screen = await renderRoute('/estudar');
+  try {
+    assert.ok(screen.container.textContent.includes('Sessão recuperada da conta'));
+    assert.ok(screen.container.textContent.includes('Retomada desta sessão salva na sua conta'));
+    assert.ok(requests.some(request => request.method === 'put' && request.url.endsWith('/estudo-em-andamento') && JSON.parse(request.data).idItem === 51));
+  } finally { continuityFixture = null; window.sessionStorage.clear(); await screen.close(); }
+});
+
+test('session content without the current account scope is never restored', async () => {
+  window.sessionStorage.setItem('planejai:active-study-content', JSON.stringify({ conteudo: { titulo: 'Texto de outra conta' } }));
+  window.sessionStorage.setItem('900002:active-study-content', JSON.stringify({ conteudo: { titulo: 'Texto privado' } }));
+  const screen = await renderRoute('/estudar');
+  try {
+    assert.ok(screen.container.textContent.includes('Nenhum conteúdo foi escolhido'));
+    assert.equal(screen.container.textContent.includes('Texto privado'), false);
+    assert.equal(screen.container.textContent.includes('Texto de outra conta'), false);
+  } finally { window.sessionStorage.clear(); await screen.close(); }
 });

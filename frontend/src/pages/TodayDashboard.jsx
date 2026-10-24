@@ -10,13 +10,15 @@ import RouteLoading from '../components/RouteLoading'
 import DailyPlanActions from '../components/DailyPlanActions'
 import LearningSignals from '../components/LearningSignals'
 import { dailyStudy, localStudyDate } from '../utils/dailyStudy'
+import continuity from '../services/studyContinuityService'
+import { scopedCacheKey } from '../utils/offlineStore'
 
 const done = (item) => Number(item?.concluido) === 1 || item?.status === 'concluído'
 const greeting = () => new Date().getHours() < 12 ? 'Bom dia' : new Date().getHours() < 18 ? 'Boa tarde' : 'Boa noite'
 
 function localMinutes(week = false) {
   try {
-    const sessions = JSON.parse(localStorage.getItem('planejai:study-sessions') || '[]')
+    const sessions = JSON.parse(localStorage.getItem(scopedCacheKey('study-sessions')) || '[]')
     const start = new Date(); start.setHours(0, 0, 0, 0)
     if (week) start.setDate(start.getDate() - ((start.getDay() + 6) % 7))
     return sessions.filter((item) => new Date(item.finishedAt).getTime() >= start.getTime()).reduce((sum, item) => sum + Number(item.minutes || 0), 0)
@@ -24,7 +26,9 @@ function localMinutes(week = false) {
 }
 
 export default function TodayDashboard() {
-  const { user, isAdmin, isDono } = useAuth()
+  const { user, isAdmin, isDono, perfilCompleto } = useAuth()
+  const [resume, setResume] = useState(null)
+  useEffect(() => { let active = true; continuity.current().then(saved => { if (active && saved?.conteudo) setResume(saved) }).catch(() => {}); return () => { active = false } }, [])
   const navigate = useNavigate()
   const [data, setData] = useState({ schedules: [], learning: null, reviews: [], evolution: [] })
   const [loading, setLoading] = useState(true)
@@ -71,7 +75,11 @@ export default function TodayDashboard() {
 
   const weakSubject = data.learning?.porDisciplina?.find((item) => Number(item.tentativas) >= 3 && Number(item.acerto) < 70)
   const firstReview = data.reviews[0]
-  const nextAction = nextContent && canStart
+  const nextAction = resume
+    ? { kind: 'resume', title: resume.conteudo.titulo, subject: resume.conteudo.disciplina || 'Sessão em andamento', reason: 'Você abriu esta sessão e ainda não a concluiu. As anotações confirmadas serão recuperadas da sua conta.', duration: 'Continue no seu ritmo', label: 'Retomar minha sessão' }
+    : !perfilCompleto
+    ? { kind: 'setup', title: 'Seu primeiro passo pode ser pequeno', subject: 'Boas-vindas', reason: 'Explore a Lumi e as fontes agora. Para um cronograma personalizado, escolha suas matérias e disponibilidade.', duration: 'Você decide quando começar', label: 'Preparar meu plano', route: '/onboarding' }
+    : nextContent && canStart
     ? { kind: 'lesson', title: nextContent.titulo, subject: nextContent.disciplina || nextContent.area || 'Plano de estudos', reason: localStudyDate(nextDay.data_estudo) < localStudyDate() ? 'Retome o primeiro conteúdo pendente. Seu progresso continua salvo.' : 'Esta é a próxima atividade do seu plano de hoje.', duration: `${sessionMinutes} min previstos para esta sessão`, label: 'Continuar meus estudos' }
     : firstReview || reviews > 0
     ? { kind: 'review', title: firstReview?.titulo || 'Revisar o que já estudou', subject: firstReview?.disciplina || 'Revisão', reason: `${reviews} revisão${reviews === 1 ? '' : 'ões'} pronta${reviews === 1 ? '' : 's'} para hoje, conforme seu histórico de estudo.`, duration: 'Sessão curta', label: 'Começar revisão', route: '/aprendizagem' }
@@ -87,7 +95,7 @@ export default function TodayDashboard() {
     setData(current => ({ ...current, schedules: Array.isArray(schedules) ? schedules : [] }))
     setPlanError(false)
   }
-  const openNextAction = () => nextAction.kind === 'lesson' ? start() : navigate(nextAction.route, nextAction.kind === 'practice' ? { state: { aba: 'simulado', disciplina: weakSubject?.disciplina } } : undefined)
+  const openNextAction = () => nextAction.kind === 'resume' ? navigate('/estudar', { state: resume }) : nextAction.kind === 'lesson' ? start() : navigate(nextAction.route, nextAction.kind === 'practice' ? { state: { aba: 'simulado', disciplina: weakSubject?.disciplina } } : undefined)
   const askLumiAboutNextAction = () => navigate('/lumi', { state: { perguntaInicial: `Meu próximo passo sugerido é ${nextAction.title}. O dado disponível é: ${nextAction.reason} Me ajude a começar com uma atividade curta e explique como você usou esse dado, sem presumir outras dificuldades.` } })
   const updateWeeklyGoal = async (event) => {
     event.preventDefault()

@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { lazy, Suspense, useState, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
@@ -30,7 +30,7 @@ function CarregadoAposPintura({ children }) {
 }
 
 function Layout() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, perfilCompleto, isGestor, isPrimeiroAcesso } = useAuth()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -57,6 +57,7 @@ function Layout() {
 
         <div id="conteudo-principal" className="app-main" tabIndex="-1">
           <ConnectionStatus />
+          {!perfilCompleto && !isGestor && !isPrimeiroAcesso && location.pathname !== '/onboarding' && <aside className="setup-invitation"><div><strong>Explore no seu ritmo.</strong><p>Lumi, fontes e exercícios já estão disponíveis. Para criar seu cronograma, escolha as matérias e os horários.</p></div><Link to="/onboarding">Preparar meu plano →</Link></aside>}
           <div className="app-route-outlet sd-route">
             <ErrorBoundary resetKey={location.pathname}>
               <Suspense fallback={<RouteLoading embedded />}><Outlet /></Suspense>

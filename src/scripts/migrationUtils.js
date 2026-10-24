@@ -35,7 +35,9 @@ const migrationOrder = [
   'add_ia_chatbot_v17.sql',
   'field_web_vitals_v18.sql',
   'user_pronouns_v19.sql',
-  'expand_user_pronouns_v20.sql'
+  'expand_user_pronouns_v20.sql',
+  'study_continuity_v21.sql',
+  'remove_unused_birth_date_v22.sql'
 ];
 
 function sortMigrations(files) {

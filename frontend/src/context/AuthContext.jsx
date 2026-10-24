@@ -14,7 +14,9 @@ async function checkPerfilCompleto(token) {
     cache: "no-store",
   });
   if (!response.ok) {
-    throw new Error("Não foi possível consultar seu perfil salvo. Tente entrar novamente.");
+    const error = new Error("Não foi possível consultar seu perfil salvo. Tente entrar novamente.");
+    error.status = response.status;
+    throw error;
   }
   const { perfil, disponibilidade } = await response.json();
   return Boolean(perfil?.areas_foco?.trim() && Array.isArray(disponibilidade) && disponibilidade.length > 0);
@@ -93,6 +95,7 @@ export const AuthProvider = ({ children }) => {
           try {
             completo = isGestor || await checkPerfilCompleto(token);
           } catch (error) {
+            if (error.status === 401 || error.status === 403) { if (!cancelled && localStorage.getItem('token') === token) { clearStoredSession(); dispatch({ type: 'LOGOUT' }); } return; }
             console.error("Erro ao consultar perfil salvo:", error);
             // Uma indisponibilidade da API não apaga o estado já confirmado.
           }
@@ -127,7 +130,7 @@ export const AuthProvider = ({ children }) => {
     return () => { cancelled = true; };
   }, []);
 
-  const login = async (email, senha) => {
+  const login = async (email, senha, destination) => {
     try {
       dispatch({
         type: "LOADING",
@@ -171,10 +174,9 @@ export const AuthProvider = ({ children }) => {
 
       if (response.primeiro_acesso) {
         navigate("/primeiro-acesso");
-      } else if (!perfilCompleto) {
-        navigate("/onboarding");
       } else {
-        navigate("/dashboard");
+        const path = destination?.pathname;
+        navigate(typeof path === 'string' && path.startsWith('/') && !path.startsWith('//') && !['/login', '/register', '/primeiro-acesso'].includes(path) ? { pathname: path, search: destination.search || '', hash: destination.hash || '' } : '/inicio');
       }
 
       return response;

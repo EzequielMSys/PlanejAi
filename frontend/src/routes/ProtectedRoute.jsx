@@ -29,9 +29,7 @@ const ProtectedRoute = ({ children, adminOnly = false, donoOnly = false, gestorO
     return <Navigate to="/primeiro-acesso" replace />
   }
 
-  if (!isPrimeiroAcesso && !perfilCompleto && !isOnboardingRoute && !isPrimeiroAcessoRoute && !isGestor) {
-    return <Navigate to="/onboarding" replace />
-  }
+  // O perfil personaliza o cronograma; não bloqueia a exploração das ferramentas.
 
   if (perfilCompleto && isOnboardingRoute) {
     return <Navigate to="/dashboard" replace />
