@@ -2,6 +2,7 @@ const { getOpenAIClient } = require('../utils/openaiClient')
 const iaConfig = require('../config/iaConfig')
 const model = require('../models/inteligenciaModel')
 const { contextoDisponivel } = require('./tutorContextService')
+const { normalizarPratica } = require('./tutorPractice')
 
 const LIMITE_CARACTERES_MENSAGEM = 2000
 
@@ -125,7 +126,7 @@ function classificarErroApi(apiError) {
  *  5. persistir a resposta do assistente;
  *  6. devolver a conversa atualizada para sincronizar o cliente.
  */
-async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, redacaoId, estudoAtual) {
+async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, redacaoId, estudoAtual, pratica) {
   const conteudo = validarEntrada(mensagem)
   const disciplinaNormalizada = disciplina ? String(disciplina).trim().slice(0, 100) : null
   const estudoAtualNormalizado = normalizarEstudoAtual(estudoAtual)
@@ -157,7 +158,7 @@ async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, reda
     }),
   ])
   const messages = montarMensagensParaApi(
-    iaConfig.systemPrompt(nomeUsuario, disciplinaNormalizada, perfil, estudoAtualNormalizado),
+    iaConfig.systemPrompt(nomeUsuario, disciplinaNormalizada, perfil, estudoAtualNormalizado, normalizarPratica(pratica)),
     normalizarHistorico(historicoRows),
   )
 

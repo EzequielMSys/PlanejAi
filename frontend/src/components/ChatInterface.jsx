@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast'
 import inteligencia from '../services/inteligenciaService'
 import TutorLumi from './TutorLumi'
 import LumiMessage from './LumiMessage'
+import LumiPractice from './LumiPractice'
 
 const SUGESTOES_INICIO = [
   'Como estudar funções do 2º grau de forma prática?',
@@ -44,7 +45,7 @@ function Mensagem({ mensagem }) {
   )
 }
 
-export default function ChatInterface({ className = '', redacaoSelecionada, perguntaInicial = '', estudoAtual, compacto = false }) {
+export default function ChatInterface({ className = '', redacaoSelecionada, perguntaInicial = '', estudoAtual, compacto = false, praticaAtual }) {
   const [mensagens, setMensagens] = useState([])
   const [input, setInput] = useState(perguntaInicial)
   const [materia, setMateria] = useState(estudoAtual?.disciplina || '')
@@ -88,7 +89,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
     setMensagens((prev) => [...prev, { ...mensagem, id: Date.now() + Math.random() }])
   }
 
-  async function enviar(texto, disciplinaOverride) {
+  async function enviar(texto, disciplinaOverride, pratica) {
     const mensagem = (texto || input).trim()
     if (!mensagem || sendingRef.current) return
     sendingRef.current = true
@@ -105,7 +106,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
     setInput('')
     setLoading(true)
     try {
-      const data = await inteligencia.chatSend(mensagem, disciplinaOverride || materia || undefined, redacaoSelecionada?.id, estudoAtual)
+      const data = await inteligencia.chatSend(mensagem, disciplinaOverride || materia || undefined, redacaoSelecionada?.id, estudoAtual, pratica)
       if (data?.offline || data?.queued) {
         toast(data.message || 'Sem conexão: a mensagem será enviada quando você ficar online.')
       } else if (data?.mensagens) {
@@ -125,16 +126,18 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
           criado_em: new Date().toISOString(),
         })
       }
+      return !data?.offline && !data?.queued
     } catch (error) {
       const aviso = error?.response?.data?.message || 'Não foi possível conversar com a Lumi agora.'
       setMensagens((atuais) => atuais.filter((item) => item.id !== envioId))
       setInput(mensagem)
       setSendError(aviso)
       toast.error(aviso)
+      return false
     } finally {
       sendingRef.current = false
       setLoading(false)
-      inputRef.current?.focus()
+      if (!pratica) inputRef.current?.focus()
     }
   }
 
@@ -249,6 +252,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         ['Confira se entendi', `Faça uma única pergunta curta sobre ${estudoAtual.titulo} para conferir se entendi. Não revele a resposta agora. Espere minha tentativa e depois explique o que acertei e o que devo revisar.`],
       ].map(([label, prompt]) => <button type="button" key={label} disabled={loading} onClick={() => enviar(prompt, estudoAtual.disciplina)}>{label}</button>)}</div><small>O atalho envia uma pergunta sobre a sessão atual.</small></div>}
       {sendError && <p role="alert" className="px-3 text-xs text-red-700 dark:text-red-300">{sendError}</p>}
+      <LumiPractice key={praticaAtual?.id || 'livre'} context={praticaAtual} loading={loading} onSend={pratica => enviar(`${pratica.modo === 'pista' ? 'Quero uma pista' : pratica.modo === 'feedback' ? 'Confira minha tentativa' : 'Quero ver a resolução comentada'}: ${pratica.pergunta}${pratica.tentativa ? `\nMinha tentativa: ${pratica.tentativa}` : ''}`, estudoAtual?.disciplina, pratica)} />
 
       <form
         onSubmit={(event) => {

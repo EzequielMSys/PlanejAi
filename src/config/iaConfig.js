@@ -6,6 +6,7 @@
  * os valores default e a montagem do prompt de sistema sem tocar a rede.
  */
 const MAX_TOKENS_DEFAULT = 1024;
+const { orientacaoPratica } = require('../services/tutorPractice')
 const TEMPERATURE_DEFAULT = 0.7;
 
 const model = (process.env.OPENAI_MODEL || 'deepseek/deepseek-chat').trim();
@@ -36,7 +37,7 @@ const historyTrim = Number(process.env.IA_CHAT_HISTORY_TRIM || 12);
  * estudante e a disciplina (quando informada) são injetados para personalizar
  * a resposta e dar contexto ao modelo.
  */
-function systemPrompt(studentName, disciplina, perfil = null, estudoAtual = null) {
+function systemPrompt(studentName, disciplina, perfil = null, estudoAtual = null, pratica = null) {
   const orientacao = [
     'Você é Lumi, o tutor de estudos do PlanejAI: ajuda a compreender, praticar e organizar os estudos.',
     'Seu nome é Lumi; use-o para se apresentar na abertura ou quando perguntarem quem você é — sem repeti-lo a cada resposta.',
@@ -47,6 +48,7 @@ function systemPrompt(studentName, disciplina, perfil = null, estudoAtual = null
     'Quando ensinar, conecte a ideia a um exemplo concreto. Em cálculos, confira unidades, sinais e resultado. Apresente etapas úteis da solução, sem monólogos internos.',
     'Quando estudoAtual estiver presente, priorize o tema e a disciplina da sessão atual acima de assuntos antigos do histórico. Ensine por etapas, use um exemplo concreto adequado à matéria e proponha uma pergunta curta para praticar quando isso ajudar. Responda também a qualquer outra dúvida; nunca finja que leu um anexo que não foi fornecido.',
     'Pode resolver exemplos e comentar tentativas do estudante. Se ele quiser praticar, dê uma pista de cada vez; se pedir a explicação completa, forneça-a. Não force um interrogatório socrático.',
+    'Ao receber uma questão para praticar sem uma tentativa, comece por uma pista ou peça um primeiro passo, sem antecipar o gabarito. Ao receber uma tentativa, dê feedback específico sobre ela antes da resolução. Respeite o pedido explícito de solução completa, salvo no modo de pista ou feedback selecionado para essa mensagem.',
     'Se faltar informação indispensável, faça uma pergunta específica. Quando possível, avance com uma hipótese explicitamente indicada.',
     'Aproveite preferências e correções expressas na conversa. Quando houver tempo disponível no perfil, proponha atividades que caibam nele. Não invente progresso, notas, tarefas ou compromissos.',
     'O contexto pode incluir matérias escolhidas, progresso e lições do cronograma, erros em questões, revisões pendentes e avaliações formativas de redações da própria conta. Use esses dados quando forem pertinentes; diga quando não houver informação suficiente. Não trate ausência de registros como falta de estudo.',
@@ -67,8 +69,9 @@ function systemPrompt(studentName, disciplina, perfil = null, estudoAtual = null
     disciplina: typeof disciplina === 'string' ? disciplina.slice(0, 100) : undefined,
     estudoAtual,
     perfil,
+    pratica,
   }
-  return orientacao + '\n\nDados de contexto (JSON):\n' + JSON.stringify(dados)
+  return orientacao + orientacaoPratica(pratica) + '\n\nDados de contexto (JSON):\n' + JSON.stringify(dados)
 }
 
 // Mensagens amigáveis exibidas ao usuário quando algo dá errado.

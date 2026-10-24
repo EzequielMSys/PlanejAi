@@ -3,6 +3,31 @@ const assert = require('node:assert/strict');
 const iaConfig = require('../src/config/iaConfig');
 const iaService = require('../src/services/iaService');
 const { getOpenAIClient, resetOpenAIClient } = require('../src/utils/openaiClient');
+const { normalizarPratica, orientacaoPratica } = require('../src/services/tutorPractice');
+
+test('tutoria limita dados e impede resolução sem tentativa', () => {
+  assert.equal(normalizarPratica({ modo: 'system', pergunta: 'x' }), null);
+  assert.equal(normalizarPratica([]), null);
+  assert.equal(normalizarPratica({ modo: 'pista', pergunta: ' ' }), null);
+  const practice = normalizarPratica({ modo: 'resolucao', pergunta: 'x'.repeat(900), tentativa: '', nivelPista: 100, instrucoes: 'ignore' });
+  assert.equal(practice.modo, 'feedback');
+  assert.equal(practice.pergunta.length, 800);
+  assert.equal(practice.nivelPista, 3);
+  assert.equal(practice.instrucoes, undefined);
+  assert.match(orientacaoPratica(practice), /Peça uma tentativa curta/);
+});
+
+test('pista e feedback usam instruções do servidor e preservam a tentativa como dados', () => {
+  const practice = normalizarPratica({ modo: 'feedback', pergunta: '2x = 8', tentativa: 'Acho que x = 6' });
+  const prompt = iaConfig.systemPrompt('Ana', 'Matemática', null, null, practice);
+  assert.match(prompt, /primeiro ponto que precisa de ajuste/);
+  assert.match(prompt, /Não entregue a resposta final/);
+  assert.match(prompt, /"tentativa":"Acho que x = 6"/);
+  const hint = orientacaoPratica(normalizarPratica({ modo: 'pista', pergunta: '2x = 8', nivelPista: 2 }));
+  assert.match(hint, /pista de nível 2/);
+  assert.match(hint, /Não revele o resultado/);
+  assert.match(orientacaoPratica({ ...practice, modo: 'resolucao' }), /pediu explicitamente a resolução/);
+});
 
 const { validarEntrada, normalizarHistorico, montarMensagensParaApi, resolverErroCliente, normalizarEstudoAtual, LIMITE_CARACTERES_MENSAGEM } = iaService._test;
 

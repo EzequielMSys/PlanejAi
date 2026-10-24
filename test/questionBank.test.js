@@ -17,6 +17,7 @@ test('banco possui ao menos 100 questões e respostas equilibradas', () => {
 test('toda questão possui quatro alternativas e resposta válida', () => {
   for (const questao of questoes) {
     assert.equal(questao.alternativas.length, 4);
+    assert.equal(new Set(questao.alternativas.map(texto => texto.trim().toLocaleLowerCase())).size, 4, `Alternativas repetidas: ${questao.enunciado}`);
     assert.ok(Number.isInteger(questao.resposta));
     assert.ok(questao.resposta >= 0 && questao.resposta < 4);
     assert.ok(questao.explicacao.length > 20);

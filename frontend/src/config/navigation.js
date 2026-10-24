@@ -1,6 +1,7 @@
 const ALL = ['aluno', 'docente', 'admin', 'adm', 'dono']
 const STAFF = ['docente', 'admin', 'adm', 'dono']
 export const PAGES = [
+  { path: '/fontes-estudo', title: 'Fontes para estudar', description: 'Leituras, provas oficiais, redação e acervos.', keywords: 'biblioteca fontes materiais enem gratuitas', group: 'Aprender', icon: 'book', roles: ALL, hidden: true, searchable: true, navParent: '/aprendizagem' },
   { path: '/inicio', title: 'Hoje', description: 'Continue seu estudo ou monte uma sessão guiada.', keywords: 'meu dia inicio jornada sessão guiada', group: 'Sua rotina', icon: 'home', roles: ALL },
   { path: '/sessao-guiada', title: 'Sessão guiada', description: 'Um roteiro para o tempo que você tem agora, sem alterar a semana.', keywords: 'minha jornada tempo', group: 'Sua rotina', icon: 'route', roles: ['aluno'], hidden: true, searchable: true, navParent: '/inicio' },
   { path: '/cronograma', title: 'Cronograma', description: 'Organize a semana, ajuste datas e retome pendências.', keywords: 'planejamento semana horários', group: 'Sua rotina', icon: 'calendar', roles: ALL },

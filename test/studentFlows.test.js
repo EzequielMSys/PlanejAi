@@ -303,7 +303,7 @@ test('secondary study tools are reachable from their parent and loaded on demand
     assert.ok(screen.container.textContent.includes('HOJE · UM PASSO DE CADA VEZ'));
     await act(async () => document.querySelector('.sd-navigation a[href="/aprendizagem"]').click());
     await flush();
-    await act(async () => document.querySelector('.learning-tools-entry a').click());
+    await act(async () => document.querySelector('a[href="/ferramentas-estudo"]').click());
     await flush();
     assert.ok(screen.container.textContent.includes('Prepare o jeito de aprender'));
     assert.equal(document.querySelector('.sd-navigation a[aria-current="page"]')?.textContent, 'Praticar e revisar');
@@ -574,4 +574,84 @@ test('an empty Lumi conversation starts at the welcome section rather than the b
     if (old) Object.defineProperty(window.HTMLElement.prototype, 'scrollHeight', old);
     else delete window.HTMLElement.prototype.scrollHeight;
   }
+});
+
+test('curated sources filter free access and keep the original providers visible', async () => {
+  const screen = await renderRoute('/fontes-estudo');
+  try {
+    assert.ok(screen.container.textContent.includes('Fonte oficial'));
+    assert.ok(document.querySelector('a[href="https://vestibular.fgv.br/provas-gabaritos"]'));
+    const free = document.querySelector('.sources-check input');
+    await act(async () => free.click());
+    assert.equal(document.querySelector('a[href="https://aprovatotal.com.br/"]'), null);
+    assert.ok(document.querySelector('a[href="https://cursoenemgratuito.com.br/"]'));
+    await inputValue(document.querySelector('.sources-controls input[type="search"]'), 'zzzz');
+    assert.ok(screen.container.textContent.includes('Nenhuma fonte neste filtro'));
+    assert.equal(document.querySelectorAll('.sources-grid article').length, 0);
+  } finally { await screen.close(); }
+});
+
+test('a quiz carries the selected answer into Lumi without sending a message or a hidden answer key', async () => {
+  window.sessionStorage.setItem('planejai:active-study-content', JSON.stringify({ conteudo: { id: 51, id_conteudo: 9, titulo: 'Leis de Newton', disciplina: 'Física' } }));
+  const screen = await renderRoute('/estudar');
+  try {
+    assert.ok(screen.container.textContent.includes('Repouso ou velocidade vetorial constante'));
+    const option = document.querySelector('.study-guide-options button');
+    const answerText = option.querySelector('span').textContent;
+    await act(async () => option.click());
+    await act(async () => button('Pensar nesta questão com a Lumi').click());
+    assert.equal(requests.filter(item => item.method === 'post' && item.url.endsWith('/inteligencia/chat')).length, 0);
+    assert.equal(document.querySelector('.lumi-practice label:last-of-type textarea').value, answerText);
+    assert.equal(button('Ver resolução comentada'), undefined);
+    await act(async () => button('Conferir minha tentativa').click());
+    await flush();
+    const request = requests.find(item => item.method === 'post' && item.url.endsWith('/inteligencia/chat'));
+    const { pratica } = JSON.parse(request.data);
+    assert.equal(pratica.modo, 'feedback');
+    assert.equal(pratica.tentativa, answerText);
+    assert.equal(pratica.respostaCorreta, undefined);
+    assert.ok(button('Ver resolução comentada'));
+    await act(async () => button('Ver resolução comentada').click());
+    await flush();
+    assert.equal(JSON.parse(requests.filter(item => item.method === 'post' && item.url.endsWith('/inteligencia/chat')).at(-1).data).pratica.modo, 'resolucao');
+  } finally { await screen.close(); window.sessionStorage.removeItem('planejai:active-study-content'); }
+});
+
+test('a failed tutoring request preserves the attempt and never unlocks the full solution', async () => {
+  const screen = await renderRoute('/lumi');
+  failChat = true;
+  try {
+    await act(async () => document.querySelector('.lumi-practice summary').click());
+    const fields = document.querySelectorAll('.lumi-practice textarea');
+    await inputValue(fields[0], 'Resolva 3x = 12');
+    await inputValue(fields[1], 'Dividi por 3 e achei x = 4.');
+    await act(async () => button('Conferir minha tentativa').click());
+    await flush();
+    assert.equal(fields[1].value, 'Dividi por 3 e achei x = 4.');
+    assert.equal(button('Ver resolução comentada'), undefined);
+  } finally { await screen.close(); failChat = false; }
+});
+
+test('unsupported subjects are clearly labelled as general study methods', async () => {
+  window.sessionStorage.setItem('planejai:active-study-content', JSON.stringify({ conteudo: { id: 51, titulo: 'Tema ainda sem aula', disciplina: 'Geral' } }));
+  const screen = await renderRoute('/estudar');
+  try {
+    assert.ok(screen.container.textContent.includes('ROTEIRO GERAL DE ESTUDO'));
+    assert.ok(screen.container.textContent.includes('ainda não há uma aula específica'));
+    assert.ok(screen.container.textContent.includes('não o domínio do tema indicado'));
+  } finally { await screen.close(); window.sessionStorage.removeItem('planejai:active-study-content'); }
+});
+
+test('external reading opens at the original source instead of an iframe that may be blocked', async () => {
+  window.sessionStorage.setItem('planejai:active-study-content', JSON.stringify({ conteudo: { id: 51, titulo: 'Ecologia', disciplina: 'Biologia', link: 'https://brasilescola.uol.com.br/biologia/cadeia-alimentar.htm' } }));
+  const screen = await renderRoute('/estudar');
+  try {
+    await act(async () => button('Fonte principal').click());
+    await flush();
+    assert.equal(document.querySelectorAll('.session-canvas iframe').length, 0);
+    const source = [...document.querySelectorAll('.session-canvas a')].find(link => link.textContent.includes('Abrir material na fonte original'));
+    assert.equal(source?.target, '_blank');
+    assert.ok(source?.href.includes('/biologia/cadeia-alimentar.htm'));
+    assert.ok(screen.container.textContent.includes('do organismo que serve de alimento para quem o consome'));
+  } finally { await screen.close(); window.sessionStorage.removeItem('planejai:active-study-content'); }
 });
