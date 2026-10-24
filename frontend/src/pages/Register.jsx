@@ -35,6 +35,8 @@ const Register = () => {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [focusError, setFocusError] = useState(null)
+  const [confirmationTouched, setConfirmationTouched] = useState(false)
+  const confirmationError = (confirmationTouched || errors.confirmarSenha) && formData.confirmarSenha !== formData.senha ? 'As senhas precisam ser iguais.' : ''
   useEffect(() => {
     if (!focusError) return
     document.getElementById(focusError)?.focus()
@@ -65,7 +67,7 @@ const Register = () => {
     }
 
     if (formData.confirmarSenha !== formData.senha) {
-      newErrors.confirmarSenha = 'As senhas não coincidem'
+      newErrors.confirmarSenha = 'As senhas precisam ser iguais.'
     }
 
     setErrors(newErrors)
@@ -205,7 +207,8 @@ const Register = () => {
               autoComplete="new-password"
               value={formData.confirmarSenha}
               onChange={(e) => handleChange('confirmarSenha', e.target.value)}
-              aria-invalid={Boolean(errors.confirmarSenha)}
+              onBlur={() => setConfirmationTouched(true)}
+              aria-invalid={Boolean(confirmationError)}
               aria-describedby="confirmar-requisitos"
               className={inputClass('confirmarSenha')}
             />
@@ -218,8 +221,8 @@ const Register = () => {
               <EyeIcon open={showConfirm} />
             </button>
           </div>
-          {errors.confirmarSenha ? (
-            <p id="confirmar-requisitos" className="study-error" role="alert">{errors.confirmarSenha}</p>
+          {confirmationError ? (
+            <p id="confirmar-requisitos" className="study-error" role="alert">{confirmationError}</p>
           ) : (
             <p id="confirmar-requisitos" className="study-hint">Repita exatamente a mesma senha</p>
           )}

@@ -1103,3 +1103,32 @@ test('custom subjects and each available weekday time have accessible names', as
     assert.deepEqual(results.violations.map(item=>item.id),[]);
   } finally { onboardingProfileFixture=null; await screen.close(); }
 });
+
+test('different passwords show an error under confirmation and matching passwords clear it', async () => {
+  const screen=await renderRoute('/register');
+  try{
+    await inputValue(document.getElementById('nome'),'Estudante Teste');
+    await inputValue(document.getElementById('email'),'fixture@example.invalid');
+    await inputValue(document.getElementById('senha'),'SenhaTeste123');
+    await inputValue(document.getElementById('confirmarSenha'),'OutraSenha123');
+    await act(async()=>document.querySelector('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));
+    assert.equal(document.getElementById('confirmar-requisitos').textContent,'As senhas precisam ser iguais.');
+    assert.equal(document.activeElement.id,'confirmarSenha');
+    assert.ok(!requests.some(request=>request.method==='post'&&request.url.endsWith('/register')));
+    await inputValue(document.getElementById('confirmarSenha'),'SenhaTeste123');
+    assert.equal(document.getElementById('confirmarSenha').getAttribute('aria-invalid'),'false');
+    assert.ok(!document.getElementById('confirmar-requisitos').textContent.includes('precisam ser iguais'));
+  }finally{await screen.close()}
+});
+
+test('password-change fields explain mismatching confirmation immediately below the field', async () => {
+  const screen=await renderRoute('/alterar-senha');
+  try{
+    await inputValue(document.getElementById('novaSenha'),'SenhaTeste123');
+    await inputValue(document.getElementById('confirmarSenha'),'Diferente123');
+    assert.equal(document.getElementById('password-confirmation-error').textContent,'As senhas precisam ser iguais.');
+    assert.equal(document.getElementById('confirmarSenha').getAttribute('aria-describedby'),'password-confirmation-error');
+    await inputValue(document.getElementById('confirmarSenha'),'SenhaTeste123');
+    assert.ok(!document.getElementById('password-confirmation-error'));
+  }finally{await screen.close()}
+});

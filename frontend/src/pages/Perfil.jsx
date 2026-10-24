@@ -534,7 +534,8 @@ const handleSaveEstudos = async (e) => {
               <form onSubmit={handleSaveSenha} className="profile-security-form">
                 <label className="profile-field">Senha atual<input type="password" autoComplete="current-password" value={senhaForm.senhaAtual} onChange={(e) => setSenhaForm((f) => ({ ...f, senhaAtual: e.target.value }))} required /></label>
                 <label className="profile-field">Nova senha<input type="password" autoComplete="new-password" value={senhaForm.novaSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, novaSenha: e.target.value }))} required /></label>
-                <label className="profile-field">Confirme a nova senha<input type="password" autoComplete="new-password" value={senhaForm.confirmarSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, confirmarSenha: e.target.value }))} required /></label>
+                <label className="profile-field">Confirme a nova senha<input type="password" autoComplete="new-password" aria-invalid={Boolean(senhaForm.confirmarSenha && senhaForm.confirmarSenha !== senhaForm.novaSenha)} aria-describedby={senhaForm.confirmarSenha && senhaForm.confirmarSenha !== senhaForm.novaSenha ? 'profile-password-confirmation-error' : undefined} value={senhaForm.confirmarSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, confirmarSenha: e.target.value }))} required /></label>
+                {senhaForm.confirmarSenha && senhaForm.confirmarSenha !== senhaForm.novaSenha && <p id="profile-password-confirmation-error" className="pn-erro" role="alert">As senhas precisam ser iguais.</p>}
 
                 {senhaErro && (
                   <div role="alert" className="p-4 rounded-[1.5rem] bg-red-100 border border-red-300 text-red-700 text-sm font-semibold">
