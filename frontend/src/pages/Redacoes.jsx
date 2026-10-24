@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import SectionLink from '../components/SectionLink'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
@@ -295,7 +296,7 @@ export default function Redacoes() {
           {!modoEscrita && aba === 'minhas' && <section className="redacoes-guidance" aria-label="Seu próximo passo na escrita">
             <div className="redacoes-path"><span className="redacoes-eyebrow">ESCOLHA UM CAMINHO</span><h2>Onde você quer avançar hoje?</h2><div className="redacoes-path-grid">
               <Link to="/lumi" state={{ perguntaInicial: 'Quero planejar uma redação no modelo ENEM. Ajude-me a definir uma tese, dois argumentos e uma proposta de intervenção sem escrever o texto por mim.' }}><span>01 · PENSAR COM A LUMI</span><strong>Destrave seu argumento</strong><small>Converse sobre tese, repertório e intervenção.</small><b aria-hidden="true">↗</b></Link>
-              <a href="#redacoes-historico"><span>02 · REVISAR</span><strong>Aprenda com seus textos</strong><small>Volte aos comentários e escolha um ajuste.</small><b aria-hidden="true">↗</b></a>
+              <SectionLink target="redacoes-historico"><span>02 · REVISAR</span><strong>Aprenda com seus textos</strong><small>Volte aos comentários e escolha um ajuste.</small><b aria-hidden="true">↗</b></SectionLink>
             </div></div>
             <div className="redacoes-lumi"><TutorLumi tamanho={62} rotulo="Lumi, tutora de redação" /><span className="redacoes-eyebrow">LUMI NO ATELIÊ</span><h2>Uma dúvida pode virar uma tese melhor.</h2><p>Peça ajuda para organizar ideias ou compreender o feedback. No estúdio, a Lumi também faz uma pré-análise do seu rascunho antes do envio.</p></div>
           </section>}

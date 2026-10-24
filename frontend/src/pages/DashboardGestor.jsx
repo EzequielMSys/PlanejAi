@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import dashboardService from '../services/dashboardService'
 import avisoService from '../services/avisoService'
 import PedagogicalInterventions from '../components/PedagogicalInterventions'
+import SectionLink from '../components/SectionLink'
 import './DashboardGestor.css'
 
 const fadeUp = {
@@ -133,7 +134,7 @@ export default function DashboardGestor() {
       <div className="pedagogy-shell space-y-8">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <section className="pedagogy-hero" aria-labelledby="pedagogy-title">
-            <div><span>PLANEJAI · VISÃO PEDAGÓGICA</span><h1 id="pedagogy-title">Cada estudante merece um próximo passo.</h1><p>Olá, {user?.apelido || user?.nome || 'equipe de gestão'}. Veja quem precisa de atenção, acompanhe evidências e organize intervenções com clareza.</p><div className="pedagogy-hero-actions"><a href="#pedagogy-priorities">Ver prioridades <b aria-hidden="true">↓</b></a><Link to="/turmas">Gerenciar turmas <b aria-hidden="true">↗</b></Link></div></div>
+            <div><span>PLANEJAI · VISÃO PEDAGÓGICA</span><h1 id="pedagogy-title">Cada estudante merece um próximo passo.</h1><p>Olá, {user?.apelido || user?.nome || 'equipe de gestão'}. Veja quem precisa de atenção, acompanhe evidências e organize intervenções com clareza.</p><div className="pedagogy-hero-actions"><SectionLink target="pedagogy-priorities">Ver prioridades <b aria-hidden="true">↓</b></SectionLink><Link to="/turmas">Gerenciar turmas <b aria-hidden="true">↗</b></Link></div></div>
             <div className="pedagogy-hero-note" aria-hidden="true"><span>ACOMPANHAR É AGIR</span><strong>Observe.<br />Converse.<br /><em>Oriente.</em></strong></div>
           </section>
         </motion.div>
@@ -141,7 +142,7 @@ export default function DashboardGestor() {
         <motion.section variants={fadeUp} initial="hidden" animate="visible" className="pedagogy-stats" aria-label="Indicadores gerais">
           {stats.map((item) => <Card key={item.titulo} {...item} />)}
         </motion.section>
-        <nav className="pedagogy-jumps" aria-label="Navegar pela visão pedagógica"><a href="#pedagogy-priorities">01 · Prioridades</a><a href="#pedagogy-evidence">02 · Evidências</a><a href="#pedagogy-notices">03 · Avisos</a></nav>
+        <nav className="pedagogy-jumps" aria-label="Navegar pela visão pedagógica"><SectionLink target="pedagogy-priorities">01 · Prioridades</SectionLink><SectionLink target="pedagogy-evidence">02 · Evidências</SectionLink><SectionLink target="pedagogy-notices">03 · Avisos</SectionLink></nav>
         <section id="pedagogy-priorities" className="pedagogy-section"><header><span>ATENÇÃO AGORA</span><h2>Por onde começar hoje</h2><p>Alertas mostram sinais para investigar. Use as informações como ponto de partida para conversar com o estudante.</p></header><PedagogicalInterventions /></section>
 
         <motion.section variants={fadeUp} initial="hidden" animate="visible" className="pedagogy-deliveries grid lg:grid-cols-3 gap-6">

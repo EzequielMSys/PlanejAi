@@ -31,6 +31,8 @@ const axe = requireFrontend('axe-core');
 let bundle;
 let requests = [];
 let failChat = false;
+let failScheduleLoad = false;
+let failExamLoad = false;
 let supportMode = '';
 let materialCatalogFixture = false;
 let dashboardLearningFixture = null;
@@ -46,6 +48,7 @@ const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de te
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data });
+    if ((failScheduleLoad && url.endsWith('/cronograma')) || (failExamLoad && url.endsWith('/inteligencia/catalogo-provas'))) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
   if (essayMode === 'workshopFailure' && config.method === 'post' && url.endsWith('/redacao/projetos')) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
   if (failLearningLoad && url.endsWith('/aprendizagem/resumo')) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
   if (url.endsWith('/redacao') && config.method === 'post') {
@@ -495,6 +498,52 @@ test('schedule keeps the planned calendar date instead of moving it to the previ
     assert.ok(document.querySelector('.schedule-journey-card').textContent.includes('24/10'));
     assert.ok(document.querySelector('.schedule-day').textContent.includes('24/10'));
   } finally { dailySchedulesFixture = []; await screen.close(); }
+});
+
+test('a schedule load failure cannot pretend the saved plan is empty and offers recovery', async () => {
+  failScheduleLoad = true;
+  const screen = await renderRoute('/cronograma');
+  try {
+    assert.ok(document.querySelector('.recovery-state'));
+    assert.equal(document.querySelector('.schedule-page .empty-workspace'), null);
+    assert.equal(button('Montar meu cronograma'),undefined);
+    assert.ok(button('Tentar novamente'));
+  } finally { failScheduleLoad=false;await screen.close(); }
+});
+
+test('a failed exam history is an error rather than an empty history', async () => {
+  failExamLoad = true;
+  const screen = await renderRoute('/provas');
+  try {
+    assert.ok(document.querySelector('.recovery-state'));
+    assert.ok(screen.container.textContent.includes('suas tentativas não puderam ser carregados'));
+    assert.ok(button('Tentar novamente'));
+  } finally { failExamLoad=false;await screen.close(); }
+});
+
+test('today does not report zero progress or reviews up to date when the summary fails',async()=>{
+  failLearningLoad=true;
+  const screen=await renderRoute('/inicio');
+  try {
+    assert.ok(screen.container.textContent.includes('Seu progresso não pôde ser consultado.'));
+    assert.ok(!document.querySelector('[aria-label="Progresso da meta semanal"]'));
+    assert.ok(!screen.container.textContent.includes('Revisões em dia'));
+  } finally {failLearningLoad=false;await screen.close();}
+});
+
+test('in-page study links keep the router address and move keyboard focus to the requested section', async () => {
+  for (const [route,role,target] of [['/provas','aluno','laboratorio-provas'],['/redacoes','aluno','redacoes-historico'],['/dashboard-gestor','dono','pedagogy-priorities']]) {
+    const screen=await renderRoute(route,role);
+    try {
+      const section=document.getElementById(target);
+      const link=[...document.querySelectorAll('a')].find(node=>node.getAttribute('href')===`#${route}`);
+      assert.ok(link);
+      await act(async()=>link.click());
+      assert.equal(document.activeElement.id,target);
+      assert.equal(section.getAttribute('tabindex'),'-1');
+      assert.ok(!screen.container.textContent.includes('Página não encontrada'));
+    } finally {await screen.close();}
+  }
 });
 
 test('owner operations panel opens the people directory', async () => {

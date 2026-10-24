@@ -13,6 +13,7 @@ import { dailyStudy, localStudyDate } from '../utils/dailyStudy'
 import continuity from '../services/studyContinuityService'
 import { scopedCacheKey } from '../utils/offlineStore'
 import FirstStudySteps from '../components/FirstStudySteps'
+import RecoveryState from '../components/RecoveryState'
 
 const done = (item) => Number(item?.concluido) === 1 || item?.status === 'concluído'
 const greeting = () => new Date().getHours() < 12 ? 'Bom dia' : new Date().getHours() < 18 ? 'Boa tarde' : 'Boa noite'
@@ -34,6 +35,8 @@ export default function TodayDashboard() {
   const [data, setData] = useState({ schedules: [], learning: null, reviews: [], evolution: [] })
   const [loading, setLoading] = useState(true)
   const [planError, setPlanError] = useState(false)
+  const [learningFailed, setLearningFailed] = useState(false)
+  const [retryingLearning, setRetryingLearning] = useState(false)
   // A meta é uma preferência da conta, não do dispositivo. O resumo inicial a
   // hidrata a partir do banco para manter a mesma experiência em qualquer PC.
   const [weeklyGoal, setWeeklyGoal] = useState(180)
@@ -56,7 +59,7 @@ export default function TodayDashboard() {
       if (!active) return
       setData(current => ({ ...current, learning }))
       if (Number(learning?.metaSemanal) >= 30) setWeeklyGoal(Number(learning.metaSemanal))
-    }).catch(() => {})
+    }).catch(() => { if (active) setLearningFailed(true) })
     aprendizagemService.revisoes()
       .then((reviews) => { if (active && Array.isArray(reviews)) setData((current) => ({ ...current, reviews })) })
       .catch(() => {})
@@ -95,6 +98,15 @@ export default function TodayDashboard() {
     const schedules = await cronogramaService.listarCronogramas()
     setData(current => ({ ...current, schedules: Array.isArray(schedules) ? schedules : [] }))
     setPlanError(false)
+  }
+  const reloadLearning = async () => {
+    setRetryingLearning(true)
+    try {
+      const learning = await aprendizagemService.resumo()
+      setData(current => ({ ...current, learning }))
+      if (Number(learning?.metaSemanal) >= 30) setWeeklyGoal(Number(learning.metaSemanal))
+      setLearningFailed(false)
+    } catch { setLearningFailed(true) } finally { setRetryingLearning(false) }
   }
   const openNextAction = () => nextAction.kind === 'resume' ? navigate('/estudar', { state: resume }) : nextAction.kind === 'lesson' ? start() : navigate(nextAction.route, nextAction.kind === 'practice' ? { state: { aba: 'simulado', disciplina: weakSubject?.disciplina } } : undefined)
   const askLumiAboutNextAction = () => navigate('/lumi', { state: { perguntaInicial: `Meu próximo passo sugerido é ${nextAction.title}. O dado disponível é: ${nextAction.reason} Me ajude a começar com uma atividade curta e explique como você usou esse dado, sem presumir outras dificuldades.` } })
@@ -140,11 +152,12 @@ export default function TodayDashboard() {
       {firstStudy ? <FirstStudySteps prepared={perfilCompleto} /> : <><section className="dash-v2-spotlight">
         <motion.article className="dash-v2-focus" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <div className="dash-v2-focus-top"><span>SEU PRÓXIMO PASSO</span><small>{nextAction.subject}</small></div>
-          <div className="dash-v2-focus-copy"><p>{nextAction.kind === 'lesson' ? 'Abra o material e siga do ponto em que parou' : 'Uma ação possível para agora'}</p><h2>{nextAction.title}</h2><p className="dash-v2-reason"><strong>Por quê?</strong> {nextAction.reason}</p><div><span>{nextAction.duration}</span><span>{reviews} {reviews === 1 ? 'revisão pendente' : 'revisões pendentes'}</span></div></div>
+          <div className="dash-v2-focus-copy"><p>{nextAction.kind === 'lesson' ? 'Abra o material e siga do ponto em que parou' : 'Uma ação possível para agora'}</p><h2>{nextAction.title}</h2><p className="dash-v2-reason"><strong>Por quê?</strong> {nextAction.reason}</p><div><span>{nextAction.duration}</span><span>{data.learning ? `${reviews} ${reviews === 1 ? 'revisão pendente' : 'revisões pendentes'}` : 'Revisões a consultar'}</span></div></div>
           <footer><button type="button" onClick={openNextAction}>{nextAction.label} <b>→</b></button><button type="button" className="dash-v2-lumi-action" onClick={askLumiAboutNextAction}>Planejar com a Lumi</button></footer>
         </motion.article>
 
         <aside className="dash-v2-score">
+          {learningFailed ? <RecoveryState title="Seu progresso não pôde ser consultado." onRetry={reloadLearning} busy={retryingLearning}>O estudo pode continuar. Tente consultar novamente para recuperar sua meta e os minutos registrados.</RecoveryState> : !data.learning ? <RouteLoading embedded label="Consultando seu progresso…" /> : <>
           <div className="dash-v2-score-head"><span>META DA SEMANA</span><button type="button" onClick={() => { setGoalDraft(String(weeklyGoal)); setEditingGoal(!editingGoal) }} aria-expanded={editingGoal}>{editingGoal ? 'Fechar' : 'Editar meta'} <span aria-hidden="true">↗</span></button></div>
           <div className="dash-v2-score-main">
             <div className="dash-v2-ring" style={{ '--score': `${weeklyProgress * 3.6}deg` }} aria-hidden="true"><span><strong>{weeklyProgress}%</strong><small>concluído</small></span></div>
@@ -152,14 +165,14 @@ export default function TodayDashboard() {
           </div>
           <div className="dash-v2-score-progress" role="progressbar" aria-label="Progresso da meta semanal" aria-valuemin="0" aria-valuemax="100" aria-valuenow={weeklyProgress}><span style={{ width: `${weeklyProgress}%` }} /></div>
           <p className="dash-v2-score-message">{remainingMinutes === 0 ? 'Meta cumprida! Seu esforço desta semana já passou do planejado.' : weeklyMinutes === 0 ? `Faltam ${remainingMinutes} min. Que tal começar com uma sessão hoje?` : `Faltam ${remainingMinutes} min para fechar sua meta da semana.`}</p>
-          {editingGoal && <form className="dash-v2-score-form" onSubmit={updateWeeklyGoal}><label htmlFor="weekly-goal">Nova meta semanal <span>(30 a 1680 min)</span></label><div><input id="weekly-goal" type="number" min="30" max="1680" step="1" value={goalDraft} onChange={(event) => setGoalDraft(event.target.value)} required /><button type="submit" disabled={savingGoal}>{savingGoal ? 'Salvando…' : 'Salvar'}</button></div></form>}
+          {editingGoal && <form className="dash-v2-score-form" onSubmit={updateWeeklyGoal}><label htmlFor="weekly-goal">Nova meta semanal <span>(30 a 1680 min)</span></label><div><input id="weekly-goal" type="number" min="30" max="1680" step="1" value={goalDraft} onChange={(event) => setGoalDraft(event.target.value)} required /><button type="submit" disabled={savingGoal}>{savingGoal ? 'Salvando…' : 'Salvar'}</button></div></form>}</>}
         </aside>
       </section>
 
-      <div className="today-review-strip"><span><strong>{reviews ? `${reviews} ${reviews === 1 ? 'revisão pronta' : 'revisões prontas'}` : 'Revisões em dia'}</strong><small>{reviews ? 'Retome o que aprendeu antes que fique distante.' : 'Novas revisões aparecem conforme você estuda.'}</small></span><button type="button" onClick={() => navigate('/aprendizagem')}>{reviews ? 'Abrir revisões →' : 'Ver aprendizagem →'}</button></div>
+      <div className="today-review-strip"><span><strong>{!data.learning ? 'Revisões a consultar' : reviews ? `${reviews} ${reviews === 1 ? 'revisão pronta' : 'revisões prontas'}` : 'Revisões em dia'}</strong><small>{!data.learning ? 'Consulte a aprendizagem para conferir sua fila.' : reviews ? 'Retome o que aprendeu antes que fique distante.' : 'Novas revisões aparecem conforme você estuda.'}</small></span><button type="button" onClick={() => navigate('/aprendizagem')}>{reviews ? 'Abrir revisões →' : 'Ver aprendizagem →'}</button></div>
       <DailyPlanActions schedules={data.schedules} onSaved={reloadPlan} />
 
-      <LearningSignals summary={data.learning} reviews={data.reviews} evolution={data.evolution} />
+      {data.learning && !learningFailed && <LearningSignals summary={data.learning} reviews={data.reviews} evolution={data.evolution} />}
 
       <section className="dash-v2-content">
         <article className="dash-v2-agenda">

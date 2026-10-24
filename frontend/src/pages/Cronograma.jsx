@@ -11,6 +11,7 @@ import { exportarCronograma } from '../utils/calendarExport'
 import './Cronograma.css'
 import DailyPlanActions from '../components/DailyPlanActions'
 import { localStudyDate } from '../utils/dailyStudy'
+import RecoveryState from '../components/RecoveryState'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -32,6 +33,7 @@ export default function Cronograma() {
   const { isGestor, perfilCompleto } = useAuth()
   const [cronogramas, setCronogramas] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [gerando, setGerando] = useState(false)
   const [concluindo, setConcluindo] = useState(null)
   const [concluindoConteudo, setConcluindoConteudo] = useState(null)
@@ -48,10 +50,14 @@ export default function Cronograma() {
   const celebradoRef = useRef(false)
 
   async function carregarCronogramas() {
+    setLoading(true)
     try {
       const data = await cronogramaService.listarCronogramas()
-      setCronogramas(Array.isArray(data) ? data : [])
+      if (!Array.isArray(data)) throw new Error('Resposta inválida ao consultar o plano.')
+      setCronogramas(data)
+      setLoadError(false)
     } catch (error) {
+      setLoadError(true)
       toast.error('Erro ao carregar cronograma.')
     } finally {
       setLoading(false)
@@ -331,6 +337,7 @@ async function concluirDia(idDia) {
     )
   }
 
+  if (loadError) return <main className="schedule-page"><h1 className="sr-only">Cronograma de estudos</h1><RecoveryState title="Seu cronograma não pôde ser consultado." onRetry={() => { carregarCronogramas() }}>Isso não significa que seu plano foi apagado. Tente carregar novamente antes de criar ou substituir um cronograma.</RecoveryState></main>
   return (
     <main className="schedule-page min-h-screen bg-study-canvas text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-72 h-72 bg-study-accent/20 rounded-full blur-3xl" />

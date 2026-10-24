@@ -6,4 +6,5 @@
 .sd-workspace :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid var(--pn-link)!important;outline-offset:3px!important;scroll-margin-block:6rem}
 .sd-workspace :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea){border-color:var(--pn-borda-forte)}
 .essay-studio :is(input,textarea):disabled{opacity:.8}.essay-studio .essay-sheet-meta{flex-wrap:wrap;gap:.5rem}.essay-studio .essay-sheet-meta span:last-child{letter-spacing:0}
+.sd-route [tabindex="-1"]{scroll-margin-top:calc(var(--ui-topbar) + 1rem)}
 @media(prefers-reduced-motion:reduce){.route-skeleton *, .route-loading-mark{animation:none!important;transition:none!important}}

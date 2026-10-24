@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import inteligencia from '../services/inteligenciaService'
+import RecoveryState from './RecoveryState'
 
 const formatarTempo = (totalSegundos) => {
   const seguro = Math.max(0, totalSegundos)
@@ -32,18 +33,23 @@ export default function ExamArena({ onSessionChange }) {
   const [resultado, setResultado] = useState(null)
   const [indiceAtual, setIndiceAtual] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [busyId, setBusyId] = useState(null)
   const [saveStatus, setSaveStatus] = useState('salvo')
   const [agora, setAgora] = useState(Date.now())
   const primeiraSincronizacao = useRef(true)
 
   const carregar = async () => {
+    setLoading(true)
     try {
       const [provas, tentativas] = await Promise.all([inteligencia.catalogoProvas(), inteligencia.historicoSimulados()])
+      if (!Array.isArray(provas) || !Array.isArray(tentativas)) throw new Error('Resposta inválida ao consultar as provas.')
       setCatalogo(provas)
       setHistorico(tentativas)
+      setLoadError(false)
       setConfig((atual) => ({ ...atual, idCatalogo: atual.idCatalogo || String(provas[0]?.id_catalogo || '') }))
     } catch {
+      setLoadError(true)
       toast.error('Não foi possível carregar o catálogo de simulados.')
     } finally { setLoading(false) }
   }
@@ -138,6 +144,7 @@ export default function ExamArena({ onSessionChange }) {
   }, [agora, simulado?.iniciadoEm])
 
   if (loading) return <section className="exam-arena exam-loading">Preparando laboratório de provas…</section>
+  if (loadError && !simulado) return <RecoveryState title="Não conseguimos consultar suas provas." onRetry={carregar}>Seu catálogo e suas tentativas não puderam ser carregados. Tente novamente para retomar de onde parou.</RecoveryState>
 
   return (
     <section className="exam-arena">

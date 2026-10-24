@@ -12,6 +12,8 @@ async function criarOuAtualizarPerfil(usuarioId, perfil) {
     tempo_diario_min,
     prazo_estimado
   } = perfil;
+  // MySQL em modo estrito recusa '' em ENUM, mesmo quando a coluna é opcional.
+  const anoEscolar = typeof ano_escolar === 'string' ? ano_escolar.trim() || null : ano_escolar ?? null;
 
   const [rows] = await pool.execute(
     'SELECT id_perfil FROM perfil_estudo WHERE id_usuario = ?',
@@ -24,17 +26,17 @@ await pool.execute(
       `UPDATE perfil_estudo
        SET ano_escolar = ?, objetivo = ?, areas_foco = ?, tempo_diario_min = ?, prazo_estimado = ?
        WHERE id_perfil = ?`,
-      [ano_escolar, objetivo, areas_foco, tempo_diario_min, prazo_estimado, id_perfil]
+      [anoEscolar, objetivo, areas_foco, tempo_diario_min, prazo_estimado, id_perfil]
     );
-    return { id_perfil, id_usuario: usuarioId, ...perfil };
+    return { id_perfil, id_usuario: usuarioId, ...perfil, ano_escolar: anoEscolar };
   } else {
     const [result] = await pool.execute(
       `INSERT INTO perfil_estudo
        (id_usuario, ano_escolar, objetivo, areas_foco, tempo_diario_min, prazo_estimado)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [usuarioId, ano_escolar, objetivo, areas_foco, tempo_diario_min, prazo_estimado]
+      [usuarioId, anoEscolar, objetivo, areas_foco, tempo_diario_min, prazo_estimado]
     );
-    return { id_perfil: result.insertId, id_usuario: usuarioId, ...perfil };
+    return { id_perfil: result.insertId, id_usuario: usuarioId, ...perfil, ano_escolar: anoEscolar };
   }
 }
 
