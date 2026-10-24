@@ -18,7 +18,7 @@ export default function Provas() {
 
   return <main className="exam-studio-page">
     {!emProva && <header className="exam-studio-hero">
-      <div className="exam-studio-nav"><span>PLANEJAI / PROVAS E SIMULADOS</span><button type="button" onClick={() => navigate('/planejamento-inteligente')}>Ver estratégia <span aria-hidden="true">↗</span></button></div>
+      <div className="exam-studio-nav"><span>PLANEJAI / PROVAS E SIMULADOS</span><button type="button" onClick={() => navigate('/ferramentas-estudo')}>Metas e ferramentas <span aria-hidden="true">↗</span></button></div>
       <div className="exam-studio-heading"><div><span>PRÁTICA COM DIREÇÃO</span><h1>Uma questão por vez.<br /><em>Mais clareza a cada prova.</em></h1><p>Escolha uma coleção autoral, ajuste seu treino e acompanhe o que já respondeu. Sua tentativa fica salva para continuar depois.</p><a href="#laboratorio-provas">Montar meu simulado <span aria-hidden="true">→</span></a></div><aside aria-label="Como funciona"><span>SEU PERCURSO</span><ol><li><b>01</b> Escolha uma coleção</li><li><b>02</b> Responda no seu ritmo</li><li><b>03</b> Revise cada explicação</li></ol></aside></div>
     </header>}
     <section className="exam-studio-arena" id="laboratorio-provas">{!emProva && <div className="exam-studio-intro"><span>LABORATÓRIO DE PROVAS</span><h2>Prepare um treino que faça sentido hoje.</h2><p>Selecione o tema, o nível e a quantidade. Você poderá marcar questões para revisar e retomar uma tentativa em andamento.</p></div>}<ExamArena onSessionChange={setEmProva} /></section>

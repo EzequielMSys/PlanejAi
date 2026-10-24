@@ -123,8 +123,8 @@ export default function TodayDashboard() {
   return <main className="dash-v2">
     <div className="dash-v2-wrap">
       <header className="dash-v2-heading">
-        <div><span>SEU CADERNO DE ESTUDOS</span><h1>{greeting()}, {name}.</h1><p>{date}</p></div>
-        <div><button type="button" onClick={() => navigate('/provas')}>Simulados</button><button type="button" onClick={() => navigate('/cronograma')}>Ver planejamento <b>→</b></button></div>
+        <div><span>HOJE · UM PASSO DE CADA VEZ</span><h1>{greeting()}, {name}.</h1><p>{date}</p></div>
+        <div>{user?.tipo === 'aluno' && <button type="button" onClick={() => navigate('/sessao-guiada')}>Montar sessão guiada</button>}<button type="button" onClick={() => navigate('/cronograma')}>Ver cronograma <b>→</b></button></div>
       </header>
 
       <section className="dash-v2-spotlight">

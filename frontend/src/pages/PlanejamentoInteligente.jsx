@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import inteligencia from "../services/inteligenciaService";
 import perfil from "../services/perfilService";
-import AdaptiveLearningHub from "../components/AdaptiveLearningHub";
-import LearningPaths from "../components/LearningPaths";
+const AdaptiveLearningHub = lazy(() => import('../components/AdaptiveLearningHub'));
+const LearningPaths = lazy(() => import('../components/LearningPaths'));
 import "./PlanejamentoInteligente.css";
 
 export default function PlanejamentoInteligente() {
   const [materias, setMaterias] = useState([]);
-  const [aba, setAba] = useState("visao");
+  const [aba, setAba] = useState("metas");
+  const [toolsLoaded, setToolsLoaded] = useState(false);
   const [cardVirado, setCardVirado] = useState(null);
   const [questoes, setQuestoes] = useState([]);
   const [respostas, setRespostas] = useState({});
@@ -35,10 +36,8 @@ export default function PlanejamentoInteligente() {
       perfil.obterPerfilCompleto(),
       inteligencia.metas(),
       inteligencia.privacidade(),
-      inteligencia.flashcards(),
-      inteligencia.provas(),
     ])
-      .then(([dados, lista, priv, cards, listaProvas]) => {
+      .then(([dados, lista, priv]) => {
         const perfilCarregado = dados.status === "fulfilled" ? dados.value : null;
         const areas = String(perfilCarregado?.perfil?.areas_foco || "")
           .split(",")
@@ -49,12 +48,22 @@ export default function PlanejamentoInteligente() {
         setFlash((v) => ({ ...v, disciplina: areas[0] || "" }));
         setMetas(lista.status === "fulfilled" && Array.isArray(lista.value) ? lista.value : []);
         if (priv.status === "fulfilled") setPrivacidade(priv.value?.visibilidade || "RESUMO");
-        setFlashcards(cards.status === "fulfilled" && Array.isArray(cards.value) ? cards.value : []);
-        setProvas(listaProvas.status === "fulfilled" && Array.isArray(listaProvas.value) ? listaProvas.value : []);
-        if ([dados, lista, priv, cards, listaProvas].some(item => item.status === "rejected")) toast.error("Parte do seu progresso não pôde ser carregada.");
+        if ([dados, lista, priv].some(item => item.status === "rejected")) toast.error("Parte das suas ferramentas não pôde ser carregada.");
       })
       .catch(() => toast.error("Não foi possível carregar seu planejamento."));
   }, []);
+  useEffect(() => {
+    if (aba !== 'ferramentas' || toolsLoaded) return;
+    let active = true;
+    Promise.allSettled([inteligencia.flashcards(), inteligencia.provas()]).then(([cards, exams]) => {
+      if (!active) return;
+      if (cards.status === 'fulfilled' && Array.isArray(cards.value)) setFlashcards(cards.value);
+      if (exams.status === 'fulfilled' && Array.isArray(exams.value)) setProvas(exams.value);
+      if (cards.status === 'fulfilled' && exams.status === 'fulfilled') setToolsLoaded(true);
+      else toast.error('Não foi possível carregar todos os cartões e provas. Reabra esta aba para tentar novamente.');
+    });
+    return () => { active = false; };
+  }, [aba, toolsLoaded]);
   async function iniciarDiagnostico() {
     try {
       const lista = await inteligencia.diagnostico(materias);
@@ -142,14 +151,13 @@ export default function PlanejamentoInteligente() {
     <main className="intelligence-page progress-page">
       <div className="progress-shell">
         <header className="progress-hero">
-          <div><span className="progress-eyebrow">PLANEJAI · MEU PROGRESSO</span><h1>Veja o caminho que você está construindo.</h1><p>Suas metas, competências e revisões reunidas para ajudar a decidir o próximo estudo.</p><div className="progress-hero-actions"><button type="button" onClick={() => setAba("metas")}>Ajustar minhas metas <span aria-hidden="true">→</span></button><Link to="/aprendizagem">Praticar agora</Link></div></div>
+          <div><Link to="/aprendizagem">← Voltar para praticar e revisar</Link><span className="progress-eyebrow">APRENDER / FERRAMENTAS DE ESTUDO</span><h1>Prepare o jeito de aprender.</h1><p>Ajuste metas por matéria, organize cartões e explore trilhas. Seu progresso e sua fila de revisões ficam em Praticar e revisar.</p><div className="progress-hero-actions"><button type="button" onClick={() => setAba("metas")}>Ajustar metas por matéria <span aria-hidden="true">→</span></button><Link to="/aprendizagem">Ver meu progresso</Link></div></div>
           <div className="progress-hero-visual" aria-hidden="true"><div><span>CONTINUAR É PROGREDIR</span><strong>{metasConcluidas}<small> / {metas.length}</small></strong><p>metas alcançadas</p><i style={{ width: `${metas.length ? metasConcluidas / metas.length * 100 : 0}%` }} /></div></div>
         </header>
-        <section className="progress-snapshot" aria-label="Resumo do progresso"><article><span>MATÉRIAS EM FOCO</span><strong>{materias.length}</strong><p>{materias.length ? materias.slice(0, 2).join(' · ') : 'Escolha suas matérias no perfil'}</p></article><article><span>METAS ATIVAS</span><strong>{metas.length}</strong><p>{metaEmFoco ? `${metaEmFoco.disciplina}: ${metaEmFoco.progresso || 0} de ${metaEmFoco.alvo}` : 'Defina um objetivo para começar'}</p></article><article><span>REVISÕES PRONTAS</span><strong>{flashcards.length}</strong><p>{flashcards.length ? 'Use seus cartões para lembrar melhor' : 'Crie um cartão após estudar'}</p></article></section>
-        <nav className="progress-tabs" aria-label="Áreas do meu progresso">{[["visao", "Visão geral"], ["metas", "Metas e diagnóstico"], ["ferramentas", "Ferramentas"]].map(([id, label]) => <button key={id} type="button" aria-current={aba === id ? "page" : undefined} onClick={() => setAba(id)}>{label}</button>)}</nav>
+        <section className="progress-snapshot" aria-label="Resumo das ferramentas"><article><span>MATÉRIAS EM FOCO</span><strong>{materias.length}</strong><p>{materias.length ? materias.slice(0, 2).join(' · ') : 'Escolha suas matérias no perfil'}</p></article><article><span>METAS ATIVAS</span><strong>{metas.length}</strong><p>{metaEmFoco ? `${metaEmFoco.disciplina}: ${metaEmFoco.progresso || 0} de ${metaEmFoco.alvo}` : 'Defina um objetivo para começar'}</p></article><article><span>CARTÕES DE MEMÓRIA</span><strong>{toolsLoaded ? flashcards.length : '—'}</strong><p>Consulte seus cartões em Cartões e pesquisa</p></article></section>
+        <nav className="progress-tabs" aria-label="Ferramentas de estudo">{[["metas", "Metas e diagnóstico"], ["ferramentas", "Cartões e pesquisa"], ["visao", "Trilhas e recomendações"]].map(([id, label]) => <button key={id} type="button" aria-current={aba === id ? "page" : undefined} onClick={() => setAba(id)}>{label}</button>)}</nav>
         {aba === "visao" && <div className="progress-view"><div className="progress-section-heading"><div><span className="progress-eyebrow">SEU PRÓXIMO PASSO</span><h2>Progresso que vira ação.</h2><p>As recomendações se ajustam conforme você pratica e registra seus estudos.</p></div></div>
-        <AdaptiveLearningHub />
-        <LearningPaths />
+        <Suspense fallback={<p role="status">Preparando suas trilhas…</p>}><AdaptiveLearningHub /><LearningPaths /></Suspense>
         <section className="mt-5 flex flex-col items-start justify-between gap-4 rounded-[2rem] border border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 dark:border-[rgb(var(--pn-primaria-borda-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] sm:flex-row sm:items-center">
           <div>
             <p className="text-xs font-black uppercase tracking-[.18em] text-[rgb(var(--pn-primaria-rgb)/1)]">Modo Prova Real</p>
@@ -210,7 +218,10 @@ export default function PlanejamentoInteligente() {
           <article className="rounded-[2rem] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 dark:bg-[rgb(var(--pn-superficie-rgb)/1)]">
             <h2 className="text-xl font-black">Meta por matéria</h2>
             <form onSubmit={salvarMeta} className="mt-4 grid gap-3">
+              <label htmlFor="goal-subject">Matéria</label>
               <select
+                id="goal-subject"
+                aria-label="Matéria da meta"
                 value={form.disciplina}
                 onChange={(e) =>
                   setForm({ ...form, disciplina: e.target.value })
@@ -220,7 +231,10 @@ export default function PlanejamentoInteligente() {
                   <option key={m}>{m}</option>
                 ))}
               </select>
+              <label htmlFor="goal-type">O que você quer praticar?</label>
               <select
+                id="goal-type"
+                aria-label="Tipo de meta"
                 value={form.tipo}
                 onChange={(e) => setForm({ ...form, tipo: e.target.value })}
               >
@@ -228,7 +242,10 @@ export default function PlanejamentoInteligente() {
                 <option value="REDACOES">Redações</option>
                 <option value="MINUTOS">Minutos</option>
               </select>
+              <label htmlFor="goal-target">Quantidade desejada</label>
               <input
+                id="goal-target"
+                aria-label="Quantidade desejada para a meta"
                 type="number"
                 min="1"
                 value={form.alvo}
@@ -253,8 +270,8 @@ export default function PlanejamentoInteligente() {
           <h2 className="text-xl font-black">Provas e vestibulares</h2>
           <form onSubmit={salvarProva} className="mt-3 grid gap-2 sm:grid-cols-4">
             <input value={prova.titulo} onChange={(e) => setProva({ ...prova, titulo: e.target.value })} placeholder="Nome da prova" />
-            <input type="date" value={prova.dataProva} onChange={(e) => setProva({ ...prova, dataProva: e.target.value })} />
-            <select multiple value={prova.materias.map((m) => m.disciplina)} onChange={(e) => setProva({ ...prova, materias: [...e.target.selectedOptions].map((o) => ({ disciplina: o.value, peso: prova.materias.find((m) => m.disciplina === o.value)?.peso || 1 })) })}>{materias.map((m) => <option key={m}>{m}</option>)}</select>
+            <input type="date" aria-label="Data da prova" value={prova.dataProva} onChange={(e) => setProva({ ...prova, dataProva: e.target.value })} />
+            <select multiple aria-label="Matérias da prova" value={prova.materias.map((m) => m.disciplina)} onChange={(e) => setProva({ ...prova, materias: [...e.target.selectedOptions].map((o) => ({ disciplina: o.value, peso: prova.materias.find((m) => m.disciplina === o.value)?.peso || 1 })) })}>{materias.map((m) => <option key={m}>{m}</option>)}</select>
             <button className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-4 py-2 font-bold text-white">Adicionar prova</button>
           </form>
           {provas.map((item) => <p key={item.id_prova} className="mt-3 text-sm"><b>{item.titulo}</b> · {String(item.data_prova).slice(0, 10)} · {(item.materias || []).map((m) => m.disciplina || m).join(', ')}</p>)}

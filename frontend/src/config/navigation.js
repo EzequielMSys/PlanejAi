@@ -1,13 +1,13 @@
 const ALL = ['aluno', 'docente', 'admin', 'adm', 'dono']
 const STAFF = ['docente', 'admin', 'adm', 'dono']
 export const PAGES = [
-  { path: '/inicio', title: 'Meu dia', description: 'Um próximo passo de cada vez.', group: 'Sua rotina', icon: 'home', roles: ALL },
-  { path: '/minha-jornada', title: 'Sessão guiada', description: 'Uma sequência de estudos que cabe no seu tempo.', group: 'Sua rotina', icon: 'route', roles: ['aluno'] },
-  { path: '/cronograma', title: 'Planejamento', description: 'Sua semana, com espaço para aprender.', group: 'Sua rotina', icon: 'calendar', roles: ALL },
-  { path: '/aprendizagem', title: 'Praticar e revisar', description: 'Questões, revisões e pontos para melhorar.', group: 'Aprender', icon: 'book', roles: ALL },
+  { path: '/inicio', title: 'Hoje', description: 'Continue seu estudo ou monte uma sessão guiada.', keywords: 'meu dia inicio jornada sessão guiada', group: 'Sua rotina', icon: 'home', roles: ALL },
+  { path: '/sessao-guiada', title: 'Sessão guiada', description: 'Um roteiro para o tempo que você tem agora, sem alterar a semana.', keywords: 'minha jornada tempo', group: 'Sua rotina', icon: 'route', roles: ['aluno'], hidden: true, searchable: true, navParent: '/inicio' },
+  { path: '/cronograma', title: 'Cronograma', description: 'Organize a semana, ajuste datas e retome pendências.', keywords: 'planejamento semana horários', group: 'Sua rotina', icon: 'calendar', roles: ALL },
+  { path: '/aprendizagem', title: 'Praticar e revisar', description: 'Revisões, questões e progresso com base nas suas respostas.', keywords: 'meu progresso aprendizagem evolução domínio', group: 'Aprender', icon: 'book', roles: ALL },
   { path: '/provas', title: 'Provas e simulados', description: 'Treine com intenção. Aprenda com o resultado.', group: 'Aprender', icon: 'exam', roles: ALL },
   { path: '/redacoes', title: 'Redações', description: 'Da primeira ideia à próxima versão.', group: 'Aprender', icon: 'pen', roles: ALL },
-  { path: '/planejamento-inteligente', title: 'Meu progresso', description: 'Entenda o que está funcionando nos seus estudos.', group: 'Aprender', icon: 'chart', roles: ALL },
+  { path: '/ferramentas-estudo', title: 'Ferramentas de estudo', description: 'Metas por matéria, diagnóstico, cartões e trilhas.', keywords: 'flashcards metas diagnóstico trilhas ferramentas planejamento inteligente', group: 'Aprender', icon: 'chart', roles: ALL, hidden: true, searchable: true, navParent: '/aprendizagem' },
   { path: '/minhas-atividades', title: 'Minhas atividades', description: 'Enunciados, entregas e devolutivas.', group: 'Sua turma', icon: 'check', roles: ['aluno'] },
   { path: '/minhas-turmas', title: 'Minhas turmas', description: 'Tudo que sua turma compartilha com você.', group: 'Sua turma', icon: 'people', roles: ['aluno'] },
   { path: '/avisos', title: 'Avisos', description: 'Os comunicados que você precisa acompanhar.', group: 'Sua turma', icon: 'bell', roles: ['aluno'] },
@@ -28,12 +28,14 @@ export const PAGES = [
 ]
 export function navigationFor(role) { return PAGES.filter(page => !page.hidden && page.roles.includes(role)) }
 export function pageFor(pathname) {
-  const path = pathname === '/dashboard' ? '/inicio' : pathname === '/chat' ? '/lumi' : pathname === '/dono/usuarios' ? '/usuarios' : pathname
+  const aliases = { '/dashboard': '/inicio', '/chat': '/lumi', '/dono/usuarios': '/usuarios', '/minha-jornada': '/sessao-guiada', '/planejamento-inteligente': '/ferramentas-estudo' }
+  const path = aliases[pathname] || pathname
   return [...PAGES].sort((a, b) => b.path.length - a.path.length).find(page => path === page.path || path.startsWith(page.path + '/')) || { title: 'PlanejAI', group: 'Seu espaço', description: 'Aprenda no seu ritmo.' }
 }
 
 export function searchPages(role, query) {
   const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim()
   const needle = normalize(query)
-  return navigationFor(role).filter(page => normalize(`${page.title} ${page.group}`).includes(needle)).slice(0, 6)
+  return PAGES.filter(page => page.roles.includes(role) && (!page.hidden || (page.searchable && needle)))
+    .filter(page => normalize(`${page.title} ${page.group} ${page.keywords || ''}`).includes(needle)).slice(0, 6)
 }

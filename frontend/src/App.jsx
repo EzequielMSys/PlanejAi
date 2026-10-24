@@ -61,12 +61,14 @@ function App() {
             <Route path="/estudar" element={<StudySession />} />
             <Route path="/status" element={<SystemStatus />} />
             <Route path="/aprendizagem" element={<Aprendizagem />} />
-            <Route path="/planejamento-inteligente" element={<PlanejamentoInteligente />} />
+            <Route path="/ferramentas-estudo" element={<PlanejamentoInteligente />} />
+            <Route path="/planejamento-inteligente" element={<Navigate to="/ferramentas-estudo" replace />} />
                         <Route path="/provas" element={<Provas />} />
             <Route path="/lumi" element={<Chat />} />
             <Route path="/chat" element={<Navigate to="/lumi" replace />} />
             <Route path="/preferencias" element={<Preferencias />} />
-            <Route path="/minha-jornada" element={<MinhaJornada />} />
+            <Route path="/sessao-guiada" element={<MinhaJornada />} />
+            <Route path="/minha-jornada" element={<Navigate to="/sessao-guiada" replace />} />
             <Route path="/redacoes" element={<Redacoes />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/minhas-atividades" element={<MinhasAtividades />} />

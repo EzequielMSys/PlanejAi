@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import aprendizagem from '../services/aprendizagemService'
 import adaptive from '../services/adaptiveService'
 import SimulatorSetup from '../components/SimulatorSetup'
@@ -134,6 +134,7 @@ export default function Aprendizagem() {
       </motion.header>
       <LearningSignals summary={resumo} reviews={revisoes} evolution={evolucao} onAction={(next, disciplina) => { setDisciplinaPratica(disciplina || ""); setAba(next) }} /></>}
 
+      {!questao && <div className="learning-tools-entry"><span>Precisa preparar seus estudos?<small>Metas por matéria, diagnóstico, cartões e trilhas ficam nas ferramentas extras.</small></span><Link to="/ferramentas-estudo">Abrir ferramentas de estudo →</Link></div>}
       {!questao && <div className="learning-toolbar"><nav className="learning-tabs" aria-label="Seções de aprendizagem">
         {tabs.map(([id, label]) => <button key={id} type="button" aria-pressed={aba === id} onClick={() => setAba(id)}>{label}</button>)}
       </nav><button type="button" onClick={imprimirRelatorio} className="learning-print print:hidden">Imprimir relatório / PDF</button></div>}

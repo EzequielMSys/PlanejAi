@@ -2,7 +2,7 @@ import { onCLS, onINP, onLCP } from 'web-vitals'
 import { apiUrl } from '../config/api'
 
 const endpoint = apiUrl('/api/operacoes/vitals')
-const knownRoutes = new Set(['/', '/login', '/register', '/esqueci-senha', '/redefinir-senha', '/inicio', '/cronograma', '/aprendizagem', '/provas', '/redacoes', '/lumi', '/chat', '/estudar', '/planejamento-inteligente', '/minha-jornada', '/perfil', '/preferencias', '/status', '/dashboard-gestor', '/turmas', '/atividades', '/materiais', '/usuarios', '/dono', '/dono/usuarios', '/onboarding', '/primeiro-acesso', '/alterar-senha', '/minhas-atividades', '/minhas-turmas', '/avisos', '/minhas-turmas/:id'])
+const knownRoutes = new Set(['/', '/login', '/register', '/esqueci-senha', '/redefinir-senha', '/inicio', '/cronograma', '/aprendizagem', '/provas', '/redacoes', '/lumi', '/chat', '/estudar', '/planejamento-inteligente', '/minha-jornada', '/ferramentas-estudo', '/sessao-guiada', '/perfil', '/preferencias', '/status', '/dashboard-gestor', '/turmas', '/atividades', '/materiais', '/usuarios', '/dono', '/dono/usuarios', '/onboarding', '/primeiro-acesso', '/alterar-senha', '/minhas-atividades', '/minhas-turmas', '/avisos', '/minhas-turmas/:id'])
 
 function routeFromHash() {
   const route = window.location.hash.slice(1).split('?')[0] || '/'

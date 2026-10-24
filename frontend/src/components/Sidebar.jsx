@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { navigationFor } from '../config/navigation'
+import { navigationFor, pageFor } from '../config/navigation'
 import Icon from './Icons'
 import Logo from './Logo'
 import Avatar from './Avatar'
@@ -12,6 +12,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const sidebarRef = useRef(null)
   const { pathname } = useLocation()
   const pages = navigationFor(user?.tipo || 'aluno')
+  const selectedPath = pageFor(pathname).navParent || pageFor(pathname).path
   const groups = [...new Set(pages.filter(page => page.path !== '/lumi' && page.group !== 'Preferências').map(page => page.group))]
   useEffect(() => {
     if (!isOpen) return
@@ -50,7 +51,7 @@ export default function Sidebar({ isOpen, onClose }) {
     <aside ref={sidebarRef} id="app-sidebar" className={`app-sidebar sd-sidebar ${isOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
       <div className="sd-brand-row"><Link to="/inicio" className="sd-brand" onClick={onClose}><Logo className="sd-brand-mark" animado={false} /><span>Planej<span>AI</span><small>espaço para aprender</small></span></Link><button className="sd-sidebar-close" type="button" onClick={onClose} aria-label="Fechar menu lateral"><Icon name="close" /></button></div>
       <nav className="sd-navigation" aria-label="Páginas do PlanejAI">
-        {groups.map(group => <section key={group}><h2>{group}</h2>{pages.filter(page => page.group === group).map(page => <NavLink key={page.path} to={page.path} onClick={onClose} aria-current={page.path === '/inicio' && pathname === '/dashboard' ? 'page' : undefined} className={({ isActive }) => `sd-nav-link${isActive || page.path === '/inicio' && pathname === '/dashboard' ? ' is-active' : ''}`}><Icon name={page.icon} /><span>{page.title}</span></NavLink>)}</section>)}
+        {groups.map(group => <section key={group}><h2>{group}</h2>{pages.filter(page => page.group === group).map(page => <Link key={page.path} to={page.path} onClick={onClose} aria-current={page.path === selectedPath ? 'page' : undefined} className={`sd-nav-link${page.path === selectedPath ? ' is-active' : ''}`} ><Icon name={page.icon} /><span>{page.title}</span></Link>)}</section>)}
       </nav>
       <Link to="/lumi" className={`sd-lumi-link${pathname === '/lumi' || pathname === '/chat' ? ' is-active' : ''}`} onClick={onClose}><LumiMark /><span><strong>Estude com a Lumi</strong><small>Uma dúvida pode virar descoberta.</small></span><Icon name="arrow" size={16} /></Link>
       <div className="sd-sidebar-bottom"><NavLink className="sd-nav-link" to="/preferencias" onClick={onClose}><Icon name="palette" /><span>Meu espaço</span></NavLink><Link className="sd-account" to="/perfil" onClick={onClose}><Avatar src={user?.foto_url} nome={user?.apelido || user?.nome} tamanho={34} /><span><strong>{user?.apelido || user?.nome || 'Minha conta'}</strong><small>{user?.tipo === 'aluno' ? 'Estudante' : user?.tipo === 'docente' ? 'Docente' : 'Gestão'}</small></span><Icon name="settings" size={17} /></Link></div>

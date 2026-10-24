@@ -16,6 +16,20 @@ test('navigation respects student, teacher and owner permissions', async () => {
   assert.ok(searchPages('aluno', 'redacoes').some(page => page.path === '/redacoes'));
   assert.ok(!searchPages('aluno', 'pessoas').some(page => page.path === '/usuarios'));
 });
+
+test('navigation groups secondary tools under their parent and preserves legacy search', async () => {
+  const { navigationFor, pageFor, searchPages } = await import('../frontend/src/config/navigation.js');
+  const visible = navigationFor('aluno');
+  assert.equal(visible.find(page => page.path === '/inicio').title, 'Hoje');
+  assert.equal(visible.find(page => page.path === '/cronograma').title, 'Cronograma');
+  assert.ok(!visible.some(page => ['/sessao-guiada', '/minha-jornada', '/planejamento-inteligente', '/ferramentas-estudo'].includes(page.path)));
+  assert.equal(pageFor('/minha-jornada').navParent, '/inicio');
+  assert.equal(pageFor('/planejamento-inteligente').navParent, '/aprendizagem');
+  assert.equal(searchPages('aluno', 'progresso')[0].path, '/aprendizagem');
+  assert.ok(searchPages('aluno', 'flashcards').some(page => page.path === '/ferramentas-estudo'));
+  assert.ok(searchPages('aluno', 'sessao guiada').some(page => page.path === '/sessao-guiada'));
+  assert.ok(!searchPages('docente', 'sessao guiada').some(page => page.path === '/sessao-guiada'));
+});
 test('reading preferences clamp unsafe values and retain supported choices', async () => {
   const { normalizeReadingPreferences, READING_DEFAULTS } = await import('../frontend/src/utils/readingPreferences.js');
   assert.deepEqual(normalizeReadingPreferences(null), READING_DEFAULTS);

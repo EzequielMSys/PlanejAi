@@ -238,7 +238,7 @@ test('login and registration previews switch study stages without submitting for
 test('owner can navigate through the main study and management links', async () => {
   const screen = await renderRoute('/inicio', 'dono');
   try {
-    for (const path of ['/cronograma', '/aprendizagem', '/provas', '/redacoes', '/planejamento-inteligente', '/dashboard-gestor', '/turmas', '/atividades', '/materiais', '/usuarios', '/dono']) {
+    for (const path of ['/cronograma', '/aprendizagem', '/provas', '/redacoes', '/dashboard-gestor', '/turmas', '/atividades', '/materiais', '/usuarios', '/dono']) {
       const link = document.querySelector(`#app-sidebar a[href="${path}"]`);
       assert.ok(link, `missing navigation link ${path}`);
       await act(async () => link.click());
@@ -274,18 +274,48 @@ test('writing workshop opens staged fields without hiding the essay history', as
     assert.ok(document.getElementById('redacoes-historico'));
   } finally { await screen.close(); }
 });
-test('progress page separates overview, goals and study tools without losing navigation', async () => {
+test('legacy progress link opens study tools with goals, cards and trails intact', async () => {
   const screen = await renderRoute('/planejamento-inteligente');
   try {
-    assert.ok(screen.container.textContent.includes('Progresso que vira ação'));
+    assert.ok(screen.container.textContent.includes('Prepare o jeito de aprender'));
     await act(async () => button('Metas e diagnóstico').click());
     assert.ok(screen.container.textContent.includes('Diagnóstico inicial'));
     assert.ok(screen.container.textContent.includes('Meta por matéria'));
-    await act(async () => button('Ferramentas').click());
+    await act(async () => button('Cartões e pesquisa').click());
     assert.ok(document.getElementById('progress-search-input'));
     assert.ok(screen.container.textContent.includes('Flashcards'));
-    await act(async () => button('Visão geral').click());
+    await act(async () => button('Trilhas e recomendações').click());
+    await flush();
     assert.ok(screen.container.textContent.includes('Progresso que vira ação'));
+  } finally { await screen.close(); }
+});
+
+test('secondary study tools are reachable from their parent and loaded on demand', async () => {
+  const screen = await renderRoute('/inicio');
+  try {
+    assert.equal(document.querySelector('.sd-navigation a[href="/sessao-guiada"]'), null);
+    await act(async () => button('Montar sessão guiada').click());
+    await flush();
+    assert.ok(screen.container.textContent.includes('Quanto tempo você tem'));
+    assert.equal(document.querySelector('.sd-navigation a[aria-current="page"]')?.textContent, 'Hoje');
+    await act(async () => button('← Voltar para Hoje').click());
+    await flush();
+    assert.ok(screen.container.textContent.includes('HOJE · UM PASSO DE CADA VEZ'));
+    await act(async () => document.querySelector('.sd-navigation a[href="/aprendizagem"]').click());
+    await flush();
+    await act(async () => document.querySelector('.learning-tools-entry a').click());
+    await flush();
+    assert.ok(screen.container.textContent.includes('Prepare o jeito de aprender'));
+    assert.equal(document.querySelector('.sd-navigation a[aria-current="page"]')?.textContent, 'Praticar e revisar');
+    const count = () => requests.filter(request => /\/inteligencia\/(flashcards|provas)$/.test(request.url)).length;
+    assert.equal(count(), 0);
+    await act(async () => button('Cartões e pesquisa').click());
+    await flush();
+    assert.equal(count(), 2);
+    await act(async () => button('Metas e diagnóstico').click());
+    await act(async () => button('Cartões e pesquisa').click());
+    await flush();
+    assert.equal(count(), 2, 'loaded tools are not fetched repeatedly');
   } finally { await screen.close(); }
 });
 test('pedagogical view presents actionable alerts and prevents duplicate intervention', async () => {
