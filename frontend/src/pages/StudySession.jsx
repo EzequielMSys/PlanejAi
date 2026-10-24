@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import cronogramaService from '../services/cronogramaService'
@@ -6,7 +6,6 @@ import aprendizagemService from '../services/aprendizagemService'
 import { resolveProtectedAsset } from '../services/fileService'
 import StudyGuide, { isExternalStudySource } from '../components/StudyGuide'
 import DictationButton from '../components/DictationButton'
-import ChatInterface from '../components/ChatInterface'
 import TutorLumi from '../components/TutorLumi'
 import './Chat.css'
 import './StudySession.css'
@@ -17,7 +16,12 @@ import { scopedCacheKey } from '../utils/offlineStore'
 import RouteLoading from '../components/RouteLoading'
 import '../components/StudyRecommendations.css'
 import { downloadTextCopy } from '../utils/downloadTextCopy'
+import './StudyDesk.css'
 
+function TutorUnavailable() {
+  return <p className="study-desk-loading" role="alert">Não foi possível carregar a Lumi. Você pode continuar lendo e anotando. Depois de preservar seus textos, reabra a página para tentar novamente.</p>
+}
+const ChatInterface = lazy(() => import('../components/ChatInterface').catch(() => ({default:TutorUnavailable})))
 const sessionKey = () => scopedCacheKey('active-study-content')
 
 function loadSavedContent() {
@@ -96,9 +100,14 @@ export default function StudySession() {
   const [finishing, setFinishing] = useState(false)
   const [difficulty, setDifficulty] = useState('LEMBREI')
   const [praticaAtual, setPraticaAtual] = useState(null)
+  const [readingMode, setReadingMode] = useState(false)
+  const [lumiOpen, setLumiOpen] = useState(false)
+  const [lumiVisited, setLumiVisited] = useState(false)
   const lumiRef = useRef(null)
-  useEffect(() => { if (praticaAtual) lumiRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' }) }, [praticaAtual])
-  const pensarComLumi = pratica => setPraticaAtual({ ...pratica, id: Date.now() + Math.random() })
+  useEffect(() => { if (praticaAtual) { lumiRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' }); lumiRef.current?.querySelector('button')?.focus({preventScroll:true}) } }, [praticaAtual])
+  const pensarComLumi = pratica => { setReadingMode(false); setLumiOpen(true); setLumiVisited(true); setPraticaAtual({ ...pratica, id: Date.now() + Math.random() }) }
+  const toggleLumi = () => { setLumiOpen(value => !value); setLumiVisited(true) }
+  const openLumi = () => { setReadingMode(false); setLumiOpen(true); setLumiVisited(true); requestAnimationFrame(() => { lumiRef.current?.scrollIntoView({block:'start',behavior:'auto'}); lumiRef.current?.querySelector('button')?.focus({preventScroll:true}) }) }
   const startedAt = useRef(Date.now())
 
   const { notes, setNotes, status: noteStatus, retry: retryNotes, loading: loadingNotes, flush: flushNotes } = useStudyNotes(content?.id_conteudo, content?.id)
@@ -147,22 +156,22 @@ export default function StudySession() {
   const materialUrl = content.link || content.url || ''
   const estudoAtual = { titulo: content.titulo || 'Este conteúdo', disciplina: content.disciplina || content.area || '', data: day?.data_estudo ? String(day.data_estudo).slice(0, 10) : '' }
 
-  return <main className="session-page pj-page">
-    {content.id && <SaveFeedback status={continuityStatus} message={continuityStatus === 'saved' ? 'Retomada desta sessão salva na sua conta. Você pode continuar em outro aparelho.' : continuityStatus === 'local' ? 'A retomada em outro aparelho ainda não foi confirmada. Suas anotações têm um aviso próprio de salvamento.' : 'Confirmando a retomada na sua conta…'} onRetry={() => { setContinuityStatus('saving'); continuity.save(content.id).then(() => setContinuityStatus('saved')).catch(() => setContinuityStatus('local')) }} />}
+  return <main className={`session-page pj-page study-desk${readingMode ? ' is-reading-mode' : ''}`}>
     <div className="pj-wrap">
       {noteStatus === 'unavailable' && tab !== 'notes' && <SaveFeedback status={noteStatus} onRetry={retryNotes} />}
       <header className="session-topbar student-page-heading">
         <button type="button" className="session-back" onClick={() => navigate(-1)}>← Voltar</button>
         <div><span className="pj-eyebrow">PlanejAI / Sala de estudo</span><h1>{content.titulo || 'Sessão de estudo'}</h1><p>{content.disciplina || content.area || 'Geral'} {day?.data_estudo ? `· ${new Date(`${String(day.data_estudo).slice(0,10)}T12:00:00`).toLocaleDateString('pt-BR')}` : ''}</p></div>
-        <button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : 'Concluir sessão'}</button>
+        <div className="study-desk-actions"><button type="button" aria-pressed={readingMode} onClick={() => setReadingMode(value => !value)}>{readingMode ? 'Sair do modo leitura' : 'Modo leitura'}</button><button type="button" aria-controls="study-desk-lumi-body" onClick={openLumi}>Abrir Lumi</button><button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : 'Concluir sessão'}</button></div>
       </header>
+      <div className="study-desk-context"><p><span className="study-desk-dot" aria-hidden="true" />Um conteúdo de cada vez. Leia, experimente e registre o que fez sentido.</p>{content.id && <SaveFeedback status={continuityStatus} message={continuityStatus === 'saved' ? 'Retomada desta sessão salva na sua conta. Você pode continuar em outro aparelho.' : continuityStatus === 'local' ? 'A retomada em outro aparelho ainda não foi confirmada. Suas anotações têm um aviso próprio de salvamento.' : 'Confirmando a retomada na sua conta…'} onRetry={() => { setContinuityStatus('saving'); continuity.save(content.id).then(() => setContinuityStatus('saved')).catch(() => setContinuityStatus('local')) }} />}</div>
 
       {shortReturn && <section className="study-short-return" aria-labelledby="short-return-title"><h2 id="short-return-title">Cinco minutos já são um começo.</h2><p>Uma sugestão de ritmo, sem cronômetro obrigatório. A sessão só será concluída quando você escolher concluir.</p><ol><li><strong>1 minuto:</strong> releia suas anotações ou a ideia principal.</li><li><strong>3 minutos:</strong> tente explicar um conceito com suas palavras.</li><li><strong>1 minuto:</strong> anote uma dúvida ou o próximo passo para depois.</li></ol><button type="button" onClick={() => { setTab('notes'); setShortReturn(false) }}>Abrir minhas anotações</button></section>}
       <section className="session-layout">
         <div className="session-workspace pj-panel">
-          <nav className="session-tabs" aria-label="Ferramentas da sessão"><button className={tab === 'guide' ? 'is-active' : ''} onClick={() => setTab('guide')}>Guia de estudo</button><button className={tab === 'material' ? 'is-active' : ''} onClick={() => setTab('material')}>{materialUrl ? 'Fonte principal' : 'Material'}</button><button className={tab === 'notes' ? 'is-active' : ''} onClick={() => setTab('notes')}>Anotações <span>{noteStatus === 'saved' ? 'na conta' : noteStatus === 'local' ? 'neste aparelho' : ''}</span></button></nav>
+          <nav className="session-tabs" aria-label="Ferramentas da sessão">{[['guide','Guia de estudo'],['material',materialUrl ? 'Fonte principal' : 'Material'],['notes','Anotações']].map(([key,label]) => <button key={key} type="button" aria-pressed={tab === key} aria-controls="session-canvas" className={tab === key ? 'is-active' : ''} onClick={() => setTab(key)}>{label}{key === 'notes' && <span> {noteStatus === 'saved' ? 'na conta' : noteStatus === 'local' ? 'neste aparelho' : ''}</span>}</button>)}</nav>
           {noteStatus === 'unsaved' && <button type="button" className="study-button" onClick={() => downloadTextCopy(notes, 'planejai-anotacoes.txt')}>Baixar cópia das anotações</button>}
-          <div className="session-canvas">
+          <div id="session-canvas" className="session-canvas" data-view={tab}>
             {tab === 'material' ? <StudyMaterial content={content} onTutorRequest={pensarComLumi} /> : tab === 'guide' ? <div className="session-guide-wrap"><StudyGuide material={content} onTutorRequest={pensarComLumi} sourceUrl={isExternalStudySource(materialUrl) ? materialUrl : undefined} /></div> : <div className="session-notes">
               <header className="session-notes-header"><div><span className="pj-eyebrow">CADERNO DA SESSÃO</span><h2>Organize suas ideias.</h2><p>Anote o que entendeu e o que quer perguntar à Lumi.</p></div><div className="session-notes-tools"><SaveFeedback status={noteStatus} onRetry={retryNotes} />{!loadingNotes && <DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? '\n' : ''}${texto}`)}/>}</div></header>
               <div className="session-note-prompts"><span>ESTRUTURE SUA REVISÃO</span><div><button type="button" disabled={loadingNotes} onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Ideia principal\n`)}>+ Ideia principal</button><button type="button" disabled={loadingNotes} onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Minha dúvida\n`)}>+ Minha dúvida</button><button type="button" disabled={loadingNotes} onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Exemplo próprio\n`)}>+ Exemplo próprio</button></div></div>
@@ -171,11 +180,13 @@ export default function StudySession() {
           </div>
         </div>
 
-        <aside className="session-tools">
-          <article ref={lumiRef} className="session-lumi pj-panel"><header><TutorLumi tamanho={32} rotulo="Lumi"/><div><span className="pj-eyebrow">APRENDA COM A LUMI</span><h2>Vamos dar sentido ao tema.</h2><p>Outra explicação, um exemplo ou uma pergunta para praticar.</p></div></header><ChatInterface className="session-lumi-chat" compacto estudoAtual={estudoAtual} praticaAtual={praticaAtual}/></article>
-          <article className="session-check pj-panel"><span className="pj-eyebrow">Antes de sair</span><h2>Como esse conteúdo ficou?</h2><p>Sua resposta define quando ele volta para revisão.</p><div>{[['DIFICIL','Ainda difícil'],['LEMBREI','Entendi'],['DOMINEI','Consigo explicar']].map(([value,label]) => <button type="button" key={value} className={difficulty === value ? 'is-active' : ''} onClick={() => setDifficulty(value)}>{label}</button>)}</div></article>
+        <aside className="session-tools" hidden={readingMode} aria-label="Apoio ao estudo">
+          <div className="study-desk-tools-heading"><span className="pj-eyebrow">NA SUA MESA</span><h2>Apoio quando precisar.</h2><p>Seu material fica no centro. Escolha uma ferramenta para seguir.</p></div>
+          <article ref={lumiRef} className="study-desk-lumi pj-panel"><header><TutorLumi tamanho={40} rotulo="Lumi"/><div><h2>Lumi, por perto.</h2><p>Outra explicação. Um exemplo. Uma boa pergunta.</p></div></header><button type="button" className="study-desk-tool-toggle" aria-expanded={lumiOpen} aria-controls="study-desk-lumi-body" onClick={toggleLumi}>{lumiOpen ? 'Recolher Lumi' : 'Conversar com a Lumi'}<span aria-hidden="true">{lumiOpen ? '−' : '+'}</span></button><div id="study-desk-lumi-body" hidden={!lumiOpen}>{lumiVisited && <Suspense fallback={<p className="study-desk-loading" role="status">Preparando a conversa…</p>}><ChatInterface className="session-lumi-chat" compacto estudoAtual={estudoAtual} praticaAtual={praticaAtual}/></Suspense>}</div></article>
+          <article className="study-desk-note-link pj-panel"><span aria-hidden="true">✎</span><h2>Uma ideia merece ficar.</h2><p>Anote com suas palavras. Os avisos distinguem a cópia neste aparelho do que já chegou à conta.</p><button type="button" onClick={() => { setTab('notes'); requestAnimationFrame(() => document.querySelector('.session-notes textarea')?.focus()) }}>Abrir anotações <span aria-hidden="true">↗</span></button></article>
         </aside>
       </section>
+      <section className="session-check study-desk-wrap-up pj-panel" aria-labelledby="session-wrap-up-title"><div><span className="pj-eyebrow">PARA FECHAR ESTE PASSO</span><h2 id="session-wrap-up-title">Como esse conteúdo ficou?</h2><p>Sua resposta define quando ele volta para revisão. Você também pode sair e retomar depois.</p></div><div className="study-desk-assessment" role="group" aria-label="Como ficou o conteúdo">{[['DIFICIL','Ainda difícil'],['LEMBREI','Entendi'],['DOMINEI','Consigo explicar']].map(([value,label]) => <button type="button" key={value} disabled={finishing} aria-pressed={difficulty === value} className={difficulty === value ? 'is-active' : ''} onClick={() => setDifficulty(value)}>{label}</button>)}</div><button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : 'Concluir sessão'}</button></section>
     </div>
   </main>
 }

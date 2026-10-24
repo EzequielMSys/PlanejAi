@@ -444,7 +444,9 @@ test('study room teaches the scheduled topic and gives Lumi its subject context'
   try {
     assert.ok(screen.container.textContent.includes('O que você precisa aprender'));
     assert.ok(screen.container.textContent.includes('Roteiro de estudo'));
-    assert.ok(screen.container.querySelector('.session-lumi'));
+    assert.ok(screen.container.querySelector('.study-desk-lumi'));
+    await act(async () => document.querySelector('.study-desk-tool-toggle').click());
+    await flush();
     assert.equal(screen.container.querySelector('.session-timer'), null);
     const message = document.getElementById('lumi-message');
     await inputValue(message, 'Não entendi a primeira lei.');
@@ -455,6 +457,71 @@ test('study room teaches the scheduled topic and gives Lumi its subject context'
     assert.equal(JSON.parse(request.data).disciplina, 'Física');
   } finally { await screen.close(); window.sessionStorage.removeItem('900001:active-study-content'); }
 });
+test('reading mode and collapsed Lumi preserve question and note drafts without sending them', async () => {
+  window.sessionStorage.setItem('900001:active-study-content', JSON.stringify({ conteudo: { id: 51, id_conteudo: 9, titulo: 'Leis de Newton', disciplina: 'Física' } }));
+  const screen = await renderRoute('/estudar');
+  try {
+    assert.ok(!document.getElementById('lumi-message'));
+    assert.equal(requests.filter(item => item.url.endsWith('/inteligencia/chat')).length,0);
+    await act(async () => document.querySelector('.study-desk-note-link button').click());
+    await flush();
+    await inputValue(document.querySelector('.session-notes textarea'),'Minha ideia sobre inércia.');
+    await act(async () => document.querySelector('.study-desk-tool-toggle').click());
+    await flush();
+    await inputValue(document.getElementById('lumi-message'),'Uma dúvida ainda não enviada.');
+    await act(async () => document.querySelector('.study-desk-tool-toggle').click());
+    assert.equal(document.getElementById('study-desk-lumi-body').hidden,true);
+    await act(async () => button('Modo leitura').click());
+    assert.equal(document.querySelector('.session-tools').hidden,true);
+    assert.equal(document.querySelector('.session-notes textarea').value,'Minha ideia sobre inércia.');
+    await act(async () => button('Sair do modo leitura').click());
+    await act(async () => document.querySelector('.study-desk-tool-toggle').click());
+    assert.equal(document.getElementById('lumi-message').value,'Uma dúvida ainda não enviada.');
+    assert.equal(requests.filter(item => item.method === 'post' && item.url.endsWith('/inteligencia/chat')).length,0);
+    const result = await axe.run(document.querySelector('.study-desk'),{rules:{'color-contrast':{enabled:false}}});
+    assert.deepEqual(result.violations.map(item => item.id),[]);
+  } finally { await screen.close(); window.sessionStorage.removeItem('900001:active-study-content'); }
+});
+
+test('weekly schedule navigates and opens details without unlocking or writing the plan', async () => {
+  const monday = new Date(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date())+'T12:00:00Z');
+  monday.setUTCDate(monday.getUTCDate()-((monday.getUTCDay()+6)%7));
+  const firstDate=monday.toISOString().slice(0,10);
+  monday.setUTCDate(monday.getUTCDate()+7);
+  const secondDate=monday.toISOString().slice(0,10);
+  dailySchedulesFixture = [{id_cronograma:11,status:'ATIVO',dias:[
+    {id_dia:51,data_estudo:firstDate,tempo_previsto:25,concluido:0,conteudos:[{id:71,titulo:'Leitura de gráficos',disciplina:'Matemática',concluido:0}]},
+    {id_dia:52,data_estudo:secondDate,tempo_previsto:40,concluido:0,bloqueado:true,conteudos:[{id:72,titulo:'Geometria',disciplina:'Matemática',concluido:0}]}
+  ]}];
+  const screen = await renderRoute('/cronograma');
+  try {
+    const before = requests.length;
+    await act(async () => button('Semana').click());
+    assert.equal(document.querySelectorAll('.schedule-week-day').length,7);
+    assert.equal(localStorage.getItem('900001:schedule-view'),'week');
+    assert.equal(localStorage.getItem('900002:schedule-view'),null);
+    assert.ok(document.querySelector('.schedule-week').textContent.includes('25 min planejados'));
+    await act(async () => document.querySelector('[aria-label="Próxima semana"]').click());
+    assert.ok(document.querySelector('.schedule-week').textContent.includes('40 min planejados'));
+    assert.equal(document.querySelector('[aria-label="Próxima semana"]').disabled,true);
+    const result = await axe.run(document.querySelector('.schedule-week'),{rules:{'color-contrast':{enabled:false}}});
+    assert.deepEqual(result.violations.map(item => item.id),[]);
+    await act(async () => document.querySelector('.schedule-week-entry button').click());
+    await flush();
+    assert.ok(document.querySelector('#schedule-day-52').classList.contains('is-locked'));
+    assert.ok(!document.querySelector('#schedule-day-52 .schedule-day-content'));
+    assert.equal(document.activeElement,document.querySelector('#schedule-day-52 h3'));
+    await act(async () => button('Semana').click());
+    assert.ok(document.querySelector('.schedule-week').textContent.includes('40 min planejados'));
+    await act(async () => document.querySelector('[aria-label="Semana anterior"]').click());
+    await act(async () => document.querySelector('.schedule-week-entry button').click());
+    await flush();
+    assert.equal(document.activeElement,document.querySelector('#schedule-day-51 h3'));
+    assert.ok(document.querySelector('#schedule-day-51 .schedule-day-content'));
+    assert.equal(requests.length,before,'switching views uses the loaded plan without API calls');
+  } finally { dailySchedulesFixture=[]; await screen.close(); }
+});
+
 test('a provider failure leaves the question available to retry', async () => {
   failChat = true;
   const screen = await renderRoute('/lumi');
@@ -473,6 +540,8 @@ test('session Lumi shortcuts stay available and send the current topic exactly o
   window.sessionStorage.setItem('900001:active-study-content', JSON.stringify({ conteudo: { id: 51, id_conteudo: 9, titulo: 'Leis de Newton', disciplina: 'Física' }, dia: { data_estudo: '2026-10-22' } }));
   const screen = await renderRoute('/estudar');
   try {
+    await act(async () => document.querySelector('.study-desk-tool-toggle').click());
+    await flush();
     for (const label of ['Explique de outro jeito', 'Dê um exemplo', 'Confira se entendi']) {
       const before = requests.filter(item => item.method === 'post' && item.url.endsWith('/inteligencia/chat')).length;
       await act(async () => button(label).click());

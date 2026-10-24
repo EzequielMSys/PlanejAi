@@ -13,6 +13,8 @@ import DailyPlanActions from '../components/DailyPlanActions'
 import { localStudyDate } from '../utils/dailyStudy'
 import RecoveryState from '../components/RecoveryState'
 import '../components/StudyRecommendations.css'
+import ScheduleWeek from '../components/ScheduleWeek'
+import { scopedCacheKey } from '../utils/offlineStore'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -40,6 +42,9 @@ export default function Cronograma() {
   const [concluindoConteudo, setConcluindoConteudo] = useState(null)
   const [diasExpandidos, setDiasExpandidos] = useState({})
   const [filtroDias, setFiltroDias] = useState('proximos')
+  const [scheduleView, setScheduleView] = useState(() => { try { return localStorage.getItem(scopedCacheKey('schedule-view')) === 'week' ? 'week' : 'list' } catch { return 'list' } })
+  const [weekAnchor, setWeekAnchor] = useState(null)
+  const changeScheduleView = view => { setScheduleView(view); try { localStorage.setItem(scopedCacheKey('schedule-view'),view) } catch { /* A escolha continua disponível nesta tela. */ } }
   const [editando, setEditando] = useState(null)
   const [editLink, setEditLink] = useState('')
   const [enviandoMaterial, setEnviandoMaterial] = useState(null)
@@ -152,9 +157,15 @@ const proximoDia = dias.find((dia) => {
   })
 
   function abrirDia(idDia) {
+    setScheduleView('list')
     setFiltroDias('todos')
-    setDiasExpandidos((atuais) => ({ ...atuais, [idDia]: true }))
-    requestAnimationFrame(() => document.getElementById(`schedule-day-${idDia}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    const day = dias.find(item => Number(item.id_dia || item.id) === Number(idDia))
+    setDiasExpandidos((atuais) => ({ ...atuais, [idDia]: !day?.bloqueado }))
+    requestAnimationFrame(() => {
+      const target = document.getElementById(`schedule-day-${idDia}`)
+      target?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })
+      const heading = target?.querySelector('h3'); heading?.setAttribute('tabindex','-1'); heading?.focus({ preventScroll:true })
+    })
   }
 
   // Dispara confetes quando o cronograma atinge 100% de conclusão
@@ -458,8 +469,9 @@ async function concluirDia(idDia) {
               <details className="study-recommendation"><summary>Como este plano escolhe as atividades?</summary><p>Na geração, as matérias vêm das áreas de foco do perfil. Os conteúdos são distribuídos nos dias livres, em blocos de aproximadamente 30 minutos; a ordem pode priorizar os pesos da próxima prova cadastrada. O tempo de cada dia é uma previsão, não uma obrigação.</p><p>As revisões ficam em Aprendizagem: a próxima data muda conforme sua avaliação do conteúdo. Este cronograma não pressupõe dificuldade só porque uma atividade ficou pendente.</p><div className="study-recommendation-actions"><a href="#/perfil">Ajustar matérias e disponibilidade</a><a href="#/aprendizagem">Conferir e ajustar revisões</a></div><p>Alterar o perfil não reescreve o plano atual. Para mudar só o dia, use “Seu dia mudou?”. Para gerar outra distribuição, confira a opção de novo cronograma.</p></details>
               <section className="schedule-plan" aria-labelledby="schedule-plan-title">
                 <div className="schedule-legend" aria-label="Estados das etapas"><span><b aria-hidden="true">○</b>Disponível para estudar</span><span><b aria-hidden="true">◇</b>Aguardando liberação</span><span><b aria-hidden="true">✓</b>Concluído</span></div>
-                <div className="schedule-plan-head"><div><span>PLANO COMPLETO</span><h2 id="schedule-plan-title">Suas etapas, em detalhe.</h2><p>Abra um dia para estudar, revisar materiais ou acompanhar o que já fez.</p></div><div className="schedule-plan-filters" role="group" aria-label="Filtrar dias do cronograma">{[['proximos', 'Próximos'], ['concluidos', 'Concluídos'], ['todos', 'Todos']].filter(([valor]) => valor !== 'proximos' || diasConcluidos < totalDias).map(([valor, rotulo]) => <button key={valor} type="button" aria-pressed={filtroEfetivo === valor} onClick={() => setFiltroDias(valor)}>{rotulo}</button>)}</div></div>
-                <div className="schedule-plan-list">
+                <div className="schedule-view-toggle" role="group" aria-label="Visualização do cronograma">{[['list','Lista detalhada'],['week','Semana']].map(([view,label]) => <button key={view} type="button" aria-pressed={scheduleView === view} aria-controls="schedule-view-content" onClick={() => changeScheduleView(view)}>{label}</button>)}</div>
+                <div className="schedule-plan-head"><div><span>{scheduleView === 'week' ? 'SEMANA A SEMANA' : 'PLANO COMPLETO'}</span><h2 id="schedule-plan-title">{scheduleView === 'week' ? 'Encontre espaço para o próximo passo.' : 'Suas etapas, em detalhe.'}</h2><p>Abra um dia para estudar, revisar materiais ou acompanhar o que já fez.</p></div>{scheduleView === 'list' && <div className="schedule-plan-filters" role="group" aria-label="Filtrar dias do cronograma">{[['proximos', 'Próximos'], ['concluidos', 'Concluídos'], ['todos', 'Todos']].filter(([valor]) => valor !== 'proximos' || diasConcluidos < totalDias).map(([valor, rotulo]) => <button key={valor} type="button" aria-pressed={filtroEfetivo === valor} onClick={() => setFiltroDias(valor)}>{rotulo}</button>)}</div>}</div>
+                <div id="schedule-view-content">{scheduleView === 'week' ? <ScheduleWeek days={dias} onOpenDay={abrirDia} initialWeek={weekAnchor} onWeekChange={setWeekAnchor} /> : <div className="schedule-plan-list">
                 {diasVisiveis.map(({ dia, index }) => {
                   const idDia = dia.id_dia || dia.id
                   const concluido =
@@ -672,7 +684,7 @@ async function concluirDia(idDia) {
                   )
                 })}
                 {!diasVisiveis.length && <div className="schedule-plan-empty">{filtroDias === 'proximos' ? 'Nenhuma etapa pendente. Sua trilha está completa!' : 'Ainda não há etapas concluídas.'}</div>}
-                </div>
+                </div>}</div>
               </section>
             </>
           )}
