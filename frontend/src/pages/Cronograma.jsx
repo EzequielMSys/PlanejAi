@@ -394,13 +394,13 @@ async function concluirDia(idDia) {
                   disabled={gerando}
                   className="mt-7 rounded-xl bg-study-accent px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-study-accent disabled:opacity-60"
                 >
-                  {gerando ? 'Montando sua semana...' : 'Montar meu cronograma'}
+                  {gerando ? 'Montando sua semana...' : perfilCompleto ? 'Montar meu cronograma' : 'Escolher matérias e horários'}
                 </button>
               </div>
               <div className="planner-preview" aria-hidden="true">
                 <div className="mb-5 flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[.18em] text-study-accent">Prévia</p>
+                    <p className="text-xs font-black uppercase tracking-[.18em] text-study-accent">Exemplo de rotina</p>
                     <p className="mt-1 font-black text-study-ink dark:text-white">Sua próxima semana</p>
                   </div>
                   <svg className="h-6 w-6 text-study-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">

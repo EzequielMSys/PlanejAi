@@ -141,7 +141,7 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
       <div className="absolute bottom-0 left-[15%] h-96 w-96 rounded-full bg-violet-400/10 blur-3xl" />
 
       <div className="max-w-6xl mx-auto relative z-10">
-        <div className="setup-invitation"><p>Você pode conhecer a Lumi, os exercícios e as fontes antes de montar seu plano.</p><button type="button" disabled={loading} onClick={() => navigate('/inicio')}>Explorar primeiro →</button></div>
+        <div className="setup-invitation"><p>Quer conhecer o PlanejAI antes de planejar?</p><button type="button" disabled={loading} onClick={() => navigate('/inicio')}>Explorar primeiro →</button></div>
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <div className="setup-hero mb-7 overflow-hidden rounded-[2rem] border border-white/10 bg-[rgb(var(--pn-primaria-forte-rgb)/1)] p-6 shadow-[0_24px_80px_-30px_rgba(31,27,72,.65)] sm:p-8 lg:p-10 relative">
             <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/0.35)] blur-2xl" />
@@ -181,35 +181,15 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
             </aside>
 
             <div>
-              <div className="mb-4 flex items-center justify-between px-1">
-                <span className="text-sm font-bold text-[rgb(var(--pn-texto-rgb)/1)]">Etapa {step} de 2</span>
-                <span className="text-sm font-black text-[rgb(var(--pn-primaria-rgb)/1)]">{step * 50}%</span>
-              </div>
-              <div className="mb-5 h-2 overflow-hidden rounded-full bg-[rgb(var(--pn-superficie-alt-rgb)/1)]"><div className="h-full rounded-full bg-gradient-to-r from-[rgb(var(--pn-primaria-rgb)/1)] to-[rgb(var(--pn-primaria-suave-rgb)/1)] transition-all duration-500" style={{ width: `${step * 50}%` }} /></div>
+              <p className="mb-3 text-sm" role="status">Etapa {step} de 2 · {step === 1 ? 'Escolha seu ponto de partida' : 'Matérias salvas; escolha seus horários'}</p><ol className="setup-step-progress" aria-label="Preparação do seu plano"><li aria-current={step === 1 ? 'step' : undefined}>1. Matérias e ritmo</li><li aria-current={step === 2 ? 'step' : undefined}>2. Dias e horários</li></ol>
 
           {step === 1 && (
             <form onSubmit={handlePerfilSubmit}><fieldset disabled={loading}>
               <div className="rounded-[2rem] border border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 shadow-[0_24px_70px_-42px_rgba(35,31,77,.55)] sm:p-8 lg:p-10">
                 <h2 className="text-2xl font-black tracking-tight text-[rgb(var(--pn-texto-rgb)/1)]">Qual é a sua meta?</h2>
-                <p className="mb-7 mt-1 text-sm text-[rgb(var(--pn-texto-rgb)/1)]">Escolha as matérias e seu tempo diário. O ano escolar é opcional. Depois dos horários, você poderá revisar e gerar o cronograma; salvar esta configuração não cria nem substitui um plano.</p>
+                <p className="mb-7 mt-1 text-sm text-[rgb(var(--pn-texto-rgb)/1)]">Escolha o objetivo, as matérias e um tempo possível. Na próxima etapa, ajuste os dias e horários.</p>
 
                 <div className="space-y-4">
-                  <div>
-                    <label className={labelClass} htmlFor="setup-year">Ano escolar (opcional)</label>
-                    <select
-                      id="setup-year"
-                      className={inputClass}
-                      value={formData.ano_escolar}
-                      onChange={(e) => setFormData({ ...formData, ano_escolar: e.target.value })}
-                    >
-                      <option value="">Prefiro informar depois</option>
-                      <option value="9º">9º ano</option>
-                      <option value="1º EM">1º ano EM</option>
-                      <option value="2º EM">2º ano EM</option>
-                      <option value="3º EM">3º ano EM</option>
-                    </select>
-                  </div>
-
                   <div>
                     <label className={labelClass} htmlFor="setup-goal">Objetivo de estudo</label>
                     <select
@@ -255,7 +235,10 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
                     />
                   </div>
 
-                  <div>
+                  <details><summary>Ajustes opcionais do plano</summary><div>
+                    <label className={labelClass} htmlFor="setup-year">Ano escolar (opcional)</label>
+                    <select id="setup-year" className={inputClass} value={formData.ano_escolar} onChange={e => setFormData({ ...formData, ano_escolar: e.target.value })}><option value="">Prefiro informar depois</option><option value="9º">9º ano</option><option value="1º EM">1º ano EM</option><option value="2º EM">2º ano EM</option><option value="3º EM">3º ano EM</option></select>
+                  </div><div className="mt-4">
                     <label className={labelClass} htmlFor="setup-duration">Duração do cronograma</label>
                     <select
                       id="setup-duration"
@@ -273,7 +256,7 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
                       <option value={180}>Semestral</option>
                       <option value={365}>Anual</option>
                     </select>
-                  </div>
+                  </div></details>
                 </div>
 
                 <button

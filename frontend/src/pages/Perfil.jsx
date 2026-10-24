@@ -555,8 +555,8 @@ const handleSaveEstudos = async (e) => {
 
               <form onSubmit={handleSaveEstudos} className="space-y-6" onChange={() => setStudySave({ status: 'pending', message: 'Alterações ainda não salvas. Use o botão Salvar para confirmar.' })}><fieldset disabled={loadingEstudos} className="min-w-0 space-y-6 border-0 p-0">
                 <div className="profile-field-grid">
-                  <label className="profile-field">Ano escolar<select value={estudoForm.ano_escolar} onChange={(e) => setEstudoForm((f) => ({ ...f, ano_escolar: e.target.value }))} required>
-                    <option value="">Ano escolar</option>
+                  <label className="profile-field">Ano escolar (opcional)<select value={estudoForm.ano_escolar} onChange={(e) => setEstudoForm((f) => ({ ...f, ano_escolar: e.target.value }))}>
+                    <option value="">Prefiro informar depois</option>
                     <option value="9º">9º ano</option>
                     <option value="1º EM">1º ano EM</option>
                     <option value="2º EM">2º ano EM</option>

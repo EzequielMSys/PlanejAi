@@ -732,6 +732,29 @@ test('first setup makes school year optional and offers exploration before gener
   } finally { await screen.close(); }
 });
 
+test('a new student sees useful first steps without an empty progress dashboard', async () => {
+  incompleteAccount = true;
+  const screen = await renderRoute('/inicio');
+  try {
+    assert.ok(document.querySelector('.first-study'));
+    assert.equal(document.querySelector('.dash-v2-score'), null);
+    assert.ok(document.querySelector('.first-study a[href="/onboarding"]'));
+    await act(async () => document.querySelector('.first-study a[href="/lumi"]').click());
+    await flush();
+    assert.ok(document.querySelector('#lumi-message'));
+    assert.equal(requests.filter(item=>item.method==='post' && item.url.includes('/chat')).length,0);
+  } finally { incompleteAccount=false;await screen.close(); }
+});
+
+test('first steps respect an already saved study profile', async () => {
+  const screen = await renderRoute('/inicio');
+  try {
+    assert.ok(document.querySelector('.first-study a[href="/cronograma"]'));
+    assert.equal(document.querySelector('.first-study a[href="/onboarding"]'),null);
+    assert.ok(screen.container.textContent.includes('Seu perfil já está preparado.'));
+  } finally { await screen.close(); }
+});
+
 test('returning to an unfinished setup recovers the server profile instead of requesting subjects again', async () => {
   onboardingProfileFixture = { areas_foco: 'Física', objetivo: 'VESTIBULAR', tempo_diario_min: 45, ano_escolar: '', prazo_estimado: 30 };
   const screen = await renderRoute('/onboarding');

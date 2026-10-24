@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { lazy, Suspense, useState, useCallback } from 'react'
+import { lazy, Suspense, useState, useCallback, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
@@ -12,6 +12,7 @@ import '../components/WorkspaceUtilities.css'
 import '../MobileExperience.css'
 import '../AccessibleControls.css'
 import '../StudyIdentity.css'
+import { observeMobileViewport } from '../utils/mobileViewport'
 
 // Widgets secundários: não participam da primeira pintura. O lazy() tira o
 // código deles do bundle de entrada (index.js) e o Deferred garante que os
@@ -32,6 +33,7 @@ function CarregadoAposPintura({ children }) {
 }
 
 function Layout() {
+  useEffect(() => observeMobileViewport(), [])
   const { isAuthenticated, perfilCompleto, isGestor, isPrimeiroAcesso } = useAuth()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)

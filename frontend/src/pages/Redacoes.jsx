@@ -476,7 +476,7 @@ export default function Redacoes() {
                   <p className="mt-4 max-w-lg leading-relaxed text-[#74627F] dark:text-[#B7A9C1]">
                     {aba === 'gestor'
                       ? 'Quando os alunos enviarem redações, elas aparecerão aqui para você avaliar.'
-                      : 'Escreva sua primeira redação e peça à Lumi uma avaliação formativa por competência.'}
+                      : 'Comece com um tema e um primeiro parágrafo. Seu rascunho fica neste navegador enquanto você escreve; envie quando quiser uma avaliação formativa da Lumi.'}
                   </p>
 
                   {aba !== 'gestor' && (

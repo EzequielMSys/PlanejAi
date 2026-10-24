@@ -12,6 +12,7 @@ import LearningSignals from '../components/LearningSignals'
 import { dailyStudy, localStudyDate } from '../utils/dailyStudy'
 import continuity from '../services/studyContinuityService'
 import { scopedCacheKey } from '../utils/offlineStore'
+import FirstStudySteps from '../components/FirstStudySteps'
 
 const done = (item) => Number(item?.concluido) === 1 || item?.status === 'concluído'
 const greeting = () => new Date().getHours() < 12 ? 'Bom dia' : new Date().getHours() < 18 ? 'Boa tarde' : 'Boa noite'
@@ -127,6 +128,7 @@ export default function TodayDashboard() {
 
   if (loading) return <RouteLoading />
   if (planError) return <main className="dash-v2"><section className="daily-adjust" role="alert"><h1>Seu plano continua salvo.</h1><p>Não conseguimos consultá-lo agora. Tente carregar novamente para continuar.</p><button type="button" className="study-button" onClick={() => { setLoading(true); reloadPlan().catch(() => setPlanError(true)).finally(() => setLoading(false)) }}>Tentar novamente</button></section></main>
+  const firstStudy = user?.tipo === 'aluno' && !resume && !data.schedules.length && data.learning && !weeklyMinutes && !reviews && !data.learning.errosPendentes && !data.learning.porDisciplina?.length && !data.evolution.length
 
   return <main className="dash-v2">
     <div className="dash-v2-wrap">
@@ -135,7 +137,7 @@ export default function TodayDashboard() {
         <div>{user?.tipo === 'aluno' && <button type="button" onClick={() => navigate('/sessao-guiada')}>Montar sessão guiada</button>}<button type="button" onClick={() => navigate('/cronograma')}>Ver cronograma <b>→</b></button></div>
       </header>
 
-      <section className="dash-v2-spotlight">
+      {firstStudy ? <FirstStudySteps prepared={perfilCompleto} /> : <><section className="dash-v2-spotlight">
         <motion.article className="dash-v2-focus" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <div className="dash-v2-focus-top"><span>SEU PRÓXIMO PASSO</span><small>{nextAction.subject}</small></div>
           <div className="dash-v2-focus-copy"><p>{nextAction.kind === 'lesson' ? 'Abra o material e siga do ponto em que parou' : 'Uma ação possível para agora'}</p><h2>{nextAction.title}</h2><p className="dash-v2-reason"><strong>Por quê?</strong> {nextAction.reason}</p><div><span>{nextAction.duration}</span><span>{reviews} {reviews === 1 ? 'revisão pendente' : 'revisões pendentes'}</span></div></div>
@@ -170,7 +172,7 @@ export default function TodayDashboard() {
           <article className="dash-v2-week"><header><span>DIAS DO PLANO CONCLUÍDOS</span><strong>{completed}/{days.length || 0}</strong></header><div role="img" aria-label={recentDays.map((day) => `${day.label}: ${day.count}`).join('; ')}>{recentDays.map((day, index) => <i key={index} title={`${day.label}: ${day.count}`} style={{ height: `${Math.max(4, day.count / maxRecent * 100)}%`, opacity: day.count ? 1 : .2 }} />)}</div><p>Últimos 7 dias do cronograma. Dias sem conclusão aparecem na linha de base.</p></article>
           {(isAdmin || isDono || user?.tipo === 'docente') && <button type="button" className="dash-v2-manager" onClick={() => navigate(isDono ? '/dono' : '/dashboard-gestor')}>Acessar central de gestão <span>↗</span></button>}
         </aside>
-      </section>
+      </section></>}
     </div>
   </main>
 }
