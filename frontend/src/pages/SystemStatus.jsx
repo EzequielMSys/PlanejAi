@@ -6,16 +6,15 @@ export default function SystemStatus() {
   const check = useCallback(async () => {
     const start = window.performance.now()
     setResult((current) => ({ ...current, state: 'checking', error: '' }))
+    const controller = new window.AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 8000)
     try {
-      const controller = new window.AbortController()
-      const timeout = window.setTimeout(() => controller.abort(), 8000)
       const response = await fetch(apiUrl('/api/health'), { signal: controller.signal, cache: 'no-store' })
-      window.clearTimeout(timeout)
       const data = await response.json().catch(() => ({}))
       setResult({ state: response.ok ? 'online' : 'error', latency: Math.round(window.performance.now() - start), data, error: response.ok ? '' : data.error || `HTTP ${response.status}` })
     } catch (error) {
       setResult({ state: 'offline', latency: null, data: null, error: error.name === 'AbortError' ? 'O servidor demorou mais de 8 segundos para responder.' : 'Não foi possível alcançar o backend.' })
-    }
+    } finally { window.clearTimeout(timeout) }
   }, [])
 
   useEffect(() => { check() }, [check])

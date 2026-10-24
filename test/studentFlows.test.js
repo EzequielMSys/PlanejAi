@@ -31,6 +31,7 @@ const axe = requireFrontend('axe-core');
 let bundle;
 let requests = [];
 let failChat = false;
+let supportMode = '';
 let materialCatalogFixture = false;
 let dashboardLearningFixture = null;
 let dailySchedulesFixture = [];
@@ -67,6 +68,13 @@ function fixture(config) {
   if (url.endsWith('/aprendizagem/resumo')) return dashboardLearningFixture || { metaSemanal: 180, minutosSemana: 0, revisoesHoje: 0, errosPendentes: 0, porDisciplina: [], porDificuldade: [], recomendacoes: [], competenciasEnem: [] };
   if (url.endsWith('/perfil')) return { perfil: onboardingProfileFixture || (setupCompleteFixture ? { areas_foco: 'Matemática', objetivo: 'ENEM', ano_escolar: '3', tempo_diario_min: 60 } : null), disponibilidade: [] };
   if (url.endsWith('/inteligencia/privacidade')) return { visibilidade: 'RESUMO' };
+  if (url.endsWith('/operacoes/suporte')) {
+    if (config.method === 'post') {
+      if (supportMode === 'failed') throw Object.assign(new Error('Falha no atendimento.'), { config, response: { status: 503, data: { message: 'Atendimento indisponível.' } } });
+      return { id: 81 };
+    }
+    return supportMode === 'saved' ? [{ id: 81, categoria: 'PROBLEMA', mensagem: 'Minha mensagem de ajuda.', status: 'ABERTO', criado_em: '2026-10-24T12:00:00Z' }] : [];
+  }
   if (url.endsWith('/usuarios/me')) return person('aluno');
   if (url.endsWith('/usuarios')) return { usuarios: [person('aluno')], pagina: 1, total_registros: 17, total_paginas: 2, stats: { total: 17, ativos: 15, inativos: 2, donos: 1, admins: 2, docentes: 3, alunos: 11 } };
   if (url.endsWith('/dashboard/estatisticas')) return { totalUsuarios: 17, totalAtividadesPublicadas: 0, totalEntregas: 0, totalCronogramasAtivos: 0 };
@@ -488,6 +496,27 @@ test('owner operations panel opens the people directory', async () => {
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 350)); });
     assert.ok(screen.container.textContent.includes('Diretório de pessoas'));
   } finally { await screen.close(); }
+});
+
+test('support preserves a failed message and confirms receipt only after server success', async () => {
+  supportMode = 'failed';
+  const screen = await renderRoute('/preferencias');
+  try {
+    const panel = document.querySelector('.support-panel');
+    const input = panel.querySelector('textarea');
+    await inputValue(input, 'Minha mensagem de ajuda.');
+    await act(async () => panel.querySelector('form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true })));
+    await flush();
+    assert.equal(input.value, 'Minha mensagem de ajuda.');
+    assert.ok(panel.textContent.includes('Atendimento indisponível.'));
+    assert.ok(!panel.textContent.includes('recebido'));
+    supportMode = 'saved';
+    await act(async () => panel.querySelector('form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true })));
+    await flush();
+    assert.equal(input.value, '');
+    assert.ok(panel.textContent.includes('Pedido #81 recebido'));
+    assert.ok(panel.textContent.includes('Minha mensagem de ajuda.'));
+  } finally { supportMode = ''; await screen.close(); }
 });
 
 test('focus mode always offers a direct way back to navigation', async () => {

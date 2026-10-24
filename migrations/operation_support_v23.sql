@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS suporte_solicitacoes (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_usuario INT NOT NULL,
+  categoria ENUM('PROBLEMA','DUVIDA','EXCLUSAO') NOT NULL,
+  mensagem VARCHAR(2000) NOT NULL,
+  status ENUM('ABERTO','EM_ATENDIMENTO','RESOLVIDO') NOT NULL DEFAULT 'ABERTO',
+  resposta VARCHAR(2000) NULL,
+  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_suporte_usuario (id_usuario, criado_em),
+  INDEX idx_suporte_status (status, criado_em),
+  CONSTRAINT fk_suporte_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

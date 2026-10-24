@@ -28,7 +28,8 @@ function operationsMonitor(req, res, next) {
       [
         userId,
         req.method,
-        req.originalUrl.slice(0, 255),
+        // Nunca persiste query strings (podem conter tokens de recuperação).
+        req.path.replace(/\/\d+(?=\/|$)/g, '/:id').slice(0, 255),
         res.statusCode,
         req.requestId || null,
         ipHash,

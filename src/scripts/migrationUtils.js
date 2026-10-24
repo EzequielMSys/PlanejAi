@@ -37,7 +37,8 @@ const migrationOrder = [
   'user_pronouns_v19.sql',
   'expand_user_pronouns_v20.sql',
   'study_continuity_v21.sql',
-  'remove_unused_birth_date_v22.sql'
+  'remove_unused_birth_date_v22.sql',
+  'operation_support_v23.sql'
 ];
 
 function sortMigrations(files) {

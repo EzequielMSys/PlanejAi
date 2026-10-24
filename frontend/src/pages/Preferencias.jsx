@@ -1,6 +1,7 @@
 import { useAccessibility } from '../context/AccessibilityContext'
 import AppearancePanel from '../components/AppearancePanel'
 import Icon from '../components/Icons'
+import SupportPanel from '../components/SupportPanel'
 
 export default function Preferencias() {
   const { settings, update, reset } = useAccessibility()
@@ -13,5 +14,6 @@ export default function Preferencias() {
       </section>
       <section className="sd-settings-section"><div className="sd-section-heading"><Icon name="settings" /><div><h2>Menos ruído, mais foco</h2><p>Você escolhe o que torna a interface mais confortável.</p></div></div>{[['focusMode', 'Modo foco', 'Recolhe a navegação e as ferramentas secundárias.'], ['reducedMotion', 'Reduzir movimento', 'Desativa animações e transições.'], ['highContrast', 'Contraste reforçado', 'Destaca bordas, textos e controles.'], ['dyslexicFont', 'Fonte de formas distintas', 'Usa Verdana nas áreas de leitura.']].map(([key, label, hint]) => <label className="sd-switch-row" key={key}><span><strong>{label}</strong><small>{hint}</small></span><input type="checkbox" checked={settings[key]} onChange={event => update(key, event.target.checked)} /></label>)}<button type="button" className="sd-text-button" onClick={reset}>Restaurar preferências de leitura</button><p className="sd-settings-footnote">Suas escolhas ficam salvas neste navegador.</p></section>
     </div><aside className="sd-reading-preview"><span className="sd-eyebrow">PRÉVIA EM TEMPO REAL</span><article className="study-reader"><span className="sd-reading-kicker">UMA PAUSA PARA ENTENDER</span><h2>Aprender também é encontrar o seu ritmo.</h2><p>Não é preciso entender tudo de uma vez. Às vezes, uma pergunta bem feita e alguns minutos de atenção são suficientes para dar o próximo passo.</p><p>Leia com calma. Marque uma ideia. Tente explicá-la com suas próprias palavras. O conhecimento começa a fazer sentido quando encontra espaço na sua rotina.</p><blockquote>O próximo passo não precisa ser grande. Precisa ser possível.</blockquote><ul><li>Faça uma coisa de cada vez.</li><li>Volte ao que ainda não ficou claro.</li><li>Reconheça o que você já aprendeu.</li></ul></article></aside></div>
+    <SupportPanel />
   </main>
 }

@@ -25,6 +25,7 @@ async function runBackup() {
 }
 
 function startBackupScheduler() {
+  if (process.env.VERCEL) { state.status = 'external_required'; return null; }
   const hours = Number(process.env.BACKUP_INTERVAL_HOURS || 0);
   if (!process.env.BACKUP_DATABASE_URL || !Number.isFinite(hours) || hours <= 0) return null;
   state.status = 'scheduled';
@@ -35,7 +36,7 @@ function startBackupScheduler() {
 }
 
 function getBackupStatus() {
-  return { ...state };
+  return { ...state, status: process.env.VERCEL ? 'external_required' : state.status, scope: 'process', destination_configured: Boolean(process.env.BACKUP_DATABASE_URL), note: process.env.VERCEL ? 'Agendamento externo necessário. O Vercel não mantém este processo ligado.' : 'Estado desta instância; não confirma backups gerenciados do provedor.' };
 }
 
 module.exports = { startBackupScheduler, getBackupStatus, runBackup };

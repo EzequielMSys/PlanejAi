@@ -4,6 +4,21 @@ const metrics = require("../services/metricsService");
 const { getBackupStatus } = require("../services/backupScheduler");
 const jobQueue = require("../services/jobQueue");
 const rateLimitStore = require('../services/rateLimitStore');
+const support = require('../services/supportService');
+const { operationalSummary } = require('../services/operationalSummary');
+
+router.get('/suporte', authMiddleware, async (req, res, next) => {
+  try { res.json(await support.list(req.usuario.id)); } catch (error) { next(error); }
+});
+router.post('/suporte', authMiddleware, async (req, res, next) => {
+  try { res.status(201).json(await support.create(req.usuario.id, req.body)); } catch (error) { next(error); }
+});
+router.get('/atendimento', authMiddleware, isDono, async (req, res, next) => {
+  try { res.json(await support.list(null, true)); } catch (error) { next(error); }
+});
+router.patch('/atendimento/:id', authMiddleware, isDono, async (req, res, next) => {
+  try { await support.reply(req.params.id, req.body); res.sendStatus(204); } catch (error) { next(error); }
+});
 
 // Apenas valores numéricos e nomes de rotas conhecidos; nenhum dado pessoal é coletado.
 router.post('/vitals', async (req, res, next) => {
@@ -22,6 +37,7 @@ router.get("/metrics", authMiddleware, isDono, async (req, res, next) => {
       web_vitals: await metrics.persistedWebVitalSnapshot(),
       jobs: jobQueue.snapshot(),
       backup: getBackupStatus(),
+      operation: await operationalSummary(),
     });
   } catch (error) { next(error); }
 });

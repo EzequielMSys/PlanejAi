@@ -17,14 +17,14 @@ export function createApiClient(basePath) {
   })
   api.interceptors.response.use(
     (response) => {
-      if (response.config.method === 'get') cachePut(response.config.offlineCacheKey, response.data).catch(() => {})
+      if (response.config.method === 'get' && response.config.cache !== false) cachePut(response.config.offlineCacheKey, response.data).catch(() => {})
       return response
     },
     async (error) => {
       const config = error.config || {}
       if (config.offlineOwner && config.offlineOwner !== currentUser()) return Promise.reject(error)
       if (axios.isCancel(error)) return Promise.reject(error)
-      if (!error.response && config.method === 'get' && config.offlineCacheKey) {
+      if (!error.response && config.method === 'get' && config.cache !== false && config.offlineCacheKey) {
         const cached = await cacheGet(config.offlineCacheKey).catch(() => null)
         if (cached) return { data: cached.data, status: 200, config, offline: true }
       }
