@@ -176,7 +176,6 @@ export default function StudySession() {
         <aside className="session-tools">
           <article className="session-lumi pj-panel"><header><TutorLumi tamanho={32} rotulo="Lumi"/><div><span className="pj-eyebrow">APOIO DURANTE A SESSÃO</span><h2>Tire uma dúvida.</h2><p>Sobre este tema ou qualquer outra matéria.</p></div></header><ChatInterface className="session-lumi-chat" compacto estudoAtual={estudoAtual}/></article>
           <article className="session-check pj-panel"><span className="pj-eyebrow">Antes de sair</span><h2>Como esse conteúdo ficou?</h2><p>Sua resposta define quando ele volta para revisão.</p><div>{[['DIFICIL','Ainda difícil'],['LEMBREI','Entendi'],['DOMINEI','Consigo explicar']].map(([value,label]) => <button type="button" key={value} className={difficulty === value ? 'is-active' : ''} onClick={() => setDifficulty(value)}>{label}</button>)}</div></article>
-          <article className="session-audio-note"><span>♫</span><div><b>Trilha de foco</b><small>O player do Spotify pode ser arrastado pela alça ⠿.</small></div></article>
         </aside>
       </section>
     </div>

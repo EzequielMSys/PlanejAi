@@ -16,7 +16,6 @@ import '../components/WorkspaceUtilities.css'
 // utilizável antes deles e o peso crítico cai em todas as rotas.
 const FocusTimer = lazy(() => import('../components/FocusTimer'))
 const InstallApp = lazy(() => import('../components/InstallApp'))
-const StudyAudioDockV2 = lazy(() => import('../components/StudyAudioDockV2'))
 
 /** Deferred + Suspense num só ponto: import lazy em si, sem indicador visível. */
 function CarregadoAposPintura({ children }) {
@@ -67,7 +66,6 @@ function Layout() {
           <>
           <CarregadoAposPintura><FocusTimer /></CarregadoAposPintura>
           <CarregadoAposPintura><InstallApp /></CarregadoAposPintura>
-          <CarregadoAposPintura><StudyAudioDockV2 /></CarregadoAposPintura>
           </>
         )}
       </div>
