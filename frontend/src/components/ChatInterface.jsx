@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import inteligencia from '../services/inteligenciaService'
 import TutorLumi from './TutorLumi'
-import LumiMessage from './LumiMessage'
+function PlainLumiMessage({ content }) {
+  return <p className="whitespace-pre-wrap break-words leading-relaxed">{content}</p>
+}
+const LumiMessage = lazy(() => import('./LumiMessage').catch(() => ({ default: PlainLumiMessage })))
 import LumiPractice from './LumiPractice'
 
 const SUGESTOES_INICIO = [
@@ -34,7 +37,7 @@ function Mensagem({ mensagem }) {
             : 'bg-study-tint dark:bg-study-paper text-study-ink dark:text-white/90 border border-study-line/15 rounded-bl-md'
         }`}
       >
-        {ehUsuario ? <p className="whitespace-pre-wrap break-words leading-relaxed">{mensagem.content}</p> : <LumiMessage content={mensagem.content} />}
+        {ehUsuario ? <p className="whitespace-pre-wrap break-words leading-relaxed">{mensagem.content}</p> : <Suspense fallback={<PlainLumiMessage content={mensagem.content} />}><LumiMessage content={mensagem.content} /></Suspense>}
         {mensagem.criado_em && (
           <time dateTime={mensagem.criado_em} className="block translate-y-0.5 text-[10px] opacity-50">
             {formatarHora(mensagem.criado_em)}

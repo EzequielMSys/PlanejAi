@@ -8,3 +8,10 @@
 .essay-studio :is(input,textarea):disabled{opacity:.8}.essay-studio .essay-sheet-meta{flex-wrap:wrap;gap:.5rem}.essay-studio .essay-sheet-meta span:last-child{letter-spacing:0}
 .sd-route [tabindex="-1"]{scroll-margin-top:calc(var(--ui-topbar) + 1rem)}
 @media(prefers-reduced-motion:reduce){.route-skeleton *, .route-loading-mark{animation:none!important;transition:none!important}}
+.setup-page .grid>*,.setup-page fieldset { min-width:0; }
+.setup-page .setup-time-range { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr)); gap:.75rem; }
+.setup-time-range label { display:grid; gap:.35rem; min-width:0; }
+.setup-time-range input { width:100%; min-width:0; }
+.setup-page .setup-step-progress { flex-wrap:wrap; }
+.setup-page .setup-step-progress li { min-width:0; flex:1 1 8rem; overflow-wrap:anywhere; }
+@media(max-width:680px) { .setup-page form .flex.mt-6 { flex-direction:column; } .setup-page form button { min-width:0; overflow-wrap:anywhere; } }

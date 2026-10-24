@@ -145,6 +145,11 @@ async function diaTemDesafioAprovado(idDia, idUsuario) {
   return Boolean(rows[0])
 }
 
+async function diasAprovadosDoCronograma(idCronograma, idUsuario) {
+  const [rows] = await pool.execute("SELECT DISTINCT id_dia FROM cronograma_avaliacoes WHERE id_cronograma = ? AND id_usuario = ? AND tipo = 'ADIANTAMENTO' AND status = 'APROVADA'", [idCronograma, idUsuario])
+  return new Set(rows.map(row => Number(row.id_dia)))
+}
+
 async function obterProvaFinal(idCronograma, idUsuario) {
   const [rows] = await pool.execute("SELECT * FROM cronograma_avaliacoes WHERE id_cronograma = ? AND id_usuario = ? AND tipo = 'FINAL' ORDER BY iniciado_em DESC LIMIT 1", [idCronograma, idUsuario])
   return rows[0] || null
@@ -189,4 +194,4 @@ async function abandonar(idAvaliacao, idUsuario) {
   return { id_avaliacao: Number(idAvaliacao), status: 'EXPIRADA' }
 }
 
-module.exports = { obterCronogramaDoUsuario, obterDiaDoUsuario, iniciar, enviar, salvarResposta, diaTemDesafioAprovado, obterProvaFinal, obterEmAndamento, retomar, abandonar }
+module.exports = { obterCronogramaDoUsuario, obterDiaDoUsuario, iniciar, enviar, salvarResposta, diaTemDesafioAprovado, diasAprovadosDoCronograma, obterProvaFinal, obterEmAndamento, retomar, abandonar }

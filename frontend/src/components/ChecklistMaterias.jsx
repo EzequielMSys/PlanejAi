@@ -179,6 +179,7 @@ export default function ChecklistMaterias({ value, onChange, max = 10 }) {
         {mostrarOutra && (
           <input
             type="text"
+            aria-label="Outras matérias, separadas por vírgula"
             className="mt-3 w-full rounded-xl border border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-rgb)/1)] px-4 py-3 text-[rgb(var(--pn-texto-rgb)/1)] placeholder-black/35 outline-none transition focus:border-[rgb(var(--pn-primaria-borda-rgb)/1)] focus:ring-4 focus:ring-indigo-100"
             placeholder="Ex.: Artes, Educação Física, Informática"
             value={outrasText}

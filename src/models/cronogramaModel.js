@@ -102,7 +102,7 @@ async function obterCronogramaCompleto(idCronograma) {
     [idCronograma]
   )
 
-  for (const dia of dias) {
+  if (dias.length) {
     const [conteudos] = await pool.execute(
       `SELECT
         cc.id,
@@ -117,14 +117,17 @@ async function obterCronogramaCompleto(idCronograma) {
         c.materiais,
         c.nivel
        FROM cronograma_conteudos cc
+       JOIN cronograma_dias d ON d.id_dia = cc.id_dia
        LEFT JOIN conteudos c
          ON c.id_conteudo = cc.id_conteudo
-       WHERE cc.id_dia = ?
+       WHERE d.id_cronograma = ?
        ORDER BY cc.id ASC`,
-      [dia.id_dia]
+      [idCronograma]
     )
 
-    dia.conteudos = conteudos
+    const porDia = new Map(dias.map(dia => [Number(dia.id_dia), []]))
+    for (const conteudo of conteudos) porDia.get(Number(conteudo.id_dia))?.push(conteudo)
+    for (const dia of dias) dia.conteudos = porDia.get(Number(dia.id_dia))
   }
 
   cronograma.dias = dias

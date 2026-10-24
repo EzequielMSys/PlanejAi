@@ -1069,3 +1069,37 @@ test('a continuity outage is recoverable rather than presented as an empty histo
     assert.ok(!screen.container.textContent.includes('Não conseguimos consultar sua última sessão'));
   } finally { continuityFailure = false; await screen.close(); }
 });
+
+test('registration validation focuses the first invalid field and associates its explanation', async () => {
+  const screen = await renderRoute('/register');
+  try {
+    await act(async () => document.querySelector('form').dispatchEvent(new window.Event('submit', { bubbles:true, cancelable:true })));
+    const input=document.getElementById('nome');
+    assert.equal(document.activeElement,input);
+    assert.equal(input.getAttribute('aria-invalid'),'true');
+    assert.ok(document.getElementById(input.getAttribute('aria-describedby')).textContent.includes('Nome é obrigatório'));
+    for (const id of ['email','senha','confirmarSenha']) assert.ok(document.getElementById(document.getElementById(id).getAttribute('aria-describedby')));
+  } finally { await screen.close(); }
+});
+
+test('custom subjects and each available weekday time have accessible names', async () => {
+  let screen = await renderRoute('/onboarding');
+  try {
+    const other=[...document.querySelectorAll('label')].find(node=>node.textContent.includes('Outra (digitar matérias'));
+    assert.ok(other);
+    await act(async()=>other.querySelector('input').click());
+    assert.ok(document.querySelector('input[aria-label="Outras matérias, separadas por vírgula"]'));
+    const results=await axe.run(document,{rules:{'color-contrast':{enabled:false}}});
+    assert.deepEqual(results.violations.map(item=>item.id),[]);
+  } finally { await screen.close(); }
+  onboardingProfileFixture={areas_foco:'Matemática',objetivo:'ENEM',tempo_diario_min:60};
+  screen=await renderRoute('/onboarding');
+  try {
+    const day=document.querySelector('input[type="checkbox"]');assert.ok(day);
+    await act(async()=>day.click());
+    const inputs=[...document.querySelectorAll('input[type="time"]')];assert.equal(inputs.length,2);
+    for(const input of inputs) assert.match(input.getAttribute('aria-label'),/Horário (inicial|final) de /);
+    const results=await axe.run(document,{rules:{'color-contrast':{enabled:false}}});
+    assert.deepEqual(results.violations.map(item=>item.id),[]);
+  } finally { onboardingProfileFixture=null; await screen.close(); }
+});

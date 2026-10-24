@@ -239,9 +239,10 @@ class CronogramaService {
 
       if (completo) {
         const hoje = new Date().toISOString().slice(0, 10)
+        const diasAprovados = await avaliacaoModel.diasAprovadosDoCronograma(completo.id_cronograma, usuarioId)
         let anteriorConcluido = true
         for (const dia of completo.dias) {
-          const adiantado = await avaliacaoModel.diaTemDesafioAprovado(dia.id_dia, usuarioId)
+          const adiantado = diasAprovados.has(Number(dia.id_dia))
           const futuro = chaveData(dia.data_estudo) > hoje
           dia.bloqueado = !Number(dia.concluido) && (!anteriorConcluido || (futuro && !adiantado))
           dia.requer_desafio = !Number(dia.concluido) && anteriorConcluido && futuro && !adiantado

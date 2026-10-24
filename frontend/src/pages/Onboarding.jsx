@@ -140,7 +140,7 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
   if (restoring) return <RouteLoading label="Recuperando sua configuração salva…" />
   if (restoreError) return <section className="setup-invitation" role="alert"><p>Não conseguimos consultar sua configuração. Recarregue para recuperar o que já foi salvo antes de editar.</p><button type="button" onClick={() => window.location.reload()}>Tentar novamente</button><button type="button" onClick={() => navigate('/inicio')}>Explorar por enquanto</button></section>
   return (
-    <div className="setup-page min-h-screen px-4 py-8 text-[rgb(var(--pn-texto-rgb)/1)] sm:px-6 lg:px-10 lg:py-10 relative overflow-hidden">
+    <main className="setup-page min-h-screen px-4 py-8 text-[rgb(var(--pn-texto-rgb)/1)] sm:px-6 lg:px-10 lg:py-10 relative overflow-hidden">
       <div className="absolute -top-24 right-[8%] h-80 w-80 rounded-full bg-cyan-300/10 blur-3xl" />
       <div className="absolute bottom-0 left-[15%] h-96 w-96 rounded-full bg-violet-400/10 blur-3xl" />
 
@@ -305,26 +305,29 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
                       </label>
 
                       {!dia.ocupado && (
-                        <div className="flex items-center gap-2 text-sm text-[rgb(var(--pn-texto-rgb)/0.6)]">
+                        <div className="setup-time-range text-sm text-[rgb(var(--pn-texto-rgb)/0.6)]">
+                          <label><span>Início</span>
                           <input
                             type="time"
+                            aria-label={`Horário inicial de ${dia.label}`}
                             value={dia.hora_inicio}
                             onChange={(e) =>
                               atualizarHorario(index, 'hora_inicio', e.target.value)
                             }
                             className="bg-[rgb(var(--pn-superficie-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] rounded-full px-3 py-2 text-xs text-[rgb(var(--pn-texto-rgb)/1)] focus:ring-2 focus:ring-[rgb(var(--pn-primaria-borda-rgb)/1)] focus:outline-none"
                           />
-
-                          <span>às</span>
-
+                          </label>
+                          <label><span>Fim</span>
                           <input
                             type="time"
+                            aria-label={`Horário final de ${dia.label}`}
                             value={dia.hora_fim}
                             onChange={(e) =>
                               atualizarHorario(index, 'hora_fim', e.target.value)
                             }
                             className="bg-[rgb(var(--pn-superficie-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] rounded-full px-3 py-2 text-xs text-[rgb(var(--pn-texto-rgb)/1)] focus:ring-2 focus:ring-[rgb(var(--pn-primaria-borda-rgb)/1)] focus:outline-none"
                           />
+                          </label>
                         </div>
                       )}
                     </div>
@@ -355,6 +358,6 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
           </div>
         </motion.div>
       </div>
-    </div>
+    </main>
   )
 }

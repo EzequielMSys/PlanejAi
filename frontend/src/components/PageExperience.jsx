@@ -1,7 +1,8 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./Accessibility.css";
 const AccessibilityToolbar = lazy(() => import('./AccessibilityToolbar'))
+import { focusRouteContent } from '../utils/routeFocus'
 
 const titles = {
   "/": "PlanejAI — Estude com direção",
@@ -44,6 +45,12 @@ const titles = {
 export default function PageExperience() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const previousPath = useRef(pathname)
+  useEffect(() => {
+    if (previousPath.current === pathname) return
+    previousPath.current = pathname
+    return focusRouteContent()
+  }, [pathname])
 
   useEffect(() => {
     const pageKey = pathname === "/"

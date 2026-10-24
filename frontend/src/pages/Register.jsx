@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import authService from '../services/authService'
@@ -34,6 +34,12 @@ const Register = () => {
   const [showConfirm, setShowConfirm] = useState(false)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
+  const [focusError, setFocusError] = useState(null)
+  useEffect(() => {
+    if (!focusError) return
+    document.getElementById(focusError)?.focus()
+    setFocusError(null)
+  }, [focusError])
   const navigate = useNavigate()
 
   const validate = () => {
@@ -63,6 +69,7 @@ const Register = () => {
     }
 
     setErrors(newErrors)
+    setFocusError(Object.keys(newErrors)[0] || null)
     return Object.keys(newErrors).length === 0
   }
 
@@ -122,10 +129,11 @@ const Register = () => {
             value={formData.nome}
             onChange={(e) => handleChange('nome', e.target.value)}
             aria-invalid={Boolean(errors.nome)}
+            aria-describedby="nome-valor"
             className={inputClass('nome')}
           />
           {errors.nome ? (
-            <p className="study-error" role="alert">{errors.nome}</p>
+            <p id="nome-valor" className="study-error" role="alert">{errors.nome}</p>
           ) : (
             <p id="nome-valor" className="study-hint">Use apenas letras</p>
           )}
@@ -138,15 +146,19 @@ const Register = () => {
                 id="email"
                 type="email"
                 autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
+                spellCheck={false}
                 placeholder="joao@exemplo.com"
                 value={formData.email}
                 onChange={(e) => handleChange('email', e.target.value)}
                 aria-invalid={Boolean(errors.email)}
+                aria-describedby="email-requisitos"
                 className={inputClass('email')}
               />
             </div>
             {errors.email ? (
-              <p className="study-error" role="alert">{errors.email}</p>
+              <p id="email-requisitos" className="study-error" role="alert">{errors.email}</p>
             ) : (
               <p id="email-requisitos" className="study-hint">Email deve conter @ e domínio</p>
             )}
@@ -177,7 +189,7 @@ const Register = () => {
               </button>
             </div>
             {errors.senha ? (
-              <p className="study-error" role="alert">{errors.senha}</p>
+              <p id="senha-requisitos" className="study-error" role="alert">{errors.senha}</p>
             ) : (
               <p id="senha-requisitos" className="study-hint">{REQUISITOS_SENHA}</p>
             )}
@@ -194,6 +206,7 @@ const Register = () => {
               value={formData.confirmarSenha}
               onChange={(e) => handleChange('confirmarSenha', e.target.value)}
               aria-invalid={Boolean(errors.confirmarSenha)}
+              aria-describedby="confirmar-requisitos"
               className={inputClass('confirmarSenha')}
             />
             <button
@@ -206,7 +219,7 @@ const Register = () => {
             </button>
           </div>
           {errors.confirmarSenha ? (
-            <p className="study-error" role="alert">{errors.confirmarSenha}</p>
+            <p id="confirmar-requisitos" className="study-error" role="alert">{errors.confirmarSenha}</p>
           ) : (
             <p id="confirmar-requisitos" className="study-hint">Repita exatamente a mesma senha</p>
           )}
