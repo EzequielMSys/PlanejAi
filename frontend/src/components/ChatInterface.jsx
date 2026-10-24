@@ -25,7 +25,7 @@ function formatarHora(data) {
 function Mensagem({ mensagem }) {
   const ehUsuario = mensagem.role === 'user'
   return (
-    <div className={`flex items-start gap-2 ${ehUsuario ? 'lumi-message--user justify-end' : 'justify-start'}`}>
+    <div className={`flex items-start gap-2 ${ehUsuario ? 'lumi-message--user justify-end' : 'lumi-message--assistant justify-start'}`}>
       {!ehUsuario && <TutorLumi tamanho={28} />}
       <div
         className={`min-w-0 max-w-[88%] rounded-2xl px-4 py-3 text-[.94rem] shadow-sm sm:max-w-[82%] ${

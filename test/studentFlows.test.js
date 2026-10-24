@@ -488,6 +488,15 @@ test('owner counters use totals instead of the paginated user slice', async () =
   finally { await screen.close(); }
 });
 
+test('schedule keeps the planned calendar date instead of moving it to the previous day', async () => {
+  dailySchedulesFixture = [{ id_cronograma: 11, status: 'ATIVO', dias: [{ id_dia: 51, data_estudo: '2026-10-24', tempo_previsto: 25, concluido: 0, conteudos: [{ id: 71, titulo: 'Leitura de gráficos', disciplina: 'Matemática', concluido: 0 }] }] }];
+  const screen = await renderRoute('/cronograma');
+  try {
+    assert.ok(document.querySelector('.schedule-journey-card').textContent.includes('24/10'));
+    assert.ok(document.querySelector('.schedule-day').textContent.includes('24/10'));
+  } finally { dailySchedulesFixture = []; await screen.close(); }
+});
+
 test('owner operations panel opens the people directory', async () => {
   const screen = await renderRoute('/dono', 'dono');
   try {

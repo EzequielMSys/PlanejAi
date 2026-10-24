@@ -10,6 +10,7 @@ import CronogramaAssessment from '../components/CronogramaAssessment'
 import { exportarCronograma } from '../utils/calendarExport'
 import './Cronograma.css'
 import DailyPlanActions from '../components/DailyPlanActions'
+import { localStudyDate } from '../utils/dailyStudy'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -19,7 +20,7 @@ const fadeUp = {
 function formatarData(data) {
   if (!data) return '-'
 
-  return new Date(data).toLocaleDateString('pt-BR', {
+  return new Date(`${localStudyDate(data)}T12:00:00`).toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: '2-digit',
     month: '2-digit'
@@ -345,7 +346,7 @@ async function concluirDia(idDia) {
             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div>
                 <p className="uppercase tracking-[0.35em] text-xs font-black text-white/80 mb-3">
-                  PlanejAI
+                  SEU TEMPO, COM INTENÇÃO
                 </p>
 
                 <h1 className="text-4xl md:text-5xl font-black text-white mb-3 tracking-tight">
@@ -372,7 +373,7 @@ async function concluirDia(idDia) {
             </div>
           </section>
 
-          {cronogramaAtual && <div className="mb-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={abrirRecuperacao} className="rounded-full border border-study-line/25 bg-study-paper px-5 py-3 text-sm font-black text-study-accent dark:bg-study-paper dark:text-study-accent">Plano de recuperação</button><button type="button" onClick={() => exportarCronograma(cronogramaAtual)} className="rounded-full bg-study-accent px-5 py-3 text-sm font-black text-white">Exportar calendário</button></div>}
+          {cronogramaAtual && <div className="schedule-tools mb-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={abrirRecuperacao} className="rounded-full border border-study-line/25 bg-study-paper px-5 py-3 text-sm font-black text-study-accent dark:bg-study-paper dark:text-study-accent">Plano de recuperação</button><button type="button" onClick={() => exportarCronograma(cronogramaAtual)} className="rounded-full bg-study-accent px-5 py-3 text-sm font-black text-white">Exportar calendário</button></div>}
 
           <DailyPlanActions schedules={cronogramas} onSaved={carregarCronogramas} />
           {!cronogramaAtual ? (
@@ -447,6 +448,7 @@ async function concluirDia(idDia) {
               {cronogramaAtual.prova_final?.concluida && <section className="schedule-milestone is-complete"><span>TRILHA CERTIFICADA</span><h2>Seu esforço virou conquista.</h2><p>Você concluiu o cronograma e foi aprovado na prova final.</p></section>}
 
               <section className="schedule-plan" aria-labelledby="schedule-plan-title">
+                <div className="schedule-legend" aria-label="Estados das etapas"><span><b aria-hidden="true">○</b>Disponível para estudar</span><span><b aria-hidden="true">◇</b>Aguardando liberação</span><span><b aria-hidden="true">✓</b>Concluído</span></div>
                 <div className="schedule-plan-head"><div><span>PLANO COMPLETO</span><h2 id="schedule-plan-title">Suas etapas, em detalhe.</h2><p>Abra um dia para estudar, revisar materiais ou acompanhar o que já fez.</p></div><div className="schedule-plan-filters" role="group" aria-label="Filtrar dias do cronograma">{[['proximos', 'Próximos'], ['concluidos', 'Concluídos'], ['todos', 'Todos']].filter(([valor]) => valor !== 'proximos' || diasConcluidos < totalDias).map(([valor, rotulo]) => <button key={valor} type="button" aria-pressed={filtroEfetivo === valor} onClick={() => setFiltroDias(valor)}>{rotulo}</button>)}</div></div>
                 <div className="schedule-plan-list">
                 {diasVisiveis.map(({ dia, index }) => {
@@ -472,8 +474,9 @@ async function concluirDia(idDia) {
                       onDrop={(event) => soltarConteudo(event, idDia)}
                       className={`schedule-day group relative overflow-hidden rounded-[2rem] p-5 shadow-xl border before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 transition ${bloqueado ? 'is-locked border-study-line/15 bg-black/[.03] before:bg-[#8A769F]' : concluido ? 'is-done border-study-line/20 bg-study-paper before:bg-[#C4B5FD]' : diaAlvo === idDia ? 'is-target border-study-line bg-study-tint ring-4 ring-[#7C3AED]/10 before:bg-study-accent' : 'is-ready border-study-line/20 bg-study-paper before:bg-[#C4B5FD] hover:before:bg-study-accent'}`}
                     >
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex-1">
+                      <div className="schedule-day-row">
+                        <span className="schedule-day-number" aria-hidden="true"><small>DIA</small>{String(index + 1).padStart(2, '0')}</span>
+                        <div className="schedule-day-details flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4"><div className="flex-1">
                           <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-1">
                             Dia {index + 1}
                           </p>
@@ -522,7 +525,7 @@ async function concluirDia(idDia) {
                               {expandido ? 'Ocultar' : 'Ver conteúdos'}
                             </button>
                           )}
-                        </div>
+                        </div></div>
                       </div>
 
                       {expandido && conteudos.length > 0 && (

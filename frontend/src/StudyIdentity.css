@@ -1,0 +1,183 @@
+/* Quiet reading surfaces. Colour identifies actions; layout identifies each area. */
+.sd-workspace {
+  --ui-purple-strong: var(--pn-link);
+  --study-copy-size: 1rem;
+  --study-copy-leading: var(--a11y-line-height, 1.75);
+}
+.sd-workspace :is(.dash-v2, .schedule-page, .learning-page, .lumi-page) {
+  text-wrap: pretty;
+}
+.sd-workspace :is(.dash-v2-reason, .learning-hero-copy > p, .learning-next p, .learning-signals article p, .lumi-intro > p, .lumi-page-heading-row > p) {
+  font-size: var(--study-copy-size);
+  line-height: var(--study-copy-leading);
+  max-width: 65ch;
+}
+.sd-workspace :is(.dash-v2-focus-copy h2, .learning-hero h1, .lumi-page-heading-row h1) {
+  text-wrap: balance;
+}
+.sd-workspace :is(.study-reader, .lumi-message) {
+  font-family: var(--study-font);
+  line-height: var(--study-copy-leading);
+  max-width: var(--study-width);
+}
+.sd-workspace .lumi-message { font-size: 1rem; }
+.sd-workspace .lumi-message p { margin-block: .9em; }
+.sd-workspace :is(.learning-tools-entry, .learning-signals) a,
+.sd-workspace :is(.learning-signals button, .today-review-strip button, .dash-v2-agenda > header button, .lumi-back) {
+  color: var(--pn-link);
+}
+
+/* Today: one clear invitation, then a quiet notebook of useful context. */
+.sd-workspace .dash-v2 { padding: clamp(1.25rem, 2.5vw, 2.5rem); padding-bottom: 5rem; }
+.sd-workspace .dash-v2 .dash-v2-heading { margin-bottom: 1.8rem; }
+.sd-workspace .dash-v2 .dash-v2-heading h1 { font-weight: 600; letter-spacing: -.045em; }
+.sd-workspace .dash-v2 .dash-v2-heading button {
+  background: transparent !important;
+  color: var(--pn-texto) !important;
+  border: 1px solid var(--pn-borda);
+  border-radius: .7rem;
+}
+.sd-workspace .dash-v2 .dash-v2-focus {
+  border: 1px solid var(--pn-borda);
+  border-top: 4px solid var(--pn-primaria);
+  border-radius: 1.3rem;
+  background: var(--pn-superficie) !important;
+  padding: clamp(1.4rem, 3vw, 2.3rem);
+}
+.sd-workspace .dash-v2 .dash-v2-focus-copy h2 {
+  max-width: 24ch;
+  font-size: clamp(2rem, 3.5vw, 3rem) !important;
+  line-height: 1.18;
+}
+.sd-workspace .dash-v2 .dash-v2-focus-top { align-items: center; }
+.sd-workspace .dash-v2 .dash-v2-focus-top > span { font-size: .72rem; letter-spacing: .12em; }
+.sd-workspace .dash-v2 .dash-v2-focus-top small {
+  border-radius: 2rem; padding: .45rem .8rem;
+  background: var(--pn-superficie-alt); font-size: .8rem;
+}
+.sd-workspace .dash-v2 .dash-v2-focus-copy > p:first-child { font-size: .9rem; }
+.sd-workspace .dash-v2 .dash-v2-focus-copy > div { font-size: .85rem; }
+.sd-workspace .dash-v2 .dash-v2-focus footer { justify-content: flex-start; gap: .7rem; }
+.sd-workspace .dash-v2 .dash-v2-focus footer button { border-radius: .75rem; min-height: 48px; }
+.sd-workspace .dash-v2 .dash-v2-focus footer .dash-v2-lumi-action {
+  background: transparent !important; color: var(--pn-link) !important;
+  border: 1px solid var(--pn-borda);
+}
+.sd-workspace .dash-v2-score {
+  background: transparent; box-shadow: none; border: 0;
+  border-left: 1px solid var(--pn-borda); border-radius: 0;
+}
+.sd-workspace .dash-v2-score-message { font-size: .9rem; line-height: var(--study-copy-leading); }
+.sd-workspace .today-review-strip { margin-top: 1rem; border: 0; background: transparent; padding-inline: .25rem; }
+.sd-workspace .dash-v2-agenda { border-radius: 1.1rem; }
+.sd-workspace .dash-v2-agenda button b { font-size: 1rem; line-height: 1.5; }
+.sd-workspace .dash-v2-agenda button small { font-size: .85rem; line-height: 1.6; }
+.sd-workspace .dash-v2-coach, .sd-workspace .dash-v2-week { border-radius: 1rem; }
+.sd-workspace .dash-v2-coach p, .sd-workspace .dash-v2-week p { font-size: .9rem; line-height: var(--study-copy-leading); }
+.sd-workspace .dash-v2 .learning-signals-grid > article { background: transparent; box-shadow: none; border: 0; border-left: 1px solid var(--pn-borda); border-radius: 0; }
+.sd-workspace .dash-v2 .learning-signals-grid > article:first-child { border-left: 0; }
+
+/* Schedule: numbered agenda, visible states and a connected sequence. */
+.sd-workspace .schedule-page .workspace-hero {
+  background: var(--pn-superficie) !important;
+  border: 1px solid var(--pn-borda); border-left: 5px solid var(--pn-primaria);
+  border-radius: 1rem; box-shadow: none !important;
+}
+.sd-workspace .schedule-page .workspace-hero > .relative > button {
+  background: transparent; color: var(--pn-link); border: 1px solid var(--pn-borda-forte);
+}
+.sd-workspace .schedule-page .schedule-tools button {
+  background: transparent; color: var(--pn-link); border: 1px solid var(--pn-borda-forte); border-radius: .7rem;
+}
+.sd-workspace .schedule-page .schedule-day-actions button[class~="bg-study-accent"] {
+  background: var(--pn-primaria); color: var(--pn-on-primaria);
+}
+.schedule-legend { display: flex; flex-wrap: wrap; gap: .6rem 1.25rem; margin-block: 1rem; font-size: .85rem; color: var(--pn-texto-suave); }
+.schedule-legend span { display: inline-flex; gap: .5rem; align-items: center; }
+.schedule-legend b { font-size: 1rem; color: var(--pn-link); }
+.sd-workspace .schedule-page .schedule-plan-list { border-left: 1px solid var(--pn-borda); padding-left: 1rem; margin-left: .5rem; }
+.sd-workspace .schedule-page .schedule-day { border-radius: .9rem !important; box-shadow: none !important; }
+.sd-workspace .schedule-page .schedule-day:hover { transform: none; }
+.schedule-day-row { display: flex; align-items: flex-start; gap: 1rem; }
+.schedule-day-number {
+  display: grid; flex: 0 0 3rem; place-items: center; min-height: 3.4rem;
+  border: 1px solid var(--pn-borda); border-radius: .65rem;
+  background: var(--pn-superficie-alt); font: 400 1.6rem/1 Georgia, serif;
+  color: var(--pn-texto); font-variant-numeric: tabular-nums;
+}
+.schedule-day-number small { font: 600 .6rem/1 system-ui; letter-spacing: .12em; }
+.schedule-day-details { flex: 1; min-width: 0; }
+.sd-workspace .schedule-page .schedule-journey-card { box-shadow: none; min-height: 18rem; }
+.sd-workspace .schedule-page .schedule-journey-card.is-ready { background: var(--pn-superficie); border-top: 3px solid var(--pn-primaria); }
+.sd-workspace .schedule-page .schedule-journey-card.is-locked { background: transparent; }
+.sd-workspace .schedule-page .schedule-journey-card-top { font-size: .72rem; }
+
+/* Learning: a learning journal, with an evidence trail rather than more tiles. */
+.sd-workspace .learning-page.learning-page { background: var(--pn-fundo) !important; }
+.sd-workspace .learning-page .learning-hero {
+  background: transparent !important; border: 0; border-bottom: 1px solid var(--pn-borda);
+  border-radius: 0; padding: .5rem 0 2rem; gap: 2rem; box-shadow: none;
+  display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(260px, .8fr); align-items: stretch;
+}
+.sd-workspace .learning-page .learning-hero::after { display: none; }
+.sd-workspace .learning-page .learning-hero p { font-weight: 400; letter-spacing: 0; font-size: 1rem; line-height: var(--study-copy-leading); }
+.sd-workspace .learning-page .learning-hero-copy > span { color: var(--pn-link); font-size: .72rem; line-height: 1.5; letter-spacing: .12em; }
+.sd-workspace .learning-page .learning-hero h1 { font-size: clamp(2.6rem, 4.7vw, 4rem); line-height: 1.12; }
+.sd-workspace .learning-page .learning-hero h1 em { color: var(--pn-link); }
+.sd-workspace .learning-page .learning-next { background: var(--pn-superficie); border: 1px solid var(--pn-borda); border-radius: 1rem; }
+.sd-workspace .learning-page .learning-signals-grid { gap: 0; counter-reset: evidence; }
+.sd-workspace .learning-page .learning-signals-grid > article {
+  position: relative; counter-increment: evidence; padding: 1.5rem;
+  border: 0; border-top: 1px solid var(--pn-borda); border-radius: 0;
+  background: transparent; box-shadow: none;
+}
+.sd-workspace .learning-page .learning-signals-grid > article::before {
+  content: '0' counter(evidence); display: block; width: fit-content;
+  margin-bottom: 1rem; padding-bottom: .4rem; border-bottom: 2px solid var(--pn-primaria);
+  font: 400 1.5rem Georgia, serif; color: var(--pn-texto);
+}
+.sd-workspace .learning-page .learning-tools-entry { background: transparent; border: 0; border-bottom: 1px solid var(--pn-borda); border-radius: 0; }
+.sd-workspace .learning-page .learning-workspace { padding: clamp(1.25rem, 3vw, 2.3rem); box-shadow: none; }
+.sd-workspace .learning-page .learning-review { border-left: 3px solid var(--pn-primaria); }
+.sd-workspace .learning-page .learning-workspace > div > p,
+.sd-workspace .learning-page .learning-workspace article > p { max-width: var(--study-width); line-height: var(--study-copy-leading); }
+
+/* Lumi: a calm conversation desk with an unobstructed reading column. */
+.sd-workspace .lumi-page .lumi-intro { border: 0; background: transparent; padding-inline: .4rem 1.2rem; }
+.sd-workspace .lumi-page .lumi-portrait {
+  border: 0; border-radius: 50% 50% 42% 42%;
+  background: var(--pn-primaria-suave); height: 11rem; max-width: 13rem; margin-inline: auto;
+}
+.sd-workspace .lumi-page .lumi-intro-note { margin-top: 1.5rem; font-size: .85rem; }
+.sd-workspace .lumi-page .lumi-chat-card { box-shadow: none; border-radius: 1.3rem; height: clamp(32rem, calc(100dvh - 18rem), 48rem); }
+.sd-workspace .lumi-page .lumi-chat-heading { background: var(--pn-superficie-alt); }
+.sd-workspace .lumi-page .lumi-starters button { font-size: .9rem; padding: 1rem; min-height: 4rem; }
+.sd-workspace .lumi-page .lumi-starters button[data-personalized=true] { background: var(--pn-superficie); }
+.sd-workspace .lumi-page .lumi-starters button:hover { transform: none; }
+.sd-workspace .lumi-page .lumi-message--assistant > div {
+  background: transparent; border: 0; box-shadow: none; padding-inline: .5rem;
+}
+.sd-workspace .lumi-page .lumi-feed { scrollbar-gutter: stable; }
+.sd-workspace .lumi-page .lumi-feed:has(.lumi-welcome-content) { display: block; }
+.sd-workspace .lumi-page .lumi-welcome-content { padding-block: 1rem; }
+.sd-workspace .lumi-page .lumi-feed > div { margin-block: 1.25rem; }
+.sd-workspace .lumi-page .lumi-feed time { font-size: .75rem; opacity: .8; }
+
+@media (max-width: 850px) {
+  .sd-workspace .dash-v2-score { border-left: 0; border-top: 1px solid var(--pn-borda); padding-inline: .25rem; }
+  .sd-workspace .dash-v2 .learning-signals-grid > article { border-left: 0; border-top: 1px solid var(--pn-borda); padding-inline: .25rem; }
+  .sd-workspace .learning-page .learning-hero { gap: 1.3rem; grid-template-columns: 1fr; }
+  .sd-workspace .lumi-page .lumi-portrait { height: 5rem; }
+}
+@media (max-width: 600px) {
+  .sd-workspace .dash-v2 .dash-v2-focus footer { align-items: stretch; flex-direction: column; }
+  .sd-workspace .dash-v2 .dash-v2-focus footer button { justify-content: space-between; }
+  .schedule-day-row { gap: .65rem; }
+  .schedule-day-number { flex-basis: 2.5rem; font-size: 1.3rem; }
+  .sd-workspace .schedule-page .schedule-plan-list { padding-left: .5rem; margin-left: 0; }
+  .sd-workspace .learning-page .learning-signals-grid > article { padding-inline: .25rem; }
+}
+@media print {
+  .schedule-legend { color: #000; }
+  .sd-workspace .learning-page .learning-hero { break-inside: avoid; }
+}
