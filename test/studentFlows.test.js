@@ -95,6 +95,26 @@ async function renderRoute(route, role = 'aluno', userOverrides = {}) {
   return { root, container, async close() { await act(async () => root.unmount()); } };
 }
 function button(text) { return [...document.querySelectorAll('button')].find(node => node.textContent.trim() === text); }
+
+test('landing menu separates account access and closes with Escape or section navigation', async () => {
+  const screen = await renderRoute('/');
+  try {
+    const menu = document.querySelector('.study-menu');
+    const toggle = menu.querySelector('summary');
+    await act(async () => toggle.click());
+    assert.equal(menu.open, true);
+    assert.equal(menu.querySelector('a[href="/register"]').textContent, 'Criar minha conta ↗');
+    await act(async () => document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    assert.equal(menu.open, false);
+    assert.equal(document.activeElement, toggle);
+    await act(async () => toggle.click());
+    await act(async () => button('Conheça a Lumi').click());
+    assert.equal(menu.open, false);
+    assert.equal(document.activeElement.id, 'lumi');
+    assert.equal(document.querySelector('form'), null);
+    assert.ok(document.querySelector('.study-actions a[href="/register"]'));
+  } finally { await screen.close(); }
+});
 async function inputValue(element, value) { await act(async () => { const setter = Object.getOwnPropertyDescriptor(element.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype, 'value').set; setter.call(element, value); element.dispatchEvent(new window.Event('input', { bubbles: true })); }); }
 
 test('class management opens details and reveals creation on demand', async () => {

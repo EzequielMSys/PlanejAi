@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
 import Logo from '../components/Logo'
 import ColorPicker from '../components/ColorPicker'
 import ThemeToggle from '../components/ThemeToggle'
@@ -21,17 +22,49 @@ function irParaSecao(id) {
 }
 
 export default function Landing() {
+  const menuRef = useRef(null)
+  const closeMenu = () => { if (menuRef.current) menuRef.current.open = false }
+  useEffect(() => {
+    const dismiss = event => {
+      const menu = menuRef.current
+      if (!menu?.open) return
+      if (event.type === 'keydown' && event.key === 'Escape') {
+        menu.open = false
+        menu.querySelector('summary').focus()
+      } else if (event.type === 'pointerdown' && !menu.contains(event.target)) menu.open = false
+    }
+    document.addEventListener('keydown', dismiss)
+    document.addEventListener('pointerdown', dismiss)
+    return () => {
+      document.removeEventListener('keydown', dismiss)
+      document.removeEventListener('pointerdown', dismiss)
+    }
+  }, [])
+  const openSection = id => { closeMenu(); irParaSecao(id) }
   return <div className="study-landing">
     <header className="study-nav">
       <Link to="/" className="study-brand" aria-label="PlanejAI, página inicial"><Logo className="h-9 w-9" /><span>Planej<span className="brand-accent">AI</span></span></Link>
-      <nav aria-label="Navegação principal"><button type="button" className="study-anchor-button" onClick={() => irParaSecao('recursos')}>O que você encontra</button><button type="button" className="study-anchor-button" onClick={() => irParaSecao('como-funciona')}>Como começar</button></nav>
-      <div className="study-nav-actions"><ColorPicker /><ThemeToggle /><Link to="/login" className="study-login">Entrar</Link></div>
+      <div className="study-nav-actions">
+        <Link to="/login" className="study-login">Entrar</Link>
+        <details className="study-menu" ref={menuRef}>
+          <summary aria-controls="study-menu-content"><span aria-hidden="true">☰</span> Menu</summary>
+          <div id="study-menu-content" className="study-menu-panel">
+            <nav aria-label="Navegação principal">
+              <button type="button" onClick={() => openSection('recursos')}>Ferramentas de estudo</button>
+              <button type="button" onClick={() => openSection('lumi')}>Conheça a Lumi</button>
+              <button type="button" onClick={() => openSection('como-funciona')}>Como começar</button>
+            </nav>
+            <div className="study-menu-account"><p>Sua conta</p><Link to="/register" onClick={closeMenu}>Criar minha conta ↗</Link><Link to="/login" onClick={closeMenu}>Já tenho conta · Entrar</Link></div>
+            <div className="study-menu-preferences"><p>Do seu jeito</p><div><ColorPicker /><ThemeToggle /></div></div>
+          </div>
+        </details>
+      </div>
     </header>
     <main id="conteudo-principal" tabIndex={-1}>
       <section className="study-hero">
         <div className="study-hero-copy">
           <p className="study-kicker">ESPAÇO PARA APRENDER · PLANEJAI</p>
-          <h1>Seu futuro.<br />Uma página<br /><em>por vez.</em></h1>
+          <h1>Seu futuro.<br /><em>Uma página por vez.</em></h1>
           <p className="study-lead">Entre a vontade de aprender e o próximo passo, existe um lugar seu. Organize os estudos, tire dúvidas e veja o que já conquistou.</p>
           <div className="study-actions"><Link to="/register" className="study-button">Começar meu caderno <span aria-hidden="true">↗</span></Link><button type="button" className="study-anchor-button" onClick={() => irParaSecao('como-funciona')}>Conhecer o PlanejAI <span aria-hidden="true">↓</span></button></div>
           <p className="study-caption">No seu tempo. Do seu jeito. Com direção.</p>
@@ -52,8 +85,7 @@ export default function Landing() {
           <span className="study-desk-caption">MENOS RUÍDO. MAIS ESPAÇO PARA PENSAR.</span>
         </div>
       </section>
-      <section className="study-manifesto"><span>APRENDER É UM PROCESSO</span><p>Um lugar para organizar.<br /><em>Liberdade para descobrir.</em></p><span>PLANEJAR / PRATICAR / EVOLUIR</span></section>
-      <section className="study-lumi" aria-labelledby="study-lumi-title">
+      <section id="lumi" className="study-lumi" aria-labelledby="study-lumi-title" tabIndex={-1}>
         <div className="study-lumi-copy"><p className="study-kicker">CONHEÇA A LUMI</p><h2 id="study-lumi-title">Toda pergunta merece<br /><em>uma conversa de verdade.</em></h2><p>Quando uma explicação não encaixa, tente outro caminho. A Lumi pode retomar suas lições, explorar suas dúvidas e seguir no seu ritmo.</p><Link to="/chat" className="study-lumi-link">Conversar com a Lumi <span aria-hidden="true">↗</span></Link></div>
         <div className="study-lumi-example" aria-label="Exemplo de conversa com a Lumi"><div className="study-lumi-example-top"><TutorLumi tamanho={60} rotulo="Lumi, gata tutora" /><div><strong>Lumi</strong><small>Apoio para seus estudos</small></div></div><p className="study-lumi-question">“Por que essa função muda de sinal?”</p><div className="study-lumi-answer"><strong>Vamos olhar passo a passo.</strong><p>O sinal muda quando o resultado passa por zero. Primeiro encontramos esse ponto; depois testamos um valor de cada lado para entender o que acontece.</p></div><span className="study-lumi-example-foot">UM EXEMPLO · CADA CONVERSA SEGUE A SUA DÚVIDA</span></div>
       </section>
@@ -65,7 +97,6 @@ export default function Landing() {
         <div><p className="study-kicker">SEM COMPLICAR</p><h2>Comece de onde<br /><em>você está.</em></h2><p>Não existe uma rotina perfeita. Existe a que funciona para você — e ela pode mudar.</p></div>
         <ol>{[['Conte o que você busca', 'Seu objetivo, suas matérias e o tempo disponível ajudam a montar o plano.'], ['Encontre seu ritmo', 'Estude, pratique e converse com o assistente quando precisar de outra explicação.'], ['Volte e perceba a diferença', 'Use seus resultados para revisar dificuldades e escolher os próximos passos.']].map(([title, text], i) => <li key={title}><span>0{i + 1}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol>
       </section>
-      <section className="study-invitation"><p className="study-kicker">O ESPAÇO É SEU</p><h2>O que você quer<br /><em>aprender agora?</em></h2><Link to="/register" className="study-button">Criar minha conta <span aria-hidden="true">↗</span></Link><p>Escolha suas cores no topo e sinta-se em casa.</p></section>
     </main>
     <footer className="study-footer"><Link to="/" className="study-brand"><Logo className="h-8 w-8" /><span>PlanejAI</span></Link><p>Aprender transforma o que vem depois.</p><small>© {new Date().getFullYear()} PlanejAI</small></footer>
   </div>
