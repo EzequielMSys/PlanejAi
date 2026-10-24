@@ -5,6 +5,7 @@ import usuarioService from '../services/usuarioService'
 import perfilService from '../services/perfilService'
 import cronogramaService from '../services/cronogramaService'
 import ChecklistMaterias from '../components/ChecklistMaterias'
+import SaveFeedback from '../components/SaveFeedback'
 import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 import { resolveBackendAsset } from '../config/api'
@@ -81,6 +82,8 @@ export default function Perfil() {
 
   const [tab, setTab] = useState('info')
   const [saving, setSaving] = useState(false)
+  const [infoSave, setInfoSave] = useState({ status: 'ready' })
+  const [studySave, setStudySave] = useState({ status: 'ready' })
   const [uploadingFoto, setUploadingFoto] = useState(false)
   const [removingFoto, setRemovingFoto] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState(user?.foto_url || null)
@@ -231,6 +234,7 @@ const handleSaveInfo = async (e) => {
     }
 
     setSaving(true)
+    setInfoSave({ status: 'saving' })
 
     try {
       const usuarioId = user.id_usuario || user.id
@@ -250,7 +254,9 @@ const handleSaveInfo = async (e) => {
       }
 
       updateUser(usuarioAtualizado)
+      setInfoSave({ status: 'saved' })
     } catch (error) {
+      setInfoSave({ status: 'error', message: 'Não foi possível confirmar o salvamento. Seus dados continuam no formulário. Tente novamente.' })
       toast.error(error.response?.data?.error || 'Erro ao atualizar perfil')
     } finally {
       setSaving(false)
@@ -324,16 +330,21 @@ const handleSaveEstudos = async (e) => {
     }
 
     setLoadingEstudos(true)
+    setStudySave({ status: 'saving' })
+    let profileSaved = false
 
     try {
       await perfilService.atualizarPerfil(estudoForm)
+      profileSaved = true
 
       const diasParaSalvar = disponibilidade.map(({ label, ...dia }) => dia)
 
       await perfilService.salvarDisponibilidade(diasParaSalvar)
+      setStudySave({ status: 'saved', message: 'Objetivos e horários salvos na sua conta.' })
 
       toast.success('Perfil de estudo atualizado!')
     } catch (error) {
+      setStudySave({ status: 'error', message: profileSaved ? 'Os objetivos foram salvos, mas não conseguimos confirmar os horários. Tente salvar novamente.' : 'Não conseguimos confirmar o salvamento. Confira sua conexão e tente novamente.' })
       toast.error(error.response?.data?.message || 'Erro ao salvar perfil de estudo')
     } finally {
       setLoadingEstudos(false)
@@ -488,7 +499,7 @@ const handleSaveEstudos = async (e) => {
           {tab === 'info' && (
             <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card">
               <div className="profile-section-head"><p className="profile-eyebrow">IDENTIDADE</p><h2>Informações pessoais</h2><p>Escolha como seu nome aparece e mantenha seu contato atualizado.</p></div>
-              <form onSubmit={handleSaveInfo} className="space-y-6">
+              <form onSubmit={handleSaveInfo} className="space-y-6" onChange={() => setInfoSave({ status: 'pending', message: 'Alterações ainda não salvas. Use o botão Salvar para confirmar.' })}><fieldset disabled={saving} className="min-w-0 space-y-6 border-0 p-0">
                 <div className="profile-field-grid">
                   <label className="profile-field">Nome completo<input autoComplete="name" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} required /></label>
                   <label className="profile-field">Como quer que a gente chame você?<input value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Nome de preferência (opcional)" /></label>
@@ -512,7 +523,7 @@ const handleSaveEstudos = async (e) => {
                 <button type="submit" disabled={saving} className="profile-primary-button">
                   {saving ? 'Salvando...' : 'Salvar alterações'}
                 </button>
-              </form>
+              </fieldset>{infoSave.status !== 'ready' && <SaveFeedback status={infoSave.status} message={infoSave.message} onRetry={() => handleSaveInfo({ preventDefault() {} })} />}</form>
             </motion.div>
           )}
 
@@ -542,7 +553,7 @@ const handleSaveEstudos = async (e) => {
             <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card">
               <div className="profile-section-head"><p className="profile-eyebrow">SEU RITMO</p><h2>Perfil de estudo</h2><p>Essas escolhas ajudam a organizar seu cronograma.</p></div>
 
-              <form onSubmit={handleSaveEstudos} className="space-y-6">
+              <form onSubmit={handleSaveEstudos} className="space-y-6" onChange={() => setStudySave({ status: 'pending', message: 'Alterações ainda não salvas. Use o botão Salvar para confirmar.' })}><fieldset disabled={loadingEstudos} className="min-w-0 space-y-6 border-0 p-0">
                 <div className="profile-field-grid">
                   <label className="profile-field">Ano escolar<select value={estudoForm.ano_escolar} onChange={(e) => setEstudoForm((f) => ({ ...f, ano_escolar: e.target.value }))} required>
                     <option value="">Ano escolar</option>
@@ -616,7 +627,7 @@ const handleSaveEstudos = async (e) => {
                     {regenerando ? 'Gerando...' : 'Regenerar cronograma'}
                   </button>
                 </div>
-              </form>
+              </fieldset>{studySave.status !== 'ready' && <SaveFeedback status={studySave.status} message={studySave.message} onRetry={() => handleSaveEstudos({ preventDefault() {} })} />}</form>
             </motion.div>
           )}
         </motion.div>

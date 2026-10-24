@@ -10,6 +10,8 @@ import ChatInterface from '../components/ChatInterface'
 import TutorLumi from '../components/TutorLumi'
 import './Chat.css'
 import './StudySession.css'
+import useStudyNotes from '../hooks/useStudyNotes'
+import SaveFeedback from '../components/SaveFeedback'
 
 const SESSION_CONTENT_KEY = 'planejai:active-study-content'
 
@@ -72,75 +74,35 @@ export default function StudySession() {
   const [content] = useState(initial?.conteudo || null)
   const [day] = useState(initial?.dia || null)
   const [tab, setTab] = useState('guide')
-  const [notes, setNotes] = useState('')
-  const [saved, setSaved] = useState(null)
-  const [notesReady, setNotesReady] = useState(false)
-  const [notesStoredRemotely, setNotesStoredRemotely] = useState(false)
   const [finishing, setFinishing] = useState(false)
   const [difficulty, setDifficulty] = useState('LEMBREI')
   const startedAt = useRef(Date.now())
-  const noteFallbackKey = `planejai:study-note:${content?.id_conteudo || content?.id || 'free'}`
 
+  const { notes, setNotes, status: noteStatus, retry: retryNotes, loading: loadingNotes, flush: flushNotes } = useStudyNotes(content?.id_conteudo, content?.id)
   useEffect(() => {
-    if (!content) return
-    window.sessionStorage.setItem(SESSION_CONTENT_KEY, JSON.stringify({ conteudo: content, dia: day }))
-    let active = true
-    setNotesReady(false)
-    setNotesStoredRemotely(false)
-    if (!content.id_conteudo) {
-      setNotes(localStorage.getItem(noteFallbackKey) || '')
-      setNotesReady(true)
-      return () => { active = false }
-    }
-    aprendizagemService.anotacao(content.id_conteudo)
-      .then((anotacao) => {
-        if (!active) return
-        setNotes(anotacao.texto || '')
-        setSaved(anotacao.atualizadoEm ? new Date(anotacao.atualizadoEm) : null)
-        setNotesStoredRemotely(true)
-      })
-      .catch(() => {
-        if (!active) return
-        setNotes(localStorage.getItem(noteFallbackKey) || '')
-      })
-      .finally(() => active && setNotesReady(true))
-    return () => { active = false }
-  }, [content, day, noteFallbackKey])
-
-  useEffect(() => {
-    if (!notesReady) return undefined
-    if (!notes && !saved) return undefined
-    const timer = window.setTimeout(async () => {
-      if (!content?.id_conteudo) {
-        localStorage.setItem(noteFallbackKey, notes)
-        setSaved(new Date())
-        return
-      }
-      try {
-        const anotacao = await aprendizagemService.salvarAnotacao(content.id_conteudo, notes)
-        setSaved(anotacao.atualizadoEm ? new Date(anotacao.atualizadoEm) : new Date())
-        setNotesStoredRemotely(true)
-      } catch {
-        localStorage.setItem(noteFallbackKey, notes)
-        setNotesStoredRemotely(false)
-      }
-    }, 650)
-    return () => window.clearTimeout(timer)
-  }, [content?.id_conteudo, noteFallbackKey, notes, notesReady])
+    if (content) window.sessionStorage.setItem(SESSION_CONTENT_KEY, JSON.stringify({ conteudo: content, dia: day }))
+  }, [content, day])
 
   async function finish() {
     if (!content) return
     setFinishing(true)
     const minutes = Math.max(1, Math.round((Date.now() - startedAt.current) / 60000))
     try {
+      const noteResult = await flushNotes()
+      if (!noteResult.confirmed && !noteResult.local && !noteResult.unchanged) {
+        toast.error('Não conseguimos proteger suas anotações. Mantenha a sessão aberta e tente salvar novamente.')
+        return
+      }
       if (content.id && !Number(content.concluido)) await cronogramaService.concluirConteudo(content.id)
       if (content.id_conteudo) {
         await aprendizagemService.adicionarRevisao(content.id_conteudo)
         await aprendizagemService.avaliarRevisao(content.id_conteudo, difficulty)
       }
-      await aprendizagemService.registrarSessao({ idConteudo: content.id_conteudo, minutos: minutes, resultado: difficulty })
+      const sessionResult = await aprendizagemService.registrarSessao({ idConteudo: content.id_conteudo, minutos: minutes, resultado: difficulty })
       saveStudyHistory(content, minutes, difficulty)
-      toast.success('Sessão concluída e próxima revisão agendada.')
+      if (sessionResult?.offline || sessionResult?.queued) toast('O registro desta sessão ficou na fila deste aparelho e será enviado quando a conexão voltar.')
+      else toast.success('Sessão concluída e próxima revisão agendada.')
+      if (!noteResult.confirmed && !noteResult.unchanged) toast('As anotações ficaram apenas neste aparelho. Reabra este conteúdo para tentar enviá-las à sua conta.')
       navigate('/inicio')
     } catch {
       saveStudyHistory(content, minutes, difficulty)
@@ -158,17 +120,17 @@ export default function StudySession() {
       <header className="session-topbar student-page-heading">
         <button type="button" className="session-back" onClick={() => navigate(-1)}>← Voltar</button>
         <div><span className="pj-eyebrow">PlanejAI / Sala de estudo</span><h1>{content.titulo || 'Sessão de estudo'}</h1><p>{content.disciplina || content.area || 'Geral'} {day?.data_estudo ? `· ${new Date(`${String(day.data_estudo).slice(0,10)}T12:00:00`).toLocaleDateString('pt-BR')}` : ''}</p></div>
-        <button type="button" className="pj-button pj-button--primary" disabled={finishing} onClick={finish}>{finishing ? 'Salvando…' : 'Concluir sessão'}</button>
+        <button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : 'Concluir sessão'}</button>
       </header>
 
       <section className="session-layout">
         <div className="session-workspace pj-panel">
-          <nav className="session-tabs" aria-label="Ferramentas da sessão"><button className={tab === 'guide' ? 'is-active' : ''} onClick={() => setTab('guide')}>Guia de estudo</button><button className={tab === 'material' ? 'is-active' : ''} onClick={() => setTab('material')}>{materialUrl ? 'Fonte principal' : 'Material'}</button><button className={tab === 'notes' ? 'is-active' : ''} onClick={() => setTab('notes')}>Anotações <span>{saved ? 'salvas' : ''}</span></button></nav>
+          <nav className="session-tabs" aria-label="Ferramentas da sessão"><button className={tab === 'guide' ? 'is-active' : ''} onClick={() => setTab('guide')}>Guia de estudo</button><button className={tab === 'material' ? 'is-active' : ''} onClick={() => setTab('material')}>{materialUrl ? 'Fonte principal' : 'Material'}</button><button className={tab === 'notes' ? 'is-active' : ''} onClick={() => setTab('notes')}>Anotações <span>{noteStatus === 'saved' ? 'na conta' : noteStatus === 'local' ? 'neste aparelho' : ''}</span></button></nav>
           <div className="session-canvas">
             {tab === 'material' ? <StudyMaterial content={content} /> : tab === 'guide' ? <div className="session-guide-wrap"><StudyGuide material={content} sourceUrl={isExternalStudySource(materialUrl) ? materialUrl : undefined} /></div> : <div className="session-notes">
-              <header className="session-notes-header"><div><span className="pj-eyebrow">CADERNO DA SESSÃO</span><h2>Organize suas ideias.</h2><p>Anote o que entendeu e o que quer perguntar à Lumi.</p></div><div className="session-notes-tools"><span className="session-notes-save" role="status"><i />{saved ? `${notesStoredRemotely ? 'Sincronizado' : 'Salvo neste aparelho'} · ${saved.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Salvamento automático'}</span><DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? '\n' : ''}${texto}`)}/></div></header>
+              <header className="session-notes-header"><div><span className="pj-eyebrow">CADERNO DA SESSÃO</span><h2>Organize suas ideias.</h2><p>Anote o que entendeu e o que quer perguntar à Lumi.</p></div><div className="session-notes-tools"><SaveFeedback status={noteStatus} onRetry={retryNotes} /><DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? '\n' : ''}${texto}`)}/></div></header>
               <div className="session-note-prompts"><span>ESTRUTURE SUA REVISÃO</span><div><button type="button" onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Ideia principal\n`)}>+ Ideia principal</button><button type="button" onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Minha dúvida\n`)}>+ Minha dúvida</button><button type="button" onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Exemplo próprio\n`)}>+ Exemplo próprio</button></div></div>
-              <label className="session-notes-editor"><span className="sr-only">Anotações da sessão</span><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Escreva com suas palavras…\n\nO que ficou claro? O que ainda precisa de outra explicação?" /><small>{notes.length} caracteres</small></label>
+              <label className="session-notes-editor"><span className="sr-only">Anotações da sessão</span><textarea disabled={loadingNotes} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Escreva com suas palavras…\n\nO que ficou claro? O que ainda precisa de outra explicação?" /><small>{notes.length} caracteres</small></label>
             </div>}
           </div>
         </div>

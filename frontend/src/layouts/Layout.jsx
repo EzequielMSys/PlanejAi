@@ -9,6 +9,7 @@ import RouteLoading from '../components/RouteLoading'
 import ErrorBoundary from '../components/ErrorBoundary'
 import '../components/LearningSurfaces.css'
 import '../components/WorkspaceUtilities.css'
+import '../MobileExperience.css'
 
 // Widgets secundários: não participam da primeira pintura. O lazy() tira o
 // código deles do bundle de entrada (index.js) e o Deferred garante que os

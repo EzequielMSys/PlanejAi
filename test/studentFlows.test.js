@@ -398,6 +398,7 @@ test('profile accepts custom pronouns without making the field required', async 
     await flush();
     assert.equal(JSON.parse(localStorage.getItem('user')).pronome, 'they/them');
     assert.ok(requests.some(request => request.method === 'put' && request.url.endsWith('/usuarios/900001') && JSON.parse(request.data).pronome === 'they/them'));
+    assert.ok(document.querySelector('.save-feedback[data-state="saved"]'));
   } finally { await screen.close(); }
 });
 test('study room teaches the scheduled topic and gives Lumi its subject context', async () => {

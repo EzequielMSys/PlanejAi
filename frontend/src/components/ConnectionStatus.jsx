@@ -55,7 +55,7 @@ export default function ConnectionStatus() {
   if ((status === 'checking' || status === 'online') && pending === 0 && conflicts === 0) return null
   return <div className="connection-alert" role="status"><span className="connection-alert-dot" />
     <p><strong>{conflicts > 0 ? `${conflicts} item(ns) precisam de revisão antes de sincronizar.` : status === 'online' ? `${pending} item(ns) aguardando sincronização.` : status === 'offline' ? 'Você está sem internet.' : 'Servidor indisponível.'}</strong>{' '}
-      {status === 'offline' ? 'Seu trabalho compatível ficará salvo neste aparelho e será enviado depois.' : status === 'online' ? 'Os envios salvos serão sincronizados automaticamente.' : 'Verifique o backend e a conexão com o banco.'}</p>
+      {status === 'offline' ? 'Algumas alterações podem ficar apenas neste aparelho. Confira o aviso de salvamento em cada tela.' : status === 'online' ? 'Os envios que estão na fila serão sincronizados automaticamente.' : 'Não conseguimos confirmar a conexão. Confira os avisos de salvamento antes de sair.'}</p>
     <button type="button" onClick={checkConnection}>Tentar novamente</button><Link to="/status">Ver diagnóstico</Link>
   </div>
 }

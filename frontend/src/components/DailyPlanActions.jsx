@@ -10,6 +10,7 @@ export default function DailyPlanActions({ schedules, onSaved }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [confirmation, setConfirmation] = useState('')
+  const [refreshError, setRefreshError] = useState(false)
   if (!canAdjust) return confirmation ? <p className="daily-adjust-saved" role="status">✓ {confirmation}</p> : null
   const select = value => { setChoice(value); setError(''); setConfirmation('') }
   async function save() {
@@ -19,7 +20,7 @@ export default function DailyPlanActions({ schedules, onSaved }) {
       setChoice(null)
       setConfirmation(result.message)
       toast.success('Rotina ajustada e salva na sua conta.')
-      await onSaved()
+      try { await onSaved(); setRefreshError(false) } catch { setRefreshError(true) }
     } catch (failure) {
       setError(failure.response?.data?.message || 'Não foi possível confirmar o ajuste. Tente novamente.')
     } finally { setSaving(false) }
@@ -30,5 +31,6 @@ export default function DailyPlanActions({ schedules, onSaved }) {
     {choice && <div className="daily-adjust-preview" role="region" aria-label="Conferir ajuste"><h3>{choice === 'REDUZIR' ? 'Um passo menor para hoje' : 'Retome sem acumular tudo amanhã'}</h3><p>{choice === 'REDUZIR' ? `Você fica com “${pending[0]?.titulo || 'o primeiro conteúdo'}” e 20 minutos previstos hoje. ${pending.length > 1 ? 'Os outros conteúdos e as etapas seguintes serão distribuídos nos seus próximos dias disponíveis, sem sobrepor as etapas.' : 'As outras datas continuam como estão.'}` : 'Os conteúdos pendentes passam para o próximo dia disponível no seu perfil. As etapas seguintes avançam quando necessário para manter a ordem.'} O que você já concluiu será preservado. A data final pode ser estendida.</p><div><button type="button" disabled={saving} onClick={save}>{saving ? 'Salvando ajuste…' : 'Confirmar ajuste'}</button><button type="button" disabled={saving} onClick={() => setChoice(null)}>Cancelar</button></div></div>}
     {error && <p role="alert" className="daily-adjust-error">{error}</p>}
     {confirmation && <p role="status" className="daily-adjust-saved">✓ {confirmation}</p>}
+    {refreshError && <div className="daily-adjust-preview" role="status"><p>O ajuste foi salvo na sua conta, mas a lista ainda não foi atualizada.</p><button type="button" onClick={() => onSaved().then(() => setRefreshError(false)).catch(() => {})}>Atualizar plano</button></div>}
   </section>
 }
