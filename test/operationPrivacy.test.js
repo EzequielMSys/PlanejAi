@@ -24,3 +24,21 @@ test('a failed read is audited without storing body, query, raw identifiers or e
   assert.equal(parameters[2], '/api/aprendizagem/conteudos/:idConteudo/anotacao');
   assert.ok(!JSON.stringify(parameters).includes('private'));
 });
+
+test('serverless audit registers background completion before responding and waits for the database', async () => {
+  let background, finishWrite;
+  const context = { module: { exports: {} }, require: name => ({
+    crypto: require('node:crypto'), '../config/db': { execute: () => new Promise(resolve => { finishWrite = resolve; }) },
+    '../services/metricsService': { beginRequest() {}, finishRequest() {} }, '../utils/operationContext': { safeRoute },
+    '@vercel/functions': { waitUntil: promise => { background = promise; } },
+  })[name], process: { hrtime: process.hrtime, env: { VERCEL: '1' } }, console };
+  vm.runInNewContext(fs.readFileSync(require.resolve('../src/middlewares/operationsMiddleware'), 'utf8'), context);
+  const res = new EventEmitter(); res.statusCode = 400;
+  context.module.exports.operationsMonitor({ method: 'POST', originalUrl: '/api/auth/login', route: { path: '/login' }, ip: '127.0.0.1' }, res, () => {});
+  assert.ok(background);
+  let completed = false; background.then(() => { completed = true; });
+  res.emit('finish'); await Promise.resolve();
+  assert.equal(completed, false);
+  finishWrite(); await background;
+  assert.equal(completed, true);
+});
