@@ -25,6 +25,9 @@ const titles = {
   "/onboarding": "Configurar estudos — PlanejAI",
   "/primeiro-acesso": "Primeiro acesso — PlanejAI",
   "/chat": "Tutor de estudos — PlanejAI",
+  "/lumi": "Lumi — PlanejAI",
+  "/fontes-estudo": "Fontes para estudar — PlanejAI",
+  "/preferencias": "Meu espaço — PlanejAI",
   "/estudar": "Sessão de estudo — PlanejAI",
   "/minha-jornada": "Sessão guiada — PlanejAI",
   "/sessao-guiada": "Sessão guiada — PlanejAI",
@@ -59,6 +62,7 @@ export default function PageExperience() {
   useEffect(() => {
     const onKeyDown = (event) => {
       if (event.altKey && !event.ctrlKey && !event.metaKey) {
+        if (event.target?.closest?.('input,textarea,select,[contenteditable="true"]')) return;
         const shortcuts = {
           1: "/inicio",
           c: "/cronograma",

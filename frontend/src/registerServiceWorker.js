@@ -23,12 +23,9 @@ export function registerServiceWorker() {
 }
 
 export function registerChunkRecovery() {
-  window.addEventListener('vite:preloadError', (event) => {
-    const key = 'planejai:last-chunk-retry'
-    const previous = Number(window.sessionStorage.getItem(key) || 0)
-    if (Date.now() - previous < 30_000) return
-    event.preventDefault()
-    window.sessionStorage.setItem(key, String(Date.now()))
-    window.location.reload()
+  // A falha segue para o ErrorBoundary. Recarregar automaticamente poderia
+  // apagar um formulário aberto enquanto outro módulo está sendo solicitado.
+  window.addEventListener('vite:preloadError', () => {
+    window.dispatchEvent(new window.CustomEvent('planejai:chunk-unavailable'))
   })
 }

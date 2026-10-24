@@ -5,11 +5,12 @@ import authService from "../services/authService";
 import { apiUrl } from "../config/api";
 import { clearStoredSession, isTokenExpired } from "../utils/session";
 import { clearOfflineData } from "../utils/offlineStore";
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 export const AuthContext = createContext();
 
 async function checkPerfilCompleto(token) {
-  const response = await fetch(apiUrl("/api/perfil"), {
+  const response = await fetchWithTimeout(apiUrl("/api/perfil"), {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });

@@ -38,10 +38,18 @@ let evolutionFixture = [];
 let continuityFixture = null;
 let onboardingProfileFixture = null;
 let incompleteAccount = false;
+let failLearningLoad = false;
+let essayMode = '';
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data });
+  if (essayMode === 'workshopFailure' && config.method === 'post' && url.endsWith('/redacao/projetos')) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
+  if (failLearningLoad && url.endsWith('/aprendizagem/resumo')) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
+  if (url.endsWith('/redacao') && config.method === 'post') {
+    if (essayMode === 'failure') throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: { message: 'Envio temporariamente indisponível.' } });
+    if (essayMode === 'queued') return { offline: true, queued: true, queueId: 123 };
+  }
   if (url.endsWith('/aprendizagem/estudo-em-andamento')) return config.method === 'get' ? continuityFixture : { salvo: true };
   if (url.endsWith('/cronograma')) return dailySchedulesFixture;
   if (url.endsWith('/aprendizagem/evolucao')) return evolutionFixture;
@@ -75,7 +83,7 @@ async function getBundle() {
   if (bundle) return bundle;
   const esbuild = requireFrontend('esbuild');
   const result = await esbuild.build({
-    stdin: { contents: `export { default as App } from './src/App'; export { ThemeProvider } from './src/context/ThemeContext'; export { AccessibilityProvider } from './src/context/AccessibilityContext'; export { default as ErrorBoundary } from './src/components/ErrorBoundary';`, resolveDir: frontendDir, loader: 'jsx' },
+    stdin: { contents: `export { default as App } from './src/App'; export { default as RouteLoading } from './src/components/RouteLoading'; export { default as PageExperience } from './src/components/PageExperience'; export { ThemeProvider } from './src/context/ThemeContext'; export { AccessibilityProvider } from './src/context/AccessibilityContext'; export { default as ErrorBoundary } from './src/components/ErrorBoundary';`, resolveDir: frontendDir, loader: 'jsx' },
     bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic', loader: { '.css': 'empty' },
     define: { 'import.meta.env': JSON.stringify({ VITE_API_URL: 'http://fixture.invalid', BASE_URL: '/', DEV: true }) },
     plugins: [{ name: 'defer-nonessential-widgets', setup(build) { build.onResolve({ filter: /LumiMessage$/ }, () => ({ path: 'lumi-message-test', namespace: 'test' })); build.onResolve({ filter: /Deferred$/ }, () => ({ path: 'deferred-test', namespace: 'test' })); build.onLoad({ filter: /lumi-message-test/, namespace: 'test' }, () => ({ contents: "import React from 'react'; export default function LumiMessage({ content }) { return React.createElement('div', { className: 'lumi-message' }, content) }", loader: 'js', resolveDir: frontendDir })); build.onLoad({ filter: /deferred-test/, namespace: 'test' }, () => ({ contents: 'export default function Deferred(){ return null }', loader: 'js' })); } }],
@@ -715,4 +723,128 @@ test('session content without the current account scope is never restored', asyn
     assert.equal(screen.container.textContent.includes('Texto privado'), false);
     assert.equal(screen.container.textContent.includes('Texto de outra conta'), false);
   } finally { window.sessionStorage.clear(); await screen.close(); }
+});
+
+test('learning load failure is a retryable error, never an empty progress report', async () => {
+  failLearningLoad = true;
+  const screen = await renderRoute('/aprendizagem');
+  try {
+    assert.ok(screen.container.textContent.includes('Não conseguimos consultar seu progresso'));
+    assert.equal(document.querySelector('.learning-hero'), null);
+    failLearningLoad = false;
+    await act(async () => document.querySelector('.recovery-state button').click()); await flush();
+    assert.ok(document.querySelector('.learning-hero'), screen.container.textContent.slice(-1200));
+  } finally { failLearningLoad = false; await screen.close(); }
+});
+
+test('essay failure preserves the editor and an account-scoped draft immediately', async () => {
+  const screen = await renderRoute('/redacoes');
+  essayMode = 'failure';
+  try {
+    assert.equal(requests.some(r => r.url.endsWith('/redacao/portfolio')), false);
+    assert.equal(requests.some(r => r.url.endsWith('/redacao/projetos')), false);
+    await act(async () => document.querySelector('.redacoes-intro-actions button').click()); await flush();
+    await inputValue(document.getElementById('essay-topic'), 'Educação e acesso');
+    const text = 'A educação permite compreender a sociedade e participar de decisões coletivas. '.repeat(5);
+    await inputValue(document.querySelector('textarea[aria-label="Texto da redação"]'), text);
+    assert.equal(JSON.parse(localStorage.getItem('900001:essay-draft:v3')).texto, text);
+    await act(async () => button('Finalizar e enviar').click()); await flush();
+    assert.ok(document.querySelector('.essay-sheet .save-feedback[data-state="error"]'));
+    assert.equal(document.querySelector('textarea[aria-label="Texto da redação"]').value, text);
+    assert.equal(JSON.parse(localStorage.getItem('900001:essay-draft:v3')).texto, text);
+  } finally { essayMode = ''; await screen.close(); }
+});
+
+test('queued essay keeps its text and prevents the same version being submitted twice', async () => {
+  const screen = await renderRoute('/redacoes');
+  essayMode = 'queued';
+  try {
+    await act(async () => document.querySelector('.redacoes-intro-actions button').click()); await flush();
+    await inputValue(document.getElementById('essay-topic'), 'Acesso à educação');
+    const text = 'Uma escola acessível precisa de condições para que os estudantes possam aprender. '.repeat(5);
+    await inputValue(document.querySelector('textarea[aria-label="Texto da redação"]'), text);
+    await act(async () => button('Finalizar e enviar').click()); await flush();
+    assert.ok(screen.container.textContent.includes('já foi encaminhada pela fila'));
+    assert.equal(document.querySelector('textarea[aria-label="Texto da redação"]').value, text);
+    assert.ok(button('Nesta versão: envio na fila').disabled);
+    assert.equal(requests.filter(r => r.method === 'post' && r.url.endsWith('/redacao')).length, 1);
+    assert.ok(JSON.parse(localStorage.getItem('900001:essay-draft:v3')).queuedVersion);
+  } finally { essayMode = ''; await screen.close(); }
+});
+
+test('essay editor ignores drafts without the current account owner', async () => {
+  const screen = await renderRoute('/redacoes');
+  try {
+    localStorage.setItem('planejai:redacao:rascunho:v2', JSON.stringify({ tema: 'Privado', texto: 'De outra conta' }));
+    localStorage.setItem('900002:essay-draft:v3', JSON.stringify({ tema: 'Privado', texto: 'De outra conta' }));
+    await act(async () => document.querySelector('.redacoes-intro-actions button').click()); await flush();
+    assert.equal(document.getElementById('essay-topic').value, '');
+    assert.equal(document.querySelector('textarea[aria-label="Texto da redação"]').value, '');
+  } finally { await screen.close(); }
+});
+
+test('a full device store keeps the essay editable and warns instead of claiming it was saved', async () => {
+  const screen = await renderRoute('/redacoes');
+  const original = window.Storage.prototype.setItem;
+  try {
+    await act(async () => document.querySelector('.redacoes-intro-actions button').click()); await flush();
+    window.Storage.prototype.setItem = () => { throw new Error('Quota exceeded'); };
+    await inputValue(document.querySelector('textarea[aria-label="Texto da redação"]'), 'Texto que precisa ser preservado.');
+    assert.ok(document.querySelector('.save-feedback[data-state="unsaved"]'));
+    assert.equal(document.querySelector('textarea[aria-label="Texto da redação"]').value, 'Texto que precisa ser preservado.');
+  } finally { window.Storage.prototype.setItem = original; await screen.close(); }
+});
+
+test('clearing both essay fields does not resurrect an old draft when the editor reopens', async () => {
+  const screen = await renderRoute('/redacoes');
+  try {
+    await act(async () => document.querySelector('.redacoes-intro-actions button').click()); await flush();
+    await inputValue(document.getElementById('essay-topic'), 'Tema antigo');
+    await inputValue(document.querySelector('textarea[aria-label="Texto da redação"]'), 'Texto antigo');
+    await inputValue(document.getElementById('essay-topic'), '');
+    await inputValue(document.querySelector('textarea[aria-label="Texto da redação"]'), '');
+    assert.equal(localStorage.getItem('900001:essay-draft:v3'), null);
+  } finally { await screen.close(); }
+});
+
+test('guided workshop waits for its saved project and keeps edits when saving fails', async () => {
+  const screen = await renderRoute('/redacoes');
+  essayMode = 'workshopFailure';
+  try {
+    assert.equal(requests.some(r => r.url.endsWith('/redacao/projetos')), false);
+    await act(async () => button('Abrir oficina →').click()); await flush();
+    await inputValue(document.querySelector('.writing-workshop-editor input'), 'Inclusão digital');
+    await act(async () => button('Salvar esta etapa').click()); await flush();
+    assert.equal(document.querySelector('.writing-workshop-editor input').value, 'Inclusão digital');
+    assert.ok(document.querySelector('.writing-workshop .save-feedback[data-state="error"]'));
+  } finally { essayMode = ''; await screen.close(); }
+});
+
+test('slow route loading explains the wait without reloading or replacing the page', async () => {
+  const { RouteLoading } = await getBundle();
+  const original = window.setTimeout;
+  let slow;
+  window.setTimeout = (callback, delay, ...args) => delay === 8000 ? (slow = callback, 999999) : original(callback, delay, ...args);
+  const root = createRoot(document.getElementById('root'));
+  try {
+    await act(async () => root.render(React.createElement(RouteLoading)));
+    await act(async () => slow());
+    assert.ok(document.body.textContent.includes('Está demorando mais que o esperado'));
+    assert.equal(document.querySelectorAll('button').length, 0);
+  } finally { window.setTimeout = original; await act(async () => root.unmount()); }
+});
+
+test('navigation shortcuts leave typed text alone and still work outside form fields', async () => {
+  const { PageExperience, ThemeProvider, AccessibilityProvider } = await getBundle();
+  const { useLocation } = requireFrontend('react-router-dom');
+  function Probe() { return React.createElement('p', { id: 'path-probe' }, useLocation().pathname); }
+  const root = createRoot(document.getElementById('root'));
+  try {
+    await act(async () => root.render(React.createElement(MemoryRouter, { initialEntries: ['/redacoes'] }, React.createElement(ThemeProvider, null, React.createElement(AccessibilityProvider, null, React.createElement(PageExperience), React.createElement('textarea', { defaultValue: 'Texto em andamento' }), React.createElement(Probe))))));
+    await act(async () => document.querySelector('textarea').dispatchEvent(new window.KeyboardEvent('keydown', { bubbles: true, cancelable: true, altKey: true, key: 'c' })));
+    assert.equal(document.getElementById('path-probe').textContent, '/redacoes');
+    assert.equal(document.querySelector('textarea').value, 'Texto em andamento');
+    await act(async () => window.dispatchEvent(new window.KeyboardEvent('keydown', { bubbles: true, cancelable: true, altKey: true, key: 'c' })));
+    assert.equal(document.getElementById('path-probe').textContent, '/cronograma');
+  } finally { await act(async () => root.unmount()); }
 });

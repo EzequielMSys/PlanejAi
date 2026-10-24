@@ -1,0 +1,9 @@
+/* A cor de destaque e a cor de texto sobre ela têm papéis diferentes. */
+.sd-workspace :is(.sd-button--primary,.pj-button--primary,.study-button,.study-guide-check,.essay-sheet-actions>div button:last-child,.learning-hero-actions>button:first-child,.dash-v2-focus footer>button:first-child){background:var(--pn-primaria)!important;color:var(--pn-on-primaria)!important}
+.sd-workspace :is(.sd-button--primary,.pj-button--primary,.study-button,.study-guide-check,.essay-sheet-actions>div button:last-child,.learning-hero-actions>button:first-child,.dash-v2-focus footer>button:first-child):hover:not(:disabled){background:var(--pn-primaria-hover)!important;color:var(--pn-on-primaria-hover)!important}
+.sd-workspace .lumi-message--user>div,.sd-workspace .study-guide-options button.is-selected b{background:var(--pn-primaria)!important;color:var(--pn-on-primaria)!important}
+.sd-workspace :is(.study-guide a,.sources-page a,.save-feedback button,.lumi-practice button,.setup-invitation a,.sd-text-button){color:var(--pn-link)!important}
+.sd-workspace :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid var(--pn-link)!important;outline-offset:3px!important;scroll-margin-block:6rem}
+.sd-workspace :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea){border-color:var(--pn-borda-forte)}
+.essay-studio :is(input,textarea):disabled{opacity:.8}.essay-studio .essay-sheet-meta{flex-wrap:wrap;gap:.5rem}.essay-studio .essay-sheet-meta span:last-child{letter-spacing:0}
+@media(prefers-reduced-motion:reduce){.route-skeleton *, .route-loading-mark{animation:none!important;transition:none!important}}

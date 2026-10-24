@@ -18,7 +18,7 @@ const redacaoService = {
     try {
       const response = await api.post('/', { tema, texto }, { offlineQueue: true })
 
-      toast.success(
+      if (!response.data.offline) toast.success(
         response.data.message || 'Redação enviada com sucesso!'
       )
 

@@ -1,17 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import redacaoService from '../services/redacaoService'
 import '../components/EssayRecords.css'
-import EssayStudio from '../components/EssayStudio'
-import EssayVersions from '../components/EssayVersionsPro'
+const EssayStudio = lazy(() => import('../components/EssayStudio'))
+const EssayVersions = lazy(() => import('../components/EssayVersionsPro'))
 import WritingWorkshop from '../components/WritingWorkshop'
-import PeerReview from '../components/PeerReview'
-import EssayPortfolio from '../components/EssayPortfolio'
+const PeerReview = lazy(() => import('../components/PeerReview'))
+const EssayPortfolio = lazy(() => import('../components/EssayPortfolio'))
 import TutorLumi from '../components/TutorLumi'
 import './RedacoesExperience.css'
+import { essayDraftKey, readEssayDraft, markEssayQueued } from '../utils/essayDraft'
+import RecoveryState from '../components/RecoveryState'
+import RouteLoading from '../components/RouteLoading'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -129,10 +132,14 @@ export default function Redacoes() {
 
   const [redacoes, setRedacoes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [sendError, setSendError] = useState('')
+  const [queuedVersion, setQueuedVersion] = useState(() => readEssayDraft()?.queuedVersion || null)
   const [enviando, setEnviando] = useState(false)
   const [modoEscrita, setModoEscrita] = useState(false)
   const [selecionada, setSelecionada] = useState(null)
   const [aba, setAba] = useState('minhas')
+  const [extraTools, setExtraTools] = useState(false)
 
   // Estado para avaliação manual (admin/dono)
   const [avaliando, setAvaliando] = useState(null)
@@ -144,7 +151,7 @@ export default function Redacoes() {
     texto: ''
   })
   let rascunhoSalvo = null
-  try { rascunhoSalvo = JSON.parse(localStorage.getItem('planejai:redacao:rascunho:v2') || 'null') } catch { /* rascunho inválido será tratado pelo estúdio */ }
+  rascunhoSalvo = readEssayDraft()
   const temRascunho = Boolean(rascunhoSalvo?.tema || rascunhoSalvo?.texto)
 
   // Estado para sugestão de tema e repertório
@@ -169,6 +176,7 @@ export default function Redacoes() {
   }
 
   async function carregarRedacoes() {
+    setLoadError(false)
     try {
       if (isGestor && aba === 'gestor') {
         const data = await redacaoService.listarTodasRedacoes()
@@ -178,7 +186,7 @@ export default function Redacoes() {
         setRedacoes(Array.isArray(data) ? data : [])
       }
     } catch (error) {
-      toast.error('Erro ao carregar redações.')
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -190,6 +198,7 @@ export default function Redacoes() {
 
   const handleEnviar = async (e) => {
     e.preventDefault()
+    if (enviando || queuedVersion === JSON.stringify(form)) return
 
     if (!form.tema.trim() || !form.texto.trim()) {
       toast.error('Preencha o tema e o texto da redação.')
@@ -197,16 +206,25 @@ export default function Redacoes() {
     }
 
     setEnviando(true)
+    setSendError('')
+    const ownerDraft = essayDraftKey()
 
     try {
       const novaRedacao = await redacaoService.enviarRedacao(form)
+      if (essayDraftKey() !== ownerDraft) return
+      if (novaRedacao?.offline) {
+        setQueuedVersion(JSON.stringify(form)); markEssayQueued(form)
+        return
+      }
 
       setRedacoes((prev) => [novaRedacao, ...prev])
       setForm({ tema: '', texto: '' })
-      localStorage.removeItem('planejai:redacao:rascunho:v2')
+      try { localStorage.removeItem(ownerDraft) } catch { /* A confirmação do servidor não depende da limpeza local. */ }
+      setQueuedVersion(null)
       setModoEscrita(false)
       toast.success('Redação enviada. Confira o feedback e a análise de erros!')
     } catch (error) {
+      setSendError(error.response?.data?.message || 'Não conseguimos confirmar o envio. Seu texto continua no editor. Tente novamente quando a conexão voltar.')
       toast.error(error.response?.data?.message || 'Erro ao enviar redação.')
     } finally {
       setEnviando(false)
@@ -248,19 +266,11 @@ export default function Redacoes() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-study-canvas flex items-center justify-center">
-        <div className="bg-study-paper rounded-[3rem] p-10 shadow-2xl border border-study-line/20 text-center">
-          <div className="h-14 w-14 border-b-4 border-study-line rounded-full animate-spin mx-auto mb-4" />
-          <p className="font-bold text-black/60">Carregando redações...</p>
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <RouteLoading label="Buscando suas redações…" />
 
   return (
     <main className="redacoes-page min-h-screen px-4 sm:px-6 lg:px-8 py-10">
+      {loadError && <RecoveryState title="Não conseguimos consultar o histórico de redações." onRetry={carregarRedacoes}><p>Você ainda pode abrir o estúdio e continuar seu rascunho. Não foi possível confirmar a lista de textos salvos na conta.</p></RecoveryState>}
       <div className="redacoes-shell max-w-6xl mx-auto">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <section className="redacoes-intro" aria-labelledby="redacoes-title">
@@ -271,7 +281,7 @@ export default function Redacoes() {
               <div className="redacoes-intro-actions">
                 <button type="button" onClick={() => setModoEscrita(true)}>{modoEscrita ? 'Voltar ao texto' : temRascunho ? 'Continuar rascunho' : 'Começar uma redação'} <span aria-hidden="true">↗</span></button>
               </div>
-              <div className="redacoes-intro-meta"><span><strong>{redacoes.length}</strong> {redacoes.length === 1 ? 'texto enviado' : 'textos enviados'}</span><span>{temRascunho ? 'Rascunho salvo neste dispositivo' : 'Um texto por vez, sem pressa'}</span></div>
+              <div className="redacoes-intro-meta"><span>{loadError ? 'Histórico não confirmado' : <><strong>{redacoes.length}</strong> {redacoes.length === 1 ? 'texto enviado' : 'textos enviados'}</>}</span><span>{temRascunho ? 'Rascunho salvo neste dispositivo' : 'Um texto por vez, sem pressa'}</span></div>
             </div>
             <div className="redacoes-intro-art" aria-hidden="true"><div className="redacoes-paper"><span>UM PROCESSO, NÃO UMA NOTA</span><i /><i /><i /><i /><b>ideia → argumento → revisão</b></div><span className="redacoes-art-mark">R.</span></div>
           </section>
@@ -316,17 +326,19 @@ export default function Redacoes() {
             </div>
           )}
 
-          {!modoEscrita && aba === 'minhas' && <><WritingWorkshop /><EssayPortfolio /><PeerReview /></>}
-          {modoEscrita ? (<EssayStudio
+          {!modoEscrita && aba === 'minhas' && <><WritingWorkshop /><button className="sd-button" type="button" onClick={() => setExtraTools(value => !value)} aria-expanded={extraTools}>{extraTools ? 'Recolher ferramentas extras' : 'Abrir portfólio e revisão em pares'}</button>{extraTools && <Suspense fallback={<RouteLoading embedded />}><EssayPortfolio /><PeerReview /></Suspense>}</>}
+          {modoEscrita ? (<Suspense fallback={<RouteLoading embedded label="Abrindo seu estúdio…" />}><EssayStudio
             form={form}
             setForm={setForm}
             onSubmit={handleEnviar}
             onCancel={() => setModoEscrita(false)}
             enviando={enviando}
+            queued={queuedVersion === JSON.stringify(form)}
+            sendError={sendError}
             sugestao={sugestaoTema}
             sugerindo={sugerindoTema}
             onSugerir={buscarSugestaoTema}
-          />) : modoEscrita ? (
+          /></Suspense>) : modoEscrita ? (
             <motion.div
               variants={fadeUp}
               initial="hidden"
@@ -448,7 +460,7 @@ export default function Redacoes() {
             </motion.div>
           ) : (
             <>
-              {redacoes.length === 0 ? (
+              {loadError && !redacoes.length ? null : redacoes.length === 0 ? (
                 <section id="redacoes-historico" className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.85fr] lg:items-center">
                   <div>
                   <span className="mb-5 inline-flex rounded-full border border-study-line bg-study-paper px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-study-accent dark:border-white/10 dark:bg-study-paper dark:text-[#C4B5FD]">Oficina de texto</span>
@@ -570,7 +582,7 @@ export default function Redacoes() {
                               <TextoComErros texto={redacao.texto} erros={erros} />
                             </div>
 
-                            {!isGestor && <EssayVersions redacao={redacao} />}
+                            {!isGestor && <Suspense fallback={<RouteLoading embedded />}><EssayVersions redacao={redacao} /></Suspense>}
 
                             {erros.length > 0 && (
                               <div className="essay-record__panel essay-record__errors p-4 rounded-[1.5rem] bg-red-50 border border-red-200">

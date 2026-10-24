@@ -4,8 +4,9 @@ import redacaoService from '../services/redacaoService'
 import DictationButton from './DictationButton'
 import './EssayStudio.css'
 import WritingRadar from './WritingRadar'
+import { essayDraftKey, readEssayDraft, writeEssayDraft } from '../utils/essayDraft'
+import SaveFeedback from './SaveFeedback'
 
-const DRAFT_KEY = 'planejai:redacao:rascunho:v2'
 
 function contar(texto) {
   const palavras = texto.trim() ? texto.trim().split(/\s+/).length : 0
@@ -52,9 +53,11 @@ function DiagnosticPanel({ diagnostico }) {
   </section>
 }
 
-export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviando, sugestao, sugerindo, onSugerir }) {
+export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviando, queued, sendError, sugestao, sugerindo, onSugerir }) {
   const [foco, setFoco] = useState(false)
   const [salvoEm, setSalvoEm] = useState(null)
+  const [draftFailed, setDraftFailed] = useState(false)
+  const [draftReady, setDraftReady] = useState(false)
   const [diagnostico, setDiagnostico] = useState(null)
   const [analisando, setAnalisando] = useState(false)
   const metricas = useMemo(() => contar(form.texto), [form.texto])
@@ -62,26 +65,28 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
   const progresso = Math.min(100, Math.round((metricas.palavras / 280) * 100))
 
   useEffect(() => {
-    if (form.tema || form.texto) return
+    if (form.tema || form.texto) { setDraftReady(true); return }
     try {
-      const salvo = JSON.parse(localStorage.getItem(DRAFT_KEY))
+      const salvo = readEssayDraft()
       if (salvo?.texto || salvo?.tema) {
         setForm({ tema: salvo.tema || '', texto: salvo.texto || '' })
         setSalvoEm(salvo.salvoEm || null)
         toast.success('Seu rascunho anterior foi recuperado.')
       }
-    } catch { localStorage.removeItem(DRAFT_KEY) }
+    } catch { /* O formulário permanece disponível sem armazenamento. */ }
+    setDraftReady(true)
   }, []) // restaura apenas ao abrir o estúdio
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!form.tema && !form.texto) return
-      const agora = new Date().toISOString()
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...form, salvoEm: agora }))
-      setSalvoEm(agora)
-    }, 650)
-    return () => window.clearTimeout(timer)
-  }, [form])
+    if (!draftReady) return
+    if (!form.tema && !form.texto) {
+      try { localStorage.removeItem(essayDraftKey()); setSalvoEm(null); setDraftFailed(false) } catch { setDraftFailed(true) }
+      return
+    }
+    const saved = writeEssayDraft(form)
+    setSalvoEm(saved)
+    setDraftFailed(!saved)
+  }, [form, draftReady])
 
   async function analisar() {
     if (form.texto.trim().length < 80) return toast.error('Escreva mais um pouco antes da pré-análise.')
@@ -92,12 +97,15 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
 
   function descartar() {
     if (!window.confirm('Descartar o rascunho salvo neste navegador?')) return
-    localStorage.removeItem(DRAFT_KEY); setForm({ tema: '', texto: '' }); setDiagnostico(null); onCancel()
+    try { localStorage.removeItem(essayDraftKey()) } catch { toast.error('Não foi possível remover o rascunho deste aparelho.'); return }
+    setForm({ tema: '', texto: '' }); setDiagnostico(null); onCancel()
   }
 
   return <div className={`essay-studio ${foco ? 'is-focus' : ''}`}>
     <header className="essay-studio-top"><div><span>PLANEJAI / ESTÚDIO DE REDAÇÃO</span><h2>Construa, teste, revise.</h2></div><div><button type="button" onClick={() => setFoco((v) => !v)}>{foco ? 'Sair do foco' : 'Modo foco'}</button><button type="button" onClick={onCancel}>Fechar</button></div></header>
-    <form onSubmit={onSubmit}>
+    {draftFailed && <SaveFeedback status="unsaved" message="Não conseguimos guardar o rascunho neste aparelho. Mantenha esta tela aberta e copie seu texto antes de sair." onRetry={() => { const saved = writeEssayDraft(form); setSalvoEm(saved); setDraftFailed(!saved) }} />}
+    {queued && <SaveFeedback status="local" message="Esta versão já foi encaminhada pela fila deste aparelho. Ao reconectar, confira o histórico antes de tentar outro envio. Seu texto continua aqui." />}
+    <form onSubmit={onSubmit} aria-busy={enviando}>
       <aside className="essay-outline">
         <span className="essay-kicker">MAPA DO TEXTO</span>
         <div className="essay-progress"><div><b>{progresso}%</b><small>meta de 280 palavras</small></div><i><i style={{ width: `${progresso}%` }} /></i></div>
@@ -107,15 +115,16 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
         <small className="essay-private-note">A prévia usa a Lumi e envia o texto ao provedor de IA configurado pelo PlanejAI. A nota é apenas estimada.</small>
       </aside>
 
-      <main className="essay-sheet">
-        <div className="essay-sheet-meta"><span>RASCUNHO</span><span>{salvoEm ? `salvo ${new Date(salvoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'não salvo'}</span></div>
+      <section className="essay-sheet" aria-label="Texto e envio da redação">
+        <div className="essay-sheet-meta"><span>RASCUNHO</span><span role="status">{salvoEm ? `Salvo neste aparelho · ${new Date(salvoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Ainda não salvo neste aparelho'}</span></div>
         <label htmlFor="essay-topic">Tema da redação</label>
-        <div className="essay-topic-row"><input id="essay-topic" value={form.tema} onChange={(e) => setForm((f) => ({ ...f, tema: e.target.value }))} placeholder="Delimite o tema aqui" /><button type="button" onClick={onSugerir} disabled={sugerindo}>{sugerindo ? 'Criando...' : 'Tema Lab'}</button></div>
-        <textarea aria-label="Texto da redação" value={form.texto} onChange={(e) => setForm((f) => ({ ...f, texto: e.target.value }))} placeholder={'Comece pela sua tese.\n\nDepois, desenvolva um argumento por parágrafo...'} spellCheck="true" />
-        <div className="essay-sheet-actions"><div><button type="button" onClick={descartar}>Descartar</button><DictationButton onText={(texto) => setForm((f) => ({ ...f, texto: `${f.texto}${f.texto ? ' ' : ''}${texto}` }))}/></div><div><button type="button" onClick={analisar} disabled={analisando}>Pré-corrigir</button><button type="submit" disabled={enviando || metricas.palavras < 30}>{enviando ? 'Enviando...' : 'Finalizar e enviar'}</button></div></div>
-      </main>
+        <div className="essay-topic-row"><input id="essay-topic" disabled={enviando} value={form.tema} onChange={(e) => setForm((f) => ({ ...f, tema: e.target.value }))} placeholder="Delimite o tema aqui" /><button type="button" onClick={onSugerir} disabled={sugerindo || enviando}>{sugerindo ? 'Criando...' : 'Tema Lab'}</button></div>
+        <textarea aria-label="Texto da redação" disabled={enviando} value={form.texto} onChange={(e) => setForm((f) => ({ ...f, texto: e.target.value }))} placeholder={'Comece pela sua tese.\n\nDepois, desenvolva um argumento por parágrafo...'} spellCheck="true" />
+        {sendError && <SaveFeedback status="error" message={`${sendError} Seu texto continua aqui. Use Finalizar e enviar para tentar novamente.`} />}
+        <div className="essay-sheet-actions"><div><button type="button" onClick={descartar} disabled={enviando}>Descartar</button><DictationButton onText={(texto) => { if (!enviando) setForm((f) => ({ ...f, texto: `${f.texto}${f.texto ? ' ' : ''}${texto}` })) }}/></div><div><button type="button" onClick={analisar} disabled={analisando}>Pré-corrigir</button><button type="submit" disabled={enviando || queued || metricas.palavras < 30}>{enviando ? 'Enviando...' : queued ? 'Nesta versão: envio na fila' : 'Finalizar e enviar'}</button></div></div>
+      </section>
       {!foco && <aside className="essay-coach"><span className="essay-kicker">COACH DE REVISÃO</span><WritingRadar text={form.texto} />{diagnostico ? <DiagnosticPanel diagnostico={diagnostico} /> : <><h3>Antes de entregar</h3><p>O bom texto não nasce pronto. Faça três leituras, cada uma com uma missão.</p><ol><li><b>Ideia</b><span>A tese responde exatamente ao tema?</span></li><li><b>Prova</b><span>Cada argumento tem explicação e consequência?</span></li><li><b>Forma</b><span>Há clareza, coesão e pontuação?</span></li></ol><blockquote>Repertório bom não enfeita. Ele ajuda a provar alguma coisa.</blockquote></>}</aside>}
     </form>
-    {!foco && <TemaLab sugestao={sugestao} usarTema={(tema) => setForm((f) => ({ ...f, tema }))} />}
+    {!foco && <TemaLab sugestao={sugestao} usarTema={(tema) => { if (!enviando) setForm((f) => ({ ...f, tema })) }} />}
   </div>
 }

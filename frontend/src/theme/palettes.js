@@ -145,6 +145,16 @@ export function tokensDaPaleta(idPaleta = PALETA_PADRAO) {
     const comClara = contraste(hexToRgb(saida.primaria), hexToRgb(clara));
     const comEscura = contraste(hexToRgb(saida.primaria), hexToRgb(escura));
     saida.onPrimaria = comClara >= comEscura ? clara : escura;
+    const textOn = background => contraste(hexToRgb(background), hexToRgb(clara)) >= contraste(hexToRgb(background), hexToRgb(escura)) ? clara : escura;
+    saida.onPrimariaHover = textOn(saida.primariaHover);
+    const surfaces = ['fundo', 'superficie', 'superficieAlt', 'primariaSuave'].map(key => hexToRgb(saida[key]));
+    saida.link = saida.texto;
+    for (let step = 0; step <= 190; step++) {
+      const lightness = PAPEIS[modo].primaria.l + (modo === 'claro' ? -1 : 1) * step * .005;
+      if (lightness < .01 || lightness > .99) break;
+      const hex = oklchToHex(lightness, chromaDe('primaria', PAPEIS[modo].primaria, paleta), paleta.hue);
+      if (surfaces.every(surface => contraste(hexToRgb(hex), surface) >= 4.5)) { saida.link = hex; break; }
+    }
 
     // A borda de campo precisa de 3:1 contra o fundo. Em vez de escolher um L
     // que só funciona para certas matizes, procura-se o L mais próximo do
@@ -158,7 +168,7 @@ export function tokensDaPaleta(idPaleta = PALETA_PADRAO) {
     let menorDelta = Infinity;
     for (let l = 0.05; l <= 0.99; l += 0.005) {
       const hex = oklchToHex(l, cBorda, paleta.hue);
-      if (contraste(hexToRgb(hex), fundoRgb) < 3) continue;
+      if (!surfaces.every(surface => contraste(hexToRgb(hex), surface) >= 3)) continue;
       const delta = Math.abs(l - alvoBorda);
       if (delta < menorDelta) {
         menorDelta = delta;

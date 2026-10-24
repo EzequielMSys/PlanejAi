@@ -7,6 +7,8 @@ import adaptive from '../services/adaptiveService'
 import SimulatorSetup from '../components/SimulatorSetup'
 import EnemCompetencies from '../components/EnemCompetencies'
 import LearningSignals from '../components/LearningSignals'
+import RecoveryState from '../components/RecoveryState'
+import RouteLoading from '../components/RouteLoading'
 
 import SimulationReport from '../components/SimulationReport'
 import './Aprendizagem.css'
@@ -33,6 +35,7 @@ export default function Aprendizagem() {
   const [resposta, setResposta] = useState(null)
   const [feedback, setFeedback] = useState(null)
   const [carregando, setCarregando] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const inicioQuestao = useRef(Date.now())
   const [tempoRestante, setTempoRestante] = useState(null)
   const [resultados, setResultados] = useState([])
@@ -43,10 +46,11 @@ export default function Aprendizagem() {
   const [disciplinaPratica, setDisciplinaPratica] = useState(location.state?.disciplina || '')
 
   async function carregar() {
+    setLoadError(false)
     try {
       const [r, rv, e, ev] = await Promise.all([aprendizagem.resumo(), aprendizagem.revisoes(), aprendizagem.erros(), aprendizagem.evolucao()])
       setResumo(r); setRevisoes(rv); setErros(e); setEvolucao(ev)
-    } catch { toast.error('Não foi possível carregar sua central de aprendizagem.') }
+    } catch { setLoadError(true) }
     finally { setCarregando(false) }
   }
 
@@ -124,7 +128,8 @@ export default function Aprendizagem() {
       : { titulo: totalRespostas ? 'Mantenha o ritmo de prática.' : 'Seu mapa começa na primeira questão.', texto: totalRespostas ? 'Um simulado curto ajuda a revelar seu próximo foco.' : 'Responda algumas questões para descobrir onde começar.', botao: 'Preparar simulado', aba: 'simulado' }
   function imprimirRelatorio() { window.print() }
 
-  if (carregando) return <div className="min-h-[60vh] grid place-items-center font-black text-study-accent">Preparando sua trilha…</div>
+  if (carregando) return <RouteLoading label="Preparando sua trilha…" />
+  if (loadError && !questoes.length) return <RecoveryState title="Não conseguimos consultar seu progresso." onRetry={() => { setCarregando(true); carregar() }} />
 
   return <main className="learning-page min-h-screen bg-study-canvas px-4 py-6 text-study-ink dark:bg-study-canvas dark:text-white sm:px-8">
     <div className="mx-auto max-w-6xl">

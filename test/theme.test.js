@@ -18,6 +18,12 @@ const PARES_CRITICOS = [
   ['textoSuave', 'fundo', 4.5],
   ['textoSuave', 'superficie', 4.5],
   ['onPrimaria', 'primaria', 4.5],
+  ['onPrimariaHover', 'primariaHover', 4.5],
+  ['link', 'fundo', 4.5],
+  ['link', 'superficie', 4.5],
+  ['link', 'superficieAlt', 4.5],
+  ['link', 'primariaSuave', 4.5],
+  ['bordaForte', 'superficieAlt', 3],
   ['primaria', 'fundo', 3],
   ['primaria', 'superficie', 3],
   // Bordas de campo precisam ser distinguíveis do fundo (WCAG 1.4.11).
@@ -101,6 +107,14 @@ describe('paletas do PlanejAI', () => {
 })
 
 describe('cor personalizada escolhida pelo usuário', () => {
+  test('cores muito claras, escuras e saturadas preservam os pares de leitura e hover', () => {
+    for (const hex of ['#ffffff', '#000000', '#ffff00', '#00ff00', '#00ffff', '#ff00ff', '#0000ff', '#ff0000']) {
+      const { h, c } = rgbToOklch(hexToRgb(hex))
+      for (const t of Object.values(tokensDaPaleta({ hue: h, chroma: Math.max(.02, Math.min(c, .248)) }))) {
+        for (const [fg, bg, min] of PARES_CRITICOS) assert.ok(contraste(hexToRgb(t[fg]), hexToRgb(t[bg])) >= min, `${hex}: ${fg}/${bg}`)
+      }
+    }
+  })
   const escolhida = { id: 'custom', nome: 'Sua cor', hue: 25, chroma: 0.14 }
 
   test('uma paleta em objeto realmente altera os tokens', () => {
