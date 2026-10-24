@@ -1,0 +1,51 @@
+name: Cópia diária e restauração do banco
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: database-backup
+  cancel-in-progress: false
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: runner-isolated-verification
+          MYSQL_DATABASE: planejai_restore_daily
+        ports:
+          - 3306/tcp
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -prunner-isolated-verification"
+          --health-interval=10s --health-timeout=5s --health-retries=15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --omit=dev
+      - name: Copiar, autenticar e restaurar em banco descartável
+        run: node src/scripts/scheduledBackup.js
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_SOURCE_DATABASE_URL }}
+          DB_SSL_CA_BASE64: ${{ secrets.BACKUP_SOURCE_CA_BASE64 }}
+          DB_SSL_MODE: verify-full
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+          RESTORE_DATABASE_URL: mysql://root:runner-isolated-verification@127.0.0.1:${{ job.services.mysql.ports[3306] }}/planejai_restore_daily
+      - name: Guardar somente a cópia criptografada e o resumo verificado
+        uses: actions/upload-artifact@v4
+        with:
+          name: banco-criptografado-${{ github.run_id }}
+          path: |
+            backups/external/database.pnai
+            backups/external/manifest.json
+          if-no-files-found: error
+          retention-days: 14

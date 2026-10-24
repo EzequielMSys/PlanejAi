@@ -9,6 +9,36 @@
 
 ## Cópia portátil e teste de restauração
 
+### Rotina externa (etapa 21)
+
+Os workflows `database-backup.yml` e `availability.yml` executam no GitHub Actions, independentemente deste computador. A cópia diária está programada para **03h17 de Brasília (06h17 UTC)**. Cada execução exporta com TLS/CA verificados, autentica a criptografia AES-256-GCM e restaura em um MySQL 8.4 descartável do runner, conferindo contagens. Só então publica `database.pnai` e `manifest.json`, com retenção de **14 dias**. Não publica SQL, chave, URI ou registros em texto aberto. O repositório é público: os arquivos criptografados podem ser acessíveis a quem tenha acesso aos artefatos; a chave precisa permanecer secreta.
+
+Secrets necessários em Settings → Secrets and variables → Actions: `BACKUP_SOURCE_DATABASE_URL`, `BACKUP_SOURCE_CA_BASE64`, `BACKUP_ENCRYPTION_KEY`. A chave foi guardada também em `backups/external-backup-recovery-key.txt`, ignorado pelo Git. Transfira essa chave para um gerenciador de senhas: perder a chave impede restaurar qualquer cópia. Rotacioná-la exige preservar as anteriores durante a retenção das cópias correspondentes.
+
+Históricos e execução manual:
+- [Cópia e restauração](https://github.com/EzequielMSys/PlanejAi/actions/workflows/database-backup.yml)
+- [Disponibilidade](https://github.com/EzequielMSys/PlanejAi/actions/workflows/availability.yml)
+
+O monitor consulta `/api/health` a cada 30 minutos e exige banco conectado; repete falhas até três vezes. Ative as notificações de falha de Actions nas preferências do GitHub. Ele não envia mensagens próprias nem reinicia o banco. No painel do dono, “Cópias e disponibilidade” consulta o histórico público sob demanda, sem depender do MySQL e sem tokens no navegador. A página autenticada ainda depende da verificação da conta; durante uma queda, use os links diretos acima.
+
+Os horários não são garantia: execuções podem atrasar. O GitHub desativa agendas de repositórios públicos após 60 dias sem atividade; confira Actions e reative se necessário. Uma falha de exportação ou restauração não substitui a última cópia válida. O objetivo de recuperação é de até um dia de dados **quando a rotina diária estiver saudável**; não há SLA. Revise semanalmente o histórico e o espaço disponível.
+
+### Recuperar uma cópia externa
+
+Abra uma execução bem-sucedida, baixe o artefato e extraia apenas o `.pnai` e o manifesto. Confira SHA-256 e data. Recupere a chave do gerenciador, configure `BACKUP_ENCRYPTION_KEY` e siga os passos de restauração isolada abaixo. Nunca publique a chave ou o arquivo decifrado. O teste automático verifica estrutura executável e contagens, não substitui uma validação funcional da aplicação restaurada.
+
+### Quando o Aiven desligar ou ficar inacessível
+
+1. Confira o workflow de disponibilidade e os logs do Vercel. Um banco inacessível retorna 503; não recrie contas nem limpe sessões dos usuários.
+2. No Aiven, confira avisos, estado do serviço e uso de armazenamento. Se estiver desligado, ligue pelo painel e aguarde iniciar. O plano gratuito pode ser desligado por inatividade; monitoramento não garante impedir isso. Confira os e-mails do provedor. Não há religamento automático configurado.
+3. Se o endereço mudou, atualize `DATABASE_URL`/CA no Vercel **e** os secrets de origem do backup; refaça o deploy. Nunca troque apenas a configuração local.
+4. Confirme `/api/health` com `database: connected`, acesso e cronograma. Execute manualmente a cópia e confira a restauração antes de encerrar o incidente.
+5. Se houver perda de dados, restaure a cópia mais recente em uma base isolada, valide os fluxos e só então planeje a troca da produção. Não restaure por cima da base atual.
+
+Referências: [Aiven gratuito e inatividade](https://aiven.io/docs/products/mysql/concepts/mysql-free-tier), [limitações das agendas do GitHub](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+
+### Execução manual
+
 1. Em um terminal privado, configure `DATABASE_URL`, CA/TLS e `BACKUP_ENCRYPTION_KEY` (32 bytes aleatórios representados por 64 caracteres hexadecimais). Não coloque esses valores em comandos compartilhados, Git ou relatórios. Guarde a chave em um gerenciador de senhas, separada dos arquivos.
 2. Execute `node src/scripts/portableBackup.js export backups/copia-AAAA-MM-DD.pnai`. O arquivo é criptografado com AES-256-GCM, comprimido e autenticado depois de gravado. Não sobrescreve arquivos existentes. Preserve o resumo com data, contagens e SHA-256.
 3. Copie o arquivo criptografado para armazenamento privado fora deste computador, com controle de acesso e retenção. Esta cópia manual não estabelece agendamento automático.
