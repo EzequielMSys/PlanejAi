@@ -3,6 +3,7 @@ const usuarioModel = require("../models/usuarioModel");
 const { getJwtSecret } = require("../config/jwtConfig");
 
 async function authMiddleware(req, res, next) {
+  let checkingAccount = false;
   try {
     const authHeader = req.headers.authorization;
 
@@ -26,6 +27,7 @@ async function authMiddleware(req, res, next) {
       return res.status(401).json({ message: "Token inválido." });
     }
 
+    checkingAccount = true;
     const usuario = await usuarioModel.buscarPorId(usuarioId);
 
     if (!usuario) {
@@ -50,6 +52,10 @@ async function authMiddleware(req, res, next) {
 
     next();
   } catch (err) {
+    if (checkingAccount) {
+      console.error('[AUTH ACCOUNT LOOKUP]', err.code || 'ACCOUNT_LOOKUP_FAILED');
+      return res.status(503).json({ message: 'Não foi possível consultar sua conta agora. Sua sessão será preservada; tente novamente em instantes.', code: 'AUTH_SERVICE_UNAVAILABLE' });
+    }
     return res.status(401).json({ message: "Token inválido ou expirado." });
   }
 }

@@ -1,4 +1,5 @@
 const authService = require("../services/authService");
+const databaseUnavailable = require('../utils/databaseUnavailable');
 
 async function registrar(req, res) {
   try {
@@ -73,6 +74,10 @@ async function login(req, res) {
     }
 
     console.error("[LOGIN ERROR]", error);
+    if (databaseUnavailable(error)) return res.status(503).json({
+      error: 'O serviço de acesso está temporariamente indisponível porque não foi possível conectar ao banco de dados. Tente novamente em instantes.',
+      code: 'AUTH_SERVICE_UNAVAILABLE',
+    });
     return res.status(500).json({
       error: "Erro interno ao autenticar.",
     });
