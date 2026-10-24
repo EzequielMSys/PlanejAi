@@ -53,11 +53,14 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
   const [sendError, setSendError] = useState('')
   const fimRef = useRef(null)
   const inputRef = useRef(null)
+  const sendingRef = useRef(false)
+  const hasSentRef = useRef(false)
 
   useEffect(() => {
+    let active = true
     inteligencia
       .chatHistory(compacto ? 6 : undefined)
-      .then((data) =>
+      .then((data) => active && !hasSentRef.current &&
         setMensagens(
           (data || []).map((m) => ({
             role: m.role,
@@ -70,6 +73,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
       .catch(() => {
         /* sem histórico ainda */
       })
+    return () => { active = false }
   }, [compacto])
 
   useEffect(() => {
@@ -84,22 +88,24 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
     setMensagens((prev) => [...prev, { ...mensagem, id: Date.now() + Math.random() }])
   }
 
-  async function enviar(texto) {
+  async function enviar(texto, disciplinaOverride) {
     const mensagem = (texto || input).trim()
-    if (!mensagem || loading) return
+    if (!mensagem || sendingRef.current) return
+    sendingRef.current = true
+    hasSentRef.current = true
     const envioId = Date.now() + Math.random()
     setSendError('')
     setMensagens((prev) => [...prev, {
       id: envioId,
       role: 'user',
       content: mensagem,
-      disciplina: materia || null,
+      disciplina: disciplinaOverride || materia || null,
       criado_em: new Date().toISOString(),
     }])
     setInput('')
     setLoading(true)
     try {
-      const data = await inteligencia.chatSend(mensagem, materia || undefined, redacaoSelecionada?.id, estudoAtual)
+      const data = await inteligencia.chatSend(mensagem, disciplinaOverride || materia || undefined, redacaoSelecionada?.id, estudoAtual)
       if (data?.offline || data?.queued) {
         toast(data.message || 'Sem conexão: a mensagem será enviada quando você ficar online.')
       } else if (data?.mensagens) {
@@ -115,7 +121,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         append({
           role: 'assistant',
           content: data.conteudo,
-          disciplina: materia || null,
+          disciplina: disciplinaOverride || materia || null,
           criado_em: new Date().toISOString(),
         })
       }
@@ -126,6 +132,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
       setSendError(aviso)
       toast.error(aviso)
     } finally {
+      sendingRef.current = false
       setLoading(false)
       inputRef.current?.focus()
     }
@@ -236,6 +243,11 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         <div ref={fimRef} />
       </div>
 
+      {compacto && estudoAtual?.titulo && <div className="session-lumi-shortcuts" aria-label="Estudar este conteúdo com a Lumi"><p>Sobre <strong>{estudoAtual.titulo}</strong></p><div>{[
+        ['Explique de outro jeito', `Explique ${estudoAtual.titulo} de outro jeito. Se já explicou nesta conversa, mude a abordagem. Use linguagem simples, em passos curtos, e confira minha dúvida antes de avançar.`],
+        ['Dê um exemplo', `Dê um exemplo concreto sobre ${estudoAtual.titulo}. Resolva passo a passo e conecte cada passo ao conceito. Termine propondo uma pequena variação para eu tentar.`],
+        ['Confira se entendi', `Faça uma única pergunta curta sobre ${estudoAtual.titulo} para conferir se entendi. Não revele a resposta agora. Espere minha tentativa e depois explique o que acertei e o que devo revisar.`],
+      ].map(([label, prompt]) => <button type="button" key={label} disabled={loading} onClick={() => enviar(prompt, estudoAtual.disciplina)}>{label}</button>)}</div><small>O atalho envia uma pergunta sobre a sessão atual.</small></div>}
       {sendError && <p role="alert" className="px-3 text-xs text-red-700 dark:text-red-300">{sendError}</p>}
 
       <form

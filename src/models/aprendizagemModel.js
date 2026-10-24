@@ -253,13 +253,16 @@ async function obterResumo(idUsuario) {
 async function obterEvolucao(idUsuario) {
   const [rows] = await pool.execute(
     `SELECT q.disciplina,
-      COALESCE(ROUND(AVG(CASE WHEN t.criado_em >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) THEN t.acertou END) * 100), 0) AS atual,
-      COALESCE(ROUND(AVG(CASE WHEN t.criado_em < DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) AND t.criado_em >= DATE_SUB(CURRENT_DATE, INTERVAL 60 DAY) THEN t.acertou END) * 100), 0) AS anterior
+      SUM(t.criado_em >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)) AS amostra_atual,
+      SUM(t.criado_em < DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)) AS amostra_anterior,
+      ROUND(AVG(CASE WHEN t.criado_em >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) THEN t.acertou END) * 100) AS atual,
+      ROUND(AVG(CASE WHEN t.criado_em < DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) THEN t.acertou END) * 100) AS anterior
      FROM tentativas_questoes t JOIN questoes_estudo q ON q.id_questao = t.id_questao
      WHERE t.id_usuario = ? AND t.criado_em >= DATE_SUB(CURRENT_DATE, INTERVAL 60 DAY)
      GROUP BY q.disciplina ORDER BY atual ASC`, [idUsuario]
   );
-  return rows.map((row) => ({ ...row, variacao: Number(row.atual) - Number(row.anterior) }));
+  return rows.map((row) => ({ ...row, comparavel: Number(row.amostra_atual) >= 3 && Number(row.amostra_anterior) >= 3,
+    variacao: Number(row.amostra_atual) >= 3 && Number(row.amostra_anterior) >= 3 ? Number(row.atual) - Number(row.anterior) : null }));
 }
 
 async function obterJornada(idUsuario, minutos) {

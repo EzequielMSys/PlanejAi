@@ -34,11 +34,13 @@ let failChat = false;
 let materialCatalogFixture = false;
 let dashboardLearningFixture = null;
 let dailySchedulesFixture = [];
+let evolutionFixture = [];
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data });
   if (url.endsWith('/cronograma')) return dailySchedulesFixture;
+  if (url.endsWith('/aprendizagem/evolucao')) return evolutionFixture;
   if (/\/dias\/\d+\/ajustar$/.test(url)) return { message: 'Seu dia foi ajustado e salvo.' };
   if (url.endsWith('/inteligencia/chat')) {
     if (config.method === 'post') {
@@ -399,6 +401,26 @@ test('a provider failure leaves the question available to retry', async () => {
   } finally { await screen.close(); failChat = false; }
 });
 
+test('session Lumi shortcuts stay available and send the current topic exactly once', async () => {
+  window.sessionStorage.setItem('planejai:active-study-content', JSON.stringify({ conteudo: { id: 51, id_conteudo: 9, titulo: 'Leis de Newton', disciplina: 'Física' }, dia: { data_estudo: '2026-10-22' } }));
+  const screen = await renderRoute('/estudar');
+  try {
+    for (const label of ['Explique de outro jeito', 'Dê um exemplo', 'Confira se entendi']) {
+      const before = requests.filter(item => item.method === 'post' && item.url.endsWith('/inteligencia/chat')).length;
+      await act(async () => button(label).click());
+      await flush();
+      const sent = requests.filter(item => item.method === 'post' && item.url.endsWith('/inteligencia/chat'));
+      assert.equal(sent.length, before + 1);
+      const payload = JSON.parse(sent.at(-1).data);
+      assert.ok(payload.mensagem.includes('Leis de Newton'));
+      assert.equal(payload.disciplina, 'Física');
+      assert.equal(payload.estudoAtual.titulo, 'Leis de Newton');
+      if (label === 'Confira se entendi') assert.ok(payload.mensagem.includes('Não revele a resposta agora'));
+      assert.ok(button(label), 'shortcuts remain after a reply');
+    }
+  } finally { await screen.close(); window.sessionStorage.removeItem('planejai:active-study-content'); }
+});
+
 test('a student cannot open management pages through a direct URL', async () => {
   const screen = await renderRoute('/usuarios', 'aluno');
   try {
@@ -482,6 +504,19 @@ test('daily panel explains a practice recommendation using recorded attempts', a
     assert.equal(document.querySelector('.learning-tabs button[aria-pressed="true"]')?.textContent.trim(), 'Simulado');
     assert.equal([...document.querySelectorAll('select')].find(node => node.parentElement?.textContent.includes('Disciplina'))?.value, 'Matemática');
   } finally { await screen.close(); dashboardLearningFixture = null; }
+});
+
+test('learning progress shows supported improvement and opens practice in the selected subject', async () => {
+  dashboardLearningFixture = { porDisciplina: [{ disciplina: 'Física', tentativas: 5, acerto: 40 }], revisoesHoje: 0 };
+  evolutionFixture = [{ disciplina: 'Biologia', anterior: 40, atual: 75, variacao: 35, comparavel: true, amostra_atual: 4, amostra_anterior: 5 }];
+  const screen = await renderRoute('/aprendizagem');
+  try {
+    assert.ok(screen.container.textContent.includes('Mais acertos em Biologia'));
+    assert.ok(screen.container.textContent.includes('4 respostas nos últimos 30 dias'));
+    await act(async () => button('Praticar Física →').click());
+    assert.equal(document.querySelector('.learning-tabs button[aria-pressed="true"]').textContent, 'Simulado');
+    assert.equal([...document.querySelectorAll('select')].find(node => node.parentElement?.textContent.includes('Disciplina'))?.value, 'Física');
+  } finally { await screen.close(); dashboardLearningFixture = null; evolutionFixture = []; }
 });
 
 test('main routes expose labels and landmarks to assistive technology', async () => {

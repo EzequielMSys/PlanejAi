@@ -8,10 +8,10 @@ import aprendizagemService from '../services/aprendizagemService'
 import './TodayDashboard.css'
 import RouteLoading from '../components/RouteLoading'
 import DailyPlanActions from '../components/DailyPlanActions'
+import LearningSignals from '../components/LearningSignals'
 import { dailyStudy, localStudyDate } from '../utils/dailyStudy'
 
 const done = (item) => Number(item?.concluido) === 1 || item?.status === 'concluído'
-const iso = (value) => value ? new Date(value).toISOString().slice(0, 10) : ''
 const greeting = () => new Date().getHours() < 12 ? 'Bom dia' : new Date().getHours() < 18 ? 'Boa tarde' : 'Boa noite'
 
 function localMinutes(week = false) {
@@ -23,22 +23,10 @@ function localMinutes(week = false) {
   } catch { return 0 }
 }
 
-function streakOf(days) {
-  const completed = new Set(days.filter(done).map((day) => iso(day.data_estudo)))
-  const cursor = new Date(); cursor.setHours(12, 0, 0, 0)
-  let streak = 0
-  for (let index = 0; index < 120; index += 1) {
-    if (completed.has(cursor.toISOString().slice(0, 10))) streak += 1
-    else if (index !== 0) break
-    cursor.setDate(cursor.getDate() - 1)
-  }
-  return streak
-}
-
 export default function TodayDashboard() {
   const { user, isAdmin, isDono } = useAuth()
   const navigate = useNavigate()
-  const [data, setData] = useState({ schedules: [], learning: null, reviews: [], errors: [] })
+  const [data, setData] = useState({ schedules: [], learning: null, reviews: [], evolution: [] })
   const [loading, setLoading] = useState(true)
   const [planError, setPlanError] = useState(false)
   // A meta é uma preferência da conta, não do dispositivo. O resumo inicial a
@@ -67,9 +55,7 @@ export default function TodayDashboard() {
     aprendizagemService.revisoes()
       .then((reviews) => { if (active && Array.isArray(reviews)) setData((current) => ({ ...current, reviews })) })
       .catch(() => {})
-    aprendizagemService.erros()
-      .then((errors) => { if (active && Array.isArray(errors)) setData((current) => ({ ...current, errors })) })
-      .catch(() => {})
+    aprendizagemService.evolucao().then(evolution => { if (active && Array.isArray(evolution)) setData(current => ({ ...current, evolution })) }).catch(() => {})
     return () => { active = false }
   }, [])
 
@@ -77,13 +63,10 @@ export default function TodayDashboard() {
   const todayDay = days.find((day) => localStudyDate(day.data_estudo) === localStudyDate())
   const agenda = (todayDay?.conteudos?.length ? todayDay.conteudos : nextDay?.conteudos || []).slice(0, 4)
   const completed = days.filter(done).length
-  const progress = days.length ? Math.round((completed / days.length) * 100) : 0
   const weeklyMinutes = Math.max(0, Number(data.learning?.minutosSemana ?? localMinutes(true)) || 0)
   const weeklyProgress = Math.min(100, Math.round((weeklyMinutes / weeklyGoal) * 100))
   const remainingMinutes = Math.max(0, weeklyGoal - weeklyMinutes)
-  const pendingErrors = data.learning?.errosPendentes || data.errors.filter((item) => !item.resolvido).length || 0
   const reviews = Number(data.learning?.revisoesHoje ?? data.reviews.length) || 0
-  const streak = streakOf(days)
   const name = user?.apelido || user?.nome?.split(' ')[0] || 'estudante'
 
   const weakSubject = data.learning?.porDisciplina?.find((item) => Number(item.tentativas) >= 3 && Number(item.acerto) < 70)
@@ -166,12 +149,7 @@ export default function TodayDashboard() {
       <div className="today-review-strip"><span><strong>{reviews ? `${reviews} ${reviews === 1 ? 'revisão pronta' : 'revisões prontas'}` : 'Revisões em dia'}</strong><small>{reviews ? 'Retome o que aprendeu antes que fique distante.' : 'Novas revisões aparecem conforme você estuda.'}</small></span><button type="button" onClick={() => navigate('/aprendizagem')}>{reviews ? 'Abrir revisões →' : 'Ver aprendizagem →'}</button></div>
       <DailyPlanActions schedules={data.schedules} onSaved={reloadPlan} />
 
-      <section className="dash-v2-stats">
-        <article><span>HOJE</span><strong>{localMinutes()}<small> min</small></strong><p>tempo em foco</p><i>↗</i></article>
-        <article><span>REVISÕES</span><strong>{reviews}</strong><p>aguardando você</p><i>◎</i></article>
-        <article><span>PONTOS FRÁGEIS</span><strong>{pendingErrors}</strong><p>para transformar em domínio</p><i>!</i></article>
-        <article><span>SEQUÊNCIA</span><strong>{streak}<small> dias</small></strong><p>voltando para aprender</p><i>◆</i></article>
-      </section>
+      <LearningSignals summary={data.learning} reviews={data.reviews} evolution={data.evolution} />
 
       <section className="dash-v2-content">
         <article className="dash-v2-agenda">
