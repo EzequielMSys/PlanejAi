@@ -8,6 +8,7 @@
 - Falha na consulta de aprendizagem mostra erro com nova tentativa, em vez de apresentar um relatório vazio.
 - Redações mantêm o editor disponível quando o histórico falha e não apresentam ausência de registros como se a consulta tivesse sido confirmada.
 - Erro de envio fica junto ao editor; o texto é mantido. Uma versão colocada na fila do aparelho não é anunciada como confirmada no servidor nem reenviada novamente pelo mesmo botão.
+- Uma resposta atrasada confirma somente o texto submetido: alterações posteriores, inclusive do ditado já iniciado, permanecem no rascunho. O mesmo cuidado se aplica à entrada na fila do aparelho.
 - Rascunhos de redação são gravados por conta, imediatamente após a alteração. Quota de armazenamento ou armazenamento bloqueado gera um aviso; o formulário continua editável. Apagar ambos os campos não ressuscita um texto antigo.
 - Rascunhos antigos sem proprietário não são associados automaticamente à conta atual. A chave antiga é preservada, sem exibir seu texto para outra conta.
 - A oficina guiada aguarda o projeto salvo antes de liberar a edição. Falhas de salvamento preservam o formulário. Portfólio e revisão entre pares têm estado de consulta e recuperação; a revisão mantém o texto se o envio falhar.
@@ -17,7 +18,7 @@
 - Editor de redação, versões, portfólio e revisão entre pares usam imports dinâmicos.
 - Portfólio e revisão entre pares são carregados ao abrir as ferramentas extras. A oficina consulta o projeto apenas quando aberta.
 - Não foram adicionadas dependências.
-- Comparação de builds locais: o chunk JavaScript específico de Redações passou de 47,79 KB (13,87 KB gzip) para 32,63 KB (9,88 KB gzip). O CSS específico passou de 35,98 KB para 17,67 KB. São tamanhos dos arquivos dessa rota, não o tráfego total do site nem uma medição de tempo de carregamento em celulares reais.
+- Comparação de builds locais: o chunk JavaScript específico de Redações passou de 47,79 KB (13,87 KB gzip) para 32,83 KB (9,95 KB gzip). O CSS específico passou de 35,98 KB para 17,67 KB. São tamanhos dos arquivos dessa rota, não o tráfego total do site nem uma medição de tempo de carregamento em celulares reais.
 
 ## Contraste e teclado
 

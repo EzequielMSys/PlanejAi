@@ -7,6 +7,6 @@ export function writeEssayDraft(form) {
   const value = { tema: form.tema, texto: form.texto, salvoEm: new Date().toISOString(), queuedVersion: readEssayDraft()?.queuedVersion }
   try { localStorage.setItem(essayDraftKey(), JSON.stringify(value)); return value.salvoEm } catch { return null }
 }
-export function markEssayQueued(form) {
-  try { localStorage.setItem(essayDraftKey(), JSON.stringify({ ...form, salvoEm: new Date().toISOString(), queuedVersion: JSON.stringify(form) })); return true } catch { return false }
+export function markEssayQueued(form, currentForm = form) {
+  try { localStorage.setItem(essayDraftKey(), JSON.stringify({ ...currentForm, salvoEm: new Date().toISOString(), queuedVersion: JSON.stringify(form) })); return true } catch { return false }
 }

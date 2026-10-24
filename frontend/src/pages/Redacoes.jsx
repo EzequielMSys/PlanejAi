@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
@@ -150,6 +150,8 @@ export default function Redacoes() {
     tema: '',
     texto: ''
   })
+  const currentForm = useRef(form)
+  currentForm.current = form
   let rascunhoSalvo = null
   rascunhoSalvo = readEssayDraft()
   const temRascunho = Boolean(rascunhoSalvo?.tema || rascunhoSalvo?.texto)
@@ -213,11 +215,15 @@ export default function Redacoes() {
       const novaRedacao = await redacaoService.enviarRedacao(form)
       if (essayDraftKey() !== ownerDraft) return
       if (novaRedacao?.offline) {
-        setQueuedVersion(JSON.stringify(form)); markEssayQueued(form)
+        setQueuedVersion(JSON.stringify(form)); markEssayQueued(form, currentForm.current)
         return
       }
 
       setRedacoes((prev) => [novaRedacao, ...prev])
+      if (JSON.stringify(currentForm.current) !== JSON.stringify(form)) {
+        toast.success('A versão enviada foi confirmada. As alterações posteriores continuam no rascunho.')
+        return
+      }
       setForm({ tema: '', texto: '' })
       try { localStorage.removeItem(ownerDraft) } catch { /* A confirmação do servidor não depende da limpeza local. */ }
       setQueuedVersion(null)

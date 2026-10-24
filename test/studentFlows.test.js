@@ -40,6 +40,7 @@ let onboardingProfileFixture = null;
 let incompleteAccount = false;
 let failLearningLoad = false;
 let essayMode = '';
+let deferredEssay;
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
@@ -47,6 +48,7 @@ function fixture(config) {
   if (essayMode === 'workshopFailure' && config.method === 'post' && url.endsWith('/redacao/projetos')) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
   if (failLearningLoad && url.endsWith('/aprendizagem/resumo')) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
   if (url.endsWith('/redacao') && config.method === 'post') {
+    if (essayMode === 'deferred') return new Promise(resolve => { deferredEssay = resolve; });
     if (essayMode === 'failure') throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: { message: 'Envio temporariamente indisponível.' } });
     if (essayMode === 'queued') return { offline: true, queued: true, queueId: 123 };
   }
@@ -78,7 +80,7 @@ function fixture(config) {
   if (url.endsWith('/adaptativo/sequencia')) return { semanas: 0 };
   return [];
 }
-axios.defaults.adapter = async config => ({ status: 200, statusText: 'OK', headers: {}, config, data: fixture(config) });
+axios.defaults.adapter = async config => ({ status: 200, statusText: 'OK', headers: {}, config, data: await fixture(config) });
 async function getBundle() {
   if (bundle) return bundle;
   const esbuild = requireFrontend('esbuild');
@@ -818,6 +820,27 @@ test('guided workshop waits for its saved project and keeps edits when saving fa
     assert.equal(document.querySelector('.writing-workshop-editor input').value, 'Inclusão digital');
     assert.ok(document.querySelector('.writing-workshop .save-feedback[data-state="error"]'));
   } finally { essayMode = ''; await screen.close(); }
+});
+
+for (const outcome of ['confirmed', 'queued']) test(`late ${outcome} essay response cannot erase text arriving after submission`, async () => {
+  const screen = await renderRoute('/redacoes');
+  const previous = window.SpeechRecognition;
+  let recognition;
+  window.SpeechRecognition = class { constructor() { recognition = this; } start() {} stop() {} };
+  essayMode = 'deferred';
+  try {
+    await act(async () => document.querySelector('.redacoes-intro-actions button').click()); await flush();
+    await inputValue(document.getElementById('essay-topic'), 'Educação');
+    const text = 'A escola deve oferecer condições de aprendizagem para todos os estudantes. '.repeat(5);
+    await inputValue(document.querySelector('textarea[aria-label="Texto da redação"]'), text);
+    await act(async () => button('Ditado por voz').click());
+    await act(async () => button('Finalizar e enviar').click());
+    await act(async () => recognition.onresult({ resultIndex: 0, results: [[{ transcript: 'ideia posterior' }]] }));
+    await act(async () => deferredEssay(outcome === 'queued' ? { offline: true, queueId: 123 } : { redacao: { id_redacao: 73, tema: 'Educação', texto: text } }));
+    await flush();
+    assert.ok(document.querySelector('textarea[aria-label="Texto da redação"]').value.includes('ideia posterior'));
+    assert.ok(JSON.parse(localStorage.getItem('900001:essay-draft:v3')).texto.includes('ideia posterior'));
+  } finally { window.SpeechRecognition = previous; essayMode = ''; await screen.close(); }
 });
 
 test('slow route loading explains the wait without reloading or replacing the page', async () => {
