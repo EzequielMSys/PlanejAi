@@ -1,5 +1,5 @@
-const crypto = require('crypto');
 const rateLimitStore = require('../services/rateLimitStore');
+const operationContext = require('../utils/operationContext');
 
 const attempts = new Map();
 const registrationAttempts = new Map();
@@ -16,7 +16,7 @@ async function consumirLimitePersistente(...args) {
 }
 
 function platformHeaders(req, res, next) {
-  const requestId = req.headers['x-request-id'] || crypto.randomUUID();
+  const requestId = operationContext.requestId(req.headers['x-request-id']);
   req.requestId = requestId;
   res.setHeader('X-Request-Id', requestId);
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -36,7 +36,7 @@ function requestLogger(req, res, next) {
   const started = process.hrtime.bigint()
   res.once('finish', () => {
     const durationMs = Number(process.hrtime.bigint() - started) / 1e6
-    console.log(JSON.stringify({ event: 'http_request', request_id: req.requestId, method: req.method, path: req.path, status: res.statusCode, duration_ms: Number(durationMs.toFixed(1)) }))
+    console.log(JSON.stringify({ event: 'http_request', request_id: req.requestId, method: req.method, path: operationContext.safeRoute(req), status: res.statusCode, duration_ms: Number(durationMs.toFixed(1)) }))
   })
   next()
 }

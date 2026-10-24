@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const pool = require("../config/db");
 const metrics = require("../services/metricsService");
+const { safeRoute } = require('../utils/operationContext');
 
 function operationsMonitor(req, res, next) {
   const started = process.hrtime.bigint();
@@ -10,12 +11,13 @@ function operationsMonitor(req, res, next) {
     const durationMs = Number(process.hrtime.bigint() - started) / 1e6;
     metrics.finishRequest({
       method: req.method,
-      route: req.baseUrl || req.path,
+      route: safeRoute(req),
       status: res.statusCode,
       durationMs,
     });
 
-    if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) return;
+    if (safeRoute(req) === '/api/health') return;
+    if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method) && res.statusCode < 500) return;
     const userId = req.usuario?.id_usuario || req.usuario?.id || null;
     const ipHash = crypto
       .createHash("sha256")
@@ -29,14 +31,14 @@ function operationsMonitor(req, res, next) {
         userId,
         req.method,
         // Nunca persiste query strings (podem conter tokens de recuperação).
-        req.path.replace(/\/\d+(?=\/|$)/g, '/:id').slice(0, 255),
+        safeRoute(req),
         res.statusCode,
         req.requestId || null,
         ipHash,
         Math.max(0, Math.round(durationMs)),
       ],
     ).catch((error) =>
-      console.warn("[AUDIT WARNING]", error.message),
+      console.warn(JSON.stringify({ event: 'audit_unavailable', request_id: req.requestId, status: res.statusCode })),
     );
   });
 

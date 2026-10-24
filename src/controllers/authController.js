@@ -35,7 +35,7 @@ async function registrar(req, res) {
       return res.status(400).json({ error: error.message });
     }
 
-    console.error("[REGISTER ERROR]", error);
+    console.error("[REGISTER ERROR]", { request_id: req.requestId || null, category: databaseUnavailable(error) ? 'DATABASE_UNAVAILABLE' : 'UNEXPECTED_ERROR' });
     return res.status(500).json({
       error: "Erro interno ao registrar usuário.",
     });
@@ -73,7 +73,7 @@ async function login(req, res) {
       });
     }
 
-    console.error("[LOGIN ERROR]", error);
+    console.error("[LOGIN ERROR]", { request_id: req.requestId || null, category: databaseUnavailable(error) ? 'DATABASE_UNAVAILABLE' : 'UNEXPECTED_ERROR' });
     if (databaseUnavailable(error)) return res.status(503).json({
       error: 'O serviço de acesso está temporariamente indisponível porque não foi possível conectar ao banco de dados. Tente novamente em instantes.',
       code: 'AUTH_SERVICE_UNAVAILABLE',
@@ -100,7 +100,7 @@ async function esqueciSenha(req, res) {
       message: "Se o email estiver cadastrado, você receberá um link de recuperação.",
     });
   } catch (error) {
-    console.error("[RECOVERY ERROR]", error);
+    console.error("[RECOVERY ERROR]", { request_id: req.requestId || null, category: databaseUnavailable(error) ? 'DATABASE_UNAVAILABLE' : 'UNEXPECTED_ERROR' });
     return res.status(202).json({
       message: "Se o email estiver cadastrado, você receberá um link de recuperação.",
     });
@@ -118,7 +118,7 @@ async function redefinirSenha(req, res) {
     if (error.message.includes("Token") || error.message.includes("Senha deve")) {
       return res.status(400).json({ error: error.message });
     }
-    console.error("[RESET PASSWORD ERROR]", error);
+    console.error("[RESET PASSWORD ERROR]", { request_id: req.requestId || null, category: databaseUnavailable(error) ? 'DATABASE_UNAVAILABLE' : 'UNEXPECTED_ERROR' });
     return res.status(500).json({ error: "Não foi possível redefinir a senha." });
   }
 }
@@ -157,7 +157,7 @@ async function trocarSenhaPrimeiroAcesso(req, res) {
       });
     }
 
-    console.error("[FIRST ACCESS PASSWORD ERROR]", error);
+    console.error("[FIRST ACCESS PASSWORD ERROR]", { request_id: req.requestId || null, category: databaseUnavailable(error) ? 'DATABASE_UNAVAILABLE' : 'UNEXPECTED_ERROR' });
     return res.status(500).json({
       error: "Erro interno ao alterar senha.",
     });
@@ -198,7 +198,7 @@ async function alterarSenha(req, res) {
       });
     }
 
-    console.error("[PASSWORD CHANGE ERROR]", error);
+    console.error("[PASSWORD CHANGE ERROR]", { request_id: req.requestId || null, category: databaseUnavailable(error) ? 'DATABASE_UNAVAILABLE' : 'UNEXPECTED_ERROR' });
     return res.status(500).json({
       error: "Erro interno ao alterar senha.",
     });

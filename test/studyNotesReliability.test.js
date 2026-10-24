@@ -12,7 +12,7 @@ const React = req('react'), { createRoot } = req('react-dom/client'), axios = re
 let useNotes, current, adapter
 axios.defaults.adapter = config => adapter(config)
 const response = (config, data) => ({ status: 200, statusText: 'OK', headers: {}, config, data })
-async function mount({ draft, owner = 101, remote = 'Texto no servidor' } = {}) {
+async function mount({ draft, confirmedDraft, failLoad = false, owner = 101, remote = 'Texto no servidor' } = {}) {
   if (!useNotes) {
     const build = await req('esbuild').build({ stdin: { contents: "export { default } from './src/hooks/useStudyNotes.js'", resolveDir: dir }, bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external', define: { 'import.meta.env': '{}' } })
     const filename = path.join(dir, '__notes_test.cjs'), mod = new Module(filename, module)
@@ -20,7 +20,8 @@ async function mount({ draft, owner = 101, remote = 'Texto no servidor' } = {}) 
   }
   localStorage.clear(); localStorage.setItem('user', JSON.stringify({ id_usuario: owner }))
   if (draft) localStorage.setItem('101:study-note:1', JSON.stringify({ text: draft, dirty: true }))
-  adapter = async config => response(config, { texto: remote })
+  if (confirmedDraft) localStorage.setItem('101:study-note:1', JSON.stringify({ text: confirmedDraft, dirty: false }))
+  adapter = async config => { if (failLoad) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, {status:503}); return response(config, { texto: remote }) }
   function Probe() { current = useNotes(1, 99); return React.createElement('p', null, current.status) }
   const root = createRoot(document.getElementById('root'))
   await React.act(async () => root.render(React.createElement(Probe)))
@@ -39,7 +40,7 @@ test('failed note save keeps a scoped draft and explicit retry confirms server p
     fail = false
     await React.act(async () => current.retry())
     assert.equal(current.status, 'saved')
-    assert.equal(localStorage.getItem('101:study-note:1'), null)
+    assert.equal(JSON.parse(localStorage.getItem('101:study-note:1')).dirty, false)
   } finally { await view.close() }
 })
 test('new edits are serialized and an older response cannot mark them saved', async () => {
@@ -107,3 +108,20 @@ test('device storage failure never claims the note was saved locally', async () 
     assert.equal(current.status, 'unsaved')
   } finally { dom.window.Storage.prototype.setItem = original; await view.close() }
 })
+
+test('a confirmed device copy can be reopened when the account is unavailable', async () => {
+  const view = await mount({ confirmedDraft: 'Última versão confirmada', failLoad: true });
+  try { assert.equal(current.notes, 'Última versão confirmada'); assert.equal(current.status, 'cached'); assert.equal(current.loading, false); }
+  finally { await view.close(); }
+});
+test('failed loading without a recoverable copy cannot silently overwrite an unseen note', async () => {
+  const view = await mount({ failLoad: true });
+  try {
+    assert.equal(current.status, 'unavailable'); assert.equal(current.loading, true);
+    await React.act(async () => current.setNotes('Não sobrescrever o que não carregou'));
+    assert.equal(current.notes, '');
+    adapter = async config => response(config, { texto: 'Nota recuperada do servidor' });
+    await React.act(async () => current.retry());
+    assert.equal(current.notes, 'Nota recuperada do servidor'); assert.equal(current.status, 'saved');
+  } finally { await view.close(); }
+});

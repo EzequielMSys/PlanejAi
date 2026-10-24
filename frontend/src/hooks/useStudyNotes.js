@@ -11,6 +11,7 @@ export default function useStudyNotes(contentId, fallbackId) {
   const [status, setStatus] = useState('loading')
   const [savedAt, setSavedAt] = useState(null)
   const [revision, setRevision] = useState(0)
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const ready = useRef(false)
   const isCurrent = () => current.active && operation.current === current && scopedCacheKey(`study-note:${contentId || fallbackId || 'free'}`) === key
   function draft(text) {
@@ -30,18 +31,20 @@ export default function useStudyNotes(contentId, fallbackId) {
       if (!active || !isCurrent()) return
       // Unsent work wins over a cached or older server copy, and requires explicit resend.
       const recovered = local?.dirty && typeof local.text === 'string'
-      const text = recovered ? local.text : remote?.texto || ''
+      const deviceCopy = !recovered && (!remote || remote.offline) && typeof local?.text === 'string'
+      if (contentId && !remote && !recovered && !deviceCopy) { setStatus('unavailable'); return }
+      const text = recovered || deviceCopy ? local.text : remote?.texto || ''
       current.text = text
       current.localSaved = Boolean(recovered)
       current.confirmed = remote && !remote.offline && !recovered ? 0 : -1
       setText(text)
       setSavedAt(recovered ? local.updatedAt : remote?.atualizadoEm || null)
-      setStatus(recovered ? 'local' : remote?.offline ? 'cached' : remote ? 'saved' : 'ready')
+      setStatus(recovered ? 'local' : deviceCopy || remote?.offline ? 'cached' : remote ? 'saved' : 'ready')
       ready.current = true
     }
     load()
     return () => { active = false; current.active = false }
-  }, [key, contentId])
+  }, [key, contentId, loadAttempt])
 
   function setNotes(value) {
     if (!ready.current || !isCurrent()) return
@@ -72,7 +75,8 @@ export default function useStudyNotes(contentId, fallbackId) {
             current.confirmed = version
             current.localSaved = false
             setStatus('saved'); setSavedAt(result?.atualizadoEm || new Date().toISOString())
-            try { localStorage.removeItem(key) } catch { /* Server confirmation is enough. */ }
+            // Preserva uma cópia confirmada para reabrir sem rede. Não é envio pendente.
+            try { localStorage.setItem(key, JSON.stringify({ text, dirty: false, updatedAt: result?.atualizadoEm || new Date().toISOString() })) } catch { /* A conta confirmou; não prometer cópia local. */ }
           }
         }
       } catch {
@@ -96,5 +100,11 @@ export default function useStudyNotes(contentId, fallbackId) {
     const timer = window.setTimeout(save, 650)
     return () => window.clearTimeout(timer)
   }, [revision, key])
-  return { notes, setNotes, status, savedAt, retry: save, loading: status === 'loading', flush: async () => ({ confirmed: await save(), local: current.localSaved, unchanged: current.version === 0 && !current.localSaved }) }
+  useEffect(() => {
+    if (current.version <= current.confirmed || current.version === 0 || current.localSaved) return
+    const warn = event => { event.preventDefault(); event.returnValue = '' }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [status, revision, key])
+  return { notes, setNotes, status, savedAt, retry: status === 'unavailable' ? () => setLoadAttempt(value => value + 1) : save, loading: status === 'loading' || status === 'unavailable', flush: async () => ({ confirmed: await save(), local: current.localSaved, unchanged: current.version === 0 && !current.localSaved }) }
 }

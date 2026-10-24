@@ -2,8 +2,9 @@
 
 ## Rotina do responsável
 
-- Consulte `/dono`: falhas de escrita HTTP 5xx nas últimas 24 horas, uso diário da Lumi e pedidos de atendimento. O histórico vem do MySQL e permanece entre execuções do Vercel. Mensagens contam envios, inclusive tentativas sem resposta; não representam tokens ou saldo do provedor.
+- Consulte `/dono`: envios dos fluxos essenciais, falhas HTTP 5xx de escrita e leitura nas últimas 24 horas, uso diário da Lumi e pedidos de atendimento. O histórico vem do MySQL e permanece entre execuções do Vercel. Recusas 4xx e limites 429 ficam separados de erros do servidor. As contagens são respostas HTTP, não usuários únicos nem conclusão de uma jornada. Mensagens contam envios, inclusive tentativas sem resposta; não representam tokens ou saldo do provedor.
 - Confira os logs de funções no Vercel para falhas de leitura, inicialização, indisponibilidade do banco e falhas do provedor de IA. O painel da aplicação também depende do banco e não substitui um monitor externo de disponibilidade.
+- Em “Onde o uso encontrou problemas”, abra as ocorrências recentes e use a referência `request_id` para localizar a requisição nos logs do Vercel. Os novos registros usam padrões fixos de rota, sem IDs reais, parâmetros de consulta ou corpo da requisição. Referências recebidas do cliente são aceitas apenas no formato UUID; outros valores são substituídos. As falhas de acesso e o tratador geral não imprimem mais o objeto de erro completo, que poderia conter SQL ou dados de conexão. Não houve limpeza retroativa do histórico.
 - Confira diariamente no Aiven a existência, retenção e possibilidade de restauração dos backups gerenciados do plano contratado. Não considere um banco online automaticamente protegido. O agendador em memória não é executado no Vercel.
 - Atenda os pedidos em `/dono`. Os usuários acessam o atendimento em Preferências. Não há envio automático de e-mail nem promessa de atendimento em tempo real.
 

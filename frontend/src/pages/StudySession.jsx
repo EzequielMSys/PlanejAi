@@ -16,6 +16,7 @@ import continuity from '../services/studyContinuityService'
 import { scopedCacheKey } from '../utils/offlineStore'
 import RouteLoading from '../components/RouteLoading'
 import '../components/StudyRecommendations.css'
+import { downloadTextCopy } from '../utils/downloadTextCopy'
 
 const sessionKey = () => scopedCacheKey('active-study-content')
 
@@ -149,6 +150,7 @@ export default function StudySession() {
   return <main className="session-page pj-page">
     {content.id && <SaveFeedback status={continuityStatus} message={continuityStatus === 'saved' ? 'Retomada desta sessão salva na sua conta. Você pode continuar em outro aparelho.' : continuityStatus === 'local' ? 'A retomada em outro aparelho ainda não foi confirmada. Suas anotações têm um aviso próprio de salvamento.' : 'Confirmando a retomada na sua conta…'} onRetry={() => { setContinuityStatus('saving'); continuity.save(content.id).then(() => setContinuityStatus('saved')).catch(() => setContinuityStatus('local')) }} />}
     <div className="pj-wrap">
+      {noteStatus === 'unavailable' && tab !== 'notes' && <SaveFeedback status={noteStatus} onRetry={retryNotes} />}
       <header className="session-topbar student-page-heading">
         <button type="button" className="session-back" onClick={() => navigate(-1)}>← Voltar</button>
         <div><span className="pj-eyebrow">PlanejAI / Sala de estudo</span><h1>{content.titulo || 'Sessão de estudo'}</h1><p>{content.disciplina || content.area || 'Geral'} {day?.data_estudo ? `· ${new Date(`${String(day.data_estudo).slice(0,10)}T12:00:00`).toLocaleDateString('pt-BR')}` : ''}</p></div>
@@ -159,10 +161,11 @@ export default function StudySession() {
       <section className="session-layout">
         <div className="session-workspace pj-panel">
           <nav className="session-tabs" aria-label="Ferramentas da sessão"><button className={tab === 'guide' ? 'is-active' : ''} onClick={() => setTab('guide')}>Guia de estudo</button><button className={tab === 'material' ? 'is-active' : ''} onClick={() => setTab('material')}>{materialUrl ? 'Fonte principal' : 'Material'}</button><button className={tab === 'notes' ? 'is-active' : ''} onClick={() => setTab('notes')}>Anotações <span>{noteStatus === 'saved' ? 'na conta' : noteStatus === 'local' ? 'neste aparelho' : ''}</span></button></nav>
+          {noteStatus === 'unsaved' && <button type="button" className="study-button" onClick={() => downloadTextCopy(notes, 'planejai-anotacoes.txt')}>Baixar cópia das anotações</button>}
           <div className="session-canvas">
             {tab === 'material' ? <StudyMaterial content={content} onTutorRequest={pensarComLumi} /> : tab === 'guide' ? <div className="session-guide-wrap"><StudyGuide material={content} onTutorRequest={pensarComLumi} sourceUrl={isExternalStudySource(materialUrl) ? materialUrl : undefined} /></div> : <div className="session-notes">
-              <header className="session-notes-header"><div><span className="pj-eyebrow">CADERNO DA SESSÃO</span><h2>Organize suas ideias.</h2><p>Anote o que entendeu e o que quer perguntar à Lumi.</p></div><div className="session-notes-tools"><SaveFeedback status={noteStatus} onRetry={retryNotes} /><DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? '\n' : ''}${texto}`)}/></div></header>
-              <div className="session-note-prompts"><span>ESTRUTURE SUA REVISÃO</span><div><button type="button" onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Ideia principal\n`)}>+ Ideia principal</button><button type="button" onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Minha dúvida\n`)}>+ Minha dúvida</button><button type="button" onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Exemplo próprio\n`)}>+ Exemplo próprio</button></div></div>
+              <header className="session-notes-header"><div><span className="pj-eyebrow">CADERNO DA SESSÃO</span><h2>Organize suas ideias.</h2><p>Anote o que entendeu e o que quer perguntar à Lumi.</p></div><div className="session-notes-tools"><SaveFeedback status={noteStatus} onRetry={retryNotes} />{!loadingNotes && <DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? '\n' : ''}${texto}`)}/>}</div></header>
+              <div className="session-note-prompts"><span>ESTRUTURE SUA REVISÃO</span><div><button type="button" disabled={loadingNotes} onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Ideia principal\n`)}>+ Ideia principal</button><button type="button" disabled={loadingNotes} onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Minha dúvida\n`)}>+ Minha dúvida</button><button type="button" disabled={loadingNotes} onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Exemplo próprio\n`)}>+ Exemplo próprio</button></div></div>
               <label className="session-notes-editor"><span className="sr-only">Anotações da sessão</span><textarea disabled={loadingNotes} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Escreva com suas palavras…\n\nO que ficou claro? O que ainda precisa de outra explicação?" /><small>{notes.length} caracteres</small></label>
             </div>}
           </div>

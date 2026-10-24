@@ -6,6 +6,8 @@ import './EssayStudio.css'
 import WritingRadar from './WritingRadar'
 import { essayDraftKey, readEssayDraft, writeEssayDraft } from '../utils/essayDraft'
 import SaveFeedback from './SaveFeedback'
+import useExitWarning from '../hooks/useExitWarning'
+import { downloadTextCopy } from '../utils/downloadTextCopy'
 
 
 function contar(texto) {
@@ -60,6 +62,7 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
   const [draftReady, setDraftReady] = useState(false)
   const [diagnostico, setDiagnostico] = useState(null)
   const [analisando, setAnalisando] = useState(false)
+  useExitWarning(draftFailed && Boolean(form.texto || form.tema))
   const metricas = useMemo(() => contar(form.texto), [form.texto])
   const estrutura = useMemo(() => checarEstrutura(form.texto), [form.texto])
   const progresso = Math.min(100, Math.round((metricas.palavras / 280) * 100))
@@ -104,6 +107,7 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
   return <div className={`essay-studio ${foco ? 'is-focus' : ''}`}>
     <header className="essay-studio-top"><div><span>PLANEJAI / ESTÚDIO DE REDAÇÃO</span><h2>Construa, teste, revise.</h2></div><div><button type="button" onClick={() => setFoco((v) => !v)}>{foco ? 'Sair do foco' : 'Modo foco'}</button><button type="button" onClick={onCancel}>Fechar</button></div></header>
     {draftFailed && <SaveFeedback status="unsaved" message="Não conseguimos guardar o rascunho neste aparelho. Mantenha esta tela aberta e copie seu texto antes de sair." onRetry={() => { const saved = writeEssayDraft(form); setSalvoEm(saved); setDraftFailed(!saved) }} />}
+    {draftFailed && <button type="button" className="study-button" onClick={() => downloadTextCopy(`${form.tema}\n\n${form.texto}`, 'planejai-rascunho-redacao.txt')}>Baixar cópia do meu texto</button>}
     {queued && <SaveFeedback status="local" message="Esta versão já foi encaminhada pela fila deste aparelho. Ao reconectar, confira o histórico antes de tentar outro envio. Seu texto continua aqui." />}
     <form onSubmit={onSubmit} aria-busy={enviando}>
       <aside className="essay-outline">

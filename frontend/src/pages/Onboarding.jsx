@@ -6,6 +6,8 @@ import ChecklistMaterias from '../components/ChecklistMaterias'
 import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 import RouteLoading from '../components/RouteLoading'
+import usePlanningDraft from '../hooks/usePlanningDraft'
+import SaveFeedback from '../components/SaveFeedback'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -40,6 +42,7 @@ export default function Onboarding() {
   })
 
   const [disponibilidade, setDisponibilidade] = useState(diasPadrao)
+  const planningDraft = usePlanningDraft({ formData, disponibilidade, step }, !restoring && !restoreError)
   useEffect(() => {
     let active = true
     perfilService.obterPerfilCompleto().then(({ perfil, disponibilidade: days }) => {
@@ -104,6 +107,7 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
       await perfilService.salvarDisponibilidade(diasParaSalvar)
 
       updatePerfilCompleto(true)
+      planningDraft.clear()
       toast.success('Preferências salvas na sua conta. Agora você pode gerar seu plano.')
       navigate('/cronograma')
     } catch (error) {
@@ -141,6 +145,8 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
       <div className="absolute bottom-0 left-[15%] h-96 w-96 rounded-full bg-violet-400/10 blur-3xl" />
 
       <div className="max-w-6xl mx-auto relative z-10">
+        {planningDraft.offer && <section className="setup-invitation" aria-label="Recuperar planejamento"><p>Há um rascunho de planejamento neste aparelho. Ele ainda não substituiu os dados da sua conta.</p><button type="button" onClick={() => { const value = planningDraft.offer.value; setFormData(current => ({ ...current, ...value.formData })); setDisponibilidade(value.disponibilidade); setStep(value.step === 2 ? 2 : 1); planningDraft.dismiss() }}>Recuperar rascunho</button><button type="button" onClick={planningDraft.dismiss}>Manter dados da conta</button></section>}
+        {planningDraft.status !== 'ready' && <SaveFeedback status={planningDraft.status} message={planningDraft.status === 'local' ? 'Rascunho guardado apenas neste aparelho. Confirme as etapas para salvar na sua conta.' : 'Não foi possível guardar o rascunho. Mantenha esta aba aberta até confirmar o salvamento na conta.'} />}
         <div className="setup-invitation"><p>Quer conhecer o PlanejAI antes de planejar?</p><button type="button" disabled={loading} onClick={() => navigate('/inicio')}>Explorar primeiro →</button></div>
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <div className="setup-hero mb-7 overflow-hidden rounded-[2rem] border border-white/10 bg-[rgb(var(--pn-primaria-forte-rgb)/1)] p-6 shadow-[0_24px_80px_-30px_rgba(31,27,72,.65)] sm:p-8 lg:p-10 relative">

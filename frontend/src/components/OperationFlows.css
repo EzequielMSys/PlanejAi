@@ -1,0 +1,9 @@
+.operation-flows>p { max-width:80ch; margin-block:.8rem; color:var(--pn-texto-suave); line-height:1.65; font-size:.9rem; }
+.operation-flows-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:1rem; margin-block:1.2rem; }
+.operation-flows-grid article { border:1px solid var(--pn-borda); padding:1rem; border-radius:.9rem; min-width:0; background:var(--pn-fundo); }
+.operation-flows-grid h3 { font-weight:750; margin-bottom:.7rem; }
+.operation-flows-grid dl>div { display:flex; justify-content:space-between; gap:.75rem; padding-block:.35rem; font-size:.85rem; }
+.operation-flows-grid dd { font-weight:750; white-space:nowrap; }
+.operation-flows summary { cursor:pointer; min-height:44px; align-content:center; font-weight:700; color:var(--pn-link); }
+.operation-flows li { margin-block:1rem; overflow-wrap:anywhere; font-size:.85rem; }
+.operation-flows li span { display:block; margin-top:.35rem; color:var(--pn-texto-suave); }

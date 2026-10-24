@@ -166,7 +166,7 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   const status = err.status || (err.type === "entity.too.large" ? 413 : 500);
-  console.error(`[${req.requestId || "sem-id"}]`, err.stack || err.message);
+  console.error(JSON.stringify({ event: 'request_error', request_id: req.requestId, route: require('./utils/operationContext').safeRoute(req), status }));
   res.status(status).json({
     error:
       status === 413
