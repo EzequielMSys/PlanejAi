@@ -33,10 +33,13 @@ let requests = [];
 let failChat = false;
 let materialCatalogFixture = false;
 let dashboardLearningFixture = null;
+let dailySchedulesFixture = [];
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data });
+  if (url.endsWith('/cronograma')) return dailySchedulesFixture;
+  if (/\/dias\/\d+\/ajustar$/.test(url)) return { message: 'Seu dia foi ajustado e salvo.' };
   if (url.endsWith('/inteligencia/chat')) {
     if (config.method === 'post') {
       if (failChat) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: { message: 'Lumi temporariamente indisponível.' } });
@@ -95,6 +98,29 @@ async function renderRoute(route, role = 'aluno', userOverrides = {}) {
   return { root, container, async close() { await act(async () => root.unmount()); } };
 }
 function button(text) { return [...document.querySelectorAll('button')].find(node => node.textContent.trim() === text); }
+
+test('today highlights the pending lesson and saves a routine adjustment only after confirmation', async () => {
+  dailySchedulesFixture = [{ id_cronograma: 11, status: 'ATIVO', dias: [{ id_dia: 51, data_estudo: new Intl.DateTimeFormat("en-CA", {timeZone:"America/Sao_Paulo"}).format(new Date()), tempo_previsto: 60, concluido: 0, conteudos: [{ id: 70, titulo: 'Concluído', concluido: 1 }, { id: 71, id_conteudo: 7, titulo: 'Funções na prática', disciplina: 'Matemática', concluido: 0 }, { id: 72, titulo: 'Revisar equações', concluido: 0 }] }] }];
+  const screen = await renderRoute('/inicio');
+  try {
+    assert.ok(screen.container.textContent.includes('Funções na prática'));
+    assert.ok(screen.container.textContent.includes('30 min previstos para esta sessão'));
+    assert.ok([...document.querySelectorAll('button')].some(node => node.textContent.includes('Continuar meus estudos')));
+    const adjust = [...document.querySelectorAll('button')].find(node => node.textContent.includes('Hoje só tenho 20 minutos'));
+    await act(async () => adjust.click());
+    assert.ok(document.querySelector('[aria-label="Conferir ajuste"]'));
+    assert.equal(requests.filter(req => req.url.endsWith('/ajustar')).length, 0);
+    await act(async () => button('Cancelar').click());
+    assert.equal(document.querySelector('[aria-label="Conferir ajuste"]'), null);
+    await act(async () => adjust.click());
+    await act(async () => button('Confirmar ajuste').click());
+    await flush();
+    const saved = requests.find(req => req.url.endsWith('/dias/51/ajustar'));
+    assert.equal(saved.method, 'post');
+    assert.equal(JSON.parse(saved.data).acao, 'REDUZIR');
+    assert.ok(screen.container.textContent.includes('Seu dia foi ajustado e salvo.'));
+  } finally { await screen.close(); dailySchedulesFixture = []; }
+});
 
 test('landing menu separates account access and closes with Escape or section navigation', async () => {
   const screen = await renderRoute('/');

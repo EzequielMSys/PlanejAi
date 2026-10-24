@@ -45,6 +45,17 @@ router.post(
   cronogramaController.replanejarAtrasados
 )
 router.get('/recuperacao', authMiddleware, cronogramaController.analisarAtrasos)
+router.post('/dias/:diaId/ajustar', authMiddleware, async (req, res) => {
+  try {
+    const id = Number(req.params.diaId)
+    if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ message: 'Dia inválido.' })
+    const result = await require('../services/dailyPlanService').adjustDay(req.usuario.id, id, req.body?.acao)
+    return res.json(result)
+  } catch (error) {
+    if (!error.status) console.error('[AJUSTE DIARIO]', error)
+    return res.status(error.status || 500).json({ message: error.status ? error.message : 'Não foi possível ajustar seu dia. Nenhuma alteração foi salva.' })
+  }
+})
 router.post('/dias/:diaId/desafio', authMiddleware, cronogramaController.iniciarDesafio)
 router.post('/cronogramas/:cronogramaId/prova-final', authMiddleware, cronogramaController.iniciarProvaFinal)
 router.get('/avaliacoes/:avaliacaoId/retomar', authMiddleware, cronogramaController.retomarAvaliacao)

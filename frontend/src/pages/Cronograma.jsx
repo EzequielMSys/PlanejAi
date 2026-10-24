@@ -9,6 +9,7 @@ import MaterialViewer from '../components/MaterialViewer'
 import CronogramaAssessment from '../components/CronogramaAssessment'
 import { exportarCronograma } from '../utils/calendarExport'
 import './Cronograma.css'
+import DailyPlanActions from '../components/DailyPlanActions'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -372,6 +373,7 @@ async function concluirDia(idDia) {
 
           {cronogramaAtual && <div className="mb-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={abrirRecuperacao} className="rounded-full border border-study-line/25 bg-study-paper px-5 py-3 text-sm font-black text-study-accent dark:bg-study-paper dark:text-study-accent">Plano de recuperação</button><button type="button" onClick={() => exportarCronograma(cronogramaAtual)} className="rounded-full bg-study-accent px-5 py-3 text-sm font-black text-white">Exportar calendário</button></div>}
 
+          <DailyPlanActions schedules={cronogramas} onSaved={carregarCronogramas} />
           {!cronogramaAtual ? (
             <section className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.9fr] lg:items-center">
               <div>

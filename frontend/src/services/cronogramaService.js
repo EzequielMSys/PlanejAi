@@ -14,6 +14,7 @@ function tratarErro(error, mensagemPadrao) {
 }
 
 const cronogramaService = {
+  ajustarDia: (idDia, acao) => api.post(`/dias/${idDia}/ajustar`, { acao }).then(response => response.data),
   async gerarCronograma() {
     try {
       const response = await api.post('/gerar')
