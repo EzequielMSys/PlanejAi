@@ -19,7 +19,7 @@ Foram desenhadas três construções vetoriais: curva e ponto, dobra e encontro.
 
 Serifa nos títulos de abertura, fonte de sistema nos controles e preferência do estudante nos textos de leitura. Títulos têm espaço para respirar; textos usam larguras limitadas e entrelinhas confortáveis. O uso de cor fica concentrado em ações e pequenos sinais.
 
-A curva com ponto aparece como assinatura das áreas. Um canto mais curto em superfícies selecionadas retoma a abertura do símbolo. Esses elementos são decorativos: não representam progresso, disponibilidade da IA ou dados de aprendizagem.
+Desde a etapa 43, páginas ligadas por um fio aparecem como motivo de interface na entrada, no acesso à conta, na navegação e nas assinaturas das áreas. A construção está em `frontend/src/components/ConnectedPages.jsx`; esse motivo não substitui o logotipo principal. Um canto de folha e margens compartilhadas aproximam as superfícies de leitura. Esses elementos são decorativos: não representam progresso, disponibilidade da IA ou relações conceituais não confirmadas. Linhas cronológicas acompanham a ordem dos registros em Meu entendimento.
 
 | Área | Composição |
 | --- | --- |
@@ -27,8 +27,20 @@ A curva com ponto aparece como assinatura das áreas. Um canto mais curto em sup
 | Hoje | Próxima ação em primeiro plano; meta na margem e lembrete depois da ação principal. |
 | Sala de estudo | Material como superfície de leitura; ferramentas recolhíveis e avaliação ao final. |
 | Aprendizagem | Diário editorial com uma margem para a próxima decisão e sinais apoiados nos dados existentes. |
-| Redações | Manuscrito, arquivo e caminhos de revisão; símbolo no lugar da letra decorativa genérica. |
+| Redações | Manuscrito, arquivo e caminhos de revisão; coluna de escrita ampla e revisão de trechos por intenção. |
 | Lumi | Retrato original na margem, conversa em uma superfície própria e apoio contextual. |
+| Minha mesa | Poucos itens organizados pelo estudante, com margens e cantos de folha. |
+| Meu entendimento | Percurso cronológico com acesso ao registro original de cada avanço. |
+
+## Estudos de marca para avaliação
+
+A proposta **Páginas que se conectam** foi solicitada para visualização e está preservada como estudo. Estes arquivos de documentação não são importados pelo site nem substituem automaticamente a marca publicada:
+
+- [Símbolo vetorial proposto](./proposta-paginas-conectadas.svg).
+- [Prancha de aplicações em SVG](./proposta-paginas-aplicacoes.svg).
+- [Prévia da proposta em PNG](./proposta-paginas-conectadas.png).
+
+A proposta de logotipo e o motivo de páginas conectadas da interface são construções distintas. A implementação atual das telas está descrita em [validação das etapas 42 e 43](../validacao-etapas-42-43.md).
 
 ## Lumi e voz
 
