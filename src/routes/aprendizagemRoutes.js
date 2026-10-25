@@ -4,6 +4,7 @@ const { authMiddleware } = require('../middlewares/authMiddleware');
 const { idempotency } = require('../middlewares/idempotencyMiddleware');
 
 router.use(authMiddleware);
+router.use('/diario', require('./learningJournalRoutes'));
 const continuity = require('../services/studyContinuityService');
 for (const [method, operation] of [['get', continuity.current], ['put', continuity.save], ['delete', continuity.clear]]) {
   router[method]('/estudo-em-andamento', async (req, res) => {

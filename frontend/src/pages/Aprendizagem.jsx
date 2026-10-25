@@ -1,5 +1,5 @@
 import AreaSignature from '../components/AreaSignature'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import { Link, useLocation } from 'react-router-dom'
@@ -14,8 +14,10 @@ import ReviewRecommendation from '../components/ReviewRecommendation'
 
 import SimulationReport from '../components/SimulationReport'
 import './Aprendizagem.css'
+import LearningJournalFallback from '../components/LearningJournalFallback'
+const LearningJournal = lazy(() => import('../components/LearningJournal').catch(() => ({default:LearningJournalFallback})))
 const tabs = [
-  ['revisoes', 'Revisões'], ['simulado', 'Simulado'], ['erros', 'Caderno de erros'], ['dominio', 'Mapa de domínio']
+  ['revisoes', 'Revisões'], ['simulado', 'Simulado'], ['erros', 'Caderno de erros'], ['dominio', 'Mapa de domínio'], ['diario','Minhas palavras e dúvidas']
 ]
 
 function Stat({ label, value, detail }) {
@@ -147,6 +149,7 @@ export default function Aprendizagem() {
       </nav><button type="button" onClick={imprimirRelatorio} className="learning-print print:hidden">Imprimir relatório / PDF</button></div>}
 
       <section className="learning-workspace">
+        {aba === 'diario' && <Suspense fallback={<RouteLoading label="Preparando seu diário…"/>}><LearningJournal/></Suspense>}
         {aba === 'revisoes' && <div><h2 className="text-2xl font-black">Fila de hoje</h2><p className="mt-1 text-sm text-black/55 dark:text-white/55">Diga honestamente como a lembrança veio. O intervalo se ajusta sozinho.</p>
           <div className="mt-6 grid gap-4">{revisoes.length === 0 ? <Empty title="Tudo em dia por aqui." text="Sua fila está limpa. Um simulado curto pode revelar o próximo conteúdo que vale revisar." action={() => setAba('simulado')} actionLabel="Preparar simulado" /> : revisoes.map((item) => <article key={item.id_revisao} className="learning-review rounded-2xl border border-study-line/15 bg-study-canvas p-5 dark:bg-study-paper"><p className="text-xs font-black uppercase tracking-wider text-study-accent dark:text-study-accent">{item.disciplina}</p><h3 className="mt-1 text-xl font-black">{item.titulo}</h3><p className="mt-2 text-xs text-black/50 dark:text-white/50">Domínio {Number(item.nivel_dominio) * 10}% · última resposta {item.ultimo_resultado || 'ainda não avaliada'}</p><ReviewRecommendation item={item} onSaved={carregar} /><div className="mt-4 flex flex-wrap gap-2">{[['ESQUECI','Esqueci'],['DIFICIL','Foi difícil'],['LEMBREI','Lembrei'],['DOMINEI','Dominei']].map(([id,label]) => <button key={id} onClick={() => avaliar(item,id)} className="rounded-full border border-study-line/25 px-4 py-2 text-xs font-black hover:bg-study-accent hover:text-white">{label}</button>)}</div></article>)}</div></div>}
 

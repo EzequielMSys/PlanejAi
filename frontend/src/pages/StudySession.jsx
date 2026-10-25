@@ -18,11 +18,14 @@ import RouteLoading from '../components/RouteLoading'
 import '../components/StudyRecommendations.css'
 import { downloadTextCopy } from '../utils/downloadTextCopy'
 import './StudyDesk.css'
+import { hasUnsafeJournalDraft, hasPendingJournalDraft } from '../utils/journalDrafts'
+import LearningJournalFallback from '../components/LearningJournalFallback'
 
 function TutorUnavailable() {
   return <p className="study-desk-loading" role="alert">Não foi possível carregar a Lumi. Você pode continuar lendo e anotando. Depois de preservar seus textos, reabra a página para tentar novamente.</p>
 }
 const ChatInterface = lazy(() => import('../components/ChatInterface').catch(() => ({default:TutorUnavailable})))
+const LearningJournal = lazy(() => import('../components/LearningJournal').catch(() => ({default:LearningJournalFallback})))
 const sessionKey = () => scopedCacheKey('active-study-content')
 
 function loadSavedContent() {
@@ -124,6 +127,14 @@ export default function StudySession() {
 
   async function finish() {
     if (!content) return
+    if (hasUnsafeJournalDraft()) {
+      toast.error('Uma explicação ou dúvida está sem cópia local. Salve na conta ou baixe o rascunho antes de concluir.')
+      return
+    }
+    if (hasPendingJournalDraft(content.id_conteudo)) {
+      toast.error('Você começou uma explicação ou dúvida deste conteúdo. Salve na conta ou descarte o rascunho antes de concluir.')
+      return
+    }
     setFinishing(true)
     const minutes = Math.max(1, Math.round((Date.now() - startedAt.current) / 60000))
     try {
@@ -188,7 +199,8 @@ export default function StudySession() {
           <article className="study-desk-note-link pj-panel"><span aria-hidden="true">✎</span><h2>Uma ideia merece ficar.</h2><p>Anote com suas palavras. Os avisos distinguem a cópia neste aparelho do que já chegou à conta.</p><button type="button" onClick={() => { setTab('notes'); requestAnimationFrame(() => document.querySelector('.session-notes textarea')?.focus()) }}>Abrir anotações <span aria-hidden="true">↗</span></button></article>
         </aside>
       </section>
-      <section className="session-check study-desk-wrap-up pj-panel" aria-labelledby="session-wrap-up-title"><div><span className="pj-eyebrow">PARA FECHAR ESTE PASSO</span><h2 id="session-wrap-up-title">Como esse conteúdo ficou?</h2><p>Sua resposta define quando ele volta para revisão. Você também pode sair e retomar depois.</p></div><div className="study-desk-assessment" role="group" aria-label="Como ficou o conteúdo">{[['DIFICIL','Ainda difícil'],['LEMBREI','Entendi'],['DOMINEI','Consigo explicar']].map(([value,label]) => <button type="button" key={value} disabled={finishing} aria-pressed={difficulty === value} className={difficulty === value ? 'is-active' : ''} onClick={() => setDifficulty(value)}>{label}</button>)}</div><button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : 'Concluir sessão'}</button></section>
+      <Suspense fallback={<p role="status">Preparando seus registros…</p>}><LearningJournal content={content} notes={notes} embedded/></Suspense>
+      <section className="session-check study-desk-wrap-up pj-panel" aria-labelledby="session-wrap-up-title"><div><span className="pj-eyebrow">PARA FECHAR ESTE PASSO</span><h2 id="session-wrap-up-title">Como esse conteúdo ficou?</h2><p>Sua resposta define quando ele volta para revisão. Você também pode sair e retomar depois. As explicações e dúvidas são opcionais; use “Salvar na minha conta” antes de sair para acessá-las em outro aparelho.</p></div><div className="study-desk-assessment" role="group" aria-label="Como ficou o conteúdo">{[['DIFICIL','Ainda difícil'],['LEMBREI','Entendi'],['DOMINEI','Consigo explicar']].map(([value,label]) => <button type="button" key={value} disabled={finishing} aria-pressed={difficulty === value} className={difficulty === value ? 'is-active' : ''} onClick={() => setDifficulty(value)}>{label}</button>)}</div><button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : 'Concluir sessão'}</button></section>
     </div>
   </main>
 }

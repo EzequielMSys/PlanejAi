@@ -49,10 +49,24 @@ let essayMode = '';
 let deferredEssay;
 let searchMode = '';
 let deferredSearch;
+let journalFailure = false;
+let journalDoubt = false;
+let journalResolved = 0;
+let journalSteps = [{id:11,tipo:'explicacao',texto:'Primeira versão preservada',criado_em:'2026-10-20T12:00:00'}, {id:12,tipo:'explicacao',texto:'Segunda versão com exemplo',criado_em:'2026-10-25T12:00:00'}];
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
+  if(url.endsWith('/aprendizagem/diario')) {
+    if(config.method==='post') {
+      if(journalFailure)throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Não foi possível confirmar.'}});
+      return {id:71,salvo:true};
+    }
+    return {itens:[{id:71,titulo:'Força e movimento',tipo:config.params.tipo,atualizado_em:'2026-10-25T12:00:00',versoes:2,retomar:1}],mais:false,pagina:1};
+  }
+  if(url.endsWith('/diario/71'))return {id:71,titulo:'Força e movimento',tipo:journalDoubt?'duvida':'explicacao',resolvido:journalResolved,passos:journalSteps,mais:false};
+  if(url.endsWith('/diario/71/passos')){const data=JSON.parse(config.data);if(data.tipo==='resolucao')journalResolved=1;if(data.tipo==='reabertura')journalResolved=0;return {id:71,salvo:true}};
+  if(url.endsWith('/diario/71/lumi'))return {resposta:'Seu exemplo tornou a ideia mais clara. O que muda se a força resultante for zero?'};
   if (url.endsWith('/busca')) {
     if(searchMode==='failed') throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
     if(searchMode==='slow' && config.params.q==='antiga') return new Promise(resolve=>{deferredSearch=resolve});
@@ -1291,4 +1305,97 @@ test('password-change fields explain mismatching confirmation immediately below 
     await inputValue(document.getElementById('confirmarSenha'),'SenhaTeste123');
     assert.ok(!document.getElementById('password-confirmation-error'));
   }finally{await screen.close()}
+});
+
+async function openJournal() {
+  const screen=await renderRoute('/aprendizagem');
+  await act(async()=>button('Minhas palavras e dúvidas').click());await flush();await flush();
+  return screen;
+}
+test('journal drafts remain on this account and failed saves retry the same version without auto sending to Lumi',async()=>{
+  const screen=await openJournal();
+  try {
+    await act(async()=>button('+ Escrever uma explicação').click());
+    await inputValue(document.querySelector('.journal-editor input'),'Inércia');
+    await inputValue(document.querySelector('.journal-editor textarea'),'Um corpo mantém seu estado quando a força resultante é zero.');
+    const savedDraft=JSON.parse(localStorage.getItem('900001:journal-draft:new:explicacao:livre'));
+    assert.match(savedDraft.texto,/força resultante/);
+    assert.ok(!requests.some(r=>r.method==='post'&&r.url.includes('/diario')));
+    journalFailure=true;
+    await act(async()=>document.querySelector('.journal-editor').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+    assert.match(document.querySelector('.journal-error').textContent,/Não foi possível confirmar/);
+    assert.equal(document.querySelector('.journal-editor textarea').value,savedDraft.texto);
+    journalFailure=false;
+    await act(async()=>document.querySelector('.journal-editor').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();
+    const posts=requests.filter(r=>r.method==='post'&&r.url.endsWith('/diario'));
+    assert.equal(posts.length,2);assert.equal(JSON.parse(posts[0].data).chave,JSON.parse(posts[1].data).chave);
+    assert.ok(!localStorage.getItem('900001:journal-draft:new:explicacao:livre'));
+    assert.ok(!requests.some(r=>r.method==='post'&&r.url.endsWith('/lumi')));
+  }finally{journalFailure=false;await screen.close()}
+});
+test('reexplaining hides old answers until requested and Lumi sends only checked versions after an explicit click',async()=>{
+  const screen=await openJournal();
+  try {
+    await act(async()=>document.querySelector('.journal-list button').click());await flush();await flush();
+    assert.ok(!screen.container.textContent.includes('Primeira versão preservada'));
+    await act(async()=>button('Consultar versões anteriores / comparar').click());
+    const checks=[...document.querySelectorAll('.journal-step input')];
+    assert.equal(checks.length,2);assert.ok(checks.every(node=>!node.checked));
+    assert.equal(button('Comparar trechos com a Lumi').disabled,true);
+    await act(async()=>{checks[0].click();checks[1].click()});
+    assert.ok(!requests.some(r=>r.url.endsWith('/lumi')));
+    await act(async()=>button('Comparar trechos com a Lumi').click());await flush();
+    const request=requests.find(r=>r.method==='post'&&r.url.endsWith('/diario/71/lumi'));
+    assert.deepEqual(JSON.parse(request.data),{passos:[11,12]});
+    assert.match(document.querySelector('.journal-feedback').textContent,/exemplo tornou/);
+    const result=await axe.run(document.querySelector('.learning-journal'),{rules:{'color-contrast':{enabled:false}}});
+    assert.deepEqual(result.violations.map(v=>v.id),[]);
+  }finally{await screen.close()}
+});
+test('a saved second explanation is appended rather than editing the earlier text',async()=>{
+  const screen=await openJournal();
+  try {
+    await act(async()=>document.querySelector('.journal-list button').click());await flush();
+    await inputValue(document.querySelector('.journal-editor textarea'),'Uma nova explicação minha.');
+    await act(async()=>document.querySelector('.journal-editor').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();
+    const request=requests.find(r=>r.method==='post'&&r.url.endsWith('/diario/71/passos'));
+    assert.equal(JSON.parse(request.data).tipo,'explicacao');assert.equal(JSON.parse(request.data).texto,'Uma nova explicação minha.');
+    assert.ok(screen.container.textContent.includes('Primeira versão preservada'));
+    assert.ok(screen.container.textContent.includes('Registro confirmado na sua conta.'));
+    assert.ok(!requests.some(r=>r.method==='post'&&r.url.endsWith('/lumi')));
+  }finally{await screen.close()}
+});
+test('doubts require the student to record what helped before resolving and can be reopened',async()=>{
+  journalDoubt=true;
+  const screen=await openJournal();
+  try {
+    await act(async()=>button('Caminhos das dúvidas').click());await flush();
+    await act(async()=>document.querySelector('.journal-list button').click());await flush();
+    const select=document.querySelector('.journal-editor select');
+    await act(async()=>{select.value='resolucao';select.dispatchEvent(new window.Event('change',{bubbles:true}))});
+    await inputValue(document.querySelector('.journal-editor textarea'),'Comparar velocidade e aceleração com uma bicicleta ajudou.');
+    await act(async()=>document.querySelector('.journal-editor').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();
+    assert.ok(screen.container.textContent.includes('Resolvida por você'));
+    await inputValue(document.querySelector('.journal-editor textarea'),'Ainda tenho dúvida sobre o movimento circular.');
+    await act(async()=>document.querySelector('.journal-editor').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();
+    assert.ok(screen.container.textContent.includes('Em investigação'));
+    assert.deepEqual(requests.filter(r=>r.url.endsWith('/diario/71/passos')).map(r=>JSON.parse(r.data).tipo),['resolucao','reabertura']);
+    assert.ok(!requests.some(r=>r.url.endsWith('/lumi')));
+  }finally{journalDoubt=false;journalResolved=0;await screen.close()}
+});
+test('a session cannot finish while its new explanation is still only a draft',async()=>{
+  window.sessionStorage.setItem('900001:active-study-content',JSON.stringify({conteudo:{id:51,id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'},dia:{data_estudo:'2026-10-25'}}));
+  const screen=await renderRoute('/estudar');
+  try {
+    await act(async()=>button('Explicar ou registrar uma dúvida').click());await flush();
+    await act(async()=>button('+ Escrever uma explicação').click());
+    await inputValue(document.querySelector('.journal-editor textarea'),'Minha ideia ainda em elaboração.');
+    await act(async()=>document.querySelector('.study-desk-actions button:last-child').click());await flush();
+    assert.ok(document.querySelector('.study-desk'));
+    assert.ok(!requests.some(r=>r.method==='post'&&/sessoes|concluir/.test(r.url)));
+    assert.ok(localStorage.getItem('900001:journal-draft:new:explicacao:9'));
+    window.confirm=()=>true;
+    await act(async()=>button('Descartar rascunho').click());
+    assert.ok(!localStorage.getItem('900001:journal-draft:new:explicacao:9'));
+  }finally{window.confirm=()=>false;window.sessionStorage.clear();await screen.close()}
 });
