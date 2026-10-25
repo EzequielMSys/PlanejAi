@@ -51,3 +51,15 @@ test('missing provider and malformed answers preserve the text and hide provider
   assert.equal(s.output('[]'),null);assert.equal(s.output(JSON.stringify({...answer,motivo:null})),null);
   assert.equal(s.output('```json\n'+JSON.stringify(answer)+'\n```').pergunta,answer.pergunta);
 });
+
+test('a new percentage is rejected while figures already supplied in the excerpt remain eligible',()=>{
+ const s=service(),raw=JSON.stringify({...answer,sugestao:'Em X cidade a leitura aumentou 15% após a abertura da biblioteca.'});
+ assert.equal(s.output(raw,body.trecho),null);
+ assert.equal(s.output(raw,'O texto enviado informa aumento de 15 por cento.' ).sugestao,JSON.parse(raw).sugestao);
+ assert.equal(s.output(JSON.stringify({...answer,motivo:'Um aumento de 2,5 por cento.'}),'Texto sem percentual.'),null);
+});
+test('all intentions forbid fabricated evidence and single-paragraph cohesion reports its context limit',async()=>{
+ const s=service();for(const intencao of ['argumento','coesao','repertorio'])assert.match(s.prompt({...body,intencao})[0].content,/não invente estatísticas, percentuais/);
+ assert.equal((await s.review(7,{...body,intencao:'coesao'},dependencies())).contextoLimitado,true);
+ assert.equal((await s.review(7,{...body,intencao:'coesao',trecho:body.trecho+'\n\n'+body.trecho},dependencies())).contextoLimitado,false);
+});
