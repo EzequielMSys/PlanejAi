@@ -6,6 +6,8 @@ import { focusRouteContent } from '../utils/routeFocus'
 
 const titles = {
   "/": "PlanejAI — Uma ideia abre outra",
+  "/mesa": "Minha mesa — PlanejAI",
+  "/meu-entendimento": "Meu entendimento — PlanejAI",
   "/busca": "Busca no meu acervo — PlanejAI",
   "/login": "Entrar — PlanejAI",
   "/register": "Criar conta — PlanejAI",

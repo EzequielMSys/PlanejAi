@@ -57,12 +57,19 @@ let notesWriteFailure=false;
 let returnsFixture=null;
 let returnsFailure=false;
 let personalFailure=false;
+let intentMode='',deferredIntent;
 let deskItems=[{id:31,tipo:'anotacao',id_origem:9,titulo:'Leis de Newton',trecho:'Um exemplo meu',disponivel:true},{id:32,tipo:'duvida',id_origem:71,titulo:'Força e velocidade',disponivel:true}];
 let journalSteps = [{id:11,tipo:'explicacao',texto:'Primeira versão preservada',criado_em:'2026-10-20T12:00:00'}, {id:12,tipo:'explicacao',texto:'Segunda versão com exemplo',criado_em:'2026-10-25T12:00:00'}];
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
+  if(url.endsWith('/redacao/revisar-intencao')){
+    if(intentMode==='failure')throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'A Lumi não conseguiu concluir esta revisão.'}});
+    const answer={intencao:JSON.parse(config.data).intencao,observacao:'A ideia precisa de uma relação causal.',sugestao:'Explique como a biblioteca aproxima o livro do estudante.',motivo:'O exemplo sustenta a afirmação.',pergunta:'Que situação da sua experiência ilustra isso?'};
+    if(intentMode==='deferred')return new Promise(resolve=>{deferredIntent=()=>resolve(answer)});
+    return answer;
+  }
   if(url.includes('/aprendizagem/mesa')||url.includes('/aprendizagem/entendimento')){
     if(personalFailure)throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Seu espaço está temporariamente indisponível.'}});
     if(url.endsWith('/mesa')&&config.method==='get')return {itens:deskItems,limite:6};
@@ -1657,4 +1664,69 @@ test('opening a desk note rechecks its source and goes to the notes editor',asyn
   assert.ok(requests.some(req=>req.url.endsWith('/mesa/31/abrir')&&req.cache===false));
   assert.ok(document.querySelector('.session-notes textarea'));
  }finally{await screen.close();window.sessionStorage.clear()}
+});
+
+
+async function openIntentEditor(){
+ const screen=await renderRoute('/redacoes');
+ await act(async()=>document.querySelector('.redacoes-intro-actions button').click());await flush();
+ const text='O acesso à leitura depende de condições materiais, como bibliotecas próximas e tempo para ler. Um acervo acessível pode aproximar o livro da rotina de estudantes.\n\nAlém disso, projetos de leitura ajudam a compartilhar interpretações e a descobrir autores. Essa troca pode tornar a leitura uma prática cotidiana.';
+ await inputValue(document.querySelector('textarea[aria-label="Texto da redação"]'),text);
+ await act(async()=>button('Revisar um trecho com a Lumi').click());
+ const select=document.querySelector('.essay-intent select');
+ await act(async()=>{select.value='0';select.dispatchEvent(new window.Event('change',{bubbles:true}))});
+ return {screen,text};
+}
+test('intent review sends a selected excerpt on demand and preserves the essay and its draft',async()=>{
+ const {screen,text}=await openIntentEditor();
+ try{
+  assert.equal(requests.filter(req=>req.url.endsWith('/revisar-intencao')).length,0);
+  await act(async()=>document.querySelector('.essay-intent input[value="coesao"]').click());
+  await act(async()=>document.querySelector('.essay-intent-neighbor input').click());
+  await act(async()=>button('Pedir uma sugestão para este trecho').click());await flush();
+  const request=requests.find(req=>req.url.endsWith('/revisar-intencao')),sent=JSON.parse(request.data);
+  assert.equal(sent.intencao,'coesao');assert.equal(sent.trecho,text);assert.deepEqual(Object.keys(sent).sort(),['intencao','trecho']);
+  assert.ok(document.querySelector('.essay-intent-result'));assert.equal(document.querySelector('textarea[aria-label="Texto da redação"]').value,text);
+  assert.equal(JSON.parse(localStorage.getItem('900001:essay-draft:v3')).texto,text);
+  const result=await axe.run(document.querySelector('.essay-intent'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(v=>v.id),[]);
+  await act(async()=>button('Voltar ao meu texto para reescrever').click());assert.equal(document.activeElement,document.querySelector('textarea[aria-label="Texto da redação"]'));
+ }finally{await screen.close()}
+});
+test('intent review failures retain the chosen text and allow an explicit retry',async()=>{
+ const {screen,text}=await openIntentEditor();intentMode='failure';
+ try{
+  await act(async()=>button('Pedir uma sugestão para este trecho').click());await flush();
+  assert.ok(document.querySelector('.essay-intent [role="alert"]'));assert.ok(!document.querySelector('.essay-intent-result'));
+  assert.equal(document.querySelector('textarea[aria-label="Texto da redação"]').value,text);
+  intentMode='';await act(async()=>button('Pedir uma sugestão para este trecho').click());await flush();assert.ok(document.querySelector('.essay-intent-result'));
+ }finally{intentMode='';await screen.close()}
+});
+test('an old review cannot appear after the student edits the source while Lumi is responding',async()=>{
+ const {screen}=await openIntentEditor();intentMode='deferred';
+ try{
+  await act(async()=>button('Pedir uma sugestão para este trecho').click());
+  assert.ok(document.querySelector('.essay-intent [role="status"]'));
+  await inputValue(document.querySelector('textarea[aria-label="Texto da redação"]'),'Uma nova versão, com um argumento que eu mesmo desenvolvi depois de repensar a ideia.');
+  await act(async()=>deferredIntent());await flush();
+  assert.ok(!document.querySelector('.essay-intent-result'));
+  assert.match(document.querySelector('textarea[aria-label="Texto da redação"]').value,/Uma nova versão/);
+ }finally{intentMode='';await screen.close()}
+});
+test('connected page motifs stay decorative and personal pages retain their navigation labels',async()=>{
+ for(const [route,title] of [['/mesa','Minha mesa — PlanejAI'],['/meu-entendimento','Meu entendimento — PlanejAI']]){
+  const screen=await renderRoute(route);
+  try{assert.equal(document.querySelector('.sd-topbar-context strong').textContent,title.replace(' — PlanejAI',''));assert.ok(document.querySelector('.area-signature .connected-pages[aria-hidden="true"]'));assert.equal(document.querySelector('.connected-pages')?.getAttribute('focusable'),'false');}
+  finally{await screen.close()}
+ }
+});
+
+test('personal routes announce their distinct document titles to assistive technology',async()=>{
+ const {PageExperience,ThemeProvider,AccessibilityProvider}=await getBundle();
+ for(const [route,title] of [['/mesa','Minha mesa — PlanejAI'],['/meu-entendimento','Meu entendimento — PlanejAI']]){
+  const root=createRoot(document.getElementById('root'));
+  try{
+   await act(async()=>root.render(React.createElement(MemoryRouter,{initialEntries:[route]},React.createElement(ThemeProvider,null,React.createElement(AccessibilityProvider,null,React.createElement(PageExperience))))));await flush();
+   assert.equal(document.title,title);assert.equal(document.querySelector('.sr-route').textContent,title);
+  }finally{await act(async()=>root.unmount())}
+ }
 });

@@ -1,3 +1,4 @@
+import AreaSignature from '../components/AreaSignature'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -355,7 +356,7 @@ async function concluirDia(idDia) {
       <div className="absolute top-0 left-0 w-72 h-72 bg-study-accent/20 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-study-accent/10 rounded-full blur-3xl" />
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div className="max-w-7xl mx-auto relative z-10"><AreaSignature area="schedule"/>
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <section className="workspace-hero bg-gradient-to-br from-study-accent via-study-accent to-study-accent rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
             <div className="absolute inset-0 bg-black/20" />

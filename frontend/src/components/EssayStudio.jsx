@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import EssayIntentReview from './EssayIntentReview'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import redacaoService from '../services/redacaoService'
 import DictationButton from './DictationButton'
@@ -56,6 +57,8 @@ function DiagnosticPanel({ diagnostico }) {
 }
 
 export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviando, queued, sendError, sugestao, sugerindo, onSugerir }) {
+  const editorRef=useRef(null)
+  const [selection,setSelection]=useState(null)
   const [foco, setFoco] = useState(false)
   const [salvoEm, setSalvoEm] = useState(null)
   const [draftFailed, setDraftFailed] = useState(false)
@@ -123,7 +126,8 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
         <div className="essay-sheet-meta"><span>RASCUNHO</span><span role="status">{salvoEm ? `Salvo neste aparelho · ${new Date(salvoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Ainda não salvo neste aparelho'}</span></div>
         <label htmlFor="essay-topic">Tema da redação</label>
         <div className="essay-topic-row"><input id="essay-topic" disabled={enviando} value={form.tema} onChange={(e) => setForm((f) => ({ ...f, tema: e.target.value }))} placeholder="Delimite o tema aqui" /><button type="button" onClick={onSugerir} disabled={sugerindo || enviando}>{sugerindo ? 'Criando...' : 'Tema Lab'}</button></div>
-        <textarea aria-label="Texto da redação" disabled={enviando} value={form.texto} onChange={(e) => setForm((f) => ({ ...f, texto: e.target.value }))} placeholder={'Comece pela sua tese.\n\nDepois, desenvolva um argumento por parágrafo...'} spellCheck="true" />
+        <textarea ref={editorRef} onSelect={event=>{const node=event.currentTarget;setSelection({source:node.value,start:node.selectionStart,end:node.selectionEnd})}} aria-label="Texto da redação" disabled={enviando} value={form.texto} onChange={(e) => setForm((f) => ({ ...f, texto: e.target.value }))} placeholder={'Comece pela sua tese.\n\nDepois, desenvolva um argumento por parágrafo...'} spellCheck="true" />
+        <EssayIntentReview text={form.texto} selection={selection} onReturn={()=>editorRef.current?.focus()}/>
         {sendError && <SaveFeedback status="error" message={`${sendError} Seu texto continua aqui. Use Finalizar e enviar para tentar novamente.`} />}
         <div className="essay-sheet-actions"><div><button type="button" onClick={descartar} disabled={enviando}>Descartar</button><DictationButton onText={(texto) => { if (!enviando) setForm((f) => ({ ...f, texto: `${f.texto}${f.texto ? ' ' : ''}${texto}` })) }}/></div><div><button type="button" onClick={analisar} disabled={analisando}>Pré-corrigir</button><button type="submit" disabled={enviando || queued || metricas.palavras < 30}>{enviando ? 'Enviando...' : queued ? 'Nesta versão: envio na fila' : 'Finalizar e enviar'}</button></div></div>
       </section>

@@ -1,3 +1,4 @@
+import AreaSignature from '../components/AreaSignature'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import service from '../services/personalStudyService'
@@ -29,7 +30,7 @@ export default function PersonalDesk(){
     },'')
   }
   return <main className="personal-study pj-page"><div className="pj-wrap">
-    <header className="personal-heading"><span className="pj-eyebrow">O QUE ESTÁ EM USO, AO SEU ALCANCE</span><h1>Minha mesa de estudo.</h1><p>Um espaço pequeno, organizado por você. Deixe por perto o que quer explorar nesta semana.</p><div className="personal-links"><Link to="/busca">Encontrar algo para fixar →</Link><Link to="/aprendizagem" state={{aba:'diario',tipo:'duvida'}}>Escolher uma dúvida →</Link></div></header>
+<AreaSignature area="desk"/>    <header className="personal-heading"><span className="pj-eyebrow">O QUE ESTÁ EM USO, AO SEU ALCANCE</span><h1>Minha mesa de estudo.</h1><p>Um espaço pequeno, organizado por você. Deixe por perto o que quer explorar nesta semana.</p><div className="personal-links"><Link to="/busca">Encontrar algo para fixar →</Link><Link to="/aprendizagem" state={{aba:'diario',tipo:'duvida'}}>Escolher uma dúvida →</Link></div></header>
     <section className="desk-board" aria-labelledby="desk-title" aria-busy={busy}><header><h2 id="desk-title">Em cima da mesa</h2><span>{data?`${data.itens.length} de 6 espaços`:'Seis espaços para o essencial'}</span></header>
       {error&&<div role="alert" className="personal-error"><p>{error}</p><button type="button" disabled={busy} onClick={()=>setRevision(v=>v+1)}>Atualizar mesa</button></div>}
       {notice&&<p role="status">{notice}</p>}

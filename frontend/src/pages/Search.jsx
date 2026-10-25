@@ -1,3 +1,4 @@
+import AreaSignature from '../components/AreaSignature'
 import DeskPin from '../components/DeskPin'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -77,7 +78,7 @@ export default function Search() {
   function submit(event){event.preventDefault();if(input.trim().length<2){setValidation('Digite pelo menos 2 caracteres.');inputRef.current?.focus();return}setValidation('');change(type,input.trim());if(input.trim()===q)setAttempt(value=>value+1)}
   const groups=data?.grupos||[], total=groups.reduce((sum,group)=>sum+group.itens.length,0)
   return <main className="unified-search pj-page"><div className="pj-wrap">
-    <header className="unified-search-heading"><span className="pj-eyebrow">SEU ACERVO, MAIS PERTO</span><h1>Uma ideia. Muitos caminhos.</h1><p>Encontre matérias, materiais, anotações e redações no seu espaço.</p></header>
+<AreaSignature area="search"/>    <header className="unified-search-heading"><span className="pj-eyebrow">SEU ACERVO, MAIS PERTO</span><h1>Uma ideia. Muitos caminhos.</h1><p>Encontre matérias, materiais, anotações e redações no seu espaço.</p></header>
     <form className="unified-search-form" role="search" aria-label="Buscar no acervo" onSubmit={submit}><label htmlFor="unified-query">O que você quer encontrar?</label><div><input id="unified-query" ref={inputRef} type="search" maxLength={100} value={input} onChange={event=>{setInput(event.target.value);setValidation('')}} placeholder="Um assunto, um título ou um trecho…" aria-invalid={Boolean(validation)} aria-describedby={validation?'unified-query-error':'unified-search-scope'}/><button type="submit">Buscar</button></div>{validation&&<p id="unified-query-error" role="alert">{validation}</p>}</form>
     <p id="unified-search-scope" className="unified-search-scope">Anotações e redações são pessoais. A busca considera itens salvos na conta; rascunhos apenas neste aparelho ficam fora dos resultados.</p>
     <div className="unified-search-filters" role="group" aria-label="Tipo de resultado">{FILTERS.map(([key,label])=><button type="button" key={key} aria-pressed={type===key} onClick={()=>{setValidation('');change(key)}}>{label}</button>)}</div>

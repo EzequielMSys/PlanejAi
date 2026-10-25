@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import EssayIntentReview from './EssayIntentReview'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import aprendizagem from '../services/aprendizagemService'
 import './EssayVersionsPro.css'
@@ -6,6 +7,8 @@ import './EssayVersionsPro.css'
 const words = (text = '') => text.trim().split(/\s+/).filter(Boolean).length
 
 export default function EssayVersionsPro({ redacao }) {
+  const editorRef=useRef(null)
+  const [selection,setSelection]=useState(null)
   const [open, setOpen] = useState(false)
   const [versions, setVersions] = useState([])
   const [text, setText] = useState(redacao.texto || '')
@@ -31,9 +34,10 @@ export default function EssayVersionsPro({ redacao }) {
     <header><div><span>OFICINA DE REESCRITA</span><h4>Versões, comparação e evolução</h4></div><button type="button" onClick={toggle}>{open ? 'Fechar oficina' : 'Abrir oficina'}</button></header>
     {open && <div className="essay-versions-body">
       <div className={`essay-version-editor ${compared ? 'has-compare' : ''}`}>
-        <label><span>Versão em trabalho</span><textarea value={text} onChange={(event) => setText(event.target.value)} /></label>
+        <label><span>Versão em trabalho</span><textarea ref={editorRef} onSelect={event=>{const node=event.currentTarget;setSelection({source:node.value,start:node.selectionStart,end:node.selectionEnd})}} value={text} onChange={(event) => setText(event.target.value)} /></label>
         {compared && <label><span>Versão {compared.numero_versao} · referência</span><textarea value={compared.texto} readOnly /></label>}
       </div>
+      <EssayIntentReview text={text} selection={selection} onReturn={()=>editorRef.current?.focus()}/>
       <div className="essay-version-actions"><span><b>{words(text)} palavras</b> · {delta >= 0 ? '+' : ''}{delta} desde a referência</span><div><select value={compareId || ''} onChange={(event) => setCompareId(event.target.value || null)}><option value="">Sem comparação</option>{versions.map((item) => <option value={item.id_versao} key={item.id_versao}>Comparar com versão {item.numero_versao}</option>)}</select><button type="button" disabled={saving} onClick={save}>{saving ? 'Salvando…' : 'Registrar versão'}</button></div></div>
       {versions.length > 0 && <div className="essay-version-history"><b>Histórico</b>{versions.map((item) => <button type="button" key={item.id_versao} onClick={() => { setText(item.texto); setCompareId(item.id_versao) }}><span>V{item.numero_versao}</span><strong>{words(item.texto)} palavras</strong><small>{new Date(item.criado_em).toLocaleDateString('pt-BR')}</small></button>)}</div>}
     </div>}

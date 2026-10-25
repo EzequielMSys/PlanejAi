@@ -1,3 +1,4 @@
+import ConnectedPages from './ConnectedPages'
 import { useState } from 'react'
 
 const etapas = [
@@ -24,6 +25,7 @@ export default function AuthJourneyPreview({ variant = 'login' }) {
 
   return <div className="auth-journey">
     <div className="auth-journey-top"><span>PLANEJAI / {variant === 'login' ? 'CONTINUE SUA JORNADA' : 'SEU ESPAÇO COMEÇA AQUI'}</span><span>{etapa.numero} / 03</span></div>
+    <ConnectedPages className="auth-journey-thread"/>
     <div className="auth-journey-copy" key={etapa.numero} aria-live="polite">
       <span className="auth-journey-kicker">Uma etapa de cada vez</span>
       <h2>{etapa.titulo}</h2>
