@@ -1399,3 +1399,57 @@ test('a session cannot finish while its new explanation is still only a draft',a
     assert.ok(!localStorage.getItem('900001:journal-draft:new:explicacao:9'));
   }finally{window.confirm=()=>false;window.sessionStorage.clear();await screen.close()}
 });
+test('a study connection explains a reviewed relationship without fetching private data or sending to Lumi',async()=>{
+  window.sessionStorage.setItem('900001:active-study-content',JSON.stringify({conteudo:{id:51,id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'},dia:{data_estudo:'2026-10-25'}}));
+  const screen=await renderRoute('/estudar');
+  try {
+    const connection=document.querySelector('.study-connections');assert.ok(connection);
+    assert.ok(connection.textContent.includes('Trabalho e energia'));
+    assert.ok(!connection.textContent.includes('Uma resultante constante de 4 N'));
+    const count=requests.length;
+    await act(async()=>button('Entender esta conexão +').click());
+    assert.match(connection.textContent,/12 J/);
+    assert.equal(requests.length,count);
+    const search=connection.querySelector('a[href^="/busca"]');
+    assert.equal(search.getAttribute('target'),'_blank');assert.match(search.getAttribute('rel'),/noopener/);
+    const url=new URL(search.href);assert.equal(url.searchParams.get('q'),'Trabalho e energia');assert.equal(url.searchParams.get('tipo'),'materiais');
+    assert.ok(connection.querySelector('a[href^="https://openstax.org/"]'));
+    assert.ok(!requests.some(r=>r.method==='post'&&/chat|lumi|sessoes|concluir/.test(r.url)));
+    const result=await axe.run(connection,{rules:{'color-contrast':{enabled:false}}});
+    assert.deepEqual(result.violations.map(v=>v.id),[]);
+  }finally{window.sessionStorage.clear();await screen.close()}
+});
+test('recording a connection appends to the current note once and reading mode preserves both',async()=>{
+  window.sessionStorage.setItem('900001:active-study-content',JSON.stringify({conteudo:{id:51,id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'},dia:{data_estudo:'2026-10-25'}}));
+  const screen=await renderRoute('/estudar');
+  try {
+    await act(async()=>document.querySelector('.study-desk-note-link button').click());await flush();
+    await inputValue(document.querySelector('.session-notes textarea'),'Minha anotação original.');
+    await act(async()=>button('Entender esta conexão +').click());
+    await act(async()=>button('Registrar esta conexão nas anotações').click());await flush();
+    const text=document.querySelector('.session-notes textarea').value;
+    assert.ok(text.startsWith('Minha anotação original.'));
+    assert.match(text,/Conexão de estudo: Leis de Newton → Trabalho e energia/);assert.match(text,/Minha explicação:/);
+    await act(async()=>button('Registrar esta conexão nas anotações').click());await flush();
+    assert.equal(document.querySelector('.session-notes textarea').value,text);
+    await act(async()=>button('Modo leitura').click());
+    await act(async()=>button('Sair do modo leitura').click());
+    assert.equal(document.querySelector('.session-notes textarea').value,text);
+    assert.ok(!requests.some(r=>r.method==='post'&&/chat|lumi|sessoes|concluir/.test(r.url)));
+  }finally{window.sessionStorage.clear();await screen.close()}
+});
+test('changing a curated connection reveals a distinct direction and leaves essays untouched',async()=>{
+  window.sessionStorage.setItem('900001:active-study-content',JSON.stringify({conteudo:{id:51,id_conteudo:9,titulo:'Estrutura da redação dissertativa',disciplina:'Redação'},dia:{data_estudo:'2026-10-25'}}));
+  const screen=await renderRoute('/estudar');
+  try {
+    assert.ok(document.querySelector('.study-connection-path').textContent.includes('Coesão e coerência textual'));
+    await act(async()=>button('Entender esta conexão +').click());
+    const next=button('Ver outra conexão →');next.focus();
+    await act(async()=>next.click());
+    assert.ok(document.activeElement===next);
+    assert.ok(document.querySelector('.study-connection-path').textContent.includes('Repertório sociocultural'));
+    assert.ok(button('Entender esta conexão +'));
+    assert.ok(!requests.some(r=>/redacao|redacoes/.test(r.url)));
+    assert.ok(!requests.some(r=>r.method==='post'&&/chat|lumi|sessoes|concluir/.test(r.url)));
+  }finally{window.sessionStorage.clear();await screen.close()}
+});

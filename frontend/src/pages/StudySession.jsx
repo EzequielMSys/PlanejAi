@@ -26,6 +26,7 @@ function TutorUnavailable() {
 }
 const ChatInterface = lazy(() => import('../components/ChatInterface').catch(() => ({default:TutorUnavailable})))
 const LearningJournal = lazy(() => import('../components/LearningJournal').catch(() => ({default:LearningJournalFallback})))
+const StudyConnections = lazy(() => import('../components/StudyConnections').catch(() => ({default:()=>null})))
 const sessionKey = () => scopedCacheKey('active-study-content')
 
 function loadSavedContent() {
@@ -115,6 +116,12 @@ export default function StudySession() {
   const startedAt = useRef(Date.now())
 
   const { notes, setNotes, status: noteStatus, retry: retryNotes, loading: loadingNotes, flush: flushNotes } = useStudyNotes(content?.id_conteudo, content?.id)
+  function recordConnection(connection) {
+    const marker=`Conexão de estudo: ${connection.fromTitle} → ${connection.toTitle}`
+    setNotes(value=>value.includes(marker) ? value : `${value}${value?'\n\n':''}${marker}\n${connection.why}\n\nPergunta: ${connection.question}\nMinha explicação:\n`)
+    setTab('notes')
+    requestAnimationFrame(()=>document.querySelector('.session-notes textarea')?.focus())
+  }
   useEffect(() => {
     if (!content) return
     try { window.sessionStorage.setItem(sessionKey(), JSON.stringify({ conteudo: content, dia: day })) } catch { /* A conta ainda pode confirmar a retomada. */ }
@@ -199,6 +206,7 @@ export default function StudySession() {
           <article className="study-desk-note-link pj-panel"><span aria-hidden="true">✎</span><h2>Uma ideia merece ficar.</h2><p>Anote com suas palavras. Os avisos distinguem a cópia neste aparelho do que já chegou à conta.</p><button type="button" onClick={() => { setTab('notes'); requestAnimationFrame(() => document.querySelector('.session-notes textarea')?.focus()) }}>Abrir anotações <span aria-hidden="true">↗</span></button></article>
         </aside>
       </section>
+      <Suspense fallback={null}><StudyConnections key={content.id_conteudo || content.titulo} content={content} onAddNote={recordConnection} noteDisabled={loadingNotes}/></Suspense>
       <Suspense fallback={<p role="status">Preparando seus registros…</p>}><LearningJournal content={content} notes={notes} embedded/></Suspense>
       <section className="session-check study-desk-wrap-up pj-panel" aria-labelledby="session-wrap-up-title"><div><span className="pj-eyebrow">PARA FECHAR ESTE PASSO</span><h2 id="session-wrap-up-title">Como esse conteúdo ficou?</h2><p>Sua resposta define quando ele volta para revisão. Você também pode sair e retomar depois. As explicações e dúvidas são opcionais; use “Salvar na minha conta” antes de sair para acessá-las em outro aparelho.</p></div><div className="study-desk-assessment" role="group" aria-label="Como ficou o conteúdo">{[['DIFICIL','Ainda difícil'],['LEMBREI','Entendi'],['DOMINEI','Consigo explicar']].map(([value,label]) => <button type="button" key={value} disabled={finishing} aria-pressed={difficulty === value} className={difficulty === value ? 'is-active' : ''} onClick={() => setDifficulty(value)}>{label}</button>)}</div><button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : 'Concluir sessão'}</button></section>
     </div>
