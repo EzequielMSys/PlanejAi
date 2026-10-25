@@ -1,3 +1,4 @@
+import { observeMobileViewport } from '../utils/mobileViewport'
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./Accessibility.css";
@@ -46,6 +47,7 @@ const titles = {
 };
 
 export default function PageExperience() {
+  useEffect(()=>observeMobileViewport(),[])
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const previousPath = useRef(pathname)
@@ -61,7 +63,7 @@ export default function PageExperience() {
       : pathname.replace(/^\/+|\/+$/g, "").replaceAll("/", "-") || "landing";
 
     document.body.dataset.page = pageKey;
-    document.title = titles[pathname] || "PlanejAI";
+    document.title = titles[pathname] || (pathname.startsWith("/minhas-turmas/") ? "Minha turma — PlanejAI" : "PlanejAI");
     window.scrollTo({ top: 0, behavior: "instant" });
 
     return () => {
@@ -104,7 +106,7 @@ export default function PageExperience() {
         Pular para o conteúdo
       </a>
       <span className="sr-route" aria-live="polite">
-        {titles[pathname] || "PlanejAI"}
+        {titles[pathname] || (pathname.startsWith("/minhas-turmas/") ? "Minha turma — PlanejAI" : "PlanejAI")}
       </span>
       <Suspense fallback={null}><AccessibilityToolbar /></Suspense>
     </>

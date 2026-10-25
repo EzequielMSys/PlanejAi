@@ -55,3 +55,24 @@
 }
 .setup-step-progress{display:flex;gap:.75rem;list-style:none;margin-bottom:1.25rem;padding:0;color:var(--pn-texto-suave);font-size:.85rem}.setup-step-progress li{flex:1;border-top:3px solid var(--pn-borda);padding-top:.6rem}.setup-step-progress li[aria-current=step]{border-color:var(--pn-primaria);color:var(--pn-texto);font-weight:750}
 .setup-page details{border:1px solid var(--pn-borda);border-radius:.8rem;padding:1rem}.setup-page details summary{cursor:pointer;color:var(--pn-link);font-weight:700;min-height:44px}.setup-page details[open]>div{margin-top:1rem}
+/* Prevent automatic input zoom and keep the chosen reading scale in compact layouts. */
+@media(max-width:680px){
+  .sd-workspace .sd-search input,.sd-workspace .sd-route :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea){font-size:max(16px,1rem)!important}
+  .sd-workspace :is(.profile-tabs,.progress-tabs){flex-wrap:wrap;overflow:visible}
+  .sd-workspace :is(.profile-tabs,.progress-tabs) button{flex:1 1 9rem;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+  .sd-workspace .schedule-page .empty-workspace button{max-width:100%;white-space:normal;overflow-wrap:anywhere;font-size:.95rem;padding-inline:1rem}
+  .sd-workspace .owner-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sd-workspace .owner-stat{min-width:0;padding:1rem;overflow-wrap:anywhere}
+  .sd-workspace .owner-hero h1,.sd-workspace .schedule-page .workspace-hero h1{font-size:clamp(1.5rem,7vw,2rem);line-height:1.25}
+}
+@media(max-width:420px){.sd-workspace .owner-stat-grid{grid-template-columns:minmax(0,1fr)}}
+/* Keep the active composer reachable instead of squeezing tools into a short chat card. */
+@media(max-width:680px){
+  html[data-mobile-keyboard] .sd-workspace .lumi-page :is(.area-signature,.lumi-chat-heading){display:none}
+  html[data-mobile-keyboard] .sd-workspace .lumi-page:has(#lumi-message:focus) :is(.lumi-controls,.lumi-context-evidence,.lumi-practice){display:none}
+  html[data-mobile-keyboard] .sd-workspace .lumi-page .lumi-feed{min-height:0;flex:1 1 0}
+  html[data-mobile-keyboard] .sd-workspace .lumi-page:has(#lumi-message:focus) .lumi-chat-body{overflow:hidden}
+  html[data-mobile-keyboard] .sd-workspace .lumi-page:has(.lumi-practice:focus-within) .lumi-chat-card{height:auto;min-height:0;overflow:visible}
+  html[data-mobile-keyboard] .sd-workspace .lumi-page:has(.lumi-practice:focus-within) .lumi-chat-body{height:auto}
+  html[data-mobile-keyboard] .sd-workspace .lumi-page:has(.lumi-practice:focus-within) .lumi-feed{max-height:12rem;flex-basis:auto}
+}

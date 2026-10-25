@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import useDialogFocus from '../hooks/useDialogFocus'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import conteudoService from '../services/conteudoService'
 import './Materiais.css'
@@ -15,16 +16,12 @@ export default function Materiais() {
   const [selecionado, setSelecionado] = useState(null)
   const [salvando, setSalvando] = useState(false)
   const [carregando, setCarregando] = useState(true)
+  const dialogRef=useRef(null),saving=useRef(false)
+  useDialogFocus(dialogRef,Boolean(selecionado),()=>setSelecionado(null),salvando)
 
   useEffect(() => {
     conteudoService.listar().then(dados => setConteudos(Array.isArray(dados) ? dados : [])).catch(() => toast.error('Não foi possível carregar os conteúdos.')).finally(() => setCarregando(false))
   }, [])
-  useEffect(() => {
-    if (!selecionado) return undefined
-    const fechar = event => { if (event.key === 'Escape') setSelecionado(null) }
-    document.addEventListener('keydown', fechar)
-    return () => document.removeEventListener('keydown', fechar)
-  }, [selecionado])
 
   const comMaterial = conteudos.filter(item => Boolean(item.link) || lerMateriais(item.materiais).length > 0).length
   const filtrados = useMemo(() => conteudos.filter(item => {
@@ -36,6 +33,8 @@ export default function Materiais() {
   const atualizarMaterial = (indice, campo, valor) => setSelecionado(atual => ({ ...atual, materiais: atual.materiais.map((item, i) => i === indice ? { ...item, [campo]: valor } : item) }))
   const salvar = async event => {
     event.preventDefault()
+    if(saving.current)return
+    saving.current=true
     setSalvando(true)
     try {
       const atualizado = await conteudoService.atualizar(selecionado.id_conteudo, selecionado)
@@ -43,7 +42,7 @@ export default function Materiais() {
       setSelecionado(null)
       toast.success('Materiais atualizados.')
     } catch (error) { toast.error(error.response?.data?.message || 'Use links completos iniciados por https://') }
-    finally { setSalvando(false) }
+    finally { saving.current=false;setSalvando(false) }
   }
 
   return <main className="materials-page"><div className="materials-wrap">
@@ -56,6 +55,6 @@ export default function Materiais() {
       <div className="materials-grid">{filtrados.map(item => { const extras = lerMateriais(item.materiais).length; const temMaterial = Boolean(item.link) || extras > 0; return <button type="button" key={item.id_conteudo} className="materials-card" onClick={() => abrir(item)}><span className="materials-card-top"><span>{item.disciplina || item.area || 'Geral'} · {item.nivel || 'Conteúdo'}</span><b aria-hidden="true">↗</b></span><strong>{item.titulo}</strong><span className="materials-card-footer"><span className={temMaterial ? 'is-ready' : 'is-pending'}>{temMaterial ? 'Com material' : 'Precisa de material'}</span><small>{extras} {extras === 1 ? 'recurso extra' : 'recursos extras'}</small></span></button> })}</div>
     </section>
 
-    {selecionado && <div className="materials-dialog-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setSelecionado(null) }}><form className="materials-dialog" role="dialog" aria-modal="true" aria-labelledby="materials-dialog-title" onSubmit={salvar}><header><div><span className="materials-kicker">EDITAR FONTES</span><h2 id="materials-dialog-title">{selecionado.titulo}</h2><p>{selecionado.disciplina} · {selecionado.nivel}</p></div><button type="button" onClick={() => setSelecionado(null)} aria-label="Fechar edição">×</button></header><div className="materials-dialog-body"><label>Link principal<input type="url" value={selecionado.link || ''} onChange={event => setSelecionado({ ...selecionado, link: event.target.value })} placeholder="https://www.youtube.com/watch?v=..." /></label><p className="materials-help">Use o endereço direto do vídeo ou da página, não uma página de resultados.</p><div className="materials-extras-heading"><div><h3>Recursos complementares</h3><p>Adicione leituras e referências para aprofundar o tema.</p></div><span>{selecionado.materiais.length}</span></div>{selecionado.materiais.map((material, indice) => <fieldset className="materials-extra" key={indice}><legend>Recurso {indice + 1}</legend><div><label>Título<input value={material.titulo || ''} onChange={event => atualizarMaterial(indice, 'titulo', event.target.value)} placeholder="Ex.: Guia de revisão" /></label><label>Tipo<select value={material.tipo || 'LINK'} onChange={event => atualizarMaterial(indice, 'tipo', event.target.value)}><option value="VIDEO">Vídeo</option><option value="PDF">PDF</option><option value="IMAGEM">Imagem</option><option value="LINK">Link</option></select></label></div><label>Endereço<input type="url" value={material.url || ''} onChange={event => atualizarMaterial(indice, 'url', event.target.value)} placeholder="https://..." /></label><button type="button" onClick={() => setSelecionado(atual => ({ ...atual, materiais: atual.materiais.filter((_, i) => i !== indice) }))}>Remover recurso</button></fieldset>)}<button className="materials-add" type="button" onClick={() => setSelecionado(atual => ({ ...atual, materiais: [...atual.materiais, { titulo: '', tipo: 'LINK', url: '' }] }))}>+ Adicionar recurso</button></div><footer><button type="button" onClick={() => setSelecionado(null)}>Cancelar</button><button type="submit" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar materiais'}</button></footer></form></div>}
+    {selecionado && <div className="materials-dialog-backdrop" onMouseDown={event => { if (!salvando && event.target === event.currentTarget) setSelecionado(null) }}><section ref={dialogRef} tabIndex={-1} className="materials-dialog" role="dialog" aria-modal="true" aria-labelledby="materials-dialog-title"><form onSubmit={salvar}><header><div><span className="materials-kicker">EDITAR FONTES</span><h2 id="materials-dialog-title">{selecionado.titulo}</h2><p>{selecionado.disciplina} · {selecionado.nivel}</p></div><button type="button" disabled={salvando} onClick={() => setSelecionado(null)} aria-label="Fechar edição">×</button></header><fieldset disabled={salvando} className="materials-dialog-body"><legend className="sr-only">Fontes do conteúdo</legend><label>Link principal<input type="url" value={selecionado.link || ''} onChange={event => setSelecionado({ ...selecionado, link: event.target.value })} placeholder="https://www.youtube.com/watch?v=..." /></label><p className="materials-help">Use o endereço direto do vídeo ou da página, não uma página de resultados.</p><div className="materials-extras-heading"><div><h3>Recursos complementares</h3><p>Adicione leituras e referências para aprofundar o tema.</p></div><span>{selecionado.materiais.length}</span></div>{selecionado.materiais.map((material, indice) => <fieldset className="materials-extra" key={indice}><legend>Recurso {indice + 1}</legend><div><label>Título<input value={material.titulo || ''} onChange={event => atualizarMaterial(indice, 'titulo', event.target.value)} placeholder="Ex.: Guia de revisão" /></label><label>Tipo<select value={material.tipo || 'LINK'} onChange={event => atualizarMaterial(indice, 'tipo', event.target.value)}><option value="VIDEO">Vídeo</option><option value="PDF">PDF</option><option value="IMAGEM">Imagem</option><option value="LINK">Link</option></select></label></div><label>Endereço<input type="url" value={material.url || ''} onChange={event => atualizarMaterial(indice, 'url', event.target.value)} placeholder="https://..." /></label><button type="button" onClick={() => setSelecionado(atual => ({ ...atual, materiais: atual.materiais.filter((_, i) => i !== indice) }))}>Remover recurso</button></fieldset>)}<button className="materials-add" type="button" onClick={() => setSelecionado(atual => ({ ...atual, materiais: [...atual.materiais, { titulo: '', tipo: 'LINK', url: '' }] }))}>+ Adicionar recurso</button></fieldset><footer><button type="button" disabled={salvando} onClick={() => setSelecionado(null)}>Cancelar</button><button type="submit" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar materiais'}</button></footer></form></section></div>}
   </div></main>
 }

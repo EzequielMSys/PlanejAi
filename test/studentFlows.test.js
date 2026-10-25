@@ -58,6 +58,7 @@ let returnsFixture=null;
 let returnsFailure=false;
 let personalFailure=false;
 let intentMode='',deferredIntent;
+let directoryOtherAccount=false;
 let deskItems=[{id:31,tipo:'anotacao',id_origem:9,titulo:'Leis de Newton',trecho:'Um exemplo meu',disponivel:true},{id:32,tipo:'duvida',id_origem:71,titulo:'Força e velocidade',disponivel:true}];
 let journalSteps = [{id:11,tipo:'explicacao',texto:'Primeira versão preservada',criado_em:'2026-10-20T12:00:00'}, {id:12,tipo:'explicacao',texto:'Segunda versão com exemplo',criado_em:'2026-10-25T12:00:00'}];
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
@@ -152,7 +153,7 @@ function fixture(config) {
     return supportMode === 'saved' ? [{ id: 81, categoria: 'PROBLEMA', mensagem: 'Minha mensagem de ajuda.', status: 'ABERTO', criado_em: '2026-10-24T12:00:00Z' }] : [];
   }
   if (url.endsWith('/usuarios/me')) return person('aluno');
-  if (url.endsWith('/usuarios')) return { usuarios: [person('aluno')], pagina: 1, total_registros: 17, total_paginas: 2, stats: { total: 17, ativos: 15, inativos: 2, donos: 1, admins: 2, docentes: 3, alunos: 11 } };
+  if (url.endsWith('/usuarios')) return { usuarios: [directoryOtherAccount?{...person('aluno'),id:900002,id_usuario:900002}:person('aluno')], pagina: 1, total_registros: 17, total_paginas: 2, stats: { total: 17, ativos: 15, inativos: 2, donos: 1, admins: 2, docentes: 3, alunos: 11 } };
   if (url.endsWith('/dashboard/estatisticas')) return { totalUsuarios: 17, totalAtividadesPublicadas: 0, totalEntregas: 0, totalCronogramasAtivos: 0 };
   if (url.endsWith('/colaborativo/gestao/alertas')) return [{ id_usuario: 31, nome: 'Aluno de teste', motivos: ['Revisões atrasadas'] }];
   if (url.endsWith('/colaborativo/gestao/grupos/sugestoes')) return [{ disciplina: 'Matemática', competencia: 'Razão e proporção', aprendizes: [31], mentores: [] }];
@@ -1729,4 +1730,86 @@ test('personal routes announce their distinct document titles to assistive techn
    assert.equal(document.title,title);assert.equal(document.querySelector('.sr-route').textContent,title);
   }finally{await act(async()=>root.unmount())}
  }
+});
+
+
+test('cohesion waits for the neighboring paragraph instead of requesting a speculative review',async()=>{
+ const {screen}=await openIntentEditor();
+ try{
+  await act(async()=>document.querySelector('.essay-intent input[value="coesao"]').click());
+  assert.ok(button('Pedir uma sugestão para este trecho').disabled);
+  assert.match(document.querySelector('.essay-intent-context').textContent,/parágrafo vizinho/);
+  assert.equal(requests.filter(req=>req.url.endsWith('/revisar-intencao')).length,0);
+  await act(async()=>document.querySelector('.essay-intent-neighbor input').click());
+  assert.ok(!button('Pedir uma sugestão para este trecho').disabled);
+ }finally{await screen.close()}
+});
+test('password dialog contains focus, reports mismatch below confirmation and restores its trigger',async()=>{
+ directoryOtherAccount=true;const screen=await renderRoute('/usuarios','dono');
+ try{
+  await act(async()=>document.querySelector('.users-actions summary').click());
+  const trigger=button('Definir senha');trigger.focus();
+  await act(async()=>trigger.click());const dialog=document.querySelector('.users-password-dialog');
+  assert.equal(document.activeElement,dialog);assert.equal(dialog.getAttribute('role'),'dialog');
+  await inputValue(dialog.querySelector('[aria-label="Nova senha"]'),'SenhaFicticia123!');
+  await inputValue(dialog.querySelector('[aria-label="Confirmar nova senha"]'),'OutraSenhaFicticia123!');
+  await act(async()=>button('Salvar senha').click());
+  assert.equal(dialog.querySelector('[role="alert"]').textContent,'As senhas precisam ser iguais.');
+  assert.equal(dialog.querySelector('[aria-label="Confirmar nova senha"]').getAttribute('aria-invalid'),'true');
+  assert.ok(!requests.some(req=>['post','patch','put'].includes(req.method)&&req.url.includes('/senha')));
+  button('Salvar senha').focus();await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})));
+  assert.equal(document.activeElement,dialog.querySelector('input'));
+  await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Tab',shiftKey:true,bubbles:true,cancelable:true})));
+  assert.equal(document.activeElement,button('Salvar senha'));
+  const result=await axe.run(dialog,{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(v=>v.id),[]);
+  await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})));
+  assert.ok(!document.querySelector('.users-password-dialog'));assert.equal(document.activeElement,trigger);assert.equal(document.body.style.overflow,'');
+ }finally{directoryOtherAccount=false;await screen.close()}
+});
+test('material editor traps focus and closes without sending or discarding the original catalog entry',async()=>{
+ materialCatalogFixture=true;const screen=await renderRoute('/materiais','dono');
+ try{
+  const trigger=document.querySelector('.materials-card');trigger.focus();await act(async()=>trigger.click());
+  const dialog=document.querySelector('.materials-dialog');assert.equal(document.activeElement,dialog);
+  const last=dialog.querySelector('button[type="submit"]');last.focus();
+  await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})));
+  assert.equal(document.activeElement,dialog.querySelector('button'));
+  await act(async()=>button('+ Adicionar recurso').click());
+  const result=await axe.run(dialog,{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(v=>v.id),[]);
+  await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})));
+  assert.ok(!document.querySelector('.materials-dialog'));assert.equal(document.activeElement,trigger);assert.equal(document.body.style.overflow,'');
+  assert.equal(requests.filter(req=>req.method==='put'||req.method==='patch').length,0);
+ }finally{materialCatalogFixture=false;await screen.close()}
+});
+
+
+test('the public page shell observes keyboard height and cleans up its viewport state',async()=>{
+ const {PageExperience,ThemeProvider,AccessibilityProvider}=await getBundle();
+ const saved={};for(const key of ['visualViewport','innerWidth','innerHeight'])saved[key]=Object.getOwnPropertyDescriptor(window,key);
+ const viewport=new window.EventTarget();viewport.height=350;viewport.scale=1;
+ Object.defineProperty(window,'visualViewport',{configurable:true,value:viewport});Object.defineProperty(window,'innerWidth',{configurable:true,value:390});Object.defineProperty(window,'innerHeight',{configurable:true,value:844});
+ const root=createRoot(document.getElementById('root'));
+ try{
+  await act(async()=>root.render(React.createElement(MemoryRouter,{initialEntries:['/login']},React.createElement(ThemeProvider,null,React.createElement(AccessibilityProvider,null,React.createElement(PageExperience),React.createElement('input',{type:'email','aria-label':'Email fictício'}),React.createElement('button',null,'Continuar'))))));
+  await act(async()=>document.querySelector('input[type="email"]').focus());await flush();
+  assert.ok(document.documentElement.hasAttribute('data-mobile-keyboard'));assert.equal(document.documentElement.style.getPropertyValue('--visible-viewport-height'),'350px');
+  await act(async()=>[...document.querySelectorAll('button')].find(el=>el.textContent==='Continuar').focus());await flush();
+  assert.ok(!document.documentElement.hasAttribute('data-mobile-keyboard'));
+ }finally{
+  await act(async()=>root.unmount());
+  for(const key of Object.keys(saved)){if(saved[key])Object.defineProperty(window,key,saved[key]);else delete window[key]}
+ }
+ assert.equal(document.documentElement.style.getPropertyValue('--visible-viewport-height'),'');
+});
+test('activity creation exposes named controls in all seven question formats',async()=>{
+ const screen=await renderRoute('/atividades','dono');
+ try{
+  await act(async()=>button('Montar primeira atividade →').click());
+  assert.ok(document.querySelector('input[placeholder="Título da atividade"]').closest('label'));
+  for(const type of ['MULTIPLA_ESCOLHA','CHECKBOX','DISSERTATIVA','RESPOSTA_CURTA','ORDENACAO','ASSOCIACAO','ARQUIVO']){
+   const select=document.querySelector('[aria-label="Tipo da questão 1"]');
+   await act(async()=>{select.value=type;select.dispatchEvent(new window.Event('change',{bubbles:true}))});
+   const result=await axe.run(document.querySelector('.activity-question-editor').parentElement,{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(v=>v.id),[],type);
+  }
+ }finally{await screen.close()}
 });

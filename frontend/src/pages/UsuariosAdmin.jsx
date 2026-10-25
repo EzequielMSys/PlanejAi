@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import useDialogFocus from '../hooks/useDialogFocus'
 import usuarioService from '../services/usuarioService'
 import { useAuth } from '../context/AuthContext'
 import { toast } from 'react-hot-toast'
@@ -47,6 +48,9 @@ export default function UsuariosAdmin() {
   const [confirmarSenha, setConfirmarSenha] = useState('')
   const [salvandoSenha, setSalvandoSenha] = useState(false)
   const [senhaTemporaria, setSenhaTemporaria] = useState(null)
+  const [senhaErro,setSenhaErro]=useState('')
+  const dialogRef=useRef(null),savingPassword=useRef(false)
+  useDialogFocus(dialogRef,Boolean(modalSenha||senhaTemporaria),()=>modalSenha?fecharModalSenha():setSenhaTemporaria(null),salvandoSenha)
 
   const carregarUsuarios = useCallback(async () => {
     setLoading(true)
@@ -171,24 +175,26 @@ export default function UsuariosAdmin() {
   }
 
   async function definirSenha() {
-    if (!modalSenha) return
+    if (!modalSenha || savingPassword.current) return
 
     if (!novaSenha || !confirmarSenha) {
-      toast.error('Preencha todos os campos.')
+      setSenhaErro('Preencha a nova senha e a confirmação.')
       return
     }
 
     if (novaSenha.length < 8) {
-      toast.error('A senha deve ter no mínimo 8 caracteres.')
+      setSenhaErro('A senha deve ter no mínimo 8 caracteres.')
       return
     }
 
     if (novaSenha !== confirmarSenha) {
-      toast.error('As senhas não coincidem.')
+      setSenhaErro('As senhas precisam ser iguais.')
       return
     }
 
     try {
+      savingPassword.current=true
+      setSenhaErro('')
       setSalvandoSenha(true)
 
       await usuarioService.definirSenha(
@@ -203,8 +209,9 @@ export default function UsuariosAdmin() {
 
       await carregarUsuarios()
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erro ao definir senha.')
+      setSenhaErro(error.response?.data?.error || 'Não foi possível confirmar a alteração. Confira antes de tentar novamente.')
     } finally {
+      savingPassword.current=false
       setSalvandoSenha(false)
     }
   }
@@ -226,6 +233,8 @@ export default function UsuariosAdmin() {
   }
 
   function fecharModalSenha() {
+    if(savingPassword.current)return
+    setSenhaErro('')
     setModalSenha(null)
     setNovaSenha('')
     setConfirmarSenha('')
@@ -326,6 +335,7 @@ export default function UsuariosAdmin() {
                       <td className="p-5">
                         {isDono && podeAlterar ? (
                           <select
+                            aria-label={`Tipo de conta de ${usuario.nome || usuario.email}`}
                             value={usuario.tipo}
                             disabled={acaoLoading === `tipo-${id}`}
                             onChange={(e) => alterarTipo(usuario, e.target.value)}
@@ -469,14 +479,14 @@ export default function UsuariosAdmin() {
       </div>
 
       {modalSenha && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] p-8">
+        <div className="users-password-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="users-password-title" className="users-password-dialog w-full max-w-md bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] p-8">
             <div className="mb-6">
               <p className="text-xs uppercase tracking-[0.3em] text-[rgb(var(--pn-primaria-rgb)/1)] font-black mb-2">
                 PlanejAI
               </p>
 
-              <h2 className="text-3xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-2">
+              <h2 id="users-password-title" className="text-3xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-2">
                 Definir senha
               </h2>
 
@@ -494,8 +504,10 @@ export default function UsuariosAdmin() {
                 type="password"
                 placeholder="Nova senha"
                 aria-label="Nova senha"
+                autoComplete="new-password"
+                disabled={salvandoSenha}
                 value={novaSenha}
-                onChange={(e) => setNovaSenha(e.target.value)}
+                onChange={(e) => {setNovaSenha(e.target.value);setSenhaErro('')}}
                 className="w-full rounded-2xl px-5 py-4 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.3)] outline-none focus:ring-2 focus:ring-[rgb(var(--pn-primaria-borda-rgb)/1)]"
               />
 
@@ -503,11 +515,17 @@ export default function UsuariosAdmin() {
                 type="password"
                 placeholder="Confirmar senha"
                 aria-label="Confirmar nova senha"
+                autoComplete="new-password"
+                disabled={salvandoSenha}
+                aria-invalid={Boolean(senhaErro)}
+                aria-describedby={senhaErro?'users-password-error':undefined}
                 value={confirmarSenha}
-                onChange={(e) => setConfirmarSenha(e.target.value)}
+                onChange={(e) => {setConfirmarSenha(e.target.value);setSenhaErro('')}}
                 className="w-full rounded-2xl px-5 py-4 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.3)] outline-none focus:ring-2 focus:ring-[rgb(var(--pn-primaria-borda-rgb)/1)]"
               />
             </div>
+
+            {senhaErro&&<p id="users-password-error" role="alert" className="users-password-error">{senhaErro}</p>}
 
             <p className="text-xs text-[rgb(var(--pn-texto-rgb)/0.5)] mt-3">
               A senha será salva criptografada no banco. A senha anterior não pode ser visualizada.
@@ -517,6 +535,7 @@ export default function UsuariosAdmin() {
               <button
                 type="button"
                 onClick={fecharModalSenha}
+                disabled={salvandoSenha}
                 className="flex-1 py-3 rounded-full bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.3)] font-bold hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] transition"
               >
                 Cancelar
@@ -534,7 +553,7 @@ export default function UsuariosAdmin() {
           </div>
         </div>
       )}
-      {senhaTemporaria && <div className="users-secret-backdrop" role="presentation"><section className="users-secret-dialog" role="dialog" aria-modal="true" aria-labelledby="users-secret-title"><span className="users-kicker">ACESSO TEMPORÁRIO</span><h2 id="users-secret-title">Senha redefinida</h2><p>Compartilhe esta senha com {senhaTemporaria.nome} por um canal seguro. Ela será mostrada apenas enquanto este aviso estiver aberto.</p><code>{senhaTemporaria.senha}</code><button type="button" onClick={() => setSenhaTemporaria(null)}>Concluir</button></section></div>}
+      {senhaTemporaria && <div className="users-secret-backdrop" role="presentation"><section ref={dialogRef} tabIndex={-1} className="users-secret-dialog" role="dialog" aria-modal="true" aria-labelledby="users-secret-title"><span className="users-kicker">ACESSO TEMPORÁRIO</span><h2 id="users-secret-title">Senha redefinida</h2><p>Compartilhe esta senha com {senhaTemporaria.nome} por um canal seguro. Ela será mostrada apenas enquanto este aviso estiver aberto.</p><code>{senhaTemporaria.senha}</code><button type="button" onClick={() => setSenhaTemporaria(null)}>Concluir</button></section></div>}
     </main>
   )
 }
