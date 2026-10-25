@@ -1,4 +1,5 @@
 module.exports = [
+  { basePath: "/api/busca", tag: "Busca", router: require("../routes/searchRoutes") },
   { basePath: "/api/auth", tag: "Autenticação", router: require("../routes/authRoutes") },
   { basePath: "/api/files", tag: "Arquivos", router: require("../routes/fileRoutes") },
   { basePath: "/api/usuarios", tag: "Usuários", router: require("../routes/usuarioRoutes") },

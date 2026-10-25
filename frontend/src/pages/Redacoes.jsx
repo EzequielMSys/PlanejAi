@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import SectionLink from '../components/SectionLink'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import redacaoService from '../services/redacaoService'
@@ -128,6 +128,9 @@ function BadgeIA({ nivel }) {
 }
 
 export default function Redacoes() {
+  const [searchParams] = useSearchParams()
+  const requestedEssay = searchParams.get('redacao')
+  const openedSearch = useRef(null)
   const { isAdmin, isDono, isDocente } = useAuth()
   const isGestor = isAdmin || isDono || isDocente
 
@@ -198,6 +201,22 @@ export default function Redacoes() {
   useEffect(() => {
     carregarRedacoes()
   }, [isGestor, aba])
+
+  useEffect(() => {
+    if (!requestedEssay) { openedSearch.current = null; return }
+    if (loading || loadError || !requestedEssay || openedSearch.current === requestedEssay) return
+    const found = redacoes.find(item => String(item.id_redacao) === requestedEssay)
+    if (!found) return
+    openedSearch.current = requestedEssay
+    setSelecionada(found)
+    const frame = requestAnimationFrame(() => {
+      const card = document.getElementById(`essay-record-${found.id_redacao}`)
+      card?.scrollIntoView({block:'start',behavior:'auto'})
+      const heading = card?.querySelector('h3')
+      heading?.setAttribute('tabindex','-1'); heading?.focus({preventScroll:true})
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [loading, loadError, requestedEssay, redacoes])
 
   const handleEnviar = async (e) => {
     e.preventDefault()
@@ -278,6 +297,7 @@ export default function Redacoes() {
   return (
     <main className="redacoes-page min-h-screen px-4 sm:px-6 lg:px-8 py-10">
       {loadError && <RecoveryState title="Não conseguimos consultar o histórico de redações." onRetry={carregarRedacoes}><p>Você ainda pode abrir o estúdio e continuar seu rascunho. Não foi possível confirmar a lista de textos salvos na conta.</p></RecoveryState>}
+      {!loadError && requestedEssay && !redacoes.some(item => String(item.id_redacao) === requestedEssay) && <p role="status">A redação encontrada na busca não está mais neste histórico. Confira os textos disponíveis abaixo.</p>}
       <div className="redacoes-shell max-w-6xl mx-auto">
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <section className="redacoes-intro" aria-labelledby="redacoes-title">
@@ -532,6 +552,7 @@ export default function Redacoes() {
                     return (
                       <div
                         key={redacao.id_redacao}
+                        id={`essay-record-${redacao.id_redacao}`}
                         className="essay-record bg-study-paper rounded-[2rem] p-5 shadow-xl border border-study-line/20"
                       >
                         <div className="essay-record__header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

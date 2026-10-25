@@ -47,10 +47,21 @@ let incompleteAccount = false;
 let failLearningLoad = false;
 let essayMode = '';
 let deferredEssay;
+let searchMode = '';
+let deferredSearch;
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
-  requests.push({ url, method: config.method, data: config.data });
+  requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
+  if (url.endsWith('/busca')) {
+    if(searchMode==='failed') throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
+    if(searchMode==='slow' && config.params.q==='antiga') return new Promise(resolve=>{deferredSearch=resolve});
+    if(searchMode==='empty') return {query:config.params.q,pagina:1,limite:12,grupos:[]};
+    const groups=[{tipo:'materias',nome:'Matérias',itens:[{id:'Física',titulo:'Física'}]}, {tipo:'materiais',nome:'Materiais',mais:true,itens:[{id:9,titulo:'Leis de Newton',disciplina:'Física',trecho:'Força e movimento.'}]}, {tipo:'anotacoes',nome:'Anotações',itens:[{id:9,titulo:'Minha leitura de Newton',disciplina:'Física',trecho:'Minha dúvida sobre inércia.'}]}, {tipo:'redacoes',nome:'Redações',itens:[{id:81,titulo:'Educação no Brasil',trecho:'Um texto de teste.'}]}];
+    return {query:config.params.q,pagina:Number(config.params.pagina)||1,limite:12,grupos:groups.filter(group=>config.params.tipo==='todos'||group.tipo===config.params.tipo)};
+  }
+  if(url.endsWith('/busca/conteudos/9')) return {id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física',materiais:'[]',link:''};
+  if(searchMode && url.endsWith('/redacao') && config.method==='get') return [{id_redacao:81,tema:'Educação no Brasil',texto:'Um texto de teste.',enviada_em:'2026-10-24',id_usuario:900001}];
     if ((failScheduleLoad && url.endsWith('/cronograma')) || (failExamLoad && url.endsWith('/inteligencia/catalogo-provas'))) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
   if (essayMode === 'workshopFailure' && config.method === 'post' && url.endsWith('/redacao/projetos')) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
   if (failLearningLoad && url.endsWith('/aprendizagem/resumo')) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
@@ -694,6 +705,69 @@ test('mobile menu traps keyboard focus, closes with Escape and restores the page
   } finally { await screen.close(); window.matchMedia = originalMedia; }
 });
 
+test('unified search submits content queries, keeps page shortcuts and avoids fetching while typing', async () => {
+  const screen=await renderRoute('/inicio');
+  try {
+    await act(async()=>document.querySelector('.sd-search-trigger').click());
+    assert.ok(screen.container.textContent.includes('Buscar no meu acervo'));
+    await inputValue(document.querySelector('.sd-search input'),'Newton');
+    assert.equal(requests.filter(item=>item.url.endsWith('/busca')).length,0);
+    await act(async()=>document.querySelector('.sd-search form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));
+    await flush();await flush();
+    assert.ok(document.querySelector('.unified-search'));
+    assert.ok(document.querySelector('.unified-search-status').textContent.includes('Newton'));
+    assert.equal(requests.find(item=>item.url.endsWith('/busca')).cache,false);
+    const before=requests.filter(item=>item.url.endsWith('/busca')).length;
+    await inputValue(document.getElementById('unified-query'),'inércia');
+    assert.equal(requests.filter(item=>item.url.endsWith('/busca')).length,before);
+    const result=await axe.run(document.querySelector('.unified-search'),{rules:{'color-contrast':{enabled:false}}});
+    assert.deepEqual(result.violations.map(item=>item.id),[]);
+  } finally {await screen.close();}
+});
+
+test('search opens personal notes in their editor and rechecks material access', async () => {
+  window.sessionStorage.clear();
+  const screen=await renderRoute('/busca?q=Newton&tipo=anotacoes');
+  try {
+    await act(async()=>button('Ver anotação +').click());await flush();
+    assert.ok(requests.some(item=>item.url.endsWith('/busca/conteudos/9')&&item.cache===false));
+    await act(async()=>document.querySelector('.search-content-details a').click());await flush();await flush();
+    assert.ok(document.querySelector('.session-notes textarea'));
+    assert.equal(requests.filter(item=>item.method==='post').length,0);
+  } finally {await screen.close();window.sessionStorage.clear();}
+});
+
+test('search filters paginate and an older slow response cannot replace the current results', async () => {
+  searchMode='slow';
+  const screen=await renderRoute('/busca?q=antiga');
+  try {
+    await inputValue(document.getElementById('unified-query'),'Newton');
+    await act(async()=>document.querySelector('.unified-search-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));
+    await flush();
+    await act(async()=>deferredSearch({query:'antiga',grupos:[]}));await flush();
+    assert.ok(document.querySelector('.unified-search-status').textContent.includes('Newton'));
+    await act(async()=>document.querySelector('.unified-search-filters button:nth-child(3)').click());await flush();
+    await act(async()=>button('Próximos →').click());await flush();
+    const last=requests.filter(item=>item.url.endsWith('/busca')).at(-1);
+    assert.equal(last.params.tipo,'materiais');assert.equal(last.params.pagina,2);
+    assert.ok(button('← Anteriores'));
+  } finally {searchMode='';await screen.close();}
+});
+
+test('search failures preserve input and retry without pretending the account has no matches', async () => {
+  searchMode='failed';
+  const screen=await renderRoute('/busca?q=Newton');
+  try {
+    assert.ok(screen.container.textContent.includes('Não conseguimos consultar seu acervo.'));
+    assert.equal(document.getElementById('unified-query').value,'Newton');
+    assert.ok(!screen.container.textContent.includes('Nenhum resultado nesta busca.'));
+    searchMode='ready';await act(async()=>document.querySelector('.unified-search-empty button').click());await flush();
+    assert.ok(document.querySelector('a[href="/redacoes?redacao=81"]'),screen.container.textContent.slice(-1800));
+    await act(async()=>document.querySelector('a[href="/redacoes?redacao=81"]').click());await flush();await flush();
+    assert.ok(document.querySelector('#essay-record-81 .essay-record__details'));
+  } finally {searchMode='';await screen.close();}
+});
+
 test('search trigger focuses the page search input', async () => {
   const screen = await renderRoute('/inicio');
   try {
@@ -701,6 +775,23 @@ test('search trigger focuses the page search input', async () => {
     assert.equal(document.activeElement, document.querySelector('.sd-search input'));
     assert.ok(document.getElementById('page-search-results'));
   } finally { await screen.close(); }
+});
+
+test('short searches stay local and a confirmed empty search offers a useful next step',async()=>{
+  searchMode='empty';
+  const screen=await renderRoute('/busca');
+  try{
+    assert.equal(requests.filter(item=>item.url.endsWith('/busca')).length,0);
+    await inputValue(document.getElementById('unified-query'),'a');
+    await act(async()=>document.querySelector('.unified-search-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));
+    assert.ok(document.getElementById('unified-query-error').textContent.includes('2 caracteres'));
+    assert.equal(document.activeElement,document.getElementById('unified-query'));
+    assert.equal(requests.filter(item=>item.url.endsWith('/busca')).length,0);
+    await inputValue(document.getElementById('unified-query'),'qualquer');
+    await act(async()=>document.querySelector('.unified-search-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));
+    await flush();assert.ok(screen.container.textContent.includes('Nenhum resultado nesta busca.'));
+    assert.ok(screen.container.textContent.includes('Tente uma palavra mais curta'));
+  }finally{searchMode='';await screen.close();}
 });
 
 test('daily panel explains a practice recommendation using recorded attempts', async () => {

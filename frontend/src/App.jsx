@@ -38,6 +38,7 @@ const Provas = lazy(() => import('./pages/Provas'))
 const Chat = lazy(() => import('./pages/Chat'))
 const Preferencias = lazy(() => import('./pages/Preferencias'))
 const FontesEstudo = lazy(() => import('./pages/FontesEstudo'))
+const Search = lazy(() => import('./pages/Search'))
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
             <Route path="/primeiro-acesso" element={<PrimeiroAcesso />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/inicio" element={<Dashboard />} />
+            <Route path="/busca" element={<Search />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/cronograma" element={<Cronograma />} />
             <Route path="/estudar" element={<StudySession />} />

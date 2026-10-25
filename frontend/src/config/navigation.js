@@ -25,6 +25,7 @@ export const PAGES = [
   { path: '/primeiro-acesso', title: 'Primeiro acesso', description: 'Prepare sua conta para estudar.', group: 'Sua conta', roles: ALL, hidden: true },
   { path: '/onboarding', title: 'Meu ponto de partida', description: 'Um plano que respeita a sua rotina.', group: 'Sua conta', roles: ALL, hidden: true },
   { path: '/estudar', title: 'Sala de estudo', description: 'Seu material, suas anotações e tempo para se concentrar.', group: 'Aprender', roles: ALL, hidden: true },
+  { path: '/busca', title: 'Busca no meu acervo', description: 'Matérias, materiais, anotações e redações.', group: 'Aprender', icon: 'search', roles: ALL, hidden: true, searchable: true },
   { path: '/status', title: 'Conexão e serviços', description: 'Confira como estão os serviços da plataforma.', group: 'Ajuda', roles: ALL, hidden: true },
 ]
 export function navigationFor(role) { return PAGES.filter(page => !page.hidden && page.roles.includes(role)) }

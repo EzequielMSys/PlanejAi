@@ -96,7 +96,7 @@ export default function StudySession() {
     continuity.current().then(saved => { if (active && saved?.conteudo) { setContent(saved.conteudo); setDay(saved.dia) } }).catch(() => { if (active) setResumeError(true) }).finally(() => { if (active) setResuming(false) })
     return () => { active = false }
   }, [])
-  const [tab, setTab] = useState('guide')
+  const [tab, setTab] = useState(location.state?.ferramenta === 'notes' ? 'notes' : 'guide')
   const [finishing, setFinishing] = useState(false)
   const [difficulty, setDifficulty] = useState('LEMBREI')
   const [praticaAtual, setPraticaAtual] = useState(null)
