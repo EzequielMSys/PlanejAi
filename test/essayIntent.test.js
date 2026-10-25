@@ -58,8 +58,16 @@ test('a new percentage is rejected while figures already supplied in the excerpt
  assert.equal(s.output(raw,'O texto enviado informa aumento de 15 por cento.' ).sugestao,JSON.parse(raw).sugestao);
  assert.equal(s.output(JSON.stringify({...answer,motivo:'Um aumento de 2,5 por cento.'}),'Texto sem percentual.'),null);
 });
-test('all intentions forbid fabricated evidence and single-paragraph cohesion reports its context limit',async()=>{
+test('all intentions forbid fabricated evidence and single-paragraph cohesion is rejected before spending quota',async()=>{
  const s=service();for(const intencao of ['argumento','coesao','repertorio'])assert.match(s.prompt({...body,intencao})[0].content,/não invente estatísticas, percentuais/);
- assert.equal((await s.review(7,{...body,intencao:'coesao'},dependencies())).contextoLimitado,true);
- assert.equal((await s.review(7,{...body,intencao:'coesao',trecho:body.trecho+'\n\n'+body.trecho},dependencies())).contextoLimitado,false);
+ const limited=dependencies();await assert.rejects(s.review(7,{...body,intencao:'coesao'},limited),e=>e.status===400);assert.equal(limited.calls.length,0);
+ assert.equal((await s.review(7,{...body,intencao:'coesao',trecho:body.trecho+'\n\n'+body.trecho},dependencies())).intencao,'coesao');
+});
+
+test('fictional repertoire receives an explicit source boundary and a separate prompt constraint',async()=>{
+ const s=service(),deps=dependencies(),trecho='No meu romance fictício, uma jovem usa a biblioteca escolar para conseguir livros.';
+ const result=await s.review(7,{intencao:'repertorio',trecho},deps);
+ assert.match(result.avisoFonte,/fontes verificáveis/);
+ assert.equal(deps.prompts[0].messages.length,3);assert.match(deps.prompts[0].messages[1].content,/NÃO COMPROVA/);
+ assert.equal(JSON.parse(deps.prompts[0].messages[2].content).trecho,trecho);
 });
