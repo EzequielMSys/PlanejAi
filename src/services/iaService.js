@@ -3,6 +3,7 @@ const iaConfig = require('../config/iaConfig')
 const model = require('../models/inteligenciaModel')
 const { contextoDisponivel } = require('./tutorContextService')
 const { normalizarPratica } = require('./tutorPractice')
+const {normalizeChoice}=require('./chatContextChoice')
 
 const LIMITE_CARACTERES_MENSAGEM = 2000
 
@@ -126,8 +127,9 @@ function classificarErroApi(apiError) {
  *  5. persistir a resposta do assistente;
  *  6. devolver a conversa atualizada para sincronizar o cliente.
  */
-async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, redacaoId, estudoAtual, pratica) {
+async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, redacaoId, estudoAtual, pratica, contextoEscolhido) {
   const conteudo = validarEntrada(mensagem)
+  const choice=normalizeChoice(contextoEscolhido)
   const disciplinaNormalizada = disciplina ? String(disciplina).trim().slice(0, 100) : null
   const estudoAtualNormalizado = normalizarEstudoAtual(estudoAtual)
   const idRedacao = Number.isSafeInteger(Number(redacaoId)) && Number(redacaoId) > 0 ? Number(redacaoId) : null
@@ -150,7 +152,7 @@ async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, reda
     throw err
   }
 
-  const [historicoRows, perfil] = await Promise.all([
+  const [historicoRows, perfil] = choice ? [null,{registrosEscolhidos:choice.itens}] : await Promise.all([
     model.listarMensagensChat(Number(idUsuario), iaConfig.historyTrim),
     contextoDisponivel(Number(idUsuario), undefined, 1500, {
       incluirTextoRedacao: /redaç|redac|texto que escrevi|meu texto|minha escrita/i.test(conteudo),
@@ -158,8 +160,8 @@ async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, reda
     }),
   ])
   const messages = montarMensagensParaApi(
-    iaConfig.systemPrompt(nomeUsuario, disciplinaNormalizada, perfil, estudoAtualNormalizado, normalizarPratica(pratica)),
-    normalizarHistorico(historicoRows),
+    iaConfig.systemPrompt(choice ? undefined : nomeUsuario, disciplinaNormalizada, perfil, choice ? null : estudoAtualNormalizado, normalizarPratica(pratica)),
+    choice ? [...choice.historico,{role:'user',content:conteudo}] : normalizarHistorico(historicoRows),
   )
 
   let resposta
@@ -180,6 +182,7 @@ async function enviarMensagem(idUsuario, mensagem, disciplina, nomeUsuario, reda
   }
 
   await model.salvarMensagemChat(Number(idUsuario), 'assistant', resposta, disciplinaNormalizada)
+  if(choice)return {role:'assistant',conteudo:resposta,disciplina:disciplinaNormalizada}
 
   const atualizado = await model.listarMensagensChat(Number(idUsuario), iaConfig.historyTrim)
   return {

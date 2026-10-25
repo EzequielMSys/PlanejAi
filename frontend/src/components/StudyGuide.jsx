@@ -1,3 +1,4 @@
+import ReadingSurface from './ReadingSurface'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import coreLessons from '../data/coreStudyLessons'
@@ -80,7 +81,7 @@ export function isExternalStudySource(url) {
   } catch { return false }
 }
 
-export default function StudyGuide({ material, sourceUrl, className = '', onTutorRequest }) {
+export default function StudyGuide({ material = {}, sourceUrl, className = '', onTutorRequest }) {
   const titulo = material?.titulo || material?.title || 'Este conteúdo'
   const disciplina = material?.disciplina || material?.area || 'sua disciplina'
   const plano = useMemo(() => planoPorDisciplina(disciplina, titulo), [disciplina, titulo])
@@ -115,7 +116,7 @@ export default function StudyGuide({ material, sourceUrl, className = '', onTuto
     setResultado(questoes.reduce((total, [, , correta], indice) => total + Number(respostas[indice] === correta), 0))
   }
 
-  return <article className={`study-guide ${className}`}>
+  return <ReadingSurface key={`${material.id_conteudo || material.id || material.titulo}:${material.disciplina || ''}`} material={material}><article className={`study-guide ${className}`}>
     <header><span>{plano.chave ? 'GUIA DO TEMA' : 'ROTEIRO GERAL DE ESTUDO'}</span><h2>{titulo}</h2><p>{disciplina} · {plano.chave ? 'Texto e questões autorais para uma primeira prática.' : 'Este roteiro ensina um método de estudo; ainda não há uma aula específica para este tema.'}</p></header>
     <section><h3>O que você precisa aprender</h3><p>{plano.conceito}</p></section>
     <section className="study-guide-reading"><span>TEXTO DE APOIO</span><h3>Entenda a ideia antes de praticar</h3><p>{textoApoio}</p><small>Leia uma vez para compreender e volte ao texto quando uma questão trouxer dúvida.</small></section>
@@ -133,5 +134,5 @@ export default function StudyGuide({ material, sourceUrl, className = '', onTuto
     </section>
     <section className="study-guide-sources"><h3>Continue em uma boa fonte</h3><p>Consulte a explicação completa e compare com sua tentativa. Os links abrem em outra aba.</p>{fontes.map(source => <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.name} ↗</a>)}<Link to="/fontes-estudo">Explorar fontes, provas oficiais e redação →</Link></section>
     <footer>{sourceUrl ? <><span>Material indicado para esta sessão:</span><a href={sourceUrl} target="_blank" rel="noopener noreferrer">Abrir {origem} ↗</a></> : <span>{plano.chave ? 'O teste é formativo e não mede, sozinho, seu domínio do tema.' : 'As questões verificam o método de estudo, não o domínio do tema indicado.'}</span>}</footer>
-  </article>
+  </article></ReadingSurface>
 }

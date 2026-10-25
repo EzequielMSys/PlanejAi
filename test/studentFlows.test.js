@@ -31,6 +31,7 @@ const axe = requireFrontend('axe-core');
 let bundle;
 let requests = [];
 let failChat = false;
+let chatHistoryFixture=[];
 let failScheduleLoad = false;
 let failExamLoad = false;
 let supportMode = '';
@@ -143,7 +144,7 @@ function fixture(config) {
       if (failChat) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: { message: 'Lumi temporariamente indisponível.' } });
       return { mensagens: [{ role: 'user', conteudo: JSON.parse(config.data).mensagem }, { role: 'assistant', conteudo: '# Vamos entender\n\nUma **ideia** de cada vez.\n\n- Primeiro ponto\n- Segundo ponto\n\n<script>unsafe()</script>' }] };
     }
-    return [];
+    return chatHistoryFixture;
   }
   if (url.endsWith('/aprendizagem/jornada')) return { blocks: [], plannedMinutes: 25, summary: { reviews: 0, errors: 0, weeklyMinutes: 0, weeklyGoal: 180, criticalDiscipline: null } };
   if (url.endsWith('/aprendizagem/resumo')) return dashboardLearningFixture || { metaSemanal: 180, minutosSemana: 0, revisoesHoje: 0, errosPendentes: 0, porDisciplina: [], porDificuldade: [], recomendacoes: [], competenciasEnem: [] };
@@ -360,7 +361,7 @@ test('writing guidance opens Lumi with an editable question about ENEM essays', 
     assert.ok(link, 'writing guidance should link to Lumi');
     await act(async () => link.click());
     await flush();
-    const input = document.querySelector('.lumi-chat-body textarea, .lumi-chat-body input[type="text"]');
+    const input = document.getElementById('lumi-message');
     assert.ok(input, 'Lumi should show a message field');
     assert.match(input.value, /tese.*argumentos/i);
   } finally { await screen.close(); }
@@ -1888,4 +1889,77 @@ test('workshop recovers an unsent device draft explicitly and clears it after co
 test('welcome ignores another accounts visit and gives first study priority',async()=>{
  const screen=await renderRoute('/inicio','aluno',{}, {'900002:today-last-visit:v1':new Date(Date.now()-6*86400000).toISOString()});
  try{assert.equal(document.querySelector('.today-welcome').dataset.moment,'first');assert.ok(document.querySelector('.first-study-primary'));assert.ok(!document.querySelector('.today-details'))}finally{await screen.close()}
+});
+
+test('Lumi sends only selected snippets and removes the old conversation when context changes',async()=>{
+ const screen=await renderRoute('/lumi');
+ try{
+  await act(async()=>document.querySelector('.lumi-context-add')?.closest('details').querySelector('summary').click());
+  const field=document.querySelector('.lumi-context-add textarea');await inputValue(field,'Minha dúvida escolhida sobre força e aceleração.');
+  await act(async()=>button('Adicionar trecho escolhido').click());
+  await inputValue(document.getElementById('lumi-message'),'Explique esta ideia.');
+  await act(async()=>document.getElementById('lumi-message').closest('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+  const first=JSON.parse(requests.find(x=>x.method==='post'&&x.url.endsWith('/inteligencia/chat')).data);
+  assert.equal(first.contextoEscolhido.itens[0].texto,'Minha dúvida escolhida sobre força e aceleração.');assert.deepEqual(first.contextoEscolhido.historico,[]);assert.equal(first.redacaoId,undefined);
+  await act(async()=>document.querySelector('[aria-label="Retirar Minha dúvida do contexto"]').click());
+  assert.equal(document.querySelectorAll('.lumi-message--assistant').length,0);
+  await inputValue(document.getElementById('lumi-message'),'Agora explique energia.');
+  await act(async()=>document.getElementById('lumi-message').closest('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+  const last=JSON.parse(requests.filter(x=>x.method==='post'&&x.url.endsWith('/inteligencia/chat')).at(-1).data);
+  assert.deepEqual(last.contextoEscolhido.itens,[]);assert.deepEqual(last.contextoEscolhido.historico,[]);assert.ok(!JSON.stringify(last).includes('dúvida escolhida'));
+ }finally{await screen.close()}
+});
+
+test('starting Lumi without prior context removes session subject and pending practice',async()=>{
+ window.sessionStorage.setItem('900001:active-study-content',JSON.stringify({conteudo:{id:51,id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'}}));
+ const screen=await renderRoute('/estudar');
+ try{
+  await act(async()=>document.querySelector('.study-desk-tool-toggle').click());await flush();
+  await act(async()=>button('Começar sem contexto anterior').click());
+  await inputValue(document.getElementById('lumi-message'),'Como interpretar um poema?');
+  await act(async()=>document.getElementById('lumi-message').closest('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+  const data=JSON.parse(requests.find(x=>x.method==='post'&&x.url.endsWith('/inteligencia/chat')).data);
+  assert.equal(data.estudoAtual,undefined);assert.equal(data.disciplina,undefined);assert.deepEqual(data.contextoEscolhido.itens,[]);assert.deepEqual(data.contextoEscolhido.historico,[]);
+ }finally{window.sessionStorage.clear();await screen.close()}
+});
+
+test('reading settings are scoped and a bookmark restores the matching section explicitly',async()=>{
+ window.sessionStorage.setItem('900001:active-study-content',JSON.stringify({conteudo:{id:51,id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'}}));
+ const settings={size:24,width:48,spacing:2};
+ const screen=await renderRoute('/estudar','aluno',{}, {'900001:reading-settings:v1':JSON.stringify(settings),'900001:reading-position:v1:9':JSON.stringify({index:1,title:'Entenda a ideia antes de praticar'})});
+ try{
+  const content=document.querySelector('.reading-content');assert.equal(content.style.getPropertyValue('--reading-size'),'1.5rem');assert.equal(content.style.getPropertyValue('--reading-width'),'48ch');
+  assert.ok(button('Continuar de onde parei'));assert.ok(document.querySelector('.reading-resume'));
+  await act(async()=>button('Continuar de onde parei').click());
+  assert.equal(document.activeElement.querySelector('h3').textContent,'Entenda a ideia antes de praticar');
+  assert.equal(JSON.parse(localStorage.getItem('900001:reading-position:v1:9')).index,1);
+  const select=document.querySelector('.reading-settings select');await act(async()=>{select.value='20';select.dispatchEvent(new window.Event('change',{bubbles:true}))});
+  assert.equal(JSON.parse(localStorage.getItem('900001:reading-settings:v1')).size,20);
+  const result=await axe.run(document.querySelector('.reading-surface'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(x=>x.id),[]);
+ }finally{window.sessionStorage.clear();await screen.close()}
+});
+
+test('reading ignores another accounts bookmark and stays usable when storage fails',async()=>{
+ window.sessionStorage.setItem('900001:active-study-content',JSON.stringify({conteudo:{id:51,id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'}}));
+ const screen=await renderRoute('/estudar','aluno',{}, {'900002:reading-position:v1:9':JSON.stringify({index:1,title:'Registro privado'})});const original=window.Storage.prototype.setItem;
+ try{
+  assert.equal(document.querySelector('.reading-resume'),null);
+  window.Storage.prototype.setItem=()=>{throw Error('quota')};
+  const select=document.querySelector('.reading-settings select');await act(async()=>{select.value='22';select.dispatchEvent(new window.Event('change',{bubbles:true}))});
+  assert.equal(document.querySelector('.reading-content').style.getPropertyValue('--reading-size'),'1.375rem');
+  assert.match(document.querySelector('.reading-surface').textContent,/Não foi possível guardar/);
+ }finally{window.Storage.prototype.setItem=original;window.sessionStorage.clear();await screen.close()}
+});
+
+test('viewing saved Lumi history does not add it to a new conversation context',async()=>{
+ chatHistoryFixture=[{role:'user',conteudo:'Dúvida privada de uma conversa antiga.'}];
+ const screen=await renderRoute('/lumi');
+ try{
+  assert.equal(document.querySelector('.lumi-history-readonly'),null);
+  await act(async()=>button('Ver histórico salvo').click());await flush();
+  assert.match(document.querySelector('.lumi-history-readonly').textContent,/conversa antiga/);
+  await inputValue(document.getElementById('lumi-message'),'Explique uma metáfora.');
+  await act(async()=>document.getElementById('lumi-message').closest('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+  const data=JSON.parse(requests.find(x=>x.method==='post'&&x.url.endsWith('/inteligencia/chat')).data);assert.deepEqual(data.contextoEscolhido.historico,[]);assert.ok(!JSON.stringify(data).includes('conversa antiga'));
+ }finally{chatHistoryFixture=[];await screen.close()}
 });

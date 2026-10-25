@@ -26,7 +26,7 @@ export default function Chat() {
           <span className="lumi-intro-label">APOIO PARA SEUS ESTUDOS</span>
           <h2>{convite}</h2>
           <p>Explique onde travou ou o que já tentou. Posso propor um exercício, revisar uma redação e ajudar a retomar seu plano.</p>
-          <div className="lumi-intro-note"><strong>Uma conversa com contexto</strong><span>Quando disponíveis, suas matérias, lições e redações ajudam a tornar a resposta mais útil.</span></div>
+          <div className="lumi-intro-note"><strong>Uma conversa com contexto</strong><span>Você escolhe os registros e trechos que serão enviados. Pode retirar cada item ou começar sem contexto anterior.</span></div>
         </aside>
 
         <section className="lumi-chat-card" aria-label="Conversa com a Lumi">
