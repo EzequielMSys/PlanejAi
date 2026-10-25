@@ -125,13 +125,13 @@ function JournalDetail({id,onBack,onChanged,notes}) {
   </article>
 }
 
-export default function LearningJournal({content,notes,embedded=false}) {
+export default function LearningJournal({content,notes,embedded=false,initialRegistro,initialTipo}) {
   const [opened,setOpened] = useState(!embedded)
-  const [tipo,setTipo] = useState('explicacao')
+  const [tipo,setTipo] = useState(initialTipo==='duvida'?'duvida':'explicacao')
   const [page,setPage] = useState(1)
   const [list,setList] = useState(null)
   const [error,setError] = useState('')
-  const [selected,setSelected] = useState(null)
+  const [selected,setSelected] = useState(Number.isSafeInteger(Number(initialRegistro)) && Number(initialRegistro)>0?Number(initialRegistro):null)
   const [creating,setCreating] = useState(false)
   const [revision,setRevision] = useState(0)
   const owner = currentUser()

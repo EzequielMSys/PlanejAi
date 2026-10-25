@@ -36,6 +36,16 @@ function client() {
 }
 function offline(config) { return Promise.reject(new axios.AxiosError('offline', 'ERR_NETWORK', config)); }
 
+test('an account-bound closing cannot transmit an old reminder with another account token',async()=>{
+  const {api,localStorage,queued}=client();let sent=0;
+  api.defaults.adapter=async config=>{sent++;return {status:200,data:{confirmado:true},config}};
+  localStorage.setItem('user',JSON.stringify({id:2}));localStorage.setItem('token','second-account-token');
+  await assert.rejects(api.post('/fechamentos',{proximoPasso:'Private draft of the first account'},{expectedOwner:'1',offlineQueue:true}),error=>axios.isCancel(error));
+  assert.equal(sent,0);assert.equal(queued.length,0);
+  await api.post('/fechamentos',{proximoPasso:'Own reminder'},{expectedOwner:'2'});
+  assert.equal(sent,1);
+});
+
 test('offline cache separates query parameters and preserves the requested page', async () => {
   const { api, cache } = client();
   api.defaults.adapter = async config => ({ status: 200, data: { page: config.params.page }, config });

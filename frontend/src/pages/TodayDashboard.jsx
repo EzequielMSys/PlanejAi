@@ -16,6 +16,9 @@ import { scopedCacheKey } from '../utils/offlineStore'
 import FirstStudySteps from '../components/FirstStudySteps'
 import RecoveryState from '../components/RecoveryState'
 import '../components/StudyRecommendations.css'
+import closures from '../services/sessionClosureService'
+import StudyReturns from '../components/StudyReturns'
+import {currentUser} from '../utils/offlineStore'
 
 const done = (item) => Number(item?.concluido) === 1 || item?.status === 'concluído'
 const greeting = () => new Date().getHours() < 12 ? 'Bom dia' : new Date().getHours() < 18 ? 'Boa tarde' : 'Boa noite'
@@ -31,6 +34,16 @@ function localMinutes(week = false) {
 
 export default function TodayDashboard() {
   const { user, isAdmin, isDono, perfilCompleto } = useAuth()
+  const [returns,setReturns]=useState(null)
+  const [returnsStatus,setReturnsStatus]=useState('loading')
+  const [returnsAttempt,setReturnsAttempt]=useState(0)
+  const [openingReturn,setOpeningReturn]=useState(false)
+  useEffect(()=>{
+    const abort=new window.AbortController(),owner=currentUser()
+    setReturnsStatus('loading')
+    closures.pending(abort.signal).then(value=>{if(!abort.signal.aborted && owner===currentUser()){if(!value || !Object.hasOwn(value,'principal'))throw Error('invalid');setReturns(value);setReturnsStatus('ready')}}).catch(()=>{if(!abort.signal.aborted && owner===currentUser())setReturnsStatus('error')})
+    return()=>abort.abort()
+  },[returnsAttempt,user?.id,user?.id_usuario])
   const [resume, setResume] = useState(null)
   const [resumeStatus, setResumeStatus] = useState('loading')
   useEffect(() => {
@@ -93,10 +106,14 @@ export default function TodayDashboard() {
   const firstReview = data.reviews[0]
   const pendingContents = days.reduce((total, day) => total + (day.conteudos || []).filter(item => !done(item)).length, 0)
   const resumeDate = resume?.atualizadoEm && !Number.isNaN(Date.parse(resume.atualizadoEm)) ? new Date(resume.atualizadoEm).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : null
+  const returnSuggestion=returnsStatus==='ready'?returns?.principal:null
+  const returnLabels={lembrete:'Retomar meu próximo passo',explicacao:'Explicar novamente',duvida:'Investigar minha dúvida',revisao:'Começar revisão'}
   const nextAction = resume
     ? { kind: 'resume', title: resume.conteudo.titulo, subject: resume.conteudo.disciplina || 'Sessão em andamento', reason: `Esta foi sua última sessão aberta${resumeDate ? `, em ${resumeDate}` : ''}, ainda sem conclusão. Você pode reler as anotações confirmadas na conta e escolher um próximo passo.`, duration: 'Continue no seu ritmo', label: 'Retomar minha sessão' }
     : !perfilCompleto
     ? { kind: 'setup', title: 'Seu primeiro passo pode ser pequeno', subject: 'Boas-vindas', reason: 'Explore a Lumi e as fontes agora. Para um cronograma personalizado, escolha suas matérias e disponibilidade.', duration: 'Você decide quando começar', label: 'Preparar meu plano', route: '/onboarding' }
+    : returnSuggestion
+    ? {kind:'return',entry:returnSuggestion,title:returnSuggestion.titulo,subject:returnSuggestion.disciplina || 'Seu fio de estudo',reason:returnSuggestion.motivo,duration:`${returnSuggestion.minutos} min sugeridos para começar`,label:returnLabels[returnSuggestion.tipo] || 'Retomar meu estudo'}
     : nextContent && canStart
     ? { kind: 'lesson', title: nextContent.titulo, subject: nextContent.disciplina || nextContent.area || 'Plano de estudos', reason: localStudyDate(nextDay.data_estudo) < localStudyDate() ? 'Retome o primeiro conteúdo pendente. Seu progresso continua salvo.' : 'Esta é a próxima atividade do seu plano de hoje.', duration: `${sessionMinutes} min previstos para esta sessão`, label: 'Continuar meus estudos' }
     : firstReview || reviews > 0
@@ -122,7 +139,24 @@ export default function TodayDashboard() {
       setLearningFailed(false)
     } catch { setLearningFailed(true) } finally { setRetryingLearning(false) }
   }
-  const openNextAction = () => nextAction.kind === 'resume' ? navigate('/estudar', { state: resume }) : nextAction.kind === 'lesson' ? start() : navigate(nextAction.route, nextAction.kind === 'practice' ? { state: { aba: 'simulado', disciplina: weakSubject?.disciplina } } : undefined)
+  async function openReturn(item) {
+    if(openingReturn)return
+    if(item.tipo==='explicacao'||item.tipo==='duvida')return navigate('/aprendizagem',{state:{aba:'diario',registro:item.id,tipo:item.tipo}})
+    if(item.tipo==='revisao')return navigate('/aprendizagem',{state:{aba:'revisoes',idRevisao:item.id}})
+    setOpeningReturn(true)
+    const owner=currentUser()
+    try{const saved=await closures.resume(item.id);if(owner===currentUser() && saved?.conteudo)navigate('/estudar',{state:saved})}
+    catch(error){toast.error(error?.response?.data?.message || 'Não conseguimos abrir o conteúdo. Seu lembrete continua salvo.')}
+    finally{setOpeningReturn(false)}
+  }
+  async function finishReturn(id) {
+    if(openingReturn)return
+    setOpeningReturn(true)
+    try{const result=await closures.done(id);if(!result?.confirmado)throw Error('unconfirmed');setReturnsAttempt(n=>n+1);toast.success('Próximo passo marcado como feito.')}
+    catch{toast.error('O servidor não confirmou a alteração. O lembrete continua disponível.')}
+    finally{setOpeningReturn(false)}
+  }
+  const openNextAction = () => nextAction.kind === 'return' ? openReturn(nextAction.entry) : nextAction.kind === 'resume' ? navigate('/estudar', { state: resume }) : nextAction.kind === 'lesson' ? start() : navigate(nextAction.route, nextAction.kind === 'practice' ? { state: { aba: 'simulado', disciplina: weakSubject?.disciplina } } : undefined)
   const openShortReturn = () => navigate('/estudar', { state: { ...(resume || { conteudo: nextContent, dia: nextDay }), retomadaCurta: true } })
   const askLumiAboutNextAction = () => navigate('/lumi', { state: { perguntaInicial: `Meu próximo passo sugerido é ${nextAction.title}. O dado disponível é: ${nextAction.reason} Me ajude a começar com uma atividade curta e explique como você usou esse dado, sem presumir outras dificuldades.` } })
   const updateWeeklyGoal = async (event) => {
@@ -154,8 +188,8 @@ export default function TodayDashboard() {
   const maxRecent = Math.max(1, ...recentDays.map((day) => day.count))
 
   if (loading) return <RouteLoading />
-  if (planError) return <main className="dash-v2"><section className="daily-adjust" role="alert"><h1>Seu plano continua salvo.</h1><p>Não conseguimos consultá-lo agora. Tente carregar novamente para continuar.</p><button type="button" className="study-button" onClick={() => { setLoading(true); reloadPlan().catch(() => setPlanError(true)).finally(() => setLoading(false)) }}>Tentar novamente</button></section></main>
-  const firstStudy = resumeStatus === 'ready' && user?.tipo === 'aluno' && !resume && !data.schedules.length && data.learning && !weeklyMinutes && !reviews && !data.learning.errosPendentes && !data.learning.porDisciplina?.length && !data.evolution.length
+  if (planError && !returnSuggestion && !resume) return <main className="dash-v2"><section className="daily-adjust" role="alert"><h1>Seu plano continua salvo.</h1><p>Não conseguimos consultá-lo agora. Tente carregar novamente para continuar.</p><button type="button" className="study-button" onClick={() => { setLoading(true); reloadPlan().catch(() => setPlanError(true)).finally(() => setLoading(false)) }}>Tentar novamente</button></section></main>
+  const firstStudy = resumeStatus === 'ready' && returnsStatus==='ready' && !returnSuggestion && user?.tipo === 'aluno' && !resume && !data.schedules.length && data.learning && !weeklyMinutes && !reviews && !data.learning.errosPendentes && !data.learning.porDisciplina?.length && !data.evolution.length
 
   return <main className="dash-v2">
     <div className="dash-v2-wrap">
@@ -164,13 +198,15 @@ export default function TodayDashboard() {
         <div><span>HOJE · UM PASSO DE CADA VEZ</span><h1>{greeting()}, {name}.</h1><p>{date}</p></div>
         <div>{user?.tipo === 'aluno' && <button type="button" onClick={() => navigate('/sessao-guiada')}>Montar sessão guiada</button>}<button type="button" onClick={() => navigate('/cronograma')}>Ver cronograma <b>→</b></button></div>
       </header>
+      {planError && <div role="alert" className="study-return-note"><p>O cronograma não pôde ser consultado. Você ainda pode retomar os registros confirmados abaixo.</p><button type="button" onClick={()=>reloadPlan().catch(()=>setPlanError(true))}>Consultar cronograma novamente</button></div>}
 
       {resumeStatus !== 'ready' && <div className="study-return-note" role="status"><p>{resumeStatus === 'loading' ? 'Conferindo onde você parou…' : 'Não conseguimos consultar sua última sessão. Seu histórico não foi apagado.'}</p>{resumeStatus === 'error' && <button type="button" onClick={reloadResume}>Consultar minha retomada</button>}</div>}
       {firstStudy ? <FirstStudySteps prepared={perfilCompleto} /> : <><section className="dash-v2-spotlight">
         <motion.article className="dash-v2-focus" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <div className="dash-v2-focus-top"><span>SEU PRÓXIMO PASSO</span><small>{nextAction.subject}</small></div>
           <div className="dash-v2-focus-copy"><p>{nextAction.kind === 'lesson' ? 'Abra o material e siga do ponto em que parou' : 'Uma ação possível para agora'}</p><h2>{nextAction.title}</h2><p className="dash-v2-reason"><strong>Por quê?</strong> {nextAction.reason}</p><div><span>{nextAction.duration}</span><span>{data.learning ? `${reviews} ${reviews === 1 ? 'revisão pendente' : 'revisões pendentes'}` : 'Revisões a consultar'}</span></div></div>
-          <footer><button type="button" disabled={nextAction.kind === 'lesson' && resumeStatus !== 'ready'} onClick={openNextAction}>{nextAction.label} <b>→</b></button>{['resume', 'lesson'].includes(nextAction.kind) && resumeStatus === 'ready' ? <button type="button" className="dash-v2-lumi-action" onClick={openShortReturn}>Retomar por 5 minutos</button> : <button type="button" className="dash-v2-lumi-action" onClick={askLumiAboutNextAction}>Planejar com a Lumi</button>}</footer>
+          {nextAction.entry?.texto && <p className="study-return-reminder">{nextAction.entry.texto}</p>}
+          <footer><button type="button" disabled={(nextAction.kind === 'lesson' && resumeStatus !== 'ready') || (nextAction.kind==='return' && openingReturn)} onClick={openNextAction}>{nextAction.label} <b>→</b></button>{['resume', 'lesson'].includes(nextAction.kind) && resumeStatus === 'ready' ? <button type="button" className="dash-v2-lumi-action" onClick={openShortReturn}>Retomar por 5 minutos</button> : <button type="button" className="dash-v2-lumi-action" onClick={askLumiAboutNextAction}>Planejar com a Lumi</button>}</footer>
           {['resume', 'lesson'].includes(nextAction.kind) && <div className="study-return-note"><p><strong>Sem precisar recuperar tudo de uma vez.</strong> {pendingContents} {pendingContents === 1 ? 'conteúdo ainda aberto' : 'conteúdos ainda abertos'} no plano. Escolha só um próximo passo.</p></div>}
 
         </motion.article>
@@ -188,6 +224,7 @@ export default function TodayDashboard() {
         </aside>
       </section>
 
+      <StudyReturns data={returns} status={returnsStatus} onRetry={()=>setReturnsAttempt(n=>n+1)} onOpen={openReturn} onDone={finishReturn} busy={openingReturn}/>
       <div className="today-review-strip"><span><strong>{!data.learning ? 'Revisões a consultar' : reviews ? `${reviews} ${reviews === 1 ? 'revisão pronta' : 'revisões prontas'}` : 'Revisões em dia'}</strong><small>{!data.learning ? 'Consulte a aprendizagem para conferir sua fila.' : reviews ? 'Retome o que aprendeu antes que fique distante.' : 'Novas revisões aparecem conforme você estuda.'}</small></span><button type="button" onClick={() => navigate('/aprendizagem')}>{reviews ? 'Abrir revisões →' : 'Ver aprendizagem →'}</button></div>
       <DailyPlanActions schedules={data.schedules} onSaved={reloadPlan} />
 

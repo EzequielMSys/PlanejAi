@@ -2,8 +2,9 @@ import AreaSignature from '../components/AreaSignature'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-import cronogramaService from '../services/cronogramaService'
-import aprendizagemService from '../services/aprendizagemService'
+import closures from '../services/sessionClosureService'
+import useClosureDraft from '../hooks/useClosureDraft'
+import SessionClosingSummary from '../components/SessionClosingSummary'
 import { resolveProtectedAsset } from '../services/fileService'
 import StudyGuide, { isExternalStudySource } from '../components/StudyGuide'
 import DictationButton from '../components/DictationButton'
@@ -13,7 +14,7 @@ import './StudySession.css'
 import useStudyNotes from '../hooks/useStudyNotes'
 import SaveFeedback from '../components/SaveFeedback'
 import continuity from '../services/studyContinuityService'
-import { scopedCacheKey } from '../utils/offlineStore'
+import { scopedCacheKey, currentUser } from '../utils/offlineStore'
 import RouteLoading from '../components/RouteLoading'
 import '../components/StudyRecommendations.css'
 import { downloadTextCopy } from '../utils/downloadTextCopy'
@@ -114,6 +115,12 @@ export default function StudySession() {
   const toggleLumi = () => { setLumiOpen(value => !value); setLumiVisited(true) }
   const openLumi = () => { setReadingMode(false); setLumiOpen(true); setLumiVisited(true); requestAnimationFrame(() => { lumiRef.current?.scrollIntoView({block:'start',behavior:'auto'}); lumiRef.current?.querySelector('button')?.focus({preventScroll:true}) }) }
   const startedAt = useRef(Date.now())
+  const closingDraft = useClosureDraft(content,startedAt)
+  useEffect(()=>{if(closingDraft.attempt?.resultado)setDifficulty(closingDraft.attempt.resultado)},[closingDraft.attempt?.resultado])
+  const closingLock = useRef(false)
+  const active = useRef(true)
+  useEffect(()=>{active.current=true;return()=>{active.current=false}},[])
+  const [closed,setClosed] = useState(null)
 
   const { notes, setNotes, status: noteStatus, retry: retryNotes, loading: loadingNotes, flush: flushNotes } = useStudyNotes(content?.id_conteudo, content?.id)
   function recordConnection(connection) {
@@ -133,7 +140,7 @@ export default function StudySession() {
   }, [content, day])
 
   async function finish() {
-    if (!content) return
+    if (!content || closingLock.current) return
     if (hasUnsafeJournalDraft()) {
       toast.error('Uma explicação ou dúvida está sem cópia local. Salve na conta ou baixe o rascunho antes de concluir.')
       return
@@ -142,33 +149,29 @@ export default function StudySession() {
       toast.error('Você começou uma explicação ou dúvida deste conteúdo. Salve na conta ou descarte o rascunho antes de concluir.')
       return
     }
+    closingLock.current=true
     setFinishing(true)
-    const minutes = Math.max(1, Math.round((Date.now() - startedAt.current) / 60000))
+    const owner=currentUser()
     try {
       const noteResult = await flushNotes()
+      if(owner!==currentUser() || !active.current)return
       if (!noteResult.confirmed && !noteResult.local && !noteResult.unchanged) {
         toast.error('Não conseguimos proteger suas anotações. Mantenha a sessão aberta e tente salvar novamente.')
         return
       }
-      if (content.id && !Number(content.concluido)) await cronogramaService.concluirConteudo(content.id)
-      if (content.id_conteudo) {
-        await aprendizagemService.adicionarRevisao(content.id_conteudo)
-        await aprendizagemService.avaliarRevisao(content.id_conteudo, difficulty)
-      }
-      const sessionResult = await aprendizagemService.registrarSessao({ idConteudo: content.id_conteudo, minutos: minutes, resultado: difficulty })
-      saveStudyHistory(content, minutes, difficulty)
-      if (sessionResult?.offline || sessionResult?.queued) toast('O registro desta sessão ficou na fila deste aparelho e será enviado quando a conexão voltar.')
-      else toast.success('Sessão concluída e próxima revisão agendada.')
-      if (!noteResult.confirmed && !noteResult.unchanged) toast('As anotações ficaram apenas neste aparelho. Reabra este conteúdo para tentar enviá-las à sua conta.')
+      const result=await closures.close(closingDraft.prepare(difficulty),owner)
+      if(owner!==currentUser() || !active.current)return
+      if(!result?.confirmado || !result.fechamento?.sintese)throw Error('unconfirmed')
+      saveStudyHistory(content,result.fechamento.sintese.minutos,difficulty)
+      closingDraft.clear()
       try { window.sessionStorage.removeItem(sessionKey()) } catch { /* Complemento local. */ }
-      continuity.clear(content.id).catch(() => {})
-      navigate('/inicio')
-    } catch {
-      saveStudyHistory(content, minutes, difficulty)
-      toast.error('A sessão ficou salva neste aparelho, mas o servidor não confirmou a conclusão.')
-    } finally { setFinishing(false) }
+      setClosed({closure:result.fechamento,notesPending:!noteResult.confirmed && !noteResult.unchanged})
+    } catch(error) {
+      if(owner===currentUser() && active.current)toast.error(error?.response?.data?.message || 'O servidor não confirmou o fechamento. Seu lembrete foi preservado. Tente concluir novamente; o mesmo envio será conferido para evitar duplicação.')
+    } finally { closingLock.current=false;if(active.current)setFinishing(false) }
   }
 
+  if(closed)return <SessionClosingSummary {...closed} notes={notes} onRetryNotes={async()=>{const result=await flushNotes();if(result.confirmed)setClosed(value=>({...value,notesPending:false,notesReconfirmed:true}));else toast.error('O envio das anotações ainda não foi confirmado. Sua cópia continua neste aparelho.')}}/>
   if (resuming) return <RouteLoading label="Buscando sua sessão em andamento…" />
   if (!content) return <main className="pj-page"><div className="session-missing pj-panel"><span className="pj-eyebrow">Sala de estudo</span><h1>{resumeError ? 'Não conseguimos consultar sua sessão.' : 'Nenhum conteúdo foi escolhido.'}</h1><p>Seu progresso continua na conta. Escolha um conteúdo no cronograma para estudar.</p>{resumeError && <button type="button" onClick={() => window.location.reload()}>Tentar novamente</button>}<button className="pj-button pj-button--primary" onClick={() => navigate('/cronograma')}>Ir ao cronograma</button></div></main>
 
@@ -182,7 +185,7 @@ export default function StudySession() {
       <header className="session-topbar student-page-heading">
         <button type="button" className="session-back" onClick={() => navigate(-1)}>← Voltar</button>
         <div><span className="pj-eyebrow">PlanejAI / Sala de estudo</span><h1>{content.titulo || 'Sessão de estudo'}</h1><p>{content.disciplina || content.area || 'Geral'} {day?.data_estudo ? `· ${new Date(`${String(day.data_estudo).slice(0,10)}T12:00:00`).toLocaleDateString('pt-BR')}` : ''}</p></div>
-        <div className="study-desk-actions"><button type="button" aria-pressed={readingMode} onClick={() => setReadingMode(value => !value)}>{readingMode ? 'Sair do modo leitura' : 'Modo leitura'}</button><button type="button" aria-controls="study-desk-lumi-body" onClick={openLumi}>Abrir Lumi</button><button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : 'Concluir sessão'}</button></div>
+        <div className="study-desk-actions"><button type="button" aria-pressed={readingMode} onClick={() => setReadingMode(value => !value)}>{readingMode ? 'Sair do modo leitura' : 'Modo leitura'}</button><button type="button" aria-controls="study-desk-lumi-body" onClick={openLumi}>Abrir Lumi</button><button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : closingDraft.attempt ? 'Conferir fechamento' : 'Concluir sessão'}</button></div>
       </header>
       <div className="study-desk-context"><p><span className="study-desk-dot" aria-hidden="true" />Um conteúdo de cada vez. Leia, experimente e registre o que fez sentido.</p>{content.id && <SaveFeedback status={continuityStatus} message={continuityStatus === 'saved' ? 'Retomada desta sessão salva na sua conta. Você pode continuar em outro aparelho.' : continuityStatus === 'local' ? 'A retomada em outro aparelho ainda não foi confirmada. Suas anotações têm um aviso próprio de salvamento.' : 'Confirmando a retomada na sua conta…'} onRetry={() => { setContinuityStatus('saving'); continuity.save(content.id).then(() => setContinuityStatus('saved')).catch(() => setContinuityStatus('local')) }} />}</div>
 
@@ -208,7 +211,8 @@ export default function StudySession() {
       </section>
       <Suspense fallback={null}><StudyConnections key={content.id_conteudo || content.titulo} content={content} onAddNote={recordConnection} noteDisabled={loadingNotes}/></Suspense>
       <Suspense fallback={<p role="status">Preparando seus registros…</p>}><LearningJournal content={content} notes={notes} embedded/></Suspense>
-      <section className="session-check study-desk-wrap-up pj-panel" aria-labelledby="session-wrap-up-title"><div><span className="pj-eyebrow">PARA FECHAR ESTE PASSO</span><h2 id="session-wrap-up-title">Como esse conteúdo ficou?</h2><p>Sua resposta define quando ele volta para revisão. Você também pode sair e retomar depois. As explicações e dúvidas são opcionais; use “Salvar na minha conta” antes de sair para acessá-las em outro aparelho.</p></div><div className="study-desk-assessment" role="group" aria-label="Como ficou o conteúdo">{[['DIFICIL','Ainda difícil'],['LEMBREI','Entendi'],['DOMINEI','Consigo explicar']].map(([value,label]) => <button type="button" key={value} disabled={finishing} aria-pressed={difficulty === value} className={difficulty === value ? 'is-active' : ''} onClick={() => setDifficulty(value)}>{label}</button>)}</div><button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : 'Concluir sessão'}</button></section>
+      <section className="session-closure-reminder" aria-labelledby="closure-reminder-title"><span className="pj-eyebrow">DEIXE UM FIO PARA A PRÓXIMA VEZ</span><h2 id="closure-reminder-title">Por onde você quer continuar?</h2><p>Opcional. Seu lembrete será salvo junto com o fechamento e aparecerá na tela Hoje.</p><label htmlFor="closure-reminder">Meu próximo passo</label><textarea id="closure-reminder" rows={3} maxLength={600} value={closingDraft.reminder} disabled={finishing || Boolean(closingDraft.attempt)} onChange={event=>closingDraft.change(event.target.value)} placeholder="Na próxima sessão, tentar resolver sem consultar o exemplo."/><small>{closingDraft.reminder.length}/600 · {closingDraft.attempt?'Um fechamento foi enviado. Tente concluir novamente para conferir o mesmo envio antes de mudar o lembrete.':closingDraft.localSaved?'Rascunho neste aparelho; será confirmado na conta ao concluir.':'Sem cópia local: mantenha a página aberta até confirmar ou baixe o lembrete.'}</small>{!closingDraft.localSaved && <button type="button" onClick={()=>downloadTextCopy(closingDraft.reminder,'planejai-proximo-passo.txt')}>Baixar meu próximo passo</button>}</section>
+      <section className="session-check study-desk-wrap-up pj-panel" aria-labelledby="session-wrap-up-title"><div><span className="pj-eyebrow">PARA FECHAR ESTE PASSO</span><h2 id="session-wrap-up-title">Como esse conteúdo ficou?</h2><p>Sua resposta define quando ele volta para revisão. Você também pode sair e retomar depois. As explicações e dúvidas são opcionais; use “Salvar na minha conta” antes de sair para acessá-las em outro aparelho.</p></div><div className="study-desk-assessment" role="group" aria-label="Como ficou o conteúdo">{[['DIFICIL','Ainda difícil'],['LEMBREI','Entendi'],['DOMINEI','Consigo explicar']].map(([value,label]) => <button type="button" key={value} disabled={finishing || Boolean(closingDraft.attempt)} aria-pressed={difficulty === value} className={difficulty === value ? 'is-active' : ''} onClick={() => setDifficulty(value)}>{label}</button>)}</div><button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : closingDraft.attempt ? 'Conferir fechamento' : 'Concluir sessão'}</button></section>
     </div>
   </main>
 }

@@ -5,6 +5,7 @@ import { cacheGet, cachePut, enqueue, scopedCacheKey, currentUser } from '../uti
 export function createApiClient(basePath) {
   const api = axios.create({ baseURL: apiUrl(basePath), timeout: 15000 })
   api.interceptors.request.use((config) => {
+    if(config.expectedOwner && config.expectedOwner!==currentUser())throw new axios.CanceledError('A conta mudou. Reabra o estudo na conta correta antes de enviar.')
     const token = localStorage.getItem('token')
     if (token) config.headers.Authorization = `Bearer ${token}`
     // getUri uses Axios' actual parameter serializer, including filters and pages.

@@ -52,11 +52,27 @@ let deferredSearch;
 let journalFailure = false;
 let journalDoubt = false;
 let journalResolved = 0;
+let closingFailure=false;
+let notesWriteFailure=false;
+let returnsFixture=null;
+let returnsFailure=false;
 let journalSteps = [{id:11,tipo:'explicacao',texto:'Primeira versão preservada',criado_em:'2026-10-20T12:00:00'}, {id:12,tipo:'explicacao',texto:'Segunda versão com exemplo',criado_em:'2026-10-25T12:00:00'}];
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
+  if(url.endsWith('/aprendizagem/retomadas')) {
+    if(returnsFailure)throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
+    return returnsFixture || {principal:null,explicacao:null,duvida:null,revisao:null,proximoPasso:null};
+  }
+  if(url.endsWith('/aprendizagem/fechamentos')) {
+    if(closingFailure)throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Fechamento ainda não confirmado.'}});
+    const data=JSON.parse(config.data);
+    return {confirmado:true,fechamento:{id:89,id_conteudo:data.idConteudo,proximo_passo:data.proximoPasso,sintese:{titulo:'Leis de Newton',disciplina:'Física',minutos:5,resultado:data.resultado,anotacoes:notesWriteFailure?0:1,explicacoes:2,totalDuvidas:1,duvidas:[{id:71,titulo:'Ainda confundo força e velocidade'}]}}};
+  }
+  if(url.endsWith('/fechamentos/89/retomar'))return {conteudo:{id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'}};
+  if(url.endsWith('/fechamentos/89/retomado')){returnsFixture=null;return {confirmado:true}};
+  if(notesWriteFailure && url.endsWith('/conteudos/9/anotacao') && config.method==='put')throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
   if(url.endsWith('/aprendizagem/diario')) {
     if(config.method==='post') {
       if(journalFailure)throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Não foi possível confirmar.'}});
@@ -1452,4 +1468,118 @@ test('changing a curated connection reveals a distinct direction and leaves essa
     assert.ok(!requests.some(r=>/redacao|redacoes/.test(r.url)));
     assert.ok(!requests.some(r=>r.method==='post'&&/chat|lumi|sessoes|concluir/.test(r.url)));
   }finally{window.sessionStorage.clear();await screen.close()}
+});
+async function openClosingSession() {
+  window.sessionStorage.setItem('900001:active-study-content',JSON.stringify({conteudo:{id:51,id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'},dia:{data_estudo:'2026-10-25'}}));
+  return renderRoute('/estudar');
+}
+test('closing a session confirms its actual summary and saves a personal next step in one request',async()=>{
+  const screen=await openClosingSession();
+  try {
+    await inputValue(document.getElementById('closure-reminder'),'Tentar resolver sem consultar o exemplo.');
+    assert.ok(!requests.some(r=>r.url.endsWith('/fechamentos')));
+    await act(async()=>document.querySelector('.study-desk-actions button:last-child').click());await flush();await flush();
+    assert.ok(document.querySelector('.session-closing'));
+    assert.ok(screen.container.textContent.includes('2 versões de explicações preservadas'));
+    assert.ok(screen.container.textContent.includes('Ainda confundo força e velocidade'));
+    assert.ok(screen.container.textContent.includes('Tentar resolver sem consultar o exemplo.'));
+    assert.ok(document.activeElement===document.querySelector('.session-closing h1'));
+    const posts=requests.filter(r=>r.url.endsWith('/fechamentos'));assert.equal(posts.length,1);
+    assert.equal(JSON.parse(posts[0].data).proximoPasso,'Tentar resolver sem consultar o exemplo.');
+    assert.ok(!requests.some(r=>r.method==='post'&&/sessoes$|revisoes\/|concluir$/.test(r.url)));
+    assert.ok(!localStorage.getItem('900001:study-close:item-51'));
+    const result=await axe.run(document.querySelector('.session-closing'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(v=>v.id),[]);
+  }finally{window.sessionStorage.clear();await screen.close()}
+});
+test('a failed closing preserves its original reminder and retries the same immutable request',async()=>{
+  closingFailure=true;
+  const screen=await openClosingSession();
+  try {
+    await inputValue(document.getElementById('closure-reminder'),'Retomar pelo desenho do problema.');
+    await act(async()=>document.querySelector('.study-desk-actions button:last-child').click());await flush();
+    assert.ok(!document.querySelector('.session-closing'));
+    assert.equal(document.getElementById('closure-reminder').value,'Retomar pelo desenho do problema.');
+    assert.equal(document.getElementById('closure-reminder').disabled,true);
+    assert.ok(localStorage.getItem('900001:study-close:item-51'));
+    closingFailure=false;
+    await act(async()=>document.querySelector('.study-desk-actions button:last-child').click());await flush();
+    const posts=requests.filter(r=>r.url.endsWith('/fechamentos'));assert.equal(posts.length,2);assert.equal(posts[0].data,posts[1].data);
+    assert.ok(document.querySelector('.session-closing'));
+  }finally{closingFailure=false;window.sessionStorage.clear();await screen.close()}
+});
+test('an unconfirmed note remains separate from a confirmed closing and can be retried independently',async()=>{
+  notesWriteFailure=true;
+  const screen=await openClosingSession();
+  try {
+    await act(async()=>document.querySelector('.study-desk-note-link button').click());
+    await inputValue(document.querySelector('.session-notes textarea'),'Minha anotação que precisa ser reenviada.');
+    await act(async()=>document.querySelector('.study-desk-actions button:last-child').click());await flush();
+    assert.ok(document.querySelector('.session-closing'));
+    assert.ok(screen.container.textContent.includes('Suas anotações atuais estão só neste aparelho.'));
+    notesWriteFailure=false;
+    await act(async()=>button('Tentar enviar anotações').click());await flush();
+    assert.ok(!document.querySelector('.closing-note-warning'));
+    assert.equal(requests.filter(r=>r.url.endsWith('/fechamentos')).length,1);
+  }finally{notesWriteFailure=false;window.sessionStorage.clear();await screen.close()}
+});
+test('today prioritizes due personal work and opens the exact explanation instead of the general list',async()=>{
+  const explanation={id:71,titulo:'Minha explicação de Newton',minutos:5,motivo:'Sua última versão foi salva há pelo menos três dias.'};
+  returnsFixture={explicacao:explanation,duvida:{id:72,titulo:'Uma dúvida aberta',minutos:8,motivo:'Ainda em investigação.'},revisao:{id:81,titulo:'Uma revisão pendente',minutos:10,motivo:'Prevista para hoje.'},proximoPasso:null,principal:{...explanation,tipo:'explicacao'}};
+  const screen=await renderRoute('/inicio');
+  try {
+    assert.ok(document.querySelector('.dash-v2-focus h2').textContent.includes('Minha explicação de Newton'));
+    assert.ok(document.querySelector('.study-returns').textContent.includes('Uma dúvida aberta'));
+    assert.ok(document.querySelector('.study-returns').textContent.includes('Uma revisão pendente'));
+    assert.ok(document.querySelector('.dash-v2-focus').textContent.includes('5 min sugeridos'));
+    await act(async()=>document.querySelector('.dash-v2-focus footer button').click());await flush();await flush();
+    assert.ok(document.querySelector('.journal-detail'));
+    assert.ok(!screen.container.textContent.includes('Primeira versão preservada'));
+    assert.ok(requests.some(r=>r.url.endsWith('/diario/71')));
+  }finally{returnsFixture=null;await screen.close()}
+});
+test('today keeps an ongoing session ahead of other suggestions and does not consume a reminder on open',async()=>{
+  const reminder={id:89,titulo:'Próximo estudo',texto:'Fazer um desenho antes de calcular.',minutos:5,motivo:'Você escolheu esse próximo passo.'};
+  returnsFixture={proximoPasso:reminder,principal:{...reminder,tipo:'lembrete'}};
+  continuityFixture={conteudo:{id:51,id_conteudo:9,titulo:'Uma sessão ainda aberta',disciplina:'Física'},dia:{data_estudo:'2026-10-25'}};
+  const screen=await renderRoute('/inicio');
+  try {
+    assert.equal(document.querySelector('.dash-v2-focus h2').textContent,'Uma sessão ainda aberta');
+    await act(async()=>document.querySelector('.study-returns article button').click());await flush();
+    assert.ok(document.querySelector('.study-desk'));
+    assert.ok(!requests.some(r=>r.url.endsWith('/retomado')));
+  }finally{returnsFixture=null;continuityFixture=null;window.sessionStorage.clear();await screen.close()}
+});
+test('a failed return lookup offers retry without claiming the pending work is empty',async()=>{
+  returnsFailure=true;
+  const screen=await renderRoute('/inicio');
+  try {
+    assert.ok(screen.container.textContent.includes('Não conseguimos consultar suas retomadas'));
+    assert.ok(!screen.container.textContent.includes('Nenhuma retomada foi encontrada'));
+    returnsFailure=false;
+    await act(async()=>button('Consultar retomadas novamente').click());await flush();
+    assert.ok(!screen.container.textContent.includes('Não conseguimos consultar suas retomadas'));
+    assert.equal(requests.filter(r=>r.url.endsWith('/retomadas')).length,2);
+  }finally{returnsFailure=false;await screen.close()}
+});
+test('a personal next step is marked done only through its explicit control',async()=>{
+  const reminder={id:89,titulo:'Leis de Newton',texto:'Tentar um exemplo novo.',minutos:5,motivo:'Sua escolha para a próxima sessão.'};
+  returnsFixture={proximoPasso:reminder,principal:{...reminder,tipo:'lembrete'}};
+  const screen=await renderRoute('/inicio');
+  try {
+    assert.ok(!requests.some(r=>r.url.endsWith('/retomado')));
+    await act(async()=>button('Marcar próximo passo como feito').click());await flush();
+    assert.equal(requests.filter(r=>r.url.endsWith('/fechamentos/89/retomado')).length,1);
+    assert.ok(!screen.container.textContent.includes('Tentar um exemplo novo.'));
+  }finally{returnsFixture=null;await screen.close()}
+});
+test('a suggested review opens the review section with the selected item available',async()=>{
+  const review={id:81,titulo:'Uma revisão para retomar',minutos:10,motivo:'A data de revisão já passou.',atrasada:true};
+  returnsFixture={revisao:review,principal:{...review,tipo:'revisao'}};
+  reviewQueueFixture=[{id_revisao:81,id_conteudo:9,titulo:review.titulo,disciplina:'Física',nivel_dominio:2,ultimo_resultado:'DIFICIL'}];
+  const screen=await renderRoute('/inicio');
+  try {
+    await act(async()=>document.querySelector('.dash-v2-focus footer button').click());await flush();await flush();
+    assert.ok(document.getElementById('learning-review-81'));
+    assert.equal(document.querySelector('.learning-tabs button[aria-pressed="true"]').textContent,'Revisões');
+  }finally{returnsFixture=null;reviewQueueFixture=[];await screen.close()}
 });
