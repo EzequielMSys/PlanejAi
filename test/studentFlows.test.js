@@ -59,12 +59,16 @@ let returnsFailure=false;
 let personalFailure=false;
 let intentMode='',deferredIntent;
 let directoryOtherAccount=false;
+let planningWriteFailure=false;
 let deskItems=[{id:31,tipo:'anotacao',id_origem:9,titulo:'Leis de Newton',trecho:'Um exemplo meu',disponivel:true},{id:32,tipo:'duvida',id_origem:71,titulo:'Força e velocidade',disponivel:true}];
 let journalSteps = [{id:11,tipo:'explicacao',texto:'Primeira versão preservada',criado_em:'2026-10-20T12:00:00'}, {id:12,tipo:'explicacao',texto:'Segunda versão com exemplo',criado_em:'2026-10-25T12:00:00'}];
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
+  if(planningWriteFailure && config.method==='post' && (url.endsWith('/perfil') || url.endsWith('/perfil/disponibilidade')))throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
+  if(essayMode==='success' && config.method==='post' && url.endsWith('/redacao'))return {redacao:{id_redacao:88,...JSON.parse(config.data)}};
+  if(essayMode==='workshopSuccess' && config.method==='post' && url.endsWith('/redacao/projetos'))return {id_projeto:84,...JSON.parse(config.data)};
   if(url.endsWith('/redacao/revisar-intencao')){
     if(intentMode==='failure')throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'A Lumi não conseguiu concluir esta revisão.'}});
     const answer={intencao:JSON.parse(config.data).intencao,observacao:'A ideia precisa de uma relação causal.',sugestao:'Explique como a biblioteca aproxima o livro do estudante.',motivo:'O exemplo sustenta a afirmação.',pergunta:'Que situação da sua experiência ilustra isso?'};
@@ -184,12 +188,13 @@ async function getBundle() {
   return bundle;
 }
 async function flush() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); }); }
-async function renderRoute(route, role = 'aluno', userOverrides = {}) {
+async function renderRoute(route, role = 'aluno', userOverrides = {}, stored = {}) {
   setupCompleteFixture = route !== '/onboarding' && !incompleteAccount;
   localStorage.clear();
   const token = [Buffer.from('{"alg":"HS256"}').toString('base64'), Buffer.from(JSON.stringify({ id: 900001, exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64'), 'fixture'].join('.');
   for (const [key, value] of Object.entries({ token, user: JSON.stringify({ ...person(role), ...userOverrides }), perfil_completo: route === '/onboarding' ? 'false' : 'true', primeiro_acesso: route === '/primeiro-acesso' ? 'true' : 'false', theme: 'light' })) localStorage.setItem(key, value);
   requests = [];
+  for(const [key,value] of Object.entries(stored))localStorage.setItem(key,value);
   const { App, ThemeProvider, AccessibilityProvider, ErrorBoundary } = await getBundle();
   const container = document.getElementById('root');
   const root = createRoot(container);
@@ -1812,4 +1817,75 @@ test('activity creation exposes named controls in all seven question formats',as
    const result=await axe.run(document.querySelector('.activity-question-editor').parentElement,{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(v=>v.id),[],type);
   }
  }finally{await screen.close()}
+});
+
+test('today gives a returning student one main action and keeps details expandable',async()=>{
+ continuityFixture={conteudo:{id:51,id_conteudo:9,titulo:'Retomar Newton',disciplina:'Física'}};
+ const screen=await renderRoute('/inicio','aluno',{}, {'900001:today-last-visit:v1':new Date(Date.now()-6*86400000).toISOString()});
+ try{
+  assert.equal(document.querySelector('.today-welcome').dataset.moment,'ongoing');
+  assert.ok(document.querySelector('.dash-v2-focus footer button').textContent.includes('Retomar minha sessão'));
+  const details=document.querySelector('.today-details');assert.equal(details.open,false);
+  await act(async()=>details.querySelector('summary').click());assert.equal(details.open,true);
+  assert.ok(document.querySelector('.dash-v2-agenda'));
+ }finally{continuityFixture=null;await screen.close()}
+});
+
+test('today recognizes a device return without inventing missed study days',async()=>{
+ dashboardLearningFixture={minutosSemana:15,metaSemanal:180,revisoesHoje:0};
+ const screen=await renderRoute('/inicio','aluno',{}, {'900001:today-last-visit:v1':new Date(Date.now()-5*86400000).toISOString()});
+ try{assert.equal(document.querySelector('.today-welcome').dataset.moment,'return');assert.match(document.querySelector('.today-welcome').textContent,/neste aparelho/);assert.equal(requests.filter(x=>x.method==='post').length,0)}finally{dashboardLearningFixture=null;await screen.close()}
+});
+
+test('planning failure retains account scoped choices and retries only on demand',async()=>{
+ onboardingProfileFixture={areas_foco:'Física',objetivo:'ENEM',tempo_diario_min:45};planningWriteFailure=true;
+ const screen=await renderRoute('/onboarding');
+ try{
+  await act(async()=>button('Voltar').click());
+  await inputValue(document.getElementById('setup-minutes'),'50');
+  await act(async()=>document.querySelector('.setup-page form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+  assert.ok(document.querySelector('.save-feedback[data-state="error"]'));
+  assert.equal(JSON.parse(localStorage.getItem('900001:planning-draft:v1')).value.formData.tempo_diario_min,50);
+  assert.equal(requests.filter(x=>x.method==='post'&&x.url.endsWith('/perfil')).length,1);
+  planningWriteFailure=false;
+  await act(async()=>button('Tentar salvar novamente').click());await flush();
+  assert.match(document.querySelector('.save-feedback[data-state="saved"]').textContent,/Matérias salvas/);
+  assert.equal(requests.filter(x=>x.method==='post'&&x.url.endsWith('/perfil')).length,2);
+ }finally{planningWriteFailure=false;onboardingProfileFixture=null;await screen.close()}
+});
+
+test('essay retry confirms the saved version before clearing its local draft',async()=>{
+ const screen=await renderRoute('/redacoes');essayMode='failure';
+ try{
+  await act(async()=>document.querySelector('.redacoes-intro-actions button').click());await flush();
+  await inputValue(document.getElementById('essay-topic'),'Educação e leitura');
+  const text='Bibliotecas próximas facilitam o acesso à leitura e permitem compartilhar experiências. '.repeat(5);
+  await inputValue(document.querySelector('textarea[aria-label="Texto da redação"]'),text);
+  await act(async()=>button('Finalizar e enviar').click());await flush();
+  assert.equal(JSON.parse(localStorage.getItem('900001:essay-draft:v3')).texto,text);
+  essayMode='success';await act(async()=>button('Tentar salvar novamente').click());await flush();
+  assert.ok(document.querySelector('.redacoes-page .save-feedback[data-state="saved"]'));
+  assert.equal(localStorage.getItem('900001:essay-draft:v3'),null);
+  assert.equal(document.querySelector('.essay-studio'),null);
+ }finally{essayMode='';await screen.close()}
+});
+
+test('workshop recovers an unsent device draft explicitly and clears it after confirmation',async()=>{
+ const draft={tema:'Minha tese preservada',tese:'Uma posição própria',argumentoUm:'',argumentoDois:'',repertorio:'',intervencao:'',rascunho:'',etapa:'TEMA'};
+ const screen=await renderRoute('/redacoes','aluno',{}, {'900001:writing-workshop-draft:v1':JSON.stringify(draft)});
+ try{
+  await act(async()=>button('Abrir oficina →').click());await flush();
+  assert.equal(document.querySelector('.writing-workshop-editor input').value,'');
+  await act(async()=>button('Recuperar rascunho da oficina').click());
+  assert.equal(document.querySelector('.writing-workshop-editor input').value,draft.tema);
+  assert.equal(requests.filter(x=>x.method==='post'&&x.url.endsWith('/redacao/projetos')).length,0);
+  essayMode='workshopSuccess';await act(async()=>button('Salvar esta etapa').click());await flush();
+  assert.ok(document.querySelector('.writing-workshop .save-feedback[data-state="saved"]'));
+  assert.equal(localStorage.getItem('900001:writing-workshop-draft:v1'),null);
+ }finally{essayMode='';await screen.close()}
+});
+
+test('welcome ignores another accounts visit and gives first study priority',async()=>{
+ const screen=await renderRoute('/inicio','aluno',{}, {'900002:today-last-visit:v1':new Date(Date.now()-6*86400000).toISOString()});
+ try{assert.equal(document.querySelector('.today-welcome').dataset.moment,'first');assert.ok(document.querySelector('.first-study-primary'));assert.ok(!document.querySelector('.today-details'))}finally{await screen.close()}
 });

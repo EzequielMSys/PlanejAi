@@ -123,7 +123,7 @@ export default function StudySession() {
   useEffect(()=>{active.current=true;return()=>{active.current=false}},[])
   const [closed,setClosed] = useState(null)
 
-  const { notes, setNotes, status: noteStatus, retry: retryNotes, loading: loadingNotes, flush: flushNotes } = useStudyNotes(content?.id_conteudo, content?.id)
+  const { notes, setNotes, status: noteStatus, savedAt: notesSavedAt, retry: retryNotes, loading: loadingNotes, flush: flushNotes } = useStudyNotes(content?.id_conteudo, content?.id)
   function recordConnection(connection) {
     const marker=`Conexão de estudo: ${connection.fromTitle} → ${connection.toTitle}`
     setNotes(value=>value.includes(marker) ? value : `${value}${value?'\n\n':''}${marker}\n${connection.why}\n\nPergunta: ${connection.question}\nMinha explicação:\n`)
@@ -182,7 +182,7 @@ export default function StudySession() {
   return <main className={`session-page pj-page study-desk${readingMode ? ' is-reading-mode' : ''}`}>
     <div className="pj-wrap">
       <AreaSignature area="study"/>
-      {noteStatus === 'unavailable' && tab !== 'notes' && <SaveFeedback status={noteStatus} onRetry={retryNotes} />}
+      {noteStatus === 'unavailable' && tab !== 'notes' && <SaveFeedback status={noteStatus} savedAt={notesSavedAt} onRetry={retryNotes} />}
       <header className="session-topbar student-page-heading">
         <button type="button" className="session-back" onClick={() => navigate(-1)}>← Voltar</button>
         <div><span className="pj-eyebrow">PlanejAI / Sala de estudo</span><h1>{content.titulo || 'Sessão de estudo'}</h1><p>{content.disciplina || content.area || 'Geral'} {day?.data_estudo ? `· ${new Date(`${String(day.data_estudo).slice(0,10)}T12:00:00`).toLocaleDateString('pt-BR')}` : ''}</p></div>
@@ -197,7 +197,7 @@ export default function StudySession() {
           {noteStatus === 'unsaved' && <button type="button" className="study-button" onClick={() => downloadTextCopy(notes, 'planejai-anotacoes.txt')}>Baixar cópia das anotações</button>}
           <div id="session-canvas" className="session-canvas" data-view={tab}>
             {tab === 'material' ? <><DeskPin type="material" id={content.id_conteudo}/><StudyMaterial content={content} onTutorRequest={pensarComLumi} /></> : tab === 'guide' ? <div className="session-guide-wrap"><StudyGuide material={content} onTutorRequest={pensarComLumi} sourceUrl={isExternalStudySource(materialUrl) ? materialUrl : undefined} /></div> : <div className="session-notes">
-              <header className="session-notes-header"><div><span className="pj-eyebrow">CADERNO DA SESSÃO</span><h2>Organize suas ideias.</h2><p>Anote o que entendeu e o que quer perguntar à Lumi.</p></div><div className="session-notes-tools"><SaveFeedback status={noteStatus} onRetry={retryNotes} />{!loadingNotes && <DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? '\n' : ''}${texto}`)}/>}</div></header>
+              <header className="session-notes-header"><div><span className="pj-eyebrow">CADERNO DA SESSÃO</span><h2>Organize suas ideias.</h2><p>Anote o que entendeu e o que quer perguntar à Lumi.</p></div><div className="session-notes-tools"><SaveFeedback status={noteStatus} savedAt={notesSavedAt} onRetry={retryNotes} />{!loadingNotes && <DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? '\n' : ''}${texto}`)}/>}</div></header>
               <div className="session-note-prompts"><span>ESTRUTURE SUA REVISÃO</span><div><button type="button" disabled={loadingNotes} onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Ideia principal\n`)}>+ Ideia principal</button><button type="button" disabled={loadingNotes} onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Minha dúvida\n`)}>+ Minha dúvida</button><button type="button" disabled={loadingNotes} onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Exemplo próprio\n`)}>+ Exemplo próprio</button></div></div>
               <label className="session-notes-editor"><span className="sr-only">Anotações da sessão</span><textarea disabled={loadingNotes} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Escreva com suas palavras…\n\nO que ficou claro? O que ainda precisa de outra explicação?" /><small>{notes.length} caracteres</small></label>
               {notes.trim()&&noteStatus==='saved'&&<DeskPin type="anotacao" id={content.id_conteudo}/>}

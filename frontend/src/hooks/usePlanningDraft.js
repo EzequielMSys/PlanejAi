@@ -25,5 +25,10 @@ export default function usePlanningDraft(value, ready) {
   }, [serialized, ready, key])
   useExitWarning(status === 'unsaved')
   const clear = () => { if (owner.current !== currentUser()) return; cleared.current = true; try { localStorage.removeItem(key) } catch { /* Não afirmar remoção; a conta foi confirmada. */ } setOffer(null); setStatus('ready') }
-  return { offer: owner.current === currentUser() ? offer : null, status, dismiss: () => setOffer(null), clear }
+  const retry = () => {
+    if (!ready || owner.current !== currentUser() || cleared.current) return
+    try { localStorage.setItem(key, JSON.stringify({version:1,value,savedAt:new Date().toISOString()})); setStatus('local') }
+    catch { setStatus('unsaved') }
+  }
+  return { offer: owner.current === currentUser() ? offer : null, status, retry, dismiss: () => setOffer(null), clear }
 }

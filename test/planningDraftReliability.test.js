@@ -23,3 +23,13 @@ test('unrecoverable storage failure warns on page exit and never claims a saved 
  localStorage.clear();localStorage.setItem('user',JSON.stringify({id:101}));const close=await mount(),original=dom.window.Storage.prototype.setItem;
  try{dom.window.Storage.prototype.setItem=()=>{throw Error('quota')};await React.act(async()=>update({...value,step:2}));assert.equal(current.status,'unsaved');const event=new window.Event('beforeunload',{cancelable:true});window.dispatchEvent(event);assert.equal(event.defaultPrevented,true)}finally{dom.window.Storage.prototype.setItem=original;await close()}
 });
+
+test('planning storage retry persists the latest choices after quota recovers',async()=>{
+ localStorage.clear();localStorage.setItem('user',JSON.stringify({id:101}));const close=await mount(),original=dom.window.Storage.prototype.setItem;
+ try{
+  dom.window.Storage.prototype.setItem=()=>{throw Error('quota')};
+  await React.act(async()=>update({...value,formData:{...value.formData,areas_foco:'Física'}}));assert.equal(current.status,'unsaved');
+  dom.window.Storage.prototype.setItem=original;await React.act(async()=>current.retry());
+  assert.equal(current.status,'local');assert.equal(JSON.parse(localStorage.getItem('101:planning-draft:v1')).value.formData.areas_foco,'Física');
+ }finally{dom.window.Storage.prototype.setItem=original;await close()}
+});

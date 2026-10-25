@@ -19,6 +19,7 @@ import './RedacoesExperience.css'
 import { essayDraftKey, readEssayDraft, markEssayQueued } from '../utils/essayDraft'
 import RecoveryState from '../components/RecoveryState'
 import RouteLoading from '../components/RouteLoading'
+import SaveFeedback from '../components/SaveFeedback'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -141,6 +142,7 @@ export default function Redacoes() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [sendError, setSendError] = useState('')
+  const [confirmedAt,setConfirmedAt]=useState(null)
   const [queuedVersion, setQueuedVersion] = useState(() => readEssayDraft()?.queuedVersion || null)
   const [enviando, setEnviando] = useState(false)
   const [modoEscrita, setModoEscrita] = useState(false)
@@ -241,8 +243,10 @@ export default function Redacoes() {
         setQueuedVersion(JSON.stringify(form)); markEssayQueued(form, currentForm.current)
         return
       }
+      if(!novaRedacao?.id_redacao)throw Error('unconfirmed')
 
       setRedacoes((prev) => [novaRedacao, ...prev])
+      setConfirmedAt(new Date().toISOString())
       if (JSON.stringify(currentForm.current) !== JSON.stringify(form)) {
         toast.success('A versão enviada foi confirmada. As alterações posteriores continuam no rascunho.')
         return
@@ -303,6 +307,7 @@ export default function Redacoes() {
       {!loadError && requestedEssay && !redacoes.some(item => String(item.id_redacao) === requestedEssay) && <p role="status">A redação encontrada na busca não está mais neste histórico. Confira os textos disponíveis abaixo.</p>}
       <div className="redacoes-shell max-w-6xl mx-auto">
       <AreaSignature area="writing"/>
+      {confirmedAt && !modoEscrita && <SaveFeedback status="saved" savedAt={confirmedAt} message="Redação salva na sua conta. Ela já está no histórico abaixo." />}
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <section className="redacoes-intro" aria-labelledby="redacoes-title">
             <div className="redacoes-intro-copy">

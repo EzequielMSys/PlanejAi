@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import perfilService from '../services/perfilService'
@@ -43,6 +43,10 @@ export default function Onboarding() {
 
   const [disponibilidade, setDisponibilidade] = useState(diasPadrao)
   const planningDraft = usePlanningDraft({ formData, disponibilidade, step }, !restoring && !restoreError)
+  const [accountSave,setAccountSave]=useState(null)
+  const saving=useRef(false)
+  const changedPlan=JSON.stringify({formData,disponibilidade})
+  useEffect(()=>{setAccountSave(current=>current?.status==='saved'?null:current)},[changedPlan])
   useEffect(() => {
     let active = true
     perfilService.obterPerfilCompleto().then(({ perfil, disponibilidade: days }) => {
@@ -60,6 +64,7 @@ export default function Onboarding() {
 
   const handlePerfilSubmit = async (e) => {
     e.preventDefault()
+    if(saving.current)return
 
 if (!formData.objetivo || !formData.areas_foco.trim()) {
       toast.error('Preencha todos os campos obrigatórios.')
@@ -80,26 +85,34 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
       return
     }
 
+    saving.current=true
     setLoading(true)
+    setAccountSave({status:'saving',part:'profile',message:'Salvando suas matérias na conta…'})
 
     try {
       await perfilService.salvarPerfil(formData)
+      setAccountSave({status:'saved',message:'Matérias salvas na sua conta. Confirme também seus horários.',savedAt:new Date().toISOString()})
       setStep(2)
     } catch (error) {
+      setAccountSave({status:'error',part:'profile',message:'Não foi possível salvar suas matérias na conta. Suas escolhas continuam aqui; tente novamente.'})
       toast.error(error.response?.data?.message || 'Erro ao salvar perfil.')
     } finally {
+      saving.current=false
       setLoading(false)
     }
   }
 
   const handleDisponibilidadeSubmit = async (e) => {
     e.preventDefault()
+    if(saving.current)return
     const available = disponibilidade.filter(day => !Number(day.ocupado))
     if (!available.length || available.some(day => !day.hora_inicio || !day.hora_fim || day.hora_inicio >= day.hora_fim)) {
       toast.error('Escolha pelo menos um dia com horário final depois do inicial.')
       return
     }
+    saving.current=true
     setLoading(true)
+    setAccountSave({status:'saving',part:'availability',message:'Salvando seus horários na conta…'})
 
     try {
       const diasParaSalvar = disponibilidade.map(({ label, ...dia }) => dia)
@@ -111,8 +124,10 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
       toast.success('Preferências salvas na sua conta. Agora você pode gerar seu plano.')
       navigate('/cronograma')
     } catch (error) {
+      setAccountSave({status:'error',part:'availability',message:'Não foi possível salvar seus horários na conta. O planejamento continua aqui; tente novamente.'})
       toast.error(error.response?.data?.message || 'Erro ao salvar disponibilidade.')
     } finally {
+      saving.current=false
       setLoading(false)
     }
   }
@@ -146,7 +161,8 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
 
       <div className="max-w-6xl mx-auto relative z-10">
         {planningDraft.offer && <section className="setup-invitation" aria-label="Recuperar planejamento"><p>Há um rascunho de planejamento neste aparelho. Ele ainda não substituiu os dados da sua conta.</p><button type="button" onClick={() => { const value = planningDraft.offer.value; setFormData(current => ({ ...current, ...value.formData })); setDisponibilidade(value.disponibilidade); setStep(value.step === 2 ? 2 : 1); planningDraft.dismiss() }}>Recuperar rascunho</button><button type="button" onClick={planningDraft.dismiss}>Manter dados da conta</button></section>}
-        {planningDraft.status !== 'ready' && <SaveFeedback status={planningDraft.status} message={planningDraft.status === 'local' ? 'Rascunho guardado apenas neste aparelho. Confirme as etapas para salvar na sua conta.' : 'Não foi possível guardar o rascunho. Mantenha esta aba aberta até confirmar o salvamento na conta.'} />}
+        {planningDraft.status !== 'ready' && <SaveFeedback status={planningDraft.status} onRetry={planningDraft.status === 'unsaved' ? planningDraft.retry : undefined} message={planningDraft.status === 'local' ? 'Rascunho guardado apenas neste aparelho. Confirme as etapas para salvar na sua conta.' : 'Não foi possível guardar o rascunho. Mantenha esta aba aberta até confirmar o salvamento na conta.'} />}
+        {accountSave && <SaveFeedback {...accountSave} onRetry={accountSave.status === 'error' ? () => (accountSave.part === 'profile' ? handlePerfilSubmit : handleDisponibilidadeSubmit)({preventDefault(){}}) : undefined} />}
         <div className="setup-invitation"><p>Quer conhecer o PlanejAI antes de planejar?</p><button type="button" disabled={loading} onClick={() => navigate('/inicio')}>Explorar primeiro →</button></div>
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <div className="setup-hero mb-7 overflow-hidden rounded-[2rem] border border-white/10 bg-[rgb(var(--pn-primaria-forte-rgb)/1)] p-6 shadow-[0_24px_80px_-30px_rgba(31,27,72,.65)] sm:p-8 lg:p-10 relative">

@@ -81,7 +81,7 @@ export default function useStudyNotes(contentId, fallbackId) {
         }
       } catch {
         if (isCurrent() && version === current.version) {
-          setStatus(draft(text) ? 'local' : 'unsaved')
+          setStatus(draft(text) ? 'error' : 'unsaved')
           setSavedAt(new Date().toISOString())
         }
       } finally {

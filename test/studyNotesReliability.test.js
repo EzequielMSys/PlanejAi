@@ -36,7 +36,7 @@ test('failed note save keeps a scoped draft and explicit retry confirms server p
     await React.act(async () => current.setNotes('Rascunho importante'))
     assert.equal(JSON.parse(localStorage.getItem('101:study-note:1')).text, 'Rascunho importante')
     await tick()
-    assert.equal(current.status, 'local')
+    assert.equal(current.status, 'error')
     fail = false
     await React.act(async () => current.retry())
     assert.equal(current.status, 'saved')

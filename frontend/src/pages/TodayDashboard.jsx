@@ -19,6 +19,7 @@ import '../components/StudyRecommendations.css'
 import closures from '../services/sessionClosureService'
 import StudyReturns from '../components/StudyReturns'
 import {currentUser} from '../utils/offlineStore'
+import {readTodayVisit,rememberTodayVisit,todayWelcome} from '../utils/todayWelcome'
 
 const done = (item) => Number(item?.concluido) === 1 || item?.status === 'concluído'
 const greeting = () => new Date().getHours() < 12 ? 'Bom dia' : new Date().getHours() < 18 ? 'Boa tarde' : 'Boa noite'
@@ -33,6 +34,8 @@ function localMinutes(week = false) {
 }
 
 export default function TodayDashboard() {
+  const [lastVisit]=useState(readTodayVisit)
+  useEffect(()=>{rememberTodayVisit()},[])
   const { user, isAdmin, isDono, perfilCompleto } = useAuth()
   const [returns,setReturns]=useState(null)
   const [returnsStatus,setReturnsStatus]=useState('loading')
@@ -190,14 +193,16 @@ export default function TodayDashboard() {
   if (loading) return <RouteLoading />
   if (planError && !returnSuggestion && !resume) return <main className="dash-v2"><section className="daily-adjust" role="alert"><h1>Seu plano continua salvo.</h1><p>Não conseguimos consultá-lo agora. Tente carregar novamente para continuar.</p><button type="button" className="study-button" onClick={() => { setLoading(true); reloadPlan().catch(() => setPlanError(true)).finally(() => setLoading(false)) }}>Tentar novamente</button></section></main>
   const firstStudy = resumeStatus === 'ready' && returnsStatus==='ready' && !returnSuggestion && user?.tipo === 'aluno' && !resume && !data.schedules.length && data.learning && !weeklyMinutes && !reviews && !data.learning.errosPendentes && !data.learning.porDisciplina?.length && !data.evolution.length
+  const welcome=todayWelcome({firstStudy,resume,lastVisit})
 
   return <main className="dash-v2">
     <div className="dash-v2-wrap">
       <AreaSignature area="today"/>
       <header className="dash-v2-heading">
         <div><span>HOJE · UM PASSO DE CADA VEZ</span><h1>{greeting()}, {name}.</h1><p>{date}</p></div>
-        <div>{user?.tipo === 'aluno' && <button type="button" onClick={() => navigate('/sessao-guiada')}>Montar sessão guiada</button>}<button type="button" onClick={() => navigate('/cronograma')}>Ver cronograma <b>→</b></button></div>
+        <details className="today-shortcuts"><summary>Outras opções</summary><div>{user?.tipo === 'aluno' && <button type="button" onClick={() => navigate('/sessao-guiada')}>Montar sessão guiada</button>}<button type="button" onClick={() => navigate('/cronograma')}>Ver cronograma <b>→</b></button></div></details>
       </header>
+      <section className="today-welcome" data-moment={welcome.kind} aria-labelledby="today-welcome-title"><span aria-hidden="true">↳</span><div><h2 id="today-welcome-title">{welcome.title}</h2><p>{welcome.text}</p></div></section>
       {planError && <div role="alert" className="study-return-note"><p>O cronograma não pôde ser consultado. Você ainda pode retomar os registros confirmados abaixo.</p><button type="button" onClick={()=>reloadPlan().catch(()=>setPlanError(true))}>Consultar cronograma novamente</button></div>}
 
       {resumeStatus !== 'ready' && <div className="study-return-note" role="status"><p>{resumeStatus === 'loading' ? 'Conferindo onde você parou…' : 'Não conseguimos consultar sua última sessão. Seu histórico não foi apagado.'}</p>{resumeStatus === 'error' && <button type="button" onClick={reloadResume}>Consultar minha retomada</button>}</div>}
@@ -228,6 +233,7 @@ export default function TodayDashboard() {
       <div className="today-review-strip"><span><strong>{!data.learning ? 'Revisões a consultar' : reviews ? `${reviews} ${reviews === 1 ? 'revisão pronta' : 'revisões prontas'}` : 'Revisões em dia'}</strong><small>{!data.learning ? 'Consulte a aprendizagem para conferir sua fila.' : reviews ? 'Retome o que aprendeu antes que fique distante.' : 'Novas revisões aparecem conforme você estuda.'}</small></span><button type="button" onClick={() => navigate('/aprendizagem')}>{reviews ? 'Abrir revisões →' : 'Ver aprendizagem →'}</button></div>
       <DailyPlanActions schedules={data.schedules} onSaved={reloadPlan} />
 
+      <details className="today-details"><summary>Ver detalhes do meu dia <span>Roteiro, progresso e sugestões</span></summary>
       {data.learning && !learningFailed && <LearningSignals summary={data.learning} reviews={data.reviews} evolution={data.evolution} />}
 
       <section className="dash-v2-content">
@@ -241,7 +247,7 @@ export default function TodayDashboard() {
           <article className="dash-v2-week"><header><span>DIAS DO PLANO CONCLUÍDOS</span><strong>{completed}/{days.length || 0}</strong></header><div role="img" aria-label={recentDays.map((day) => `${day.label}: ${day.count}`).join('; ')}>{recentDays.map((day, index) => <i key={index} title={`${day.label}: ${day.count}`} style={{ height: `${Math.max(4, day.count / maxRecent * 100)}%`, opacity: day.count ? 1 : .2 }} />)}</div><p>Últimos 7 dias do cronograma. Dias sem conclusão aparecem na linha de base.</p></article>
           {(isAdmin || isDono || user?.tipo === 'docente') && <button type="button" className="dash-v2-manager" onClick={() => navigate(isDono ? '/dono' : '/dashboard-gestor')}>Acessar central de gestão <span>↗</span></button>}
         </aside>
-      </section></>}
+      </section></details></>}
     </div>
   </main>
 }
