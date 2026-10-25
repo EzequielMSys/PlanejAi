@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { listSupport, sendSupport, replySupport, exportAccountData } from '../services/operationsService'
+import { listSupport, sendSupport, replySupport, exportAccountData, supportCapture } from '../services/operationsService'
 import './SupportPanel.css'
 
-const labels = { PROBLEMA: 'Problema no site', DUVIDA: 'Dúvida', EXCLUSAO: 'Exclusão da conta', ABERTO: 'Aberto', EM_ATENDIMENTO: 'Em atendimento', RESOLVIDO: 'Resolvido' }
+const labels = { PROBLEMA: 'Problema no site', MELHORIA:'Sugestão de melhoria', DUVIDA: 'Dúvida', EXCLUSAO: 'Exclusão da conta', ABERTO: 'Aberto', EM_ATENDIMENTO: 'Em atendimento', RESOLVIDO: 'Resolvido' }
 const errorMessage = error => error.response?.data?.message || error.response?.data?.error || error.message || 'Não foi possível concluir. Tente novamente.'
 
 export default function SupportPanel({ owner = false }) {
@@ -42,7 +42,7 @@ export default function SupportPanel({ owner = false }) {
     {notice && <p role="status">{notice}</p>}{error && <p role="alert">{error}</p>}
     <div className="support-heading"><h3>{owner ? 'Últimos 100 pedidos' : 'Meus pedidos'}</h3><button type="button" disabled={loading || busy} onClick={load}>{loading ? 'Consultando…' : 'Atualizar pedidos'}</button></div>
     {!loading && !error && requests.length === 0 && <p>Nenhum pedido por aqui.</p>}
-    {requests.map(request => <article key={request.id}><h4>#{request.id} · {labels[request.categoria]}</h4><small>{labels[request.status]} · {new Date(request.criado_em).toLocaleDateString('pt-BR')}</small>{owner && <p>{request.nome} · {request.email}</p>}<p className="support-message">{request.mensagem}</p>{request.resposta && <p className="support-message"><strong>Resposta da equipe: </strong>{request.resposta}</p>}{owner && <Reply request={request} onDone={load} onError={setError} />}</article>)}
+    {requests.map(request => <article key={request.id}><h4>#{request.id} · {labels[request.categoria]}</h4><small>{labels[request.status]} · {new Date(request.criado_em).toLocaleDateString('pt-BR')}</small>{owner && <p>{request.nome} · {request.email}</p>}<p className="support-message">{request.mensagem}</p>{request.pagina&&<p>Página: <strong>{request.pagina}</strong></p>}{request.detalhes&&<p className="support-message">{request.detalhes}</p>}{!!Number(request.tem_captura)&&<Capture id={request.id}/>}{request.resposta && <p className="support-message"><strong>Resposta da equipe: </strong>{request.resposta}</p>}{owner && <Reply request={request} onDone={load} onError={setError} />}</article>)}
   </section>
 }
 
@@ -55,4 +55,11 @@ function Reply({ request, onDone, onError }) {
     try { await replySupport(request.id, { resposta: response, status }); await onDone() } catch (error) { onError(errorMessage(error)) } finally { setBusy(false) }
   }
   return <form onSubmit={submit}><fieldset disabled={busy}><label>Resposta ao pedido #{request.id}<textarea rows={3} required minLength={10} maxLength={2000} value={response} onChange={event => setResponse(event.target.value)} /></label><label>Estado<select value={status} onChange={event => setStatus(event.target.value)}>{['ABERTO', 'EM_ATENDIMENTO', 'RESOLVIDO'].map(value => <option key={value} value={value}>{labels[value]}</option>)}</select></label><button>{busy ? 'Salvando…' : 'Salvar atendimento'}</button></fieldset></form>
+}
+
+function Capture({id}){
+ const [url,setUrl]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
+ useEffect(()=>()=>{if(url)URL.revokeObjectURL(url)},[url])
+ async function open(){setBusy(true);setError('');try{const data=await supportCapture(id);setUrl(URL.createObjectURL(data))}catch{setError('Não foi possível abrir a captura. Confira sua conexão e tente novamente.')}finally{setBusy(false)}}
+ return <div className="support-capture">{url?<img src={url} alt={`Captura anexada ao pedido ${id}`}/>:<button type="button" disabled={busy} onClick={open}>{busy?'Consultando captura…':'Ver captura anexada'}</button>}{error&&<p role="alert">{error}</p>}</div>
 }

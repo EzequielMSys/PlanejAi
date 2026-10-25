@@ -61,4 +61,4 @@ async function validarArquivoEnviado(file) {
   throw error
 }
 
-module.exports = { validarArquivoEnviado, removerArquivo }
+module.exports = { validarArquivoEnviado, removerArquivo, isAcceptedSignature }

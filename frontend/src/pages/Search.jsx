@@ -1,12 +1,14 @@
 import AreaSignature from '../components/AreaSignature'
 import DeskPin from '../components/DeskPin'
 import { useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import searchService from '../services/searchService'
 import { currentUser } from '../utils/offlineStore'
 import { resolveProtectedAsset } from '../services/fileService'
 import './Search.css'
+import {readRecentSearches,rememberSearch,clearRecentSearches,highlightParts} from '../utils/searchExperience'
+function Highlight({text,query}){return highlightParts(text,query).map((part,index)=>part.match?<mark key={index}>{part.text}</mark>:part.text)}
 
 const FILTERS = [['todos','Tudo'],['materias','Matérias'],['materiais','Materiais'],['anotacoes','Anotações'],['redacoes','Redações']]
 function Resource({title,source}) {
@@ -43,11 +45,17 @@ function ContentDetails({item,type}) {
     <Link to="/estudar" state={{conteudo:data,ferramenta:type==='anotacoes'?'notes':'guide'}}> {type==='anotacoes'?'Abrir minhas anotações':'Abrir na sala de estudo'} <span aria-hidden="true">→</span></Link>
   </div>
 }
-function Result({item,type,onSubject}) {
+function Result({item,type,onSubject,query}) {
   const [expanded,setExpanded]=useState(false)
+  const navigate=useNavigate(),[opening,setOpening]=useState(false),[openError,setOpenError]=useState('')
+  const busy=useRef(false),request=useRef(null)
+  useEffect(()=>()=>request.current?.abort(),[])
+  async function open(){if(busy.current)return;busy.current=true;setOpening(true);setOpenError('');const owner=currentUser(),controller=new window.AbortController();request.current=controller;try{const data=await searchService.content(item.id,controller.signal,type==='anotacoes');if(!data?.id_conteudo)throw Error('invalid');if(!controller.signal.aborted&&owner===currentUser())navigate('/estudar',{state:{conteudo:data,ferramenta:type==='anotacoes'?'notes':'guide'}})}catch{if(!controller.signal.aborted)setOpenError('Não foi possível abrir este registro. Seu acesso pode ter mudado; tente novamente.')}finally{busy.current=false;setOpening(false)}}
   const id=`search-${type}-${item.id}`
   return <article className="unified-search-card">
-    <div><span className="search-result-meta">{item.disciplina || (type==='redacoes'?'Texto salvo na sua conta':type==='materias'?'Matéria do seu acervo':'Seu espaço de estudo')}</span><h3>{item.titulo}</h3>{item.trecho&&<p>{item.trecho}</p>}</div>
+    <div><span className="search-result-meta">{item.disciplina || (type==='redacoes'?'Texto salvo na sua conta':type==='materias'?'Matéria do seu acervo':'Seu espaço de estudo')}</span><h3><Highlight text={item.titulo} query={query}/></h3>{item.trecho&&<p><Highlight text={item.trecho} query={query}/></p>}</div>
+    {['materiais','anotacoes'].includes(type)&&<button type="button" disabled={opening} onClick={open}>{opening?'Conferindo acesso…':type==='anotacoes'?'Abrir anotação →':'Abrir material →'}</button>}
+    {openError&&<p role="alert">{openError}</p>}
     {type==='materias'?<button type="button" onClick={()=>onSubject(item.titulo)}>Encontrar materiais <span aria-hidden="true">→</span></button>:type==='redacoes'?<Link to={`/redacoes?redacao=${encodeURIComponent(item.id)}`}>Abrir redação <span aria-hidden="true">→</span></Link>:<><button type="button" aria-expanded={expanded} aria-controls={id} onClick={()=>setExpanded(value=>!value)}>{expanded?'Recolher detalhes':type==='anotacoes'?'Ver anotação':'Ver materiais'} <span aria-hidden="true">{expanded?'−':'+'}</span></button><div id={id} hidden={!expanded}>{expanded&&<ContentDetails item={item} type={type}/>}</div></>}
     {type!=='materias'&&<DeskPin type={{anotacoes:'anotacao',materiais:'material',redacoes:'redacao'}[type]} id={item.id}/>}
   </article>
@@ -61,6 +69,8 @@ export default function Search() {
   const [status,setStatus]=useState('idle')
   const [attempt,setAttempt]=useState(0)
   const [validation,setValidation]=useState('')
+  const [recent,setRecent]=useState(readRecentSearches),[recentError,setRecentError]=useState('')
+  useEffect(()=>{setRecent(readRecentSearches());setRecentError('')},[user?.id,user?.id_usuario])
   const inputRef=useRef(null)
   useEffect(()=>setInput(q),[q])
   useEffect(()=>{
@@ -70,7 +80,7 @@ export default function Search() {
     const controller=new window.AbortController(), owner=currentUser()
     setStatus('loading')
     searchService.search({q,tipo:type,pagina:page},controller.signal).then(value=>{
-      if(!controller.signal.aborted&&owner===currentUser()){ if(!Array.isArray(value?.grupos)) throw new Error('Resposta inválida');setData(value);setStatus('ready') }
+      if(!controller.signal.aborted&&owner===currentUser()){ if(!Array.isArray(value?.grupos)) throw new Error('Resposta inválida');setData(value);setStatus('ready');if(rememberSearch(q,type)){setRecent(readRecentSearches());setRecentError('')}else setRecentError('Não foi possível guardar esta busca neste aparelho.') }
     }).catch(()=>{if(!controller.signal.aborted&&owner===currentUser())setStatus('error')})
     return ()=>controller.abort()
   },[q,type,page,attempt,user?.id,user?.id_usuario])
@@ -82,13 +92,16 @@ export default function Search() {
     <form className="unified-search-form" role="search" aria-label="Buscar no acervo" onSubmit={submit}><label htmlFor="unified-query">O que você quer encontrar?</label><div><input id="unified-query" ref={inputRef} type="search" maxLength={100} value={input} onChange={event=>{setInput(event.target.value);setValidation('')}} placeholder="Um assunto, um título ou um trecho…" aria-invalid={Boolean(validation)} aria-describedby={validation?'unified-query-error':'unified-search-scope'}/><button type="submit">Buscar</button></div>{validation&&<p id="unified-query-error" role="alert">{validation}</p>}</form>
     <p id="unified-search-scope" className="unified-search-scope">Anotações e redações são pessoais. A busca considera itens salvos na conta; rascunhos apenas neste aparelho ficam fora dos resultados.</p>
     <div className="unified-search-filters" role="group" aria-label="Tipo de resultado">{FILTERS.map(([key,label])=><button type="button" key={key} aria-pressed={type===key} onClick={()=>{setValidation('');change(key)}}>{label}</button>)}</div>
+    <p className="search-filter-summary">Filtro atual: <strong>{FILTERS.find(([key])=>key===type)?.[1] || 'Inválido'}</strong>. Trocar o filtro mantém a expressão pesquisada.</p>
+    {!!recent.length&&<section className="search-recent" aria-label="Buscas recentes desta conta"><header><h2>Buscas recentes neste aparelho</h2><button type="button" onClick={()=>{if(clearRecentSearches())setRecent([]);else setRecentError('Não foi possível limpar as buscas deste aparelho.')}}>Limpar buscas recentes</button></header><div>{recent.map(item=><button type="button" key={`${item.type}:${item.q}`} onClick={()=>{setInput(item.q);change(item.type,item.q);if(item.q===q&&item.type===type)setAttempt(value=>value+1)}}>{item.q} <small>{FILTERS.find(([key])=>key===item.type)?.[1]}</small></button>)}</div></section>}
+    {recentError&&<p role="status">{recentError}</p>}
     <section aria-label="Resultados da busca" aria-busy={status==='loading'}>
       <p className="unified-search-status" role="status">{status==='loading'?'Procurando no seu acervo…':status==='ready'?`${total} ${total===1?'resultado exibido':'resultados exibidos'} para “${data.query}”${page>1?` · página ${page}`:''}.`:''}</p>
       {status==='idle'&&<div className="unified-search-empty"><h2>O que ficou na sua cabeça?</h2><p>Use o nome de uma matéria ou um trecho que lembra de ter escrito. Depois, escolha o tipo de resultado.</p></div>}
       {status==='invalid'&&<div className="unified-search-empty" role="alert"><h2>Vamos ajustar a busca.</h2><p>Use de 2 a 100 caracteres e escolha um dos filtros acima.</p><button type="button" onClick={()=>{setParams({});setValidation('');inputRef.current?.focus()}}>Começar outra busca</button></div>}
       {status==='error'&&<div className="unified-search-empty" role="alert"><h2>Não conseguimos consultar seu acervo.</h2><p>Sua busca continua preenchida. Tente novamente quando a conexão voltar.</p><button type="button" onClick={()=>setAttempt(value=>value+1)}>Tentar novamente</button></div>}
       {status==='ready'&&!total&&<div className="unified-search-empty"><h2>Nenhum resultado nesta busca.</h2><p>Tente uma palavra mais curta ou outro filtro. Só aparecem itens disponíveis para sua conta.</p></div>}
-      {status==='ready'&&groups.filter(group=>group.itens.length).map(group=><section className="unified-search-group" key={`${q}:${type}:${page}:${group.tipo}`} aria-labelledby={`search-group-${group.tipo}`}><header><h2 id={`search-group-${group.tipo}`}>{group.nome}</h2>{type==='todos'&&group.mais&&<button type="button" onClick={()=>change(group.tipo)}>Ver só {group.nome.toLocaleLowerCase('pt-BR')} →</button>}</header><div className="unified-search-grid">{group.itens.map(item=><Result key={item.id} type={group.tipo} item={item} onSubject={subject=>change('materiais',subject)}/>)}</div>{group.mais&&type==='todos'&&<p className="unified-search-limit">Primeiros {data.limite} resultados deste tipo. Filtre para continuar ou detalhe a busca.</p>}</section>)}
+      {status==='ready'&&groups.filter(group=>group.itens.length).map(group=><section className="unified-search-group" key={`${q}:${type}:${page}:${group.tipo}`} aria-labelledby={`search-group-${group.tipo}`}><header><h2 id={`search-group-${group.tipo}`}>{group.nome}</h2>{type==='todos'&&group.mais&&<button type="button" onClick={()=>change(group.tipo)}>Ver só {group.nome.toLocaleLowerCase('pt-BR')} →</button>}</header><div className="unified-search-grid">{group.itens.map(item=><Result key={item.id} type={group.tipo} item={item} query={q} onSubject={subject=>change('materiais',subject)}/>)}</div>{group.mais&&type==='todos'&&<p className="unified-search-limit">Primeiros {data.limite} resultados deste tipo. Filtre para continuar ou detalhe a busca.</p>}</section>)}
       {status==='ready'&&type!=='todos'&&(page>1||groups[0]?.mais)&&<nav className="unified-search-pagination" aria-label="Páginas dos resultados"><button type="button" disabled={page<=1} onClick={()=>change(type,q,page-1)}>← Anteriores</button><span>Página {page}</span><button type="button" disabled={!groups[0]?.mais||page>=100} onClick={()=>change(type,q,page+1)}>Próximos →</button></nav>}
     </section>
   </div></main>

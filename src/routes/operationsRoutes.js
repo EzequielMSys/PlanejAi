@@ -13,6 +13,9 @@ router.get('/suporte', authMiddleware, async (req, res, next) => {
 router.post('/suporte', authMiddleware, async (req, res, next) => {
   try { res.status(201).json(await support.create(req.usuario.id, req.body)); } catch (error) { next(error); }
 });
+router.get('/suporte/:id/captura',authMiddleware,async(req,res,next)=>{
+  try{const file=await support.screenshot(req.params.id,req.usuario);if(!file?.captura)return res.sendStatus(404);res.set({'Content-Type':file.captura_mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; sandbox"});res.send(file.captura)}catch(error){next(error)}
+});
 router.get('/atendimento', authMiddleware, isDono, async (req, res, next) => {
   try { res.json(await support.list(null, true)); } catch (error) { next(error); }
 });

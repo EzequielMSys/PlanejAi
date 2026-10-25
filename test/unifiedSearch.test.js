@@ -76,3 +76,8 @@ test('HTTP search requires authentication, disables caching and keeps errors rec
     assert.equal(error.status,503);assert.ok(!(await error.text()).includes('private database detail'));
   } finally {await new Promise(resolve=>server.close(resolve));}
 });
+
+test('material excerpts include matching resource titles without exposing private source URLs',async()=>{
+ const result=await service().search({id:11,tipo:'aluno'},{q:'energia',tipo:'materiais'},{execute:async()=>[[{id:9,titulo:'Física',texto:'Exatas',recursos:JSON.stringify([{titulo:'Trabalho e energia',url:'https://source.invalid/?secret=private'}])}]]});
+ const item=result.grupos[0].itens[0];assert.match(item.trecho,/Trabalho e energia/);assert.ok(!JSON.stringify(item).includes('secret'));assert.equal(item.recursos,undefined);
+});

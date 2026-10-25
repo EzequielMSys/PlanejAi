@@ -21,6 +21,7 @@ import '../BrandExperience.css'
 // utilizável antes deles e o peso crítico cai em todas as rotas.
 const FocusTimer = lazy(() => import('../components/FocusTimer'))
 const InstallApp = lazy(() => import('../components/InstallApp'))
+const FeedbackLauncher = lazy(() => import('../components/FeedbackLauncher'))
 
 /** Deferred + Suspense num só ponto: import lazy em si, sem indicador visível. */
 function CarregadoAposPintura({ children }) {
@@ -70,6 +71,7 @@ function Layout() {
         </div>
         {isAuthenticated && (
           <>
+          <Suspense fallback={null}><FeedbackLauncher /></Suspense>
           <CarregadoAposPintura><FocusTimer /></CarregadoAposPintura>
           <CarregadoAposPintura><InstallApp /></CarregadoAposPintura>
           </>

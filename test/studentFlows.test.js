@@ -1963,3 +1963,44 @@ test('viewing saved Lumi history does not add it to a new conversation context',
   const data=JSON.parse(requests.find(x=>x.method==='post'&&x.url.endsWith('/inteligencia/chat')).data);assert.deepEqual(data.contextoEscolhido.historico,[]);assert.ok(!JSON.stringify(data).includes('conversa antiga'));
  }finally{chatHistoryFixture=[];await screen.close()}
 });
+
+test('search highlights matching text and directly opens the authorized note',async()=>{
+ window.sessionStorage.clear();const screen=await renderRoute('/busca?q=newton&tipo=anotacoes');
+ try{assert.ok(document.querySelector('.unified-search-card h3 mark'));assert.equal(document.querySelector('.unified-search-card h3 mark').textContent,'Newton');await act(async()=>button('Abrir anotação →').click());await flush();assert.ok(document.querySelector('.session-notes textarea'));assert.ok(requests.some(item=>item.url.endsWith('/busca/conteudos/9')&&item.params.anotacao==='1'))}finally{window.sessionStorage.clear();await screen.close()}
+});
+
+test('recent searches belong to the current account and can be cleared without repeating a search',async()=>{
+ const screen=await renderRoute('/busca?q=Newton&tipo=anotacoes','aluno',{}, {'900002:recent-searches:v1':JSON.stringify([{q:'Registro de outra conta',type:'redacoes'}]),'900001:recent-searches:v1':JSON.stringify([{q:'Educação',type:'redacoes'}])});
+ try{
+  assert.ok(document.querySelector('.search-recent').textContent.includes('Educação'));assert.ok(!document.querySelector('.search-recent').textContent.includes('outra conta'));
+  assert.equal(JSON.parse(localStorage.getItem('900001:recent-searches:v1'))[0].q,'Newton');
+  const count=requests.filter(x=>x.url.endsWith('/busca')).length;await act(async()=>button('Limpar buscas recentes').click());assert.equal(localStorage.getItem('900001:recent-searches:v1'),null);assert.ok(localStorage.getItem('900002:recent-searches:v1'));assert.equal(requests.filter(x=>x.url.endsWith('/busca')).length,count);
+ }finally{await screen.close()}
+});
+
+test('feedback previews exact page and text before sending and keeps them after a failure',async()=>{
+ supportMode='failed';const screen=await renderRoute('/busca?q=Newton&tipo=anotacoes');
+ try{
+  await act(async()=>button('Sugerir melhoria').click());const panel=document.querySelector('.feedback-dialog');assert.equal(document.activeElement,panel);
+  assert.equal(panel.querySelector('input[readonly]').value,'/busca');await inputValue(panel.querySelector('textarea'),'Gostaria de comparar minhas anotações.');
+  await act(async()=>panel.querySelector('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));
+  assert.match(panel.querySelector('.feedback-preview').textContent,/Gostaria de comparar/);assert.ok(!panel.textContent.includes('q=Newton'));
+  assert.equal(requests.filter(x=>x.method==='post'&&x.url.endsWith('/operacoes/suporte')).length,0);
+  await act(async()=>button('Confirmar envio do feedback').click());await flush();assert.ok(panel.querySelector('[role="alert"]'));assert.match(panel.textContent,/Gostaria de comparar/);
+  supportMode='saved';await act(async()=>button('Confirmar envio do feedback').click());await flush();assert.equal(document.querySelector('.feedback-dialog'),null);assert.match(document.querySelector('.feedback-entry').textContent,/Feedback #81 recebido/);
+  const sent=JSON.parse(requests.filter(x=>x.method==='post'&&x.url.endsWith('/operacoes/suporte')).at(-1).data);assert.equal(sent.pagina,'/busca');assert.equal(sent.categoria,'MELHORIA');assert.equal(sent.captura,undefined);assert.equal(sent.detalhes,'');
+ }finally{supportMode='';await screen.close()}
+});
+
+test('feedback screenshot remains local until confirmation and can be removed',async()=>{
+ const screen=await renderRoute('/inicio');
+ try{
+  await act(async()=>button('Relatar um problema').click());const panel=document.querySelector('.feedback-dialog');
+  await inputValue(panel.querySelector('textarea'),'O botão ficou difícil de encontrar.');
+  const fileInput=panel.querySelector('input[type="file"]'),file=new window.File([new Uint8Array([137,80,78,71,13,10,26,10])],'captura-ficticia.png',{type:'image/png'});
+  Object.defineProperty(fileInput,'files',{configurable:true,value:[file]});await act(async()=>fileInput.dispatchEvent(new window.Event('change',{bubbles:true})));await flush();
+  assert.ok(panel.querySelector('.feedback-image img'));assert.equal(requests.filter(x=>x.method==='post'&&x.url.endsWith('/operacoes/suporte')).length,0);
+  const axeResult=await axe.run(panel,{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(axeResult.violations.map(x=>x.id),[]);
+  await act(async()=>button('Retirar captura').click());assert.equal(panel.querySelector('.feedback-image img'),null);
+ }finally{await screen.close()}
+});

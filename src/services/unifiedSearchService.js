@@ -30,6 +30,7 @@ function excerpt(text, query, length = 190) {
   const start = Math.max(0, index - 45);
   return `${start ? '…' : ''}${value.slice(start, start + length)}${value.length > start + length ? '…' : ''}`;
 }
+function resourceTitles(value){try{const items=typeof value==='string'?JSON.parse(value):value;return Array.isArray(items)?items.slice(0,20).map(item=>typeof item?.titulo==='string'?item.titulo.slice(0,300):'').filter(Boolean).join(' · '):''}catch{return ''}}
 async function search(user, input, db = pool) {
   const opt = options(input);
   const scope = contentScope(user);
@@ -42,7 +43,7 @@ async function search(user, input, db = pool) {
         AND c.disciplina LIKE ? ESCAPE '!' ORDER BY c.disciplina LIMIT ${LIMIT + 1} OFFSET ${offset}`;
       params = [...scope.params, opt.pattern];
     } else if (type === 'materiais') {
-      sql = `SELECT c.id_conteudo AS id, c.titulo, c.disciplina, LEFT(COALESCE(c.area,''),500) AS texto
+      sql = `SELECT c.id_conteudo AS id, c.titulo, c.disciplina, LEFT(COALESCE(c.area,''),500) AS texto,c.materiais AS recursos
         FROM conteudos c WHERE (${scope.sql}) AND (c.titulo LIKE ? ESCAPE '!' OR c.disciplina LIKE ? ESCAPE '!' OR c.area LIKE ? ESCAPE '!' OR CAST(c.materiais AS CHAR) LIKE ? ESCAPE '!')
         ORDER BY (c.titulo LIKE ? ESCAPE '!') DESC,c.titulo,c.id_conteudo LIMIT ${LIMIT + 1} OFFSET ${offset}`;
       params = [...scope.params, ...Array(4).fill(opt.pattern), opt.prefix];
@@ -61,7 +62,7 @@ async function search(user, input, db = pool) {
     const [rows] = await db.execute(sql, params);
     return { tipo: type, nome: LABELS[type], mais: rows.length > LIMIT, itens: rows.slice(0,LIMIT).map(row => ({
       id: row.id || row.titulo, titulo: row.titulo, disciplina: row.disciplina || '',
-      trecho: excerpt(row.texto, opt.q), atualizadoEm: row.atualizadoEm || null,
+      trecho: excerpt(type==='materiais'?[row.texto,resourceTitles(row.recursos)].filter(Boolean).join(' · '):row.texto, opt.q), atualizadoEm: row.atualizadoEm || null,
     })) };
   }));
   return { query: opt.q, pagina: opt.page, limite: LIMIT, grupos: groups };
