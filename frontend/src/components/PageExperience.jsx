@@ -5,7 +5,8 @@ const AccessibilityToolbar = lazy(() => import('./AccessibilityToolbar'))
 import { focusRouteContent } from '../utils/routeFocus'
 
 const titles = {
-  "/": "PlanejAI — Estude com direção",
+  "/": "PlanejAI — Uma ideia abre outra",
+  "/busca": "Busca no meu acervo — PlanejAI",
   "/login": "Entrar — PlanejAI",
   "/register": "Criar conta — PlanejAI",
   "/inicio": "Hoje — PlanejAI",
