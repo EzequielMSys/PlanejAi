@@ -56,11 +56,24 @@ let closingFailure=false;
 let notesWriteFailure=false;
 let returnsFixture=null;
 let returnsFailure=false;
+let personalFailure=false;
+let deskItems=[{id:31,tipo:'anotacao',id_origem:9,titulo:'Leis de Newton',trecho:'Um exemplo meu',disponivel:true},{id:32,tipo:'duvida',id_origem:71,titulo:'Força e velocidade',disponivel:true}];
 let journalSteps = [{id:11,tipo:'explicacao',texto:'Primeira versão preservada',criado_em:'2026-10-20T12:00:00'}, {id:12,tipo:'explicacao',texto:'Segunda versão com exemplo',criado_em:'2026-10-25T12:00:00'}];
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
+  if(url.includes('/aprendizagem/mesa')||url.includes('/aprendizagem/entendimento')){
+    if(personalFailure)throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Seu espaço está temporariamente indisponível.'}});
+    if(url.endsWith('/mesa')&&config.method==='get')return {itens:deskItems,limite:6};
+    if(url.endsWith('/mesa')&&config.method==='post')return {id:31,fixado:true};
+    if(url.endsWith('/mover')){deskItems=[...deskItems].reverse();return {ordenado:true}};
+    if(url.endsWith('/mesa/31')&&config.method==='delete'){deskItems=deskItems.filter(item=>item.id!==31);return {retirado:true}};
+    if(url.endsWith('/mesa/31/abrir'))return {tipo:'anotacao',id_origem:9,item:{id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'}};
+    if(url.endsWith('/mesa/32/abrir'))return {tipo:'duvida',id_origem:71,item:{id:71,titulo:'Força e velocidade'}};
+    if(url.endsWith('/entendimento'))return {itens:[{passo:102,registro:71,registro_tipo:'explicacao',titulo:'Força e velocidade',tipo:'explicacao',versao:2,trecho:'Minha nova explicação',criado_em:'2026-10-25T12:00:00'}],mais:false,pagina:1};
+    if(url.endsWith('/entendimento/102'))return {id:102,id_diario:71,registro_tipo:'explicacao',tipo:'explicacao',texto:'Minha nova explicação completa',criado_em:'2026-10-25T12:00:00',anterior:{id:1,texto:'Minha versão anterior original',criado_em:'2026-10-20T12:00:00'}};
+  }
   if(url.endsWith('/aprendizagem/retomadas')) {
     if(returnsFailure)throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
     return returnsFixture || {principal:null,explicacao:null,duvida:null,revisao:null,proximoPasso:null};
@@ -854,7 +867,7 @@ test('learning progress shows supported improvement and opens practice in the se
 });
 
 test('main routes expose labels and landmarks to assistive technology', async () => {
-  const routes = ['/', '/login', '/register', '/inicio', '/cronograma', '/aprendizagem', '/provas', '/redacoes', '/lumi', '/perfil', '/planejamento-inteligente', '/minha-jornada', '/preferencias', '/minhas-atividades', '/minhas-turmas', '/avisos', '/status'];
+  const routes = ['/', '/login', '/register', '/inicio', '/cronograma', '/aprendizagem', '/provas', '/redacoes', '/lumi', '/perfil', '/planejamento-inteligente', '/minha-jornada', '/preferencias', '/minhas-atividades', '/minhas-turmas', '/avisos', '/status', '/mesa', '/meu-entendimento'];
   const management = ['/dashboard-gestor', '/turmas', '/atividades', '/materiais', '/usuarios', '/dono', '/dono/usuarios'];
   for (const route of [...routes, ...management]) {
     const screen = await renderRoute(route, management.includes(route) ? 'dono' : 'aluno');
@@ -1582,4 +1595,66 @@ test('a suggested review opens the review section with the selected item availab
     assert.ok(document.getElementById('learning-review-81'));
     assert.equal(document.querySelector('.learning-tabs button[aria-pressed="true"]').textContent,'Revisões');
   }finally{returnsFixture=null;reviewQueueFixture=[];await screen.close()}
+});
+
+
+test('personal desk reorders and removes shortcuts without deleting originals',async()=>{
+ const original=structuredClone(deskItems),screen=await renderRoute('/mesa');
+ try{
+  assert.equal(document.querySelectorAll('.desk-card').length,2);
+  assert.match(document.querySelector('.desk-board').textContent,/2 de 6/);
+  await act(async()=>document.querySelector('[aria-label="Mover Força e velocidade para cima"]').click());await flush();
+  assert.equal(document.querySelector('.desk-card h3').textContent,'Força e velocidade');
+  await act(async()=>document.querySelector('[aria-label="Retirar Leis de Newton da mesa"]').click());await flush();
+  assert.equal(document.querySelectorAll('.desk-card').length,1);
+  assert.match(document.querySelector('.desk-board [role="status"]').textContent,/original foi preservado/);
+  assert.ok(!requests.some(req=>req.method==='delete'&&!req.url.includes('/mesa/')));
+  assert.equal(requests.find(req=>req.url.endsWith('/mesa')&&req.method==='get').cache,false);
+ }finally{deskItems=original;await screen.close()}
+});
+test('understanding opens exact evidence lazily, with both original versions and an accessible disclosure',async()=>{
+ const screen=await renderRoute('/meu-entendimento');
+ try{
+  assert.equal(requests.filter(req=>req.url.endsWith('/entendimento/102')).length,0);
+  await act(async()=>button('Comparar as duas versões').click());await flush();
+  assert.match(document.querySelector('.understanding-evidence').textContent,/Minha versão anterior original/);
+  assert.match(document.querySelector('.understanding-evidence').textContent,/Minha nova explicação completa/);
+  assert.equal(button('Recolher registro').getAttribute('aria-expanded'),'true');
+  const result=await axe.run(document.querySelector('.personal-study'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(v=>v.id),[]);
+  await act(async()=>button('Recolher registro').click());assert.ok(!document.querySelector('.understanding-evidence'));
+ }finally{await screen.close()}
+});
+test('personal pages distinguish outages from an empty account and recover on demand',async()=>{
+ for(const route of ['/mesa','/meu-entendimento']){
+  personalFailure=true;const screen=await renderRoute(route);
+  try{
+   assert.ok(document.querySelector('.personal-study [role="alert"]'));assert.ok(!document.querySelector('.personal-empty'));
+   personalFailure=false;await act(async()=>document.querySelector('.personal-study [role="alert"] button').click());await flush();
+   assert.ok(document.querySelector(route==='/mesa'?'.desk-card':'.understanding-card'));
+  }finally{personalFailure=false;await screen.close()}
+ }
+});
+
+
+test('pinning a search result waits for confirmation and keeps source type distinct',async()=>{
+ const screen=await renderRoute('/busca?q=Newton&tipo=anotacoes');
+ try{
+  assert.equal(requests.filter(req=>req.url.endsWith('/mesa')&&req.method==='post').length,0);
+  personalFailure=true;
+  await act(async()=>document.querySelector('.desk-pin button').click());await flush();
+  assert.ok(document.querySelector('.desk-pin [role="alert"]'));assert.ok(!document.querySelector('.desk-pin a'));
+  personalFailure=false;
+  await act(async()=>document.querySelector('.desk-pin button').click());await flush();
+  assert.equal(document.querySelector('.desk-pin a')?.getAttribute('href'),'/mesa');
+  const saved=requests.filter(req=>req.url.endsWith('/mesa')&&req.method==='post').at(-1);
+  assert.deepEqual(JSON.parse(saved.data),{tipo:'anotacao',idOrigem:9});
+ }finally{personalFailure=false;await screen.close()}
+});
+test('opening a desk note rechecks its source and goes to the notes editor',async()=>{
+ window.sessionStorage.clear();const screen=await renderRoute('/mesa');
+ try{
+  await act(async()=>button('Abrir anotação').click());await flush();await flush();
+  assert.ok(requests.some(req=>req.url.endsWith('/mesa/31/abrir')&&req.cache===false));
+  assert.ok(document.querySelector('.session-notes textarea'));
+ }finally{await screen.close();window.sessionStorage.clear()}
 });

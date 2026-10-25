@@ -1,3 +1,4 @@
+import DeskPin from '../components/DeskPin'
 import Logo from '../components/Logo'
 import AreaSignature from '../components/AreaSignature'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
@@ -568,6 +569,7 @@ export default function Redacoes() {
                               {redacao.tema}
                             </h3>
 
+                            {aba !== 'gestor' && <DeskPin type="redacao" id={redacao.id_redacao}/>}
                             {aba === 'gestor' && autorNome && (
                               <p className="text-sm text-black/60 font-semibold">
                                 Autor: {autorNome}

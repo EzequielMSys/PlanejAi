@@ -25,7 +25,9 @@ test('navigation groups secondary tools under their parent and preserves legacy 
   assert.ok(!visible.some(page => ['/sessao-guiada', '/minha-jornada', '/planejamento-inteligente', '/ferramentas-estudo'].includes(page.path)));
   assert.equal(pageFor('/minha-jornada').navParent, '/inicio');
   assert.equal(pageFor('/planejamento-inteligente').navParent, '/aprendizagem');
-  assert.equal(searchPages('aluno', 'progresso')[0].path, '/aprendizagem');
+  assert.ok(searchPages('aluno', 'progresso').some(page => page.path === '/aprendizagem'));
+  assert.ok(searchPages('aluno', 'progresso').some(page => page.path === '/meu-entendimento'));
+  assert.ok(visible.some(page=>page.path==='/mesa'));
   assert.ok(searchPages('aluno', 'flashcards').some(page => page.path === '/ferramentas-estudo'));
   assert.ok(searchPages('aluno', 'sessao guiada').some(page => page.path === '/sessao-guiada'));
   assert.ok(!searchPages('docente', 'sessao guiada').some(page => page.path === '/sessao-guiada'));

@@ -40,7 +40,8 @@ const migrationOrder = [
   'remove_unused_birth_date_v22.sql',
   'operation_support_v23.sql',
   'learning_journal_v24.sql',
-  'session_closure_v25.sql'
+  'session_closure_v25.sql',
+  'personal_desk_v26.sql'
 ];
 
 function sortMigrations(files) {

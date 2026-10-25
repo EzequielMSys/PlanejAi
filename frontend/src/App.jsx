@@ -38,6 +38,8 @@ const Provas = lazy(() => import('./pages/Provas'))
 const Chat = lazy(() => import('./pages/Chat'))
 const Preferencias = lazy(() => import('./pages/Preferencias'))
 const FontesEstudo = lazy(() => import('./pages/FontesEstudo'))
+const PersonalDesk = lazy(() => import('./pages/PersonalDesk'))
+const MyUnderstanding = lazy(() => import('./pages/MyUnderstanding'))
 const Search = lazy(() => import('./pages/Search'))
 
 function App() {
@@ -58,6 +60,8 @@ function App() {
             <Route path="/primeiro-acesso" element={<PrimeiroAcesso />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/inicio" element={<Dashboard />} />
+            <Route path="/mesa" element={<PersonalDesk />} />
+            <Route path="/meu-entendimento" element={<MyUnderstanding />} />
             <Route path="/busca" element={<Search />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/cronograma" element={<Cronograma />} />

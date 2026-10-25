@@ -1,3 +1,4 @@
+import DeskPin from '../components/DeskPin'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -47,6 +48,7 @@ function Result({item,type,onSubject}) {
   return <article className="unified-search-card">
     <div><span className="search-result-meta">{item.disciplina || (type==='redacoes'?'Texto salvo na sua conta':type==='materias'?'Matéria do seu acervo':'Seu espaço de estudo')}</span><h3>{item.titulo}</h3>{item.trecho&&<p>{item.trecho}</p>}</div>
     {type==='materias'?<button type="button" onClick={()=>onSubject(item.titulo)}>Encontrar materiais <span aria-hidden="true">→</span></button>:type==='redacoes'?<Link to={`/redacoes?redacao=${encodeURIComponent(item.id)}`}>Abrir redação <span aria-hidden="true">→</span></Link>:<><button type="button" aria-expanded={expanded} aria-controls={id} onClick={()=>setExpanded(value=>!value)}>{expanded?'Recolher detalhes':type==='anotacoes'?'Ver anotação':'Ver materiais'} <span aria-hidden="true">{expanded?'−':'+'}</span></button><div id={id} hidden={!expanded}>{expanded&&<ContentDetails item={item} type={type}/>}</div></>}
+    {type!=='materias'&&<DeskPin type={{anotacoes:'anotacao',materiais:'material',redacoes:'redacao'}[type]} id={item.id}/>}
   </article>
 }
 export default function Search() {

@@ -1,3 +1,4 @@
+import DeskPin from '../components/DeskPin'
 import AreaSignature from '../components/AreaSignature'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -195,10 +196,11 @@ export default function StudySession() {
           <nav className="session-tabs" aria-label="Ferramentas da sessão">{[['guide','Guia de estudo'],['material',materialUrl ? 'Fonte principal' : 'Material'],['notes','Anotações']].map(([key,label]) => <button key={key} type="button" aria-pressed={tab === key} aria-controls="session-canvas" className={tab === key ? 'is-active' : ''} onClick={() => setTab(key)}>{label}{key === 'notes' && <span> {noteStatus === 'saved' ? 'na conta' : noteStatus === 'local' ? 'neste aparelho' : ''}</span>}</button>)}</nav>
           {noteStatus === 'unsaved' && <button type="button" className="study-button" onClick={() => downloadTextCopy(notes, 'planejai-anotacoes.txt')}>Baixar cópia das anotações</button>}
           <div id="session-canvas" className="session-canvas" data-view={tab}>
-            {tab === 'material' ? <StudyMaterial content={content} onTutorRequest={pensarComLumi} /> : tab === 'guide' ? <div className="session-guide-wrap"><StudyGuide material={content} onTutorRequest={pensarComLumi} sourceUrl={isExternalStudySource(materialUrl) ? materialUrl : undefined} /></div> : <div className="session-notes">
+            {tab === 'material' ? <><DeskPin type="material" id={content.id_conteudo}/><StudyMaterial content={content} onTutorRequest={pensarComLumi} /></> : tab === 'guide' ? <div className="session-guide-wrap"><StudyGuide material={content} onTutorRequest={pensarComLumi} sourceUrl={isExternalStudySource(materialUrl) ? materialUrl : undefined} /></div> : <div className="session-notes">
               <header className="session-notes-header"><div><span className="pj-eyebrow">CADERNO DA SESSÃO</span><h2>Organize suas ideias.</h2><p>Anote o que entendeu e o que quer perguntar à Lumi.</p></div><div className="session-notes-tools"><SaveFeedback status={noteStatus} onRetry={retryNotes} />{!loadingNotes && <DictationButton onText={(texto) => setNotes((atual) => `${atual}${atual ? '\n' : ''}${texto}`)}/>}</div></header>
               <div className="session-note-prompts"><span>ESTRUTURE SUA REVISÃO</span><div><button type="button" disabled={loadingNotes} onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Ideia principal\n`)}>+ Ideia principal</button><button type="button" disabled={loadingNotes} onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Minha dúvida\n`)}>+ Minha dúvida</button><button type="button" disabled={loadingNotes} onClick={() => setNotes((atual) => `${atual}${atual ? '\n\n' : ''}Exemplo próprio\n`)}>+ Exemplo próprio</button></div></div>
               <label className="session-notes-editor"><span className="sr-only">Anotações da sessão</span><textarea disabled={loadingNotes} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Escreva com suas palavras…\n\nO que ficou claro? O que ainda precisa de outra explicação?" /><small>{notes.length} caracteres</small></label>
+              {notes.trim()&&noteStatus==='saved'&&<DeskPin type="anotacao" id={content.id_conteudo}/>}
             </div>}
           </div>
         </div>
