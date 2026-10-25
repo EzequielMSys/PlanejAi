@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useRef } from 'react'
-import Logo from '../components/Logo'
+import Logo, { BrandName } from '../components/Logo'
 import ColorPicker from '../components/ColorPicker'
 import ThemeToggle from '../components/ThemeToggle'
 import TutorLumi from '../components/TutorLumi'
 import './Landing.css'
+import BrandCover from '../components/BrandCover'
+import './BrandLanding.css'
 
 const recursos = [
   ['01', 'Um plano que cabe na vida.', 'Distribua as matérias no tempo que você tem. Retome o que ficou para depois e enxergue o próximo passo.', '/cronograma', 'Organizar meus estudos'],
@@ -43,7 +45,7 @@ export default function Landing() {
   const openSection = id => { closeMenu(); irParaSecao(id) }
   return <div className="study-landing">
     <header className="study-nav">
-      <Link to="/" className="study-brand" aria-label="PlanejAI, página inicial"><Logo className="h-9 w-9" /><span>Planej<span className="brand-accent">AI</span></span></Link>
+      <Link to="/" className="study-brand" aria-label="PlanejAI, página inicial"><Logo decorative className="h-9 w-9" /><BrandName/></Link>
       <div className="study-nav-actions">
         <Link to="/login" className="study-login">Entrar</Link>
         <details className="study-menu" ref={menuRef}>
@@ -64,26 +66,12 @@ export default function Landing() {
       <section className="study-hero">
         <div className="study-hero-copy">
           <p className="study-kicker">ESPAÇO PARA APRENDER · PLANEJAI</p>
-          <h1>Seu futuro.<br /><em>Uma página por vez.</em></h1>
-          <p className="study-lead">Entre a vontade de aprender e o próximo passo, existe um lugar seu. Organize os estudos, tire dúvidas e veja o que já conquistou.</p>
+          <h1>Uma ideia.<br /><em>Abre outra.</em></h1>
+          <p className="study-lead">Organize o que estudar, encontre sentido nas dúvidas e reconheça o que aprendeu. Seu plano, sua escrita e a Lumi, no mesmo espaço.</p>
           <div className="study-actions"><Link to="/register" className="study-button">Começar meu caderno <span aria-hidden="true">↗</span></Link><button type="button" className="study-anchor-button" onClick={() => irParaSecao('como-funciona')}>Conhecer o PlanejAI <span aria-hidden="true">↓</span></button></div>
           <p className="study-caption">No seu tempo. Do seu jeito. Com direção.</p>
         </div>
-        <div className="study-desk" aria-label="Exemplo de organização de estudos">
-          <div className="study-note"><span>um lembrete</span><p>Você não precisa<br />aprender tudo hoje.</p><svg viewBox="0 0 140 25" aria-hidden="true"><path d="M4 15 Q65 0 130 13 M110 4l22 9-20 9" /></svg></div>
-          <div className="study-notebook">
-            <div className="notebook-heading"><span>MEU CADERNO</span><span>EXEMPLO / 01</span></div>
-            <h2>Hoje, um pouco<br /><em>mais longe.</em></h2>
-            <div className="notebook-date">Três momentos para aprender</div>
-            <ol>
-              <li><span className="notebook-check">✓</span><div><b>Rever o que ficou</b><small>Revisão ativa · 15 min</small></div><span>01</span></li>
-              <li className="notebook-current"><span className="notebook-check">↗</span><div><b>Dar sentido às funções</b><small>Matemática · 30 min</small></div><span>02</span></li>
-              <li><span className="notebook-check">✎</span><div><b>Colocar ideias no papel</b><small>Redação · 25 min</small></div><span>03</span></li>
-            </ol>
-            <footer><span>O próximo passo já é um começo.</span><Logo className="h-7 w-7" /></footer>
-          </div>
-          <span className="study-desk-caption">MENOS RUÍDO. MAIS ESPAÇO PARA PENSAR.</span>
-        </div>
+        <BrandCover/>
       </section>
       <section id="lumi" className="study-lumi" aria-labelledby="study-lumi-title" tabIndex={-1}>
         <div className="study-lumi-copy"><p className="study-kicker">CONHEÇA A LUMI</p><h2 id="study-lumi-title">Toda pergunta merece<br /><em>uma conversa de verdade.</em></h2><p>Quando uma explicação não encaixa, tente outro caminho. A Lumi pode retomar suas lições, explorar suas dúvidas e seguir no seu ritmo.</p><Link to="/chat" className="study-lumi-link">Conversar com a Lumi <span aria-hidden="true">↗</span></Link></div>
@@ -98,6 +86,6 @@ export default function Landing() {
         <ol>{[['Conte o que você busca', 'Seu objetivo, suas matérias e o tempo disponível ajudam a montar o plano.'], ['Encontre seu ritmo', 'Estude, pratique e converse com o assistente quando precisar de outra explicação.'], ['Volte e perceba a diferença', 'Use seus resultados para revisar dificuldades e escolher os próximos passos.']].map(([title, text], i) => <li key={title}><span>0{i + 1}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol>
       </section>
     </main>
-    <footer className="study-footer"><Link to="/" className="study-brand"><Logo className="h-8 w-8" /><span>PlanejAI</span></Link><p>Aprender transforma o que vem depois.</p><small>© {new Date().getFullYear()} PlanejAI</small></footer>
+    <footer className="study-footer"><Link to="/" className="study-brand"><Logo decorative className="h-8 w-8" /><BrandName/></Link><p>Aprender transforma o que vem depois.</p><small>© {new Date().getFullYear()} PlanejAI</small></footer>
   </div>
 }

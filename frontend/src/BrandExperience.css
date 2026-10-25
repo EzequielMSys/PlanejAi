@@ -1,0 +1,59 @@
+/* One family, different study spaces. All colour follows the chosen palette. */
+.sd-workspace { --brand-corner:1.4rem 1.4rem .35rem 1.4rem; }
+.sd-workspace .sd-brand-mark { padding:0; background:none; border:0; border-radius:0; }
+.sd-workspace :is(.dash-v2,.learning-page,.redacoes-page,.lumi-page,.session-page) { background:var(--pn-fundo); }
+.sd-workspace :is(.dash-v2,.learning-page,.redacoes-page,.lumi-page,.session-page) { margin-top:0; }
+.sd-workspace :is(.dash-v2-heading h1,.learning-hero h1,.redacoes-intro h1,.lumi-page-heading-row h1) { font-family:Georgia,serif; font-weight:400; letter-spacing:-.05em; text-wrap:balance; }
+.sd-workspace :is(.dash-v2,.learning-page,.redacoes-page,.lumi-page) { padding-top:1.5rem; }
+.sd-workspace .learning-hero-copy>span,.sd-workspace .redacoes-intro-copy>.redacoes-eyebrow,.sd-workspace .study-desk .session-topbar .pj-eyebrow,.sd-workspace .dash-v2-heading>div:first-child>span { display:none; }
+/* Today: the next step is a clear, open invitation. */
+.sd-workspace .dash-v2 .dash-v2-heading h1 { font-size:clamp(2rem,4vw,3.6rem); }
+.sd-workspace .dash-v2 .dash-v2-focus { border-left:0; border-top:0; border-radius:var(--brand-corner); background:var(--pn-superficie)!important; padding:clamp(1.4rem,3vw,2.4rem); position:relative; }
+.sd-workspace .dash-v2-focus::before { content:''; width:3rem; height:.35rem; border-radius:1rem; background:var(--pn-link); margin-bottom:1.4rem; }
+.sd-workspace .dash-v2-focus-copy h2 { font-family:Georgia,serif; font-weight:400; }
+.sd-workspace .dash-v2 .dash-v2-focus-copy { margin-block:1rem; }
+.sd-workspace .dash-v2 .dash-v2-focus footer { margin-top:.5rem; }
+.sd-workspace .dash-v2 .dash-v2-focus .study-return-note { margin-top:1.25rem; }
+.sd-workspace .dash-v2 .dash-v2-heading h1 { font-weight:400; }
+.sd-workspace .dash-v2 .dash-v2-score { background:transparent!important; border:0; border-left:1px solid var(--pn-borda); border-radius:0; box-shadow:none; }
+.sd-workspace .dash-v2 .dash-v2-agenda { border-radius:0; border-inline:0; background:transparent; box-shadow:none; }
+.sd-workspace .dash-v2 .dash-v2-agenda>div>button { border-radius:0; background:transparent; border-inline:0; }
+/* Learning: an editorial record with a visible margin for the next decision. */
+.sd-workspace .learning-page .learning-hero { border:0; border-bottom:1px solid var(--pn-borda); background:transparent; padding:0 0 2rem; border-radius:0; box-shadow:none; gap:clamp(1.5rem,4vw,3rem); }
+.sd-workspace .learning-page .learning-hero h1 { font-size:clamp(2.4rem,4.4vw,4.1rem); line-height:1.06; }
+.sd-workspace .learning-page .learning-next { border-radius:var(--brand-corner); background:var(--pn-superficie); border:1px solid var(--pn-borda); border-top:4px solid var(--pn-link); box-shadow:none; }
+.sd-workspace .learning-page .learning-tools-entry { border-radius:0; border-inline:0; background:transparent; }
+.sd-workspace .learning-page .learning-tabs { border-radius:0; background:transparent; border:0; border-bottom:1px solid var(--pn-borda); padding-bottom:.6rem; }
+/* Writing: manuscript and margin, rather than a dashboard of identical tiles. */
+.sd-workspace .redacoes-page .redacoes-intro { border:0; border-bottom:1px solid var(--pn-borda); border-radius:0; background:transparent; box-shadow:none; padding:0 0 2rem; }
+.sd-workspace .redacoes-page .redacoes-intro h1 { font-size:clamp(2.3rem,4.6vw,4.3rem); line-height:1.1; max-width:18ch; }
+.sd-workspace .redacoes-page .redacoes-intro-copy { padding:clamp(.5rem,2vw,1.5rem) clamp(0rem,2vw,1.5rem) 1rem 0; }
+.sd-workspace .redacoes-page .redacoes-brand-symbol { width:7rem; height:7rem; }
+.sd-workspace .redacoes-page .redacoes-intro-actions button { color:var(--pn-on-primaria); }
+.sd-workspace .redacoes-page .redacoes-path { border-radius:0; border-inline:0; background:transparent; box-shadow:none; }
+.sd-workspace .redacoes-page .redacoes-lumi { border-radius:var(--brand-corner); background:var(--pn-superficie); border:1px solid var(--pn-borda); }
+.sd-workspace .redacoes-page .essay-record { border-radius:.25rem 1rem 1rem .25rem; border-left:4px solid var(--pn-link); box-shadow:none; }
+.sd-workspace .redacoes-page .essay-record__manuscript { font-family:var(--study-font); line-height:var(--a11y-line-height,1.8); }
+/* Lumi: a quiet conversation with the portrait as a companion in the margin. */
+.sd-workspace .lumi-page .lumi-intro { border:0; background:transparent; box-shadow:none; padding:1.25rem .25rem; }
+.sd-workspace .lumi-page .lumi-portrait { border-radius:50% 50% 50% .5rem; border:1px solid var(--pn-borda); background:var(--pn-primaria-suave); box-shadow:none; width:fit-content; padding:1rem; }
+.sd-workspace .lumi-page .lumi-intro-note { border-radius:0; border:0; border-left:2px solid var(--pn-link); background:transparent; padding:.25rem 0 .25rem 1rem; }
+.sd-workspace .lumi-page .lumi-chat-card { border-radius:var(--brand-corner); box-shadow:none; border:1px solid var(--pn-borda); }
+.sd-workspace .lumi-page .lumi-chat-heading { background:var(--pn-superficie); }
+.sd-workspace .lumi-page .lumi-page-kicker { display:none; }
+.sd-workspace .lumi-page .area-signature { margin-bottom:.8rem; }
+@media(min-width:901px) { .sd-workspace .lumi-page .lumi-chat-card { height:clamp(26rem,calc(100dvh - 18rem),44rem); } }
+/* Study: the reading surface keeps its own generous, quiet border. */
+.sd-workspace .study-desk .session-workspace { border-radius:.3rem 1.3rem 1.3rem .3rem; border-left:3px solid var(--pn-link); }
+.sd-workspace .study-desk .study-desk-wrap-up { border-radius:var(--brand-corner); }
+.sd-workspace .study-desk .session-topbar { padding-top:.25rem; }
+@media(max-width:1000px) { .sd-workspace .dash-v2 .dash-v2-score { border-left:0; border-top:1px solid var(--pn-borda); } }
+@media(max-width:600px) { .sd-workspace .lumi-page .lumi-intro { padding:0; } .sd-workspace .lumi-page .lumi-portrait { padding:.6rem; } .sd-workspace .redacoes-page .redacoes-intro h1 { max-width:none; } }
+@media(max-width:600px) {
+  .sd-workspace .dash-v2-score-head { flex-wrap:wrap; gap:.6rem; }
+  .sd-workspace .learning-page .learning-tabs { flex-wrap:wrap; overflow:visible; }
+  .sd-workspace .learning-page .learning-tabs button { white-space:normal; min-width:0; max-width:100%; }
+  .sd-workspace .lumi-page :is(.lumi-welcome-content,.lumi-starter-section,.lumi-starters) { min-width:0; max-width:100%; grid-template-columns:minmax(0,1fr)!important; }
+  .sd-workspace .lumi-page .lumi-starters button { min-width:0; max-width:100%; overflow-wrap:anywhere; }
+  .sd-workspace .lumi-page .lumi-controls { flex-wrap:wrap; }
+}

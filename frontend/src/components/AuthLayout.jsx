@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import Logo from './Logo'
+import Logo, { BrandName } from './Logo'
 import ThemeToggle from './ThemeToggle'
 import './AuthLayout.css'
 import './AuthJourneyPreview.css'
@@ -68,8 +68,8 @@ function LinkMarca() {
     <Link to="/" className="pn-marca" aria-label="PlanejAI, página inicial">
       {/* O aria-label do link cobre o conjunto inteiro; o do Logo ficaria
           duplicado ao ser lido junto com o texto visível ao lado. */}
-      <Logo className="h-8 w-8" animado={false} />
-      <span className="pn-marca-texto">Planej<strong>AI</strong></span>
+      <Logo decorative className="h-8 w-8" animado={false} />
+      <span className="pn-marca-texto"><BrandName/></span>
     </Link>
   )
 }

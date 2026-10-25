@@ -1,15 +1,29 @@
 {
   "name": "PlanejAI — Rotina de Estudos",
   "short_name": "PlanejAI",
-  "description": "Cronogramas, redações e atividades em uma rotina de estudos organizada.",
-  "start_url": "/PlanejAi/",
-  "scope": "/PlanejAi/",
+  "description": "Uma ideia abre outra. Seu plano, sua escrita e a Lumi, no mesmo espaço.",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#160f20",
-  "theme_color": "#7c3aed",
+  "theme_color": "#7353bd",
   "lang": "pt-BR",
-  "categories": ["education", "productivity"],
+  "categories": [
+    "education",
+    "productivity"
+  ],
   "icons": [
-    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "brand-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
   ]
 }

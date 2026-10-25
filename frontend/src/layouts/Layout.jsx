@@ -12,6 +12,7 @@ import '../components/WorkspaceUtilities.css'
 import '../MobileExperience.css'
 import '../AccessibleControls.css'
 import '../StudyIdentity.css'
+import '../BrandExperience.css'
 import { observeMobileViewport } from '../utils/mobileViewport'
 
 // Widgets secundários: não participam da primeira pintura. O lazy() tira o

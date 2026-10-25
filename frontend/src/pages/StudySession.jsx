@@ -1,3 +1,4 @@
+import AreaSignature from '../components/AreaSignature'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
@@ -158,6 +159,7 @@ export default function StudySession() {
 
   return <main className={`session-page pj-page study-desk${readingMode ? ' is-reading-mode' : ''}`}>
     <div className="pj-wrap">
+      <AreaSignature area="study"/>
       {noteStatus === 'unavailable' && tab !== 'notes' && <SaveFeedback status={noteStatus} onRetry={retryNotes} />}
       <header className="session-topbar student-page-heading">
         <button type="button" className="session-back" onClick={() => navigate(-1)}>← Voltar</button>

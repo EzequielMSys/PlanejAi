@@ -1,4 +1,4 @@
-const CACHE_NAME = 'planejai-shell-v8'
+const CACHE_NAME = 'planejai-shell-v9'
 const SHELL = new URL('./', self.registration.scope).href
 
 self.addEventListener('install', event => {

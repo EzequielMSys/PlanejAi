@@ -157,7 +157,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
 
   return (
     <div className={`flex min-h-0 flex-col h-full ${className}`}>
-      <div className="flex items-center justify-between gap-2 border-b border-study-line/10 px-3 py-2">
+      <div className="lumi-controls flex items-center justify-between gap-2 border-b border-study-line/10 px-3 py-2">
         <label className="flex items-center gap-2 text-xs font-bold text-black/60 dark:text-white/60">
           Matéria
           <select

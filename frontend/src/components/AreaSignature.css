@@ -1,0 +1,6 @@
+.area-signature { display:flex; align-items:center; flex-wrap:wrap; gap:.7rem 1.25rem; padding-block:.6rem 1rem; border-bottom:1px solid var(--pn-borda); margin-bottom:1.6rem; color:var(--pn-texto-suave); }
+.area-signature svg { width:72px; height:24px; flex:none; fill:var(--pn-link); }
+.area-signature svg path { fill:none; stroke:var(--pn-link); stroke-width:2; }
+.area-signature>span { font-size:.72rem; font-weight:750; letter-spacing:.06em; text-transform:uppercase; }
+.area-signature small { margin-left:auto; font:italic .95rem/1.5 Georgia,serif; }
+@media(max-width:600px) { .area-signature { gap:.5rem; margin-bottom:1rem; padding-block:.3rem .7rem; } .area-signature svg { width:32px; } .area-signature>span { flex:1; min-width:0; overflow-wrap:anywhere; } .area-signature small { display:none; } }

@@ -46,6 +46,7 @@ export default function ColorPicker() {
     <div className="relative" ref={containerRef}>
       <button
         type="button"
+        aria-label="Mudar cor"
         onClick={() => setAberto((v) => !v)}
         aria-expanded={aberto}
         aria-haspopup="dialog"

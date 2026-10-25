@@ -1,3 +1,5 @@
+import Logo from '../components/Logo'
+import AreaSignature from '../components/AreaSignature'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import SectionLink from '../components/SectionLink'
 import { motion } from 'framer-motion'
@@ -299,6 +301,7 @@ export default function Redacoes() {
       {loadError && <RecoveryState title="Não conseguimos consultar o histórico de redações." onRetry={carregarRedacoes}><p>Você ainda pode abrir o estúdio e continuar seu rascunho. Não foi possível confirmar a lista de textos salvos na conta.</p></RecoveryState>}
       {!loadError && requestedEssay && !redacoes.some(item => String(item.id_redacao) === requestedEssay) && <p role="status">A redação encontrada na busca não está mais neste histórico. Confira os textos disponíveis abaixo.</p>}
       <div className="redacoes-shell max-w-6xl mx-auto">
+      <AreaSignature area="writing"/>
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
           <section className="redacoes-intro" aria-labelledby="redacoes-title">
             <div className="redacoes-intro-copy">
@@ -310,7 +313,7 @@ export default function Redacoes() {
               </div>
               <div className="redacoes-intro-meta"><span>{loadError ? 'Histórico não confirmado' : <><strong>{redacoes.length}</strong> {redacoes.length === 1 ? 'texto enviado' : 'textos enviados'}</>}</span><span>{temRascunho ? 'Rascunho salvo neste dispositivo' : 'Um texto por vez, sem pressa'}</span></div>
             </div>
-            <div className="redacoes-intro-art" aria-hidden="true"><div className="redacoes-paper"><span>UM PROCESSO, NÃO UMA NOTA</span><i /><i /><i /><i /><b>ideia → argumento → revisão</b></div><span className="redacoes-art-mark">R.</span></div>
+            <div className="redacoes-intro-art" aria-hidden="true"><div className="redacoes-paper"><span>UM PROCESSO, NÃO UMA NOTA</span><i /><i /><i /><i /><b>ideia → argumento → revisão</b></div><span className="redacoes-art-mark"><Logo decorative monochrome className="redacoes-brand-symbol" animado={false}/></span></div>
           </section>
 
           {!modoEscrita && aba === 'minhas' && <section className="redacoes-guidance" aria-label="Seu próximo passo na escrita">

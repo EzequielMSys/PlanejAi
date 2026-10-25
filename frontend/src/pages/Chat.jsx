@@ -1,3 +1,4 @@
+import AreaSignature from '../components/AreaSignature'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ChatInterface from '../components/ChatInterface'
@@ -13,6 +14,7 @@ export default function Chat() {
 
   return (
     <main className="lumi-page">
+      <AreaSignature area="lumi"/>
       <header className="lumi-page-heading">
         <button type="button" onClick={() => navigate(-1)} aria-label="Voltar à página anterior" className="lumi-back">← Voltar</button>
         <div className="lumi-page-heading-row"><div><span className="lumi-page-kicker">SEU ESPAÇO DE ESTUDOS</span><h1>Converse com a Lumi.</h1></div><p>Retome uma lição, teste uma ideia ou peça outra explicação. A conversa acompanha o seu ritmo.</p></div>

@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { navigationFor, pageFor } from '../config/navigation'
 import Icon from './Icons'
-import Logo from './Logo'
+import Logo, { BrandName } from './Logo'
 import Avatar from './Avatar'
 import LumiMark from './LumiMark'
 
@@ -49,7 +49,7 @@ export default function Sidebar({ isOpen, onClose }) {
   return <>
     {isOpen && <button className="sd-sidebar-shade" type="button" onClick={onClose} aria-label="Fechar navegação" />}
     <aside ref={sidebarRef} id="app-sidebar" className={`app-sidebar sd-sidebar ${isOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
-      <div className="sd-brand-row"><Link to="/inicio" className="sd-brand" onClick={onClose}><Logo className="sd-brand-mark" animado={false} /><span>Planej<span>AI</span><small>espaço para aprender</small></span></Link><button className="sd-sidebar-close" type="button" onClick={onClose} aria-label="Fechar menu lateral"><Icon name="close" /></button></div>
+      <div className="sd-brand-row"><Link to="/inicio" className="sd-brand" onClick={onClose}><Logo decorative className="sd-brand-mark" animado={false} /><span><BrandName/><small>espaço para aprender</small></span></Link><button className="sd-sidebar-close" type="button" onClick={onClose} aria-label="Fechar menu lateral"><Icon name="close" /></button></div>
       <nav className="sd-navigation" aria-label="Páginas do PlanejAI">
         {groups.map(group => <section key={group}><h2>{group}</h2>{pages.filter(page => page.group === group).map(page => <Link key={page.path} to={page.path} onClick={onClose} aria-current={page.path === selectedPath ? 'page' : undefined} className={`sd-nav-link${page.path === selectedPath ? ' is-active' : ''}`} ><Icon name={page.icon} /><span>{page.title}</span></Link>)}</section>)}
       </nav>

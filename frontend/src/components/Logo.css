@@ -1,8 +1,12 @@
-.pn-logo-interactive{transform-origin:center;transition:transform .25s ease,filter .25s ease}
-.pn-logo-interactive .pn-logo-book,.pn-logo-interactive .pn-logo-route,.pn-logo-interactive .pn-logo-spark{transform-origin:center;transition:transform .28s ease,opacity .28s ease}
-.pn-logo-interactive:hover,.pn-logo-interactive:focus-visible{transform:translateY(-2px) rotate(-3deg);filter:drop-shadow(0 4px 7px rgb(var(--pn-primaria-rgb)/.25))}
-.pn-logo-interactive:hover .pn-logo-book,.pn-logo-interactive:focus-visible .pn-logo-book{transform:scale(1.04)}
-.pn-logo-interactive:hover .pn-logo-route,.pn-logo-interactive:focus-visible .pn-logo-route{transform:translate(1px,-1px)}
-.pn-logo-interactive:hover .pn-logo-spark,.pn-logo-interactive:focus-visible .pn-logo-spark{transform:scale(1.18)}
-@media(prefers-reduced-motion:reduce){.pn-logo-interactive,.pn-logo-interactive .pn-logo-book,.pn-logo-interactive .pn-logo-route,.pn-logo-interactive .pn-logo-spark{transition:none}.pn-logo-interactive:hover,.pn-logo-interactive:focus-visible,.pn-logo-interactive:hover .pn-logo-book,.pn-logo-interactive:hover .pn-logo-route,.pn-logo-interactive:hover .pn-logo-spark{transform:none}}
-.a11y-reduced-motion .pn-logo-interactive,.a11y-reduced-motion .pn-logo-interactive *{transition:none!important;transform:none!important}
+.pn-logo { color:var(--pn-link,var(--pn-primaria,#7353bd)); flex:none; overflow:visible; }
+.pn-logo.is-monochrome { color:inherit; }
+.pn-logo-interactive { transition:transform .2s ease; transform-origin:center; }
+a:hover .pn-logo-interactive { transform:translateY(-2px); }
+.pn-wordmark { color:var(--pn-texto,#252331); font-family:Arial,Helvetica,sans-serif; font-size:inherit; font-weight:800; letter-spacing:-.065em; line-height:1; white-space:nowrap; display:inline-block; }
+.pn-wordmark .pn-wordmark-ai { color:inherit; font-weight:500; letter-spacing:-.075em; }
+.pn-wordmark .pn-wordmark-point { color:var(--pn-link,var(--pn-primaria,#7353bd)); font-weight:900; margin-left:.015em; }
+.sd-brand .pn-wordmark { font-size:1.35rem; color:var(--pn-texto); }
+.sd-brand .pn-wordmark-ai { color:var(--pn-texto); }
+.pn-marca .pn-wordmark { font-size:1.4rem; }
+@media(prefers-reduced-motion:reduce) { .pn-logo-interactive { transition:none; } a:hover .pn-logo-interactive { transform:none; } }
+.a11y-reduced-motion .pn-logo-interactive { transition:none!important; transform:none!important; }

@@ -1,3 +1,4 @@
+import AreaSignature from '../components/AreaSignature'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
@@ -134,7 +135,7 @@ export default function Aprendizagem() {
 
   return <main className="learning-page min-h-screen bg-study-canvas px-4 py-6 text-study-ink dark:bg-study-canvas dark:text-white sm:px-8">
     <div className="mx-auto max-w-6xl">
-      {!questao && <><motion.header initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="learning-hero">
+      {!questao && <><AreaSignature area="learning"/><motion.header initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="learning-hero">
         <div className="learning-hero-copy"><span>SEU DIÁRIO DE APRENDIZAGEM</span><h1>Seu esforço<br /><em>ganha forma.</em></h1><p>Veja o que melhorou, retome o que ainda pede atenção e escolha sua próxima prática.</p><div className="learning-hero-actions"><button type="button" onClick={() => iniciarSimulado({ quantidade: 10, minutos: 15 })}>Começar simulado <span aria-hidden="true">→</span></button><button type="button" onClick={() => iniciarSimulado({ quantidade: 8, minutos: 15, adaptativo: true })}>Prática adaptativa</button></div></div>
         <aside className="learning-next"><span>PRÓXIMO PASSO SUGERIDO</span><div aria-hidden="true">↗</div><h2>{proximaAcao.titulo}</h2><p>{proximaAcao.texto}</p><button type="button" onClick={() => setAba(proximaAcao.aba)}>{proximaAcao.botao} <span aria-hidden="true">→</span></button></aside>
       </motion.header>

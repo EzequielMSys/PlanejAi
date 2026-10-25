@@ -1,3 +1,4 @@
+import AreaSignature from '../components/AreaSignature'
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
@@ -158,6 +159,7 @@ export default function TodayDashboard() {
 
   return <main className="dash-v2">
     <div className="dash-v2-wrap">
+      <AreaSignature area="today"/>
       <header className="dash-v2-heading">
         <div><span>HOJE · UM PASSO DE CADA VEZ</span><h1>{greeting()}, {name}.</h1><p>{date}</p></div>
         <div>{user?.tipo === 'aluno' && <button type="button" onClick={() => navigate('/sessao-guiada')}>Montar sessão guiada</button>}<button type="button" onClick={() => navigate('/cronograma')}>Ver cronograma <b>→</b></button></div>
@@ -168,8 +170,9 @@ export default function TodayDashboard() {
         <motion.article className="dash-v2-focus" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <div className="dash-v2-focus-top"><span>SEU PRÓXIMO PASSO</span><small>{nextAction.subject}</small></div>
           <div className="dash-v2-focus-copy"><p>{nextAction.kind === 'lesson' ? 'Abra o material e siga do ponto em que parou' : 'Uma ação possível para agora'}</p><h2>{nextAction.title}</h2><p className="dash-v2-reason"><strong>Por quê?</strong> {nextAction.reason}</p><div><span>{nextAction.duration}</span><span>{data.learning ? `${reviews} ${reviews === 1 ? 'revisão pendente' : 'revisões pendentes'}` : 'Revisões a consultar'}</span></div></div>
-          {['resume', 'lesson'].includes(nextAction.kind) && <div className="study-return-note"><p><strong>Sem precisar recuperar tudo de uma vez.</strong> {pendingContents} {pendingContents === 1 ? 'conteúdo ainda aberto' : 'conteúdos ainda abertos'} no plano. Escolha só um próximo passo.</p></div>}
           <footer><button type="button" disabled={nextAction.kind === 'lesson' && resumeStatus !== 'ready'} onClick={openNextAction}>{nextAction.label} <b>→</b></button>{['resume', 'lesson'].includes(nextAction.kind) && resumeStatus === 'ready' ? <button type="button" className="dash-v2-lumi-action" onClick={openShortReturn}>Retomar por 5 minutos</button> : <button type="button" className="dash-v2-lumi-action" onClick={askLumiAboutNextAction}>Planejar com a Lumi</button>}</footer>
+          {['resume', 'lesson'].includes(nextAction.kind) && <div className="study-return-note"><p><strong>Sem precisar recuperar tudo de uma vez.</strong> {pendingContents} {pendingContents === 1 ? 'conteúdo ainda aberto' : 'conteúdos ainda abertos'} no plano. Escolha só um próximo passo.</p></div>}
+
         </motion.article>
 
         <aside className="dash-v2-score">
