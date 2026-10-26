@@ -40,7 +40,7 @@ async function selecionarQuestoes(disciplinas, quantidade) {
   await garantirBancoQuestoes()
   if (!disciplinas.length) throw new Error('Este cronograma não possui conteúdos avaliáveis.')
   const placeholders = disciplinas.map(() => '?').join(',')
-  const [rows] = await pool.execute(
+  const [rows] = await pool.query(
     `SELECT * FROM questoes_estudo WHERE ativo = 1 AND disciplina IN (${placeholders})
      ORDER BY CASE dificuldade WHEN 'DIFICIL' THEN 0 WHEN 'MEDIA' THEN 1 ELSE 2 END, RAND() LIMIT ?`,
     [...disciplinas, quantidade]

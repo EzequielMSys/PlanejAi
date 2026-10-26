@@ -121,8 +121,8 @@ async function buscarPorId(id) {
 }
 
 async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '' } = {}) {
-  const safePage = Math.max(1, Number(page) || 1)
-  const safeLimit = Math.min(100, Math.max(1, Number(limit) || 10))
+  const safePage = Number.isSafeInteger(Number(page)) && Number(page) > 0 ? Math.min(Number(page), 1000000) : 1
+  const safeLimit = Number.isSafeInteger(Number(limit)) && Number(limit) > 0 ? Math.min(Number(limit), 100) : 10
   const offset = (safePage - 1) * safeLimit
   const where = []
   const values = []
@@ -151,7 +151,8 @@ async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '' } =
     SUM(tipo = 'docente') AS docentes,
     SUM(tipo = 'dono') AS donos
     FROM usuarios`)
-  const [rows] = await pool.execute(
+  // MySQL 8.4 rejeita os parâmetros numéricos DOUBLE de execute em LIMIT.
+  const [rows] = await pool.query(
     `SELECT 
       id_usuario AS id,
       id_usuario,

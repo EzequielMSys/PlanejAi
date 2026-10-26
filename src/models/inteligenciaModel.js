@@ -76,7 +76,7 @@ async function gerarSimulado(idUsuario, { idCatalogo, dificuldade = 'TODAS', qua
   const questoes = []
   for (const [dificuldadeQuestao, quantidadeNivel] of Object.entries(distribuicao)) {
     if (!quantidadeNivel) continue
-    const [selecionadas] = await pool.execute(`SELECT q.id_questao,q.disciplina,q.competencia,q.enunciado,q.alternativas,q.dificuldade
+    const [selecionadas] = await pool.query(`SELECT q.id_questao,q.disciplina,q.competencia,q.enunciado,q.alternativas,q.dificuldade
       FROM catalogo_prova_questoes cp JOIN questoes_estudo q ON q.id_questao=cp.id_questao
       WHERE cp.id_catalogo=? AND q.ativo=1 AND q.dificuldade=? ORDER BY RAND() LIMIT ?`, [idCatalogo, dificuldadeQuestao, quantidadeNivel])
     questoes.push(...selecionadas)

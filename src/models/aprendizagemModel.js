@@ -46,7 +46,7 @@ async function gerarSimulado(idUsuario, { quantidade = 10, disciplina, dificulda
   if (dificuldade && ['FACIL', 'MEDIA', 'DIFICIL'].includes(dificuldade)) { filtro += ' AND q.dificuldade = ?'; params.push(dificuldade); }
   if (origem === 'erros') filtro += ' AND ce.id_erro IS NOT NULL AND ce.resolvido = 0';
   params.push(limite);
-  const [rows] = await pool.execute(
+  const [rows] = await pool.query(
     `SELECT q.*, COALESCE(hist.erros, 0) AS erros_anteriores
      FROM questoes_estudo q
      LEFT JOIN caderno_erros ce ON ce.id_questao = q.id_questao AND ce.id_usuario = ?

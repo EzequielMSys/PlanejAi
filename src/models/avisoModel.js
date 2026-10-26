@@ -22,6 +22,7 @@ async function obterPorId(idAviso) {
 // que participa. Sem o segundo grupo, a aba "Avisos" da turma e a tela global
 // mostrariam conteúdos diferentes para a mesma pessoa.
 async function listarAvisos(tipoUsuario, limit = 50, idUsuario = null) {
+  const safeLimit = Number.isSafeInteger(Number(limit)) && Number(limit) > 0 ? Math.min(Number(limit), 200) : 50
   const grupos = tipoUsuario === 'aluno'
     ? ['todos', 'alunos']
     : tipoUsuario === 'docente'
@@ -30,8 +31,9 @@ async function listarAvisos(tipoUsuario, limit = 50, idUsuario = null) {
   const daTurma = tipoUsuario === 'aluno' && idUsuario
     ? 'OR (a.id_turma IS NOT NULL AND EXISTS (SELECT 1 FROM turma_alunos m WHERE m.id_turma=a.id_turma AND m.id_aluno=? AND m.ativo=1))'
     : ''
-  const params = daTurma ? [idUsuario, ...grupos, limit] : [...grupos, limit]
-  const [rows] = await pool.execute(
+  const params = daTurma ? [idUsuario, ...grupos, safeLimit] : [...grupos, safeLimit]
+  // query mantém os parâmetros escapados e serializa LIMIT como inteiro.
+  const [rows] = await pool.query(
     `SELECT a.*, u.nome AS criador_nome FROM avisos a
      LEFT JOIN usuarios u ON u.id_usuario = a.criado_por
      WHERE (a.destinatarios IN (${grupos.map(() => '?').join(',')}) ${daTurma})
