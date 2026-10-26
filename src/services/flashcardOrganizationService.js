@@ -11,14 +11,14 @@ async function flag(owner,card,body,db=pool) {
  return {salvo:true}
 }
 async function list(owner,db=pool) {
- const [rows]=await db.execute(`SELECT c.id,c.nome,c.objetivo,c.versao,COUNT(f.id_flashcard) AS total,
+ const [rows]=await db.execute(`SELECT c.id,c.nome,c.objetivo,c.versao,c.fixada,COUNT(f.id_flashcard) AS total,
  SUM(CASE WHEN f.arquivado=0 THEN 1 ELSE 0 END) AS ativos,
  SUM(CASE WHEN f.arquivado=0 AND f.proxima_revisao<=? THEN 1 ELSE 0 END) AS pendentes,
  SUM(CASE WHEN f.arquivado=0 AND f.melhorar=1 THEN 1 ELSE 0 END) AS melhorar,
  SUM(CASE WHEN f.arquivado=1 THEN 1 ELSE 0 END) AS arquivados
  FROM flashcard_colecoes c LEFT JOIN flashcard_colecao_itens i ON i.id_colecao=c.id AND i.id_usuario=c.id_usuario
  LEFT JOIN flashcards_estudo f ON f.id_flashcard=i.id_flashcard AND f.id_usuario=c.id_usuario
- WHERE c.id_usuario=? GROUP BY c.id,c.nome,c.objetivo,c.versao ORDER BY c.nome,c.id`,[today(),owner])
+ WHERE c.id_usuario=? GROUP BY c.id,c.nome,c.objetivo,c.versao,c.fixada ORDER BY c.fixada DESC,c.nome,c.id`,[today(),owner])
  return rows
 }
 async function save(owner,body,db=pool) {
@@ -61,9 +61,9 @@ async function member(owner,collection,card,body,db=pool) {
  }else await db.execute('DELETE FROM flashcard_colecao_itens WHERE id_colecao=? AND id_flashcard=? AND id_usuario=?',[collectionId,cardId,owner])
  return {salvo:true}
 }
-async function addMany(owner,collection,body,db=pool) {
+async function changeMany(owner,collection,body,db,removing) {
  const collectionId=id(collection)
- if(!Array.isArray(body?.cartoes)||body.cartoes.length<1||body.cartoes.length>50)fail(400,'Selecione de 1 a 50 cartões por inclusão.')
+ if(!Array.isArray(body?.cartoes)||body.cartoes.length<1||body.cartoes.length>50)fail(400,'Selecione de 1 a 50 cartões por operação.')
  const ids=[...new Set(body.cartoes.map(id))].sort((a,b)=>a-b)
  const conn=await db.getConnection()
  try {
@@ -71,10 +71,32 @@ async function addMany(owner,collection,body,db=pool) {
   const [[group]]=await conn.execute('SELECT id FROM flashcard_colecoes WHERE id=? AND id_usuario=? FOR UPDATE',[collectionId,owner])
   if(!group)fail(404,'Coleção não disponível nesta conta. Confira a seleção antes de tentar novamente.')
   const [records]=await conn.execute(`SELECT id_flashcard FROM flashcards_estudo WHERE id_usuario=? AND id_flashcard IN (${ids.map(()=>'?').join(',')}) ORDER BY id_flashcard FOR UPDATE`,[owner,...ids])
-  if(records.length!==ids.length)fail(404,'Um ou mais cartões não estão disponíveis nesta conta. Nenhum cartão foi adicionado por este envio.')
-  await conn.execute(`INSERT INTO flashcard_colecao_itens (id_colecao,id_flashcard,id_usuario) VALUES ${ids.map(()=>'(?,?,?)').join(',')} ON DUPLICATE KEY UPDATE id_colecao=VALUES(id_colecao)`,ids.flatMap(cardId=>[collectionId,cardId,owner]))
+  if(records.length!==ids.length)fail(404,'Um ou mais cartões não estão disponíveis nesta conta. Nenhum vínculo foi alterado por este envio.')
+  if(removing)await conn.execute(`DELETE FROM flashcard_colecao_itens WHERE id_colecao=? AND id_usuario=? AND id_flashcard IN (${ids.map(()=>'?').join(',')})`,[collectionId,owner,...ids])
+  else await conn.execute(`INSERT INTO flashcard_colecao_itens (id_colecao,id_flashcard,id_usuario) VALUES ${ids.map(()=>'(?,?,?)').join(',')} ON DUPLICATE KEY UPDATE id_colecao=VALUES(id_colecao)`,ids.flatMap(cardId=>[collectionId,cardId,owner]))
   await conn.commit()
   return {salvo:true,confirmados:ids.length}
  } catch(error) {await conn.rollback();throw error} finally {conn.release()}
 }
-module.exports={flag,list,save,edit,remove,memberships,member,addMany}
+const addMany=(owner,collection,body,db=pool)=>changeMany(owner,collection,body,db,false)
+const removeMany=(owner,collection,body,db=pool)=>changeMany(owner,collection,body,db,true)
+async function pin(owner,collection,body,db=pool) {
+ const collectionId=id(collection)
+ if(typeof body?.fixada!=='boolean')fail(400,'Escolha fixar ou desafixar a coleção.')
+ const conn=await db.getConnection()
+ try {
+  await conn.beginTransaction()
+  // Serialize priority changes in this account, including concurrent requests.
+  const [[user]]=await conn.execute('SELECT id_usuario FROM usuarios WHERE id_usuario=? FOR UPDATE',[owner])
+  if(!user)fail(404,'Conta não disponível.')
+  const [[record]]=await conn.execute('SELECT fixada FROM flashcard_colecoes WHERE id=? AND id_usuario=? FOR UPDATE',[collectionId,owner])
+  if(!record)fail(404,'Coleção não disponível nesta conta.')
+  if(body.fixada&&!Number(record.fixada)){
+   const [[count]]=await conn.execute('SELECT COUNT(*) AS total FROM flashcard_colecoes WHERE id_usuario=? AND fixada=1',[owner])
+   if(Number(count.total)>=3)fail(409,'Você já tem três coleções fixadas em Hoje. Desafixe uma delas antes de escolher outra.')
+  }
+  await conn.execute('UPDATE flashcard_colecoes SET fixada=? WHERE id=? AND id_usuario=?',[body.fixada?1:0,collectionId,owner])
+  await conn.commit();return {salvo:true,fixada:body.fixada}
+ }catch(error){await conn.rollback();throw error}finally{conn.release()}
+}
+module.exports={flag,list,save,edit,remove,memberships,member,addMany,removeMany,pin}

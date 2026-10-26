@@ -72,3 +72,21 @@ test('inclusão em lote trava coleção e cartões do dono e evita duplicação'
 test('lote misto ou coleção alheia não insere parcialmente e falha de escrita reverte tudo',async()=>{
  for(const options of [{missingGroup:true},{missingCard:true},{insertFailure:true}]){const fixture=bulkFixture(options);await assert.rejects(organization.addMany(7,9,{cartoes:[41,42]},fixture.db));assert.deepEqual(fixture.stats(),{committed:0,rolledBack:1,released:1});if(!options.insertFailure)assert.ok(!fixture.calls.some(c=>c.sql.startsWith('INSERT')))}
 });
+
+test('retirada em lote apaga somente vínculos da coleção do dono e aceita reenvio',async()=>{
+ const fixture=bulkFixture();const body={cartoes:[42,41,42]};assert.deepEqual(await organization.removeMany(7,9,body,fixture.db),{salvo:true,confirmados:2});const deletion=fixture.calls.find(c=>c.sql.startsWith('DELETE'));assert.match(deletion.sql,/DELETE FROM flashcard_colecao_itens WHERE id_colecao=\? AND id_usuario=\?/);assert.deepEqual(deletion.params,[9,7,41,42]);assert.ok(!fixture.calls.some(c=>/DELETE FROM flashcards_estudo|UPDATE flashcards_estudo|flashcard_revisoes/.test(c.sql)));assert.equal((await organization.removeMany(7,9,body,fixture.db)).salvo,true);
+ const missing=bulkFixture({missingCard:true});await assert.rejects(organization.removeMany(7,9,body,missing.db),e=>e.status===404);assert.ok(!missing.calls.some(c=>c.sql.startsWith('DELETE')));assert.equal(missing.stats().rolledBack,1);
+});
+function pinFixture({pinned=0,count=0,missing=false}={}){
+ const calls=[];let committed=0,rolledBack=0,released=0;const conn={beginTransaction:async()=>{},commit:async()=>{committed++},rollback:async()=>{rolledBack++},release:()=>{released++},execute:async(sql,params)=>{calls.push({sql,params});if(sql.startsWith('SELECT id_usuario'))return [[{id_usuario:7}]];if(sql.startsWith('SELECT fixada'))return [missing?[]:[{fixada:pinned}]];if(sql.includes('COUNT'))return [[{total:count}]];return [{affectedRows:1}]}};return {calls,db:{getConnection:async()=>conn},stats:()=>({committed,rolledBack,released})};
+}
+test('prioridades serializam mudanças por conta, limitam a três e mantêm versão editorial',async()=>{
+ const fixture=pinFixture({count:2});assert.deepEqual(await organization.pin(7,9,{fixada:true},fixture.db),{salvo:true,fixada:true});assert.equal(fixture.calls[0].sql,'SELECT id_usuario FROM usuarios WHERE id_usuario=? FOR UPDATE');assert.deepEqual(fixture.calls[0].params,[7]);assert.deepEqual(fixture.calls[1].params,[9,7]);assert.deepEqual(fixture.calls.at(-1).params,[1,9,7]);assert.doesNotMatch(fixture.calls.at(-1).sql,/versao/);
+ const full=pinFixture({count:3});await assert.rejects(organization.pin(7,9,{fixada:true},full.db),e=>e.status===409);assert.ok(!full.calls.some(c=>c.sql.startsWith('UPDATE')));assert.equal(full.stats().rolledBack,1);
+ const retry=pinFixture({pinned:1,count:3});assert.equal((await organization.pin(7,9,{fixada:true},retry.db)).salvo,true);assert.ok(!retry.calls.some(c=>c.sql.includes('COUNT')));
+ const unpin=pinFixture({pinned:1,count:3});assert.equal((await organization.pin(7,9,{fixada:false},unpin.db)).fixada,false);assert.deepEqual(unpin.calls.at(-1).params,[0,9,7]);
+});
+test('prioridades rejeitam coleção alheia e booleanos ambíguos',async()=>{
+ const fixture=pinFixture({missing:true});await assert.rejects(organization.pin(7,9,{fixada:true},fixture.db),e=>e.status===404);assert.equal(fixture.stats().rolledBack,1);assert.equal(fixture.stats().released,1);
+ for(const body of [null,{}, {fixada:'true'},{fixada:1}])await assert.rejects(organization.pin(7,9,body,{getConnection:()=>{throw Error('SQL inesperado')}}),e=>e.status===400);
+});

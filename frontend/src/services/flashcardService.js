@@ -17,4 +17,6 @@ export default {
  memberships:(id,signal)=>api.get(`/${id}/colecoes`,{signal,cache:false}).then(r=>r.data),
  member:(collection,id,incluir,owner)=>api.put(`/colecoes/${collection}/cartoes/${id}`,{incluir},{expectedOwner:owner}).then(r=>r.data),
  addMany:(collection,cartoes,owner)=>api.put(`/colecoes/${collection}/cartoes`,{cartoes},{expectedOwner:owner}).then(r=>r.data),
+ removeMany:(collection,cartoes,owner)=>api.post(`/colecoes/${collection}/retirar`,{cartoes},{expectedOwner:owner}).then(r=>r.data),
+ pin:(collection,fixada,owner)=>api.patch(`/colecoes/${collection}/fixada`,{fixada},{expectedOwner:owner}).then(r=>r.data),
 }

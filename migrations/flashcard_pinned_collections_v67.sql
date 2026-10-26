@@ -1,0 +1,1 @@
+ALTER TABLE flashcard_colecoes ADD COLUMN fixada TINYINT(1) NOT NULL DEFAULT 0;

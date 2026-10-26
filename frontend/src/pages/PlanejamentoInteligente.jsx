@@ -261,7 +261,7 @@ export default function PlanejamentoInteligente() {
           {provas.map((item) => <p key={item.id_prova} className="mt-3 text-sm"><b>{item.titulo}</b> · {String(item.data_prova).slice(0, 10)} · {(item.materias || []).map((m) => m.disciplina || m).join(', ')}</p>)}
           {prova.materias.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{prova.materias.map((materia, indice) => <label key={materia.disciplina} className="text-sm">{materia.disciplina} peso <input type="number" min="1" max="10" value={materia.peso} onChange={(e) => setProva({ ...prova, materias: prova.materias.map((m, i) => i === indice ? { ...m, peso: Number(e.target.value) || 1 } : m) })} className="ml-1 w-14" /></label>)}</div>}
         </section>
-        <FlashcardLibrary requestedCard={requestedCard}/><section className="mt-5 grid gap-5">
+        <FlashcardLibrary requestedCard={requestedCard} requestedCollection={params.get('colecao')}/><section className="mt-5 grid gap-5">
 
           <section className="rounded-[2rem] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 dark:bg-[rgb(var(--pn-superficie-rgb)/1)]">
             <h2 className="text-xl font-black">Privacidade pedagógica</h2>
