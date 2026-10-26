@@ -1,3 +1,4 @@
+import {ReadingText} from './ReadingHighlights'
 import ReadingSurface from './ReadingSurface'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -118,10 +119,10 @@ export default function StudyGuide({ material = {}, sourceUrl, className = '', o
 
   return <ReadingSurface key={`${material.id_conteudo || material.id || material.titulo}:${material.disciplina || ''}`} material={material}><article className={`study-guide ${className}`}>
     <header><span>{plano.chave ? 'GUIA DO TEMA' : 'ROTEIRO GERAL DE ESTUDO'}</span><h2>{titulo}</h2><p>{disciplina} · {plano.chave ? 'Texto e questões autorais para uma primeira prática.' : 'Este roteiro ensina um método de estudo; ainda não há uma aula específica para este tema.'}</p></header>
-    <section><h3>O que você precisa aprender</h3><p>{plano.conceito}</p></section>
-    <section className="study-guide-reading"><span>TEXTO DE APOIO</span><h3>Entenda a ideia antes de praticar</h3><p>{textoApoio}</p><small>Leia uma vez para compreender e volte ao texto quando uma questão trouxer dúvida.</small></section>
-    <section><h3>Roteiro de estudo</h3><ol>{plano.passos.map((passo) => <li key={passo}>{passo}</li>)}</ol></section>
-    {plano.armadilha && <section><h3>Armadilha comum</h3><p>{plano.armadilha}</p>{plano.pratica && <p><b>Prática ativa:</b> {plano.pratica}</p>}</section>}
+    <section><h3>O que você precisa aprender</h3><p><ReadingText text={plano.conceito} section="O que você precisa aprender"/></p></section>
+    <section className="study-guide-reading"><span>TEXTO DE APOIO</span><h3>Entenda a ideia antes de praticar</h3><p><ReadingText text={textoApoio} section="Entenda a ideia antes de praticar"/></p><small>Leia uma vez para compreender e volte ao texto quando uma questão trouxer dúvida.</small></section>
+    <section><h3>Roteiro de estudo</h3><ol>{plano.passos.map((passo) => <li key={passo}><ReadingText text={passo} section="Roteiro de estudo"/></li>)}</ol></section>
+    {plano.armadilha && <section><h3>Armadilha comum</h3><p><ReadingText text={plano.armadilha} section="Armadilha comum"/></p>{plano.pratica && <p><b>Prática ativa:</b> <ReadingText text={plano.pratica} section="Armadilha comum"/></p>}</section>}
     <section className="study-guide-quiz" aria-labelledby="quiz-title">
       <div><span>VALIDAÇÃO DE LEITURA</span><h3 id="quiz-title">Teste rápido: responda sem consultar</h3><p>{plano.chave ? "São três questões autorais sobre o conteúdo acima, sem valor de nota oficial." : "São três perguntas curtas sobre o método de estudo apresentado acima."}</p></div>
       {questoes.map(([pergunta, opcoes, correta, explicacao], indice) => <fieldset key={pergunta} disabled={resultado !== null}>

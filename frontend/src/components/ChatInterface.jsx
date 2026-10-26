@@ -1,3 +1,4 @@
+import LumiConversations from './LumiConversations'
 import LumiContextPicker from './LumiContextPicker'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
@@ -62,8 +63,9 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
   const inputRef = useRef(null)
   const sendingRef = useRef(false)
   const [practiceEpoch,setPracticeEpoch]=useState(0)
+  const [conversationEpoch,setConversationEpoch]=useState(0)
   const [items,setItems]=useState(()=>estudoAtual?.titulo?[{id:'session',tipo:'sessao',titulo:'Sessão atual',texto:[estudoAtual.disciplina,estudoAtual.titulo].filter(Boolean).join(' · ')}]:[])
-  const resetItems=next=>{if(sendingRef.current)return;setItems(next);setMensagens([]);setHistory(null);setSendError('')}
+  const resetItems=next=>{if(sendingRef.current)return;setConversationEpoch(value=>value+1);setItems(next);setMensagens([]);setHistory(null);setSendError('')}
   const fresh=()=>{if(sendingRef.current)return;resetItems([]);setMateria('');setInput('');setPracticeEpoch(value=>value+1)}
   const candidates=[...(estudoAtual?.titulo?[{id:'session',tipo:'sessao',titulo:'Sessão atual',texto:[estudoAtual.disciplina,estudoAtual.titulo].filter(Boolean).join(' · ')}]:[]),...(anotacaoAtual?.trim()?[{id:'note',tipo:'anotacao',titulo:'Anotação da sessão',texto:anotacaoAtual.slice(0,1500)}]:[]),...(redacaoSelecionada?.tema?[{id:'essay',tipo:'redacao',titulo:'Tema da redação selecionada',texto:redacaoSelecionada.tema.slice(0,1500)}]:[]),...(Array.isArray(contexto?.licoes)?contexto.licoes:[]).slice(0,4).map((item,index)=>({id:'lesson-'+index,tipo:'registro',titulo:'Lição: '+item.titulo,texto:item.disciplina+' · '+item.titulo}))]
 
@@ -141,7 +143,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
   }
 
   async function limparConversa() {
-    if (!window.confirm('Limpar toda a conversa com a Lumi?')) return
+    if (!window.confirm('Limpar o histórico geral e esta conversa da tela? As conversas guardadas por objetivo serão preservadas.')) return
     try {
       await inteligencia.chatClear()
       setMensagens([])
@@ -177,10 +179,11 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
           disabled={(!mensagens.length && !history?.length) || loading}
           className="rounded-lg px-2 py-1 text-xs font-bold text-study-accent hover:bg-study-accent/10 disabled:opacity-40 dark:text-white/80"
         >
-          Limpar conversa
+          Limpar histórico geral
         </button>}
       </div>
 
+      <LumiConversations key={conversationEpoch} snapshot={{itens:items,materia,mensagens}} draftMessage={input} busy={loading} onRestore={record=>{setItems(record.itens.map((item,index)=>({...item,id:`conversation-${index}`})));setMateria(record.materia);setMensagens(record.mensagens);setInput('');setHistory(null);setSendError('');setPracticeEpoch(value=>value+1)}} />
       <LumiContextPicker items={items} candidates={candidates} onChange={resetItems} onFresh={fresh} busy={loading} materia={materia} onRemoveSubject={()=>{resetItems(items);setMateria('')}} />
 
       <div className="lumi-feed flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-live="polite">

@@ -42,7 +42,8 @@ const migrationOrder = [
   'learning_journal_v24.sql',
   'session_closure_v25.sql',
   'personal_desk_v26.sql',
-  'feedback_context_v51.sql'
+  'feedback_context_v51.sql',
+  'reading_and_conversations_v53.sql'
 ];
 
 function sortMigrations(files) {

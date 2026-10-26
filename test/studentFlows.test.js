@@ -32,6 +32,8 @@ let bundle;
 let requests = [];
 let failChat = false;
 let chatHistoryFixture=[];
+let readingHighlightsFixture=[],highlightSaveFailure=false,conversationsFixture=[],conversationSaveFailure=false,chatPlainReply=false;
+let conversationSaveDeferred=false,resolveConversationSave;
 let failScheduleLoad = false;
 let failExamLoad = false;
 let supportMode = '';
@@ -67,6 +69,25 @@ const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de te
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
+  if(url.endsWith('/registros/destaques')){
+    if(config.method==='get')return readingHighlightsFixture.filter(item=>Boolean(item.arquivado)===(config.params.arquivados==='1'));
+    if(highlightSaveFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Destaque ainda não confirmado.'}});
+    const data=JSON.parse(config.data),row={id:91,material_key:data.materialKey,titulo:data.titulo,secao:data.secao,trecho:data.trecho,nota:data.nota,versao:1,arquivado:0};readingHighlightsFixture=[row];return {...row,salvo:true};
+  }
+  if(/\/registros\/destaques\/91(?:\/arquivo)?$/.test(url)){
+    const data=JSON.parse(config.data),row=readingHighlightsFixture[0];if(highlightSaveFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
+    if(config.method==='patch')row.arquivado=data.arquivado?1:0;else row.nota=data.nota;row.versao++;return {...row,salvo:true};
+  }
+  if(url.endsWith('/registros/conversas')){
+    if(config.method==='get')return {itens:conversationsFixture.filter(item=>Boolean(item.arquivado)===(config.params.arquivados==='1')).map(item=>({...item,total:item.mensagens.length})),mais:false,pagina:1};
+    if(conversationSaveFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:409,data:{message:'A versão da conta mudou.'}});
+    const row={...JSON.parse(config.data),id:81,versao:1,arquivado:0};conversationsFixture=[row];if(conversationSaveDeferred)return new Promise(resolve=>{resolveConversationSave=()=>resolve({id:81,versao:1,salvo:true})});return {id:81,versao:1,salvo:true};
+  }
+  if(/\/registros\/conversas\/81(?:\/arquivo)?$/.test(url)){
+    const row=conversationsFixture[0];if(config.method==='get')return row;
+    if(conversationSaveFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:409,data:{message:'A versão da conta mudou.'}});
+    const data=JSON.parse(config.data);if(config.method==='patch')row.arquivado=data.arquivado?1:0;else Object.assign(row,data);row.versao++;return {id:81,versao:row.versao,salvo:true};
+  }
   if(planningWriteFailure && config.method==='post' && (url.endsWith('/perfil') || url.endsWith('/perfil/disponibilidade')))throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
   if(essayMode==='success' && config.method==='post' && url.endsWith('/redacao'))return {redacao:{id_redacao:88,...JSON.parse(config.data)}};
   if(essayMode==='workshopSuccess' && config.method==='post' && url.endsWith('/redacao/projetos'))return {id_projeto:84,...JSON.parse(config.data)};
@@ -141,6 +162,7 @@ function fixture(config) {
   if (/\/dias\/\d+\/ajustar$/.test(url)) return { message: 'Seu dia foi ajustado e salvo.' };
   if (url.endsWith('/inteligencia/chat')) {
     if (config.method === 'post') {
+      if(chatPlainReply)return {conteudo:'Uma resposta que usa somente a conversa escolhida.'};
       if (failChat) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: { message: 'Lumi temporariamente indisponível.' } });
       return { mensagens: [{ role: 'user', conteudo: JSON.parse(config.data).mensagem }, { role: 'assistant', conteudo: '# Vamos entender\n\nUma **ideia** de cada vez.\n\n- Primeiro ponto\n- Segundo ponto\n\n<script>unsafe()</script>' }] };
     }
@@ -2003,4 +2025,76 @@ test('feedback screenshot remains local until confirmation and can be removed',a
   const axeResult=await axe.run(panel,{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(axeResult.violations.map(x=>x.id),[]);
   await act(async()=>button('Retirar captura').click());assert.equal(panel.querySelector('.feedback-image img'),null);
  }finally{await screen.close()}
+});
+
+test('reading highlights preserve a failed selection and save quote and annotation without calling Lumi',async()=>{
+ window.sessionStorage.setItem('900001:active-study-content',JSON.stringify({conteudo:{id:51,id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'}}));highlightSaveFailure=true;
+ const screen=await renderRoute('/estudar');
+ try{
+  const span=document.querySelector('[data-reading-text]'),quote=span.textContent;const range=document.createRange();range.selectNodeContents(span);
+  await act(async()=>{const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);document.dispatchEvent(new window.Event('selectionchange'))});
+  await act(async()=>button('Destacar trecho selecionado').click());
+  await inputValue(document.querySelector('.reading-highlights textarea'),'Meu exemplo com um carrinho de compras.');
+  await act(async()=>button('Salvar destaque e anotação').click());await flush();
+  assert.ok(document.querySelector('.reading-highlights .save-feedback[data-state="error"]'));assert.equal(document.querySelector('.reading-highlights textarea').value,'Meu exemplo com um carrinho de compras.');
+  assert.equal(JSON.parse(localStorage.getItem('900001:reading-highlight-draft:9')).trecho,quote);
+  highlightSaveFailure=false;await act(async()=>document.querySelector('.reading-highlights .save-feedback button').click());await flush();
+  assert.equal(document.querySelector('mark[data-reading-highlight]').textContent,quote);assert.equal(localStorage.getItem('900001:reading-highlight-draft:9'),null);
+  assert.equal(requests.filter(item=>item.method==='post'&&item.url.endsWith('/inteligencia/chat')).length,0);
+  const result=await axe.run(document.querySelector('.reading-highlights'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(item=>item.id),[]);
+ }finally{highlightSaveFailure=false;readingHighlightsFixture=[];window.getSelection().removeAllRanges();window.sessionStorage.clear();await screen.close()}
+});
+
+test('highlight annotation edits preserve the original quote and removed highlights can be restored',async()=>{
+ window.sessionStorage.setItem('900001:active-study-content',JSON.stringify({conteudo:{id:51,id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'}}));
+ readingHighlightsFixture=[{id:91,secao:'O que você precisa aprender',trecho:'As leis de Newton',nota:'Minha primeira ideia.',versao:1,arquivado:0}];
+ const screen=await renderRoute('/estudar');
+ try{
+  await act(async()=>document.querySelector('.reading-highlights>summary').click());await act(async()=>button('Editar anotação').click());
+  await inputValue(document.querySelector('.reading-highlights textarea'),'Uma explicação melhor com meu exemplo.');await act(async()=>button('Salvar destaque e anotação').click());await flush();
+  assert.equal(readingHighlightsFixture[0].trecho,'As leis de Newton');assert.equal(readingHighlightsFixture[0].nota,'Uma explicação melhor com meu exemplo.');
+  await act(async()=>button('Retirar destaque').click());await flush();assert.equal(readingHighlightsFixture[0].arquivado,1);
+  await act(async()=>button('Ver destaques retirados').click());await flush();assert.ok(button('Restaurar destaque'));
+  await act(async()=>button('Restaurar destaque').click());await flush();assert.equal(readingHighlightsFixture[0].arquivado,0);
+ }finally{readingHighlightsFixture=[];window.sessionStorage.clear();await screen.close()}
+});
+
+test('Lumi saves an objective and only resumes its chosen conversation after context review',async()=>{
+ chatPlainReply=true;const screen=await renderRoute('/lumi');
+ try{
+  await inputValue(document.getElementById('lumi-message'),'Quero entender a força resultante.');await act(async()=>document.getElementById('lumi-message').closest('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+  await act(async()=>document.querySelector('.lumi-conversations>summary').click());await inputValue(document.querySelector('.lumi-conversations input'),'Entender Newton');
+  await act(async()=>button('Guardar conversa por objetivo').click());await flush();assert.equal(conversationsFixture[0].mensagens.length,2);assert.equal(conversationsFixture[0].objetivo,'Entender Newton');
+  const calls=requests.filter(item=>item.method==='post'&&item.url.endsWith('/inteligencia/chat')).length;
+  await act(async()=>button('Começar sem contexto anterior').click());await act(async()=>document.querySelector('.lumi-conversations>summary').click());
+  await act(async()=>button('Consultar conversas guardadas').click());await flush();await act(async()=>button('Conferir antes de retomar').click());await flush();
+  assert.ok(document.querySelector('.lumi-conversation-preview'));assert.equal(document.querySelectorAll('.lumi-message--assistant').length,0);
+  await act(async()=>button('Retomar com este contexto').click());assert.equal(document.querySelectorAll('.lumi-message--assistant').length,1);assert.equal(document.querySelector('.lumi-conversations input').value,'Entender Newton');
+  assert.equal(requests.filter(item=>item.method==='post'&&item.url.endsWith('/inteligencia/chat')).length,calls);
+  await act(async()=>document.querySelector('.lumi-conversations>summary').click());
+  const result=await axe.run(document.querySelector('.lumi-conversations'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(item=>item.id),[]);
+ }finally{chatPlainReply=false;conversationsFixture=[];await screen.close()}
+});
+
+test('a conversation save conflict preserves messages and archiving can be reversed',async()=>{
+ chatPlainReply=true;const screen=await renderRoute('/lumi');
+ try{
+  await inputValue(document.getElementById('lumi-message'),'Como relacionar força e aceleração?');await act(async()=>document.getElementById('lumi-message').closest('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+  await act(async()=>document.querySelector('.lumi-conversations>summary').click());await inputValue(document.querySelector('.lumi-conversations input'),'Meu estudo de Física');conversationSaveFailure=true;
+  await act(async()=>button('Guardar conversa por objetivo').click());await flush();assert.ok(document.querySelector('.lumi-conversations .save-feedback[data-state="error"]'));assert.equal(document.querySelectorAll('.lumi-message--assistant').length,1);
+  conversationSaveFailure=false;await act(async()=>document.querySelector('.lumi-conversations .save-feedback button').click());await flush();
+  await act(async()=>button('Consultar conversas guardadas').click());await flush();await act(async()=>button('Arquivar conversa').click());await flush();assert.equal(conversationsFixture[0].arquivado,1);
+  await act(async()=>button('Ver conversas arquivadas').click());await flush();await act(async()=>button('Restaurar conversa').click());await flush();assert.equal(conversationsFixture[0].arquivado,0);
+ }finally{chatPlainReply=false;conversationSaveFailure=false;conversationsFixture=[];await screen.close()}
+});
+
+test('a delayed objective save cannot erase later messages or mark them as already saved',async()=>{
+ chatPlainReply=true;const screen=await renderRoute('/lumi');
+ try{
+  await inputValue(document.getElementById('lumi-message'),'Uma primeira pergunta.');await act(async()=>document.getElementById('lumi-message').closest('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+  await act(async()=>document.querySelector('.lumi-conversations>summary').click());await inputValue(document.querySelector('.lumi-conversations input'),'Investigar uma ideia');conversationSaveDeferred=true;
+  await act(async()=>button('Guardar conversa por objetivo').click());assert.ok(document.querySelector('.lumi-conversations .save-feedback[data-state="saving"]'));
+  await inputValue(document.getElementById('lumi-message'),'Uma pergunta posterior.');await act(async()=>document.getElementById('lumi-message').closest('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+  await act(async()=>resolveConversationSave());await flush();assert.equal(document.querySelectorAll('.lumi-message--user').length,2);assert.equal(document.querySelectorAll('.lumi-message--assistant').length,2);assert.equal(conversationsFixture[0].mensagens.length,2);assert.ok(document.querySelector('.lumi-conversations .save-feedback[data-state="pending"]'));
+ }finally{conversationSaveDeferred=false;chatPlainReply=false;conversationsFixture=[];await screen.close()}
 });

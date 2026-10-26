@@ -1,6 +1,7 @@
 import {useEffect,useId,useRef,useState} from 'react'
 import {scopedCacheKey} from '../utils/offlineStore'
 import './ReadingSurface.css'
+import ReadingHighlights from './ReadingHighlights'
 
 const defaults={size:18,width:68,spacing:1.8}
 function read(key){try{return JSON.parse(localStorage.getItem(key)||'null')}catch{return null}}
@@ -48,7 +49,7 @@ export default function ReadingSurface({material,children}) {
     {validOffer && <div className="reading-resume"><p>Você parou em <strong>{offer.title}</strong>.</p><div><button type="button" onClick={()=>{const list=sections();const found=list.findIndex(section=>section.querySelector('h3')?.textContent===offer.title);go(found>=0?found:0)}}>Continuar de onde parei</button><button type="button" onClick={()=>go(0)}>Ler desde o início</button></div></div>}
     {failed && <p role="status">Não foi possível guardar os ajustes ou o ponto de leitura neste aparelho. A leitura continua disponível.</p>}
     {notice && <p role="status">{notice}</p>}
-    <div ref={content} className="reading-content" style={{'--reading-size':`${settings.size/16}rem`,'--reading-width':`${settings.width}ch`,'--reading-spacing':settings.spacing}}>{children}</div>
+    <div ref={content} className="reading-content" style={{'--reading-size':`${settings.size/16}rem`,'--reading-width':`${settings.width}ch`,'--reading-spacing':settings.spacing}}><ReadingHighlights key={identity} materialKey={identity} title={material.titulo||'Material de estudo'} root={content}>{children}</ReadingHighlights></div>
     <button className="reading-bookmark" type="button" onClick={()=>{const list=sections();let index=list.findIndex(section=>section.getBoundingClientRect().bottom>80);if(index<0)index=0;pending.current=false;setOffer(null);const saved=remember(index);setNotice(saved?'Ponto de leitura marcado neste aparelho.':'Não foi possível guardar o ponto de leitura. Mantenha a seção como referência.')}}>Marcar ponto de leitura</button>
   </section>
 }
