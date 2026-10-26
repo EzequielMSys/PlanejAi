@@ -1,0 +1,21 @@
+import {useEffect,useRef,useState} from 'react'
+import cards from '../services/flashcardService'
+import {currentUser} from '../utils/offlineStore'
+import {cardDate} from './FlashcardFace'
+import './FlashcardHistory.css'
+
+const outcomes={ERREI:'Errei',DIFICIL:'Foi difícil',LEMBREI:'Lembrei',DOMINEI:'Dominei'}
+function reviewTime(value){const date=new Date(value);return Number.isNaN(date.getTime())?'Horário indisponível':new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'}).format(date)}
+function Entries({id}){
+ const owner=useRef(currentUser()).current
+ const [page,setPage]=useState(1),[attempt,setAttempt]=useState(0),[data,setData]=useState(null),[status,setStatus]=useState('loading')
+ useEffect(()=>{const controller=new window.AbortController();setStatus('loading');cards.history(id,page,controller.signal).then(value=>{if(!controller.signal.aborted&&owner===currentUser()){if(!Array.isArray(value?.itens)||!Number.isInteger(value?.resumo?.total))throw Error('invalid');setData(value);setStatus('ready')}}).catch(()=>{if(!controller.signal.aborted&&owner===currentUser())setStatus('error')});return()=>controller.abort()},[id,page,attempt,owner])
+ if(status==='loading')return <p role="status">Consultando o histórico deste cartão…</p>
+ if(status==='error')return <div role="alert"><p>Não foi possível consultar o histórico. Suas revisões não foram apagadas.</p><button type="button" onClick={()=>setAttempt(value=>value+1)}>Consultar histórico novamente</button></div>
+ const recent=data.itens.slice(0,5),difficult=recent.filter(item=>['ERREI','DIFICIL'].includes(item.resultado)).length
+ return <div className="card-history-content"><p className="card-history-scope">O histórico começa com as revisões registradas a partir desta atualização. Avaliações anteriores não foram reconstruídas. Horários de Brasília.</p>{data.resumo.total===0?<p>Nenhuma revisão registrada neste histórico ainda. Revele a resposta e escolha como ficou sua lembrança para registrar uma tentativa.</p>:<><p><strong>{data.resumo.total}</strong> {data.resumo.total===1?'avaliação registrada':'avaliações registradas'} neste cartão.</p><dl className="card-history-counts">{[['errei','Errei'],['dificil','Foi difícil'],['lembrei','Lembrei'],['dominei','Dominei']].map(([key,label])=><div key={key}><dt>{label}</dt><dd>{data.resumo[key]}</dd></div>)}</dl>{page===1&&recent.length>=2&&difficult>=2&&<aside className="card-history-suggestion"><strong>Uma pergunta pode ficar mais clara.</strong><p>Nas {recent.length} últimas avaliações registradas, {difficult} foram marcadas como “Errei” ou “Foi difícil”. Confira o texto usado em cada tentativa. Pode ajudar dar um foco à pergunta ou incluir um exemplo na resposta.</p></aside>}<ol className="card-history-timeline">{data.itens.map(item=><li key={item.id}><div className="card-history-entry-heading"><strong>{outcomes[item.resultado]||'Avaliação registrada'}</strong><time dateTime={item.revisadoEm}>{reviewTime(item.revisadoEm)}</time></div><p>Próxima revisão marcada: {cardDate(item.proximaRevisao)} · intervalo de {item.intervaloDias} {item.intervaloDias===1?'dia':'dias'}.</p>{item.textoMudou&&<p className="card-history-changed">A pergunta ou resposta atual é diferente da usada nesta tentativa.</p>}<details><summary>Ver texto desta tentativa</summary><div className="card-history-snapshot"><strong>Pergunta registrada</strong><p>{item.pergunta}</p><strong>Resposta registrada</strong><p>{item.resposta}</p><small>{item.disciplina||'Sem matéria'}</small></div></details></li>)}</ol>{(page>1||data.mais)&&<nav className="card-history-pagination" aria-label="Páginas do histórico deste cartão"><button type="button" disabled={page<=1} onClick={()=>setPage(value=>value-1)}>← Anteriores</button><span>Página {page}</span><button type="button" disabled={!data.mais||page>=100} onClick={()=>setPage(value=>value+1)}>Próximas →</button></nav>}</>}</div>
+}
+export default function FlashcardHistory({id}){
+ const [expanded,setExpanded]=useState(false)
+ return <details className="card-history" open={expanded}><summary onClick={event=>{event.preventDefault();setExpanded(value=>!value)}}>Histórico de revisões</summary>{expanded&&<Entries id={id}/>}</details>
+}

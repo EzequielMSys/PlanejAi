@@ -37,13 +37,31 @@ async function create(owner,body,db=pool){
 async function edit(owner,id,body,db=pool){const value=content(body),version=positive(body.versao);const [result]=await db.execute('UPDATE flashcards_estudo SET frente=?,verso=?,disciplina=?,versao=versao+1 WHERE id_flashcard=? AND id_usuario=? AND versao=? AND arquivado=0',[value.pergunta,value.resposta,value.disciplina||null,positive(id),owner,version]);if(!result.affectedRows)fail(409,'O cartão mudou ou foi arquivado. Seu rascunho continua aqui; confira a versão da conta.');return {salvo:true,id:Number(id),versao:version+1}}
 async function archive(owner,id,body,db=pool){if(typeof body.arquivado!=='boolean')fail(400,'Escolha arquivar ou restaurar.');const [result]=await db.execute('UPDATE flashcards_estudo SET arquivado=?,versao=versao+1 WHERE id_flashcard=? AND id_usuario=? AND versao=?',[body.arquivado?1:0,positive(id),owner,positive(body.versao)]);if(!result.affectedRows)fail(409,'O cartão mudou. Atualize a lista antes de tentar novamente.');return {salvo:true}}
 async function review(owner,id,body,db=pool){
- const cardId=positive(id),version=positive(body.versao),chave=key(body.chave)
- if(!Object.hasOwn(intervals,body.resultado))fail(400,'Escolha como ficou sua lembrança.')
- const days=intervals[body.resultado]
- const date=new Date(today()+'T12:00:00Z');date.setUTCDate(date.getUTCDate()+days);const next=date.toISOString().slice(0,10)
- const [result]=await db.execute('UPDATE flashcards_estudo SET proxima_revisao=?,ultima_avaliacao_chave=?,ultimo_resultado=?,versao=versao+1 WHERE id_flashcard=? AND id_usuario=? AND versao=? AND arquivado=0',[next,chave,body.resultado,cardId,owner,version])
- if(!result.affectedRows){const [[prior]]=await db.execute('SELECT versao,proxima_revisao,ultima_avaliacao_chave,ultimo_resultado,arquivado FROM flashcards_estudo WHERE id_flashcard=? AND id_usuario=?',[cardId,owner]);if(!prior)fail(404,'Cartão não disponível nesta conta.');if(prior.ultima_avaliacao_chave!==chave||prior.ultimo_resultado!==body.resultado)fail(409,'O cartão mudou em outra tela. Confira a versão atual antes de registrar sua revisão.');return {salvo:true,versao:prior.versao,proximaRevisao:prior.proxima_revisao,intervaloDias:days}}
- return {salvo:true,versao:version+1,proximaRevisao:next,intervaloDias:days}
+ const cardId=positive(id),version=positive(body.versao),chave=key(body.chave),outcome=body.resultado
+ if(!Object.hasOwn(intervals,outcome))fail(400,'Escolha como ficou sua lembrança.')
+ const days=intervals[outcome],conn=await db.getConnection()
+ try{
+  await conn.beginTransaction()
+  const [[card]]=await conn.execute('SELECT frente,verso,disciplina,versao,proxima_revisao,arquivado,ultima_avaliacao_chave,ultimo_resultado FROM flashcards_estudo WHERE id_flashcard=? AND id_usuario=? FOR UPDATE',[cardId,owner])
+  if(!card)fail(404,'Cartão não disponível nesta conta.')
+  const [[prior]]=await conn.execute('SELECT resultado,versao_cartao,proxima_revisao,intervalo_dias FROM flashcard_revisoes WHERE id_usuario=? AND id_flashcard=? AND chave=?',[owner,cardId,chave])
+  if(prior){if(prior.resultado!==outcome||Number(prior.versao_cartao)!==version)fail(409,'Este envio já foi confirmado com outra avaliação. Confira o histórico do cartão.');await conn.commit();return {salvo:true,versao:Number(prior.versao_cartao)+1,proximaRevisao:prior.proxima_revisao,intervaloDias:prior.intervalo_dias}}
+  // Preserve confirmations sent before history recording was introduced, without inventing a snapshot.
+  if(card.ultima_avaliacao_chave===chave){if(card.ultimo_resultado!==outcome)fail(409,'Este envio já foi confirmado com outra avaliação.');await conn.commit();return {salvo:true,versao:card.versao,proximaRevisao:card.proxima_revisao,intervaloDias:days}}
+  if(Number(card.arquivado)||Number(card.versao)!==version)fail(409,'O cartão mudou em outra tela. Confira a versão atual antes de registrar sua revisão.')
+  const date=new Date(today()+'T12:00:00Z');date.setUTCDate(date.getUTCDate()+days);const next=date.toISOString().slice(0,10)
+  const [result]=await conn.execute('UPDATE flashcards_estudo SET proxima_revisao=?,ultima_avaliacao_chave=?,ultimo_resultado=?,versao=versao+1 WHERE id_flashcard=? AND id_usuario=? AND versao=? AND arquivado=0',[next,chave,outcome,cardId,owner,version])
+  if(!result.affectedRows)fail(409,'O cartão mudou. Confira a versão atual antes de registrar sua revisão.')
+  await conn.execute('INSERT INTO flashcard_revisoes (id_usuario,id_flashcard,chave,resultado,versao_cartao,pergunta,resposta,disciplina,proxima_revisao,intervalo_dias,criado_em) VALUES (?,?,?,?,?,?,?,?,?,?,UTC_TIMESTAMP())',[owner,cardId,chave,outcome,version,card.frente,card.verso,card.disciplina,next,days])
+  await conn.commit();return {salvo:true,versao:version+1,proximaRevisao:next,intervaloDias:days}
+ }catch(error){await conn.rollback();throw error}finally{conn.release()}
+}
+async function history(owner,id,input={},db=pool){
+ const cardId=positive(id),page=input.pagina===undefined?1:positive(input.pagina);if(page>100)fail(400,'Página inválida.')
+ const [[card]]=await db.execute('SELECT frente,verso FROM flashcards_estudo WHERE id_flashcard=? AND id_usuario=?',[cardId,owner]);if(!card)fail(404,'Cartão não disponível nesta conta.')
+ const [[counts]]=await db.execute("SELECT COUNT(*) AS total,SUM(resultado='ERREI') AS errei,SUM(resultado='DIFICIL') AS dificil,SUM(resultado='LEMBREI') AS lembrei,SUM(resultado='DOMINEI') AS dominei FROM flashcard_revisoes WHERE id_usuario=? AND id_flashcard=?",[owner,cardId])
+ const [rows]=await db.execute("SELECT id,resultado,versao_cartao AS versaoCartao,pergunta,resposta,disciplina,proxima_revisao AS proximaRevisao,intervalo_dias AS intervaloDias,DATE_FORMAT(criado_em,'%Y-%m-%dT%H:%i:%s.000Z') AS revisadoEm FROM flashcard_revisoes WHERE id_usuario=? AND id_flashcard=? ORDER BY id DESC LIMIT 21 OFFSET "+((page-1)*20),[owner,cardId])
+ return {itens:rows.slice(0,20).map(row=>({...row,textoMudou:row.pergunta!==card.frente||row.resposta!==card.verso})),mais:rows.length>20,pagina:page,resumo:Object.fromEntries(['total','errei','dificil','lembrei','dominei'].map(field=>[field,Number(counts[field]||0)]))}
 }
 async function short(owner,input={},db=pool){
  const minutes=Number(input.minutos??5),limits={3:2,5:3,10:5};if(!Object.hasOwn(limits,minutes))fail(400,'Escolha 3, 5 ou 10 minutos.')
@@ -51,4 +69,4 @@ async function short(owner,input={},db=pool){
  const [rows]=await db.execute(`SELECT ${fields} FROM flashcards_estudo f WHERE f.id_usuario=? AND f.arquivado=0 AND f.proxima_revisao<=? ORDER BY f.proxima_revisao,f.id_flashcard LIMIT ${limits[minutes]}`,[owner,date])
  return {itens:rows,totalPendentes:Number(count.total),minutos:minutes,minutosEstimados:Math.ceil(rows.length*1.5),hoje:date}
 }
-module.exports={content,filters,list,get,create,edit,archive,review,short,today}
+module.exports={content,filters,list,get,create,edit,archive,review,history,short,today}

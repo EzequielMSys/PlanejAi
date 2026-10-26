@@ -3,6 +3,7 @@ const api=createApiClient('/api/aprendizagem/cartoes')
 export default {
  list:(params,signal)=>api.get('',{params,signal,cache:false}).then(r=>r.data),
  get:(id,signal)=>api.get(`/${id}`,{signal,cache:false}).then(r=>r.data),
+ history:(id,pagina=1,signal)=>api.get(`/${id}/historico`,{params:{pagina},signal,cache:false}).then(r=>r.data),
  create:(body,owner)=>api.post('',body,{expectedOwner:owner}).then(r=>r.data),
  edit:(id,body,owner)=>api.put(`/${id}`,body,{expectedOwner:owner}).then(r=>r.data),
  archive:(id,body,owner)=>api.patch(`/${id}/arquivo`,body,{expectedOwner:owner}).then(r=>r.data),
