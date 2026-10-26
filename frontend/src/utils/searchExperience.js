@@ -1,6 +1,6 @@
 import {scopedCacheKey,currentUser} from './offlineStore'
 const key=()=>scopedCacheKey('recent-searches:v1')
-const types=new Set(['todos','materias','materiais','anotacoes','redacoes'])
+const types=new Set(['todos','materias','materiais','anotacoes','redacoes','destaques','conversas'])
 export function readRecentSearches(){try{const value=JSON.parse(localStorage.getItem(key()));return Array.isArray(value)?value.filter(item=>typeof item.q==='string' && item.q.length>=2 && item.q.length<=100 && types.has(item.type)).slice(0,8):[]}catch{return []}}
 export function rememberSearch(q,type){if(currentUser()==='anonymous')return false;const value={q:q.trim(),type};if(value.q.length<2 || value.q.length>100 || !types.has(type))return false;try{localStorage.setItem(key(),JSON.stringify([value,...readRecentSearches().filter(item=>item.q.toLocaleLowerCase('pt-BR')!==value.q.toLocaleLowerCase('pt-BR') || item.type!==type)].slice(0,8)));return true}catch{return false}}
 export function clearRecentSearches(){try{localStorage.removeItem(key());return true}catch{return false}}

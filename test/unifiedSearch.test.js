@@ -17,10 +17,10 @@ test('search rejects broad, oversized, malformed and unbounded requests before q
 test('search escapes wildcard literals, binds the term and uses only authenticated owner scopes',async()=>{
   const search=service(),calls=[];
   await search.search({id:11,tipo:'aluno'},{q:"50%_! ' OR 1=1",id_usuario:22},{execute:async(sql,params)=>{calls.push({sql,params});return [[]]}});
-  assert.equal(calls.length,4);
+  assert.equal(calls.length,6);
   for(const call of calls){assert.ok(!call.sql.includes("OR 1=1"));assert.ok(call.params.includes("%50!%!_!! ' OR 1=1%"));assert.ok(!call.params.includes(22));}
   for(const call of calls.slice(0,2)) {assert.match(call.sql,/p.id_usuario=\?/);assert.deepEqual(Array.from(call.params.slice(0,1)),[11]);}
-  for(const call of calls.slice(2)) {assert.match(call.sql,/WHERE [ar].id_usuario=\?/);assert.equal(call.params[0],11);}
+  for(const call of calls.slice(2)) {assert.match(call.sql,/WHERE [arhl].id_usuario=\?/);assert.equal(call.params[0],11);}
 });
 test('staff catalog access never expands ownership of personal notes and essays',async()=>{
   const calls=[];
@@ -80,4 +80,8 @@ test('HTTP search requires authentication, disables caching and keeps errors rec
 test('material excerpts include matching resource titles without exposing private source URLs',async()=>{
  const result=await service().search({id:11,tipo:'aluno'},{q:'energia',tipo:'materiais'},{execute:async()=>[[{id:9,titulo:'Física',texto:'Exatas',recursos:JSON.stringify([{titulo:'Trabalho e energia',url:'https://source.invalid/?secret=private'}])}]]});
  const item=result.grupos[0].itens[0];assert.match(item.trecho,/Trabalho e energia/);assert.ok(!JSON.stringify(item).includes('secret'));assert.equal(item.recursos,undefined);
+});
+
+test('highlight and conversation search remain private for staff, exclude archived records and bound excerpts',async()=>{
+ for(const type of ['destaques','conversas']){let captured;const result=await service().search({id:33,tipo:'dono'},{q:'aceleração',tipo:type,pagina:2},{execute:async(sql,params)=>{captured={sql,params};return [[{id:91,titulo:'Newton',texto:'Minha aceleração e anotação.',mensagens:JSON.stringify([{role:'user',content:'O que significa aceleração?'},{role:'assistant',content:'Uma explicação.'}]),contexto:JSON.stringify([{tipo:'anotacao',titulo:'Ideia',texto:'Uma ideia própria.'}])}]]}});assert.equal(captured.params[0],33);assert.match(captured.sql,/arquivado=0/);assert.match(captured.sql,/LIMIT 13 OFFSET 12/);const item=result.grupos[0].itens[0];assert.match(item.trecho,/aceleração/);assert.equal(item.mensagens,undefined);assert.equal(item.contexto,undefined);assert.ok(item.trecho.length<200);if(type==='conversas')assert.match(captured.sql,/JSON_SEARCH/)}
 });

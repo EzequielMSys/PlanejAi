@@ -3,6 +3,7 @@ import memory,{newRecordKey} from '../services/studyMemoryService'
 import {currentUser,scopedCacheKey} from '../utils/offlineStore'
 import {readJournalDraft,keepJournalDraft,clearJournalDraft} from '../utils/journalDrafts'
 import SaveFeedback from './SaveFeedback'
+import HighlightReview from './HighlightReview'
 import './ReadingHighlights.css'
 
 const Highlights=createContext([])
@@ -21,6 +22,7 @@ export default function ReadingHighlights({materialKey,title,root,children}){
   const [draft,setDraft]=useState(()=>{const saved=readJournalDraft(storageKey);return typeof saved?.trecho==='string'&&typeof saved?.nota==='string'&&typeof saved?.chave==='string'?saved:blank()})
   const [records,setRecords]=useState([]),[status,setStatus]=useState('loading'),[error,setError]=useState(''),[candidate,setCandidate]=useState(null),[archived,setArchived]=useState(false),[busy,setBusy]=useState(false),[saveStatus,setSaveStatus]=useState('ready'),[attempt,setAttempt]=useState(0)
   const [expanded,setExpanded]=useState(Boolean(draft.trecho))
+  const [selected,setSelected]=useState([]),[reviewSources,setReviewSources]=useState([])
   const saving=useRef(false),editor=useRef(null)
   useEffect(()=>{const abort=new window.AbortController();setStatus('loading');memory.highlights(materialKey,archived,abort.signal).then(value=>{if(!abort.signal.aborted&&owner===currentUser()){if(!Array.isArray(value))throw Error('invalid');setRecords(value);setStatus('ready')}}).catch(()=>{if(!abort.signal.aborted&&owner===currentUser())setStatus('error')});return()=>abort.abort()},[materialKey,archived,attempt,owner])
   useEffect(()=>{
@@ -43,6 +45,8 @@ export default function ReadingHighlights({materialKey,title,root,children}){
     {saveStatus!=='ready'&&<SaveFeedback status={error?'error':saveStatus} message={error||undefined} onRetry={draft.trecho&&['error','unsaved'].includes(saveStatus)?save:undefined}/>}
     {error&&saveStatus==='ready'&&<p role="alert">{error}</p>}
     <button type="button" disabled={busy} onClick={()=>setArchived(value=>!value)}>{archived?'Ver destaques ativos':'Ver destaques retirados'}</button>
+    {!archived&&status==='ready'&&!!records.length&&<div className="highlight-review-selection"><p>Escolha até cinco destaques para preparar perguntas. Você poderá editar cada uma antes de salvar.</p>{records.map(item=><label key={item.id}><input type="checkbox" checked={selected.includes(item.id)} disabled={!selected.includes(item.id)&&selected.length>=5} onChange={event=>setSelected(old=>event.target.checked?[...old,item.id]:old.filter(id=>id!==item.id))}/><span>{item.trecho.slice(0,100)}{item.trecho.length>100?'…':''}</span></label>)}<button type="button" disabled={!records.some(item=>selected.includes(item.id))} onClick={()=>setReviewSources(records.filter(item=>selected.includes(item.id)))}>Preparar perguntas dos destaques</button></div>}
+    {!!reviewSources.length&&<HighlightReview key={reviewSources.map(item=>item.id).join('-')} sources={reviewSources} onClose={()=>{setReviewSources([]);setSelected([])}}/>}
     {status==='loading'&&<p role="status">Consultando destaques…</p>}{status==='error'&&<p role="alert">Não foi possível consultar seus destaques. <button type="button" onClick={()=>setAttempt(value=>value+1)}>Consultar destaques novamente</button></p>}
     {status==='ready'&&!records.length&&<p>{archived?'Nenhum destaque retirado neste guia.':'Nenhum destaque salvo neste guia ainda.'}</p>}
     {records.map(item=><article key={item.id}><small>{item.secao}</small><blockquote>{item.trecho}</blockquote>{item.nota&&<p className="highlight-note">{item.nota}</p>}<div>{!archived&&<><button type="button" onClick={()=>locate(item)}>Localizar trecho</button><button type="button" disabled={busy} onClick={()=>{if(draft.trecho&&!window.confirm('Trocar o rascunho aberto por esta anotação?'))return;update({id:item.id,versao:item.versao,trecho:item.trecho,secao:item.secao,nota:item.nota,chave:newRecordKey()});editor.current?.focus()}}>Editar anotação</button></>}<button type="button" disabled={busy} onClick={()=>archive(item)}>{archived?'Restaurar destaque':'Retirar destaque'}</button></div></article>)}

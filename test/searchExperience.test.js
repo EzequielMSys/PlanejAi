@@ -10,3 +10,5 @@ test('recent search storage is bounded, deduplicated, account scoped and fails s
  localStorage.setItem('user',JSON.stringify({id:8}));assert.deepEqual(api.readRecentSearches(),[]);api.rememberSearch('Física','materiais');api.clearRecentSearches();localStorage.setItem('user',JSON.stringify({id:7}));assert.equal(api.readRecentSearches().length,8);
  const original=localStorage.setItem;try{localStorage.setItem=()=>{throw Error('quota')};assert.equal(api.rememberSearch('Mais um tema','todos'),false)}finally{localStorage.setItem=original}
 });
+
+test('recent search filters support saved highlights and Lumi conversations without mixing accounts',async()=>{const api=await load();memory.clear();localStorage.setItem('user',JSON.stringify({id:7}));assert.equal(api.rememberSearch('Newton','destaques'),true);assert.equal(api.rememberSearch('Meu objetivo','conversas'),true);assert.deepEqual(api.readRecentSearches().map(item=>item.type),['conversas','destaques']);localStorage.setItem('user',JSON.stringify({id:8}));assert.deepEqual(api.readRecentSearches(),[])});

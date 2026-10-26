@@ -1,5 +1,7 @@
 import AreaSignature from '../components/AreaSignature'
 import DeskPin from '../components/DeskPin'
+import HighlightReview from '../components/HighlightReview'
+import memory from '../services/studyMemoryService'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -10,7 +12,14 @@ import './Search.css'
 import {readRecentSearches,rememberSearch,clearRecentSearches,highlightParts} from '../utils/searchExperience'
 function Highlight({text,query}){return highlightParts(text,query).map((part,index)=>part.match?<mark key={index}>{part.text}</mark>:part.text)}
 
-const FILTERS = [['todos','Tudo'],['materias','Matérias'],['materiais','Materiais'],['anotacoes','Anotações'],['redacoes','Redações']]
+const FILTERS = [['todos','Tudo'],['materias','Matérias'],['materiais','Materiais'],['anotacoes','Anotações'],['redacoes','Redações'],['destaques','Destaques'],['conversas','Conversas da Lumi']]
+function HighlightDetails({id}) {
+  const [data,setData]=useState(null),[failed,setFailed]=useState(false),[attempt,setAttempt]=useState(0),[review,setReview]=useState(false),[guide,setGuide]=useState(false)
+  useEffect(()=>{const controller=new window.AbortController(),owner=currentUser();setFailed(false);setData(null);memory.highlight(id,controller.signal).then(value=>{if(!controller.signal.aborted&&owner===currentUser()){if(!value?.id)throw Error('invalid');setData(value)}}).catch(()=>{if(!controller.signal.aborted&&owner===currentUser())setFailed(true)});return()=>controller.abort()},[id,attempt])
+  if(failed)return <div role="alert"><p>Não foi possível abrir o destaque. Ele pode ter sido retirado ou seu acesso mudou.</p><button type="button" onClick={()=>setAttempt(value=>value+1)}>Consultar destaque novamente</button></div>
+  if(!data)return <p role="status">Abrindo seu destaque…</p>
+  return <section className="search-highlight-detail" aria-label="Destaque completo"><h4>{data.secao}</h4><blockquote>{data.trecho}</blockquote>{data.nota&&<><strong>Minha anotação</strong><p>{data.nota}</p></>}<button type="button" onClick={()=>setReview(value=>!value)} aria-expanded={review}>{review?'Recolher pergunta de revisão':'Criar pergunta de revisão'}</button>{review&&<HighlightReview sources={[data]}/>}{/^[1-9]\d*$/.test(data.material_key)&&<><button type="button" onClick={()=>setGuide(value=>!value)} aria-expanded={guide}>{guide?'Recolher acesso ao guia':'Conferir acesso ao guia original'}</button>{guide&&<ContentDetails item={{id:Number(data.material_key)}} type="materiais"/>}</>}</section>
+}
 function Resource({title,source}) {
   const [url,setUrl] = useState('')
   const [failed,setFailed] = useState(false)
@@ -52,12 +61,12 @@ function Result({item,type,onSubject,query}) {
   useEffect(()=>()=>request.current?.abort(),[])
   async function open(){if(busy.current)return;busy.current=true;setOpening(true);setOpenError('');const owner=currentUser(),controller=new window.AbortController();request.current=controller;try{const data=await searchService.content(item.id,controller.signal,type==='anotacoes');if(!data?.id_conteudo)throw Error('invalid');if(!controller.signal.aborted&&owner===currentUser())navigate('/estudar',{state:{conteudo:data,ferramenta:type==='anotacoes'?'notes':'guide'}})}catch{if(!controller.signal.aborted)setOpenError('Não foi possível abrir este registro. Seu acesso pode ter mudado; tente novamente.')}finally{busy.current=false;setOpening(false)}}
   const id=`search-${type}-${item.id}`
-  return <article className="unified-search-card">
+  return <article className={`unified-search-card${expanded?' is-expanded':''}`}>
     <div><span className="search-result-meta">{item.disciplina || (type==='redacoes'?'Texto salvo na sua conta':type==='materias'?'Matéria do seu acervo':'Seu espaço de estudo')}</span><h3><Highlight text={item.titulo} query={query}/></h3>{item.trecho&&<p><Highlight text={item.trecho} query={query}/></p>}</div>
     {['materiais','anotacoes'].includes(type)&&<button type="button" disabled={opening} onClick={open}>{opening?'Conferindo acesso…':type==='anotacoes'?'Abrir anotação →':'Abrir material →'}</button>}
     {openError&&<p role="alert">{openError}</p>}
-    {type==='materias'?<button type="button" onClick={()=>onSubject(item.titulo)}>Encontrar materiais <span aria-hidden="true">→</span></button>:type==='redacoes'?<Link to={`/redacoes?redacao=${encodeURIComponent(item.id)}`}>Abrir redação <span aria-hidden="true">→</span></Link>:<><button type="button" aria-expanded={expanded} aria-controls={id} onClick={()=>setExpanded(value=>!value)}>{expanded?'Recolher detalhes':type==='anotacoes'?'Ver anotação':'Ver materiais'} <span aria-hidden="true">{expanded?'−':'+'}</span></button><div id={id} hidden={!expanded}>{expanded&&<ContentDetails item={item} type={type}/>}</div></>}
-    {type!=='materias'&&<DeskPin type={{anotacoes:'anotacao',materiais:'material',redacoes:'redacao'}[type]} id={item.id}/>}
+    {type==='materias'?<button type="button" onClick={()=>onSubject(item.titulo)}>Encontrar materiais <span aria-hidden="true">→</span></button>:type==='redacoes'?<Link to={`/redacoes?redacao=${encodeURIComponent(item.id)}`}>Abrir redação <span aria-hidden="true">→</span></Link>:type==='conversas'?<Link to={`/lumi?conversa=${encodeURIComponent(item.id)}`}>Conferir conversa e contexto →</Link>:<><button type="button" aria-expanded={expanded} aria-controls={id} onClick={()=>setExpanded(value=>!value)}>{expanded?'Recolher detalhes':type==='destaques'?'Abrir destaque':type==='anotacoes'?'Ver anotação':'Ver materiais'} <span aria-hidden="true">{expanded?'−':'+'}</span></button><div id={id} hidden={!expanded}>{expanded&&(type==='destaques'?<HighlightDetails id={item.id}/>:<ContentDetails item={item} type={type}/>)}</div></>}
+    {['anotacoes','materiais','redacoes'].includes(type)&&<DeskPin type={{anotacoes:'anotacao',materiais:'material',redacoes:'redacao'}[type]} id={item.id}/>}
   </article>
 }
 export default function Search() {
@@ -88,9 +97,9 @@ export default function Search() {
   function submit(event){event.preventDefault();if(input.trim().length<2){setValidation('Digite pelo menos 2 caracteres.');inputRef.current?.focus();return}setValidation('');change(type,input.trim());if(input.trim()===q)setAttempt(value=>value+1)}
   const groups=data?.grupos||[], total=groups.reduce((sum,group)=>sum+group.itens.length,0)
   return <main className="unified-search pj-page"><div className="pj-wrap">
-<AreaSignature area="search"/>    <header className="unified-search-heading"><span className="pj-eyebrow">SEU ACERVO, MAIS PERTO</span><h1>Uma ideia. Muitos caminhos.</h1><p>Encontre matérias, materiais, anotações e redações no seu espaço.</p></header>
+<AreaSignature area="search"/>    <header className="unified-search-heading"><span className="pj-eyebrow">SEU ACERVO, MAIS PERTO</span><h1>Uma ideia. Muitos caminhos.</h1><p>Encontre matérias, materiais, anotações, redações, destaques e conversas da Lumi.</p></header>
     <form className="unified-search-form" role="search" aria-label="Buscar no acervo" onSubmit={submit}><label htmlFor="unified-query">O que você quer encontrar?</label><div><input id="unified-query" ref={inputRef} type="search" maxLength={100} value={input} onChange={event=>{setInput(event.target.value);setValidation('')}} placeholder="Um assunto, um título ou um trecho…" aria-invalid={Boolean(validation)} aria-describedby={validation?'unified-query-error':'unified-search-scope'}/><button type="submit">Buscar</button></div>{validation&&<p id="unified-query-error" role="alert">{validation}</p>}</form>
-    <p id="unified-search-scope" className="unified-search-scope">Anotações e redações são pessoais. A busca considera itens salvos na conta; rascunhos apenas neste aparelho ficam fora dos resultados.</p>
+    <p id="unified-search-scope" className="unified-search-scope">Anotações, redações, destaques e conversas são pessoais. Só aparecem registros salvos na conta. Destaques retirados, conversas arquivadas e rascunhos apenas neste aparelho ficam fora dos resultados.</p>
     <div className="unified-search-filters" role="group" aria-label="Tipo de resultado">{FILTERS.map(([key,label])=><button type="button" key={key} aria-pressed={type===key} onClick={()=>{setValidation('');change(key)}}>{label}</button>)}</div>
     <p className="search-filter-summary">Filtro atual: <strong>{FILTERS.find(([key])=>key===type)?.[1] || 'Inválido'}</strong>. Trocar o filtro mantém a expressão pesquisada.</p>
     {!!recent.length&&<section className="search-recent" aria-label="Buscas recentes desta conta"><header><h2>Buscas recentes neste aparelho</h2><button type="button" onClick={()=>{if(clearRecentSearches())setRecent([]);else setRecentError('Não foi possível limpar as buscas deste aparelho.')}}>Limpar buscas recentes</button></header><div>{recent.map(item=><button type="button" key={`${item.type}:${item.q}`} onClick={()=>{setInput(item.q);change(item.type,item.q);if(item.q===q&&item.type===type)setAttempt(value=>value+1)}}>{item.q} <small>{FILTERS.find(([key])=>key===item.type)?.[1]}</small></button>)}</div></section>}

@@ -1,5 +1,5 @@
 import AreaSignature from '../components/AreaSignature'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ChatInterface from '../components/ChatInterface'
 import TutorLumi from '../components/TutorLumi'
@@ -9,6 +9,8 @@ import './Chat.css'
 export default function Chat() {
   const navigate = useNavigate()
   const location = useLocation()
+  const [params] = useSearchParams()
+  const conversation = params.get('conversa')
   const { user } = useAuth()
   const convite = fraseConviteLumi(user?.pronome)
 
@@ -31,7 +33,7 @@ export default function Chat() {
 
         <section className="lumi-chat-card" aria-label="Conversa com a Lumi">
           <div className="lumi-chat-heading"><span className="lumi-chat-status" aria-hidden="true" /><div><strong>Sua conversa</strong><small>Um passo de cada vez</small></div><span className="lumi-chat-heading-tip">Lumi está aqui para estudar com você</span></div>
-          <ChatInterface className="lumi-chat-body" redacaoSelecionada={location.state?.redacaoSelecionada} perguntaInicial={location.state?.perguntaInicial} />
+          <ChatInterface key={conversation||'fresh'} conversaSolicitada={/^[1-9]\d{0,14}$/.test(conversation||'')?conversation:undefined} className="lumi-chat-body" redacaoSelecionada={location.state?.redacaoSelecionada} perguntaInicial={location.state?.perguntaInicial} />
         </section>
       </div>
     </main>

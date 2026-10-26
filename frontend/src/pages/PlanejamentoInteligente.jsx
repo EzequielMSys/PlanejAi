@@ -1,15 +1,18 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import inteligencia from "../services/inteligenciaService";
 import perfil from "../services/perfilService";
+import memory from '../services/studyMemoryService';
+import {currentUser} from '../utils/offlineStore';
 const AdaptiveLearningHub = lazy(() => import('../components/AdaptiveLearningHub'));
 const LearningPaths = lazy(() => import('../components/LearningPaths'));
 import "./PlanejamentoInteligente.css";
 
 export default function PlanejamentoInteligente() {
   const [materias, setMaterias] = useState([]);
-  const [aba, setAba] = useState("metas");
+  const [params] = useSearchParams();
+  const [aba, setAba] = useState(params.get('aba') === 'ferramentas' ? 'ferramentas' : 'metas');
   const [toolsLoaded, setToolsLoaded] = useState(false);
   const [cardVirado, setCardVirado] = useState(null);
   const [questoes, setQuestoes] = useState([]);
@@ -22,6 +25,9 @@ export default function PlanejamentoInteligente() {
     alvo: 20,
   });
   const [flashcards, setFlashcards] = useState([]);
+  const [focusedCard,setFocusedCard]=useState(null),[focusedError,setFocusedError]=useState(false),[focusedAttempt,setFocusedAttempt]=useState(0);
+  const requestedCard=params.get('cartao');
+  useEffect(()=>{if(!requestedCard)return;const controller=new window.AbortController(),owner=currentUser();setFocusedCard(null);setFocusedError(false);memory.review(requestedCard,controller.signal).then(value=>{if(!controller.signal.aborted&&owner===currentUser()){if(!value?.id_flashcard)throw Error('invalid');setFocusedCard(value)}}).catch(()=>{if(!controller.signal.aborted&&owner===currentUser())setFocusedError(true)});return()=>controller.abort()},[requestedCard,focusedAttempt]);
   const [flash, setFlash] = useState({ frente: "", verso: "", disciplina: "" });
   const [busca, setBusca] = useState("");
   const [resultadosBusca, setResultadosBusca] = useState([]);
@@ -123,8 +129,12 @@ export default function PlanejamentoInteligente() {
     }
   }
   async function avaliarFlash(id, resultado) {
-    await inteligencia.avaliarFlashcard(id, resultado);
-    setFlashcards((items) => items.filter((item) => item.id_flashcard !== id));
+    try {
+      await inteligencia.avaliarFlashcard(id, resultado);
+      setFlashcards((items) => items.filter((item) => item.id_flashcard !== id));
+      setFocusedCard(item=>item?.id_flashcard===id?null:item);
+      toast.success('Revisão registrada.');
+    } catch { toast.error('Não foi possível registrar a revisão. Seu cartão continua aqui.'); }
   }
   async function pesquisar(valor) {
     setBusca(valor);
@@ -295,12 +305,14 @@ export default function PlanejamentoInteligente() {
                 Criar flashcard
               </button>
             </form>
-            {flashcards.slice(0, 5).map((card) => (
+            {focusedError&&<p role="alert">Não foi possível abrir o cartão escolhido. <button type="button" onClick={()=>setFocusedAttempt(value=>value+1)}>Consultar cartão novamente</button></p>}
+            {(focusedCard?[focusedCard,...flashcards.filter(item=>item.id_flashcard!==focusedCard.id_flashcard)].slice(0,5):flashcards.slice(0,5)).map((card) => (
               <div
                 key={card.id_flashcard}
                 className="mt-3 rounded-xl border p-3"
               >
                 <b>{card.frente}</b>
+                {card.fonte_titulo&&<details><summary>Trecho que originou esta pergunta</summary><p>{card.fonte_titulo} · {card.fonte_secao}</p><blockquote>{card.fonte_trecho}</blockquote></details>}
                 <button type="button" className="progress-flash-reveal" aria-expanded={cardVirado === card.id_flashcard} onClick={() => setCardVirado(cardVirado === card.id_flashcard ? null : card.id_flashcard)}>{cardVirado === card.id_flashcard ? "Ocultar resposta" : "Revelar resposta"}</button>
                 {cardVirado === card.id_flashcard && <p className="mt-1 text-sm">{card.verso}</p>}
                 {cardVirado === card.id_flashcard && <div className="mt-2 flex gap-2">

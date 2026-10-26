@@ -34,6 +34,7 @@ let failChat = false;
 let chatHistoryFixture=[];
 let readingHighlightsFixture=[],highlightSaveFailure=false,conversationsFixture=[],conversationSaveFailure=false,chatPlainReply=false;
 let conversationSaveDeferred=false,resolveConversationSave;
+let reviewSaveFailure=false;
 let failScheduleLoad = false;
 let failExamLoad = false;
 let supportMode = '';
@@ -69,12 +70,15 @@ const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de te
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
+  if(url.endsWith('/registros/perguntas/141'))return {id_flashcard:141,frente:'Como a força muda o movimento?',verso:'A força resultante produz aceleração.',disciplina:'Física',fonte_titulo:'Leis de Newton',fonte_secao:'Conceito',fonte_trecho:'Uma força resultante não nula produz aceleração.'};
+  if(url.endsWith('/registros/perguntas')){if(reviewSaveFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Pergunta ainda não confirmada.'}});return {id:141,salvo:true}}
   if(url.endsWith('/registros/destaques')){
     if(config.method==='get')return readingHighlightsFixture.filter(item=>Boolean(item.arquivado)===(config.params.arquivados==='1'));
     if(highlightSaveFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Destaque ainda não confirmado.'}});
     const data=JSON.parse(config.data),row={id:91,material_key:data.materialKey,titulo:data.titulo,secao:data.secao,trecho:data.trecho,nota:data.nota,versao:1,arquivado:0};readingHighlightsFixture=[row];return {...row,salvo:true};
   }
   if(/\/registros\/destaques\/91(?:\/arquivo)?$/.test(url)){
+    if(config.method==='get'){if(highlightSaveFailure)throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:404,data:{}});return readingHighlightsFixture[0]}
     const data=JSON.parse(config.data),row=readingHighlightsFixture[0];if(highlightSaveFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
     if(config.method==='patch')row.arquivado=data.arquivado?1:0;else row.nota=data.nota;row.versao++;return {...row,salvo:true};
   }
@@ -134,6 +138,7 @@ function fixture(config) {
     if(searchMode==='failed') throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
     if(searchMode==='slow' && config.params.q==='antiga') return new Promise(resolve=>{deferredSearch=resolve});
     if(searchMode==='empty') return {query:config.params.q,pagina:1,limite:12,grupos:[]};
+    if(searchMode==='memory')return {query:config.params.q,pagina:1,limite:12,grupos:[{tipo:'destaques',nome:'Destaques',itens:[{id:91,titulo:'Leis de Newton',trecho:'Meu exemplo de força no carrinho.'}]},{tipo:'conversas',nome:'Conversas da Lumi',itens:[{id:81,titulo:'Entender Newton',disciplina:'Física',trecho:'Como a força muda o movimento?'}]}].filter(group=>config.params.tipo==='todos'||group.tipo===config.params.tipo)};
     const groups=[{tipo:'materias',nome:'Matérias',itens:[{id:'Física',titulo:'Física'}]}, {tipo:'materiais',nome:'Materiais',mais:true,itens:[{id:9,titulo:'Leis de Newton',disciplina:'Física',trecho:'Força e movimento.'}]}, {tipo:'anotacoes',nome:'Anotações',itens:[{id:9,titulo:'Minha leitura de Newton',disciplina:'Física',trecho:'Minha dúvida sobre inércia.'}]}, {tipo:'redacoes',nome:'Redações',itens:[{id:81,titulo:'Educação no Brasil',trecho:'Um texto de teste.'}]}];
     return {query:config.params.q,pagina:Number(config.params.pagina)||1,limite:12,grupos:groups.filter(group=>config.params.tipo==='todos'||group.tipo===config.params.tipo)};
   }
@@ -2097,4 +2102,37 @@ test('a delayed objective save cannot erase later messages or mark them as alrea
   await inputValue(document.getElementById('lumi-message'),'Uma pergunta posterior.');await act(async()=>document.getElementById('lumi-message').closest('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
   await act(async()=>resolveConversationSave());await flush();assert.equal(document.querySelectorAll('.lumi-message--user').length,2);assert.equal(document.querySelectorAll('.lumi-message--assistant').length,2);assert.equal(conversationsFixture[0].mensagens.length,2);assert.ok(document.querySelector('.lumi-conversations .save-feedback[data-state="pending"]'));
  }finally{conversationSaveDeferred=false;chatPlainReply=false;conversationsFixture=[];await screen.close()}
+});
+
+test('search opens a full personal highlight and prepares an editable review without implicit saving',async()=>{
+ searchMode='memory';readingHighlightsFixture=[{id:91,material_key:'9',titulo:'Leis de Newton',secao:'Conceito',trecho:'A força resultante produz aceleração.',nota:'Meu exemplo com carrinho.',versao:1,arquivado:0}];
+ const screen=await renderRoute('/busca?q=força&tipo=todos');
+ try{
+  assert.ok(button('Destaques'));assert.ok(button('Conversas da Lumi'));assert.ok(document.querySelector('a[href="/lumi?conversa=81"]'));
+  await act(async()=>button('Abrir destaque +').click());await flush();assert.match(document.querySelector('.search-highlight-detail').textContent,/Meu exemplo com carrinho/);
+  await act(async()=>button('Criar pergunta de revisão').click());assert.equal(requests.filter(x=>x.url.endsWith('/registros/perguntas')).length,0);
+  const inputs=document.querySelectorAll('.highlight-review textarea');await inputValue(inputs[0],'O que muda no carrinho quando há força resultante?');await inputValue(inputs[1],'Sua velocidade muda: ocorre aceleração.');reviewSaveFailure=true;
+  await act(async()=>button('Salvar pergunta nos meus cartões').click());await flush();assert.ok(document.querySelector('.highlight-review .save-feedback[data-state="error"]'));assert.equal(inputs[1].value,'Sua velocidade muda: ocorre aceleração.');assert.ok(localStorage.getItem('900001:highlight-review-draft:91'));
+  reviewSaveFailure=false;await act(async()=>document.querySelector('.highlight-review .save-feedback button').click());await flush();assert.ok(document.querySelector('.highlight-review .save-feedback[data-state="saved"]'));assert.equal(localStorage.getItem('900001:highlight-review-draft:91'),null);
+  const posts=requests.filter(x=>x.url.endsWith('/registros/perguntas'));assert.equal(posts.length,2);assert.equal(JSON.parse(posts[0].data).chave,JSON.parse(posts[1].data).chave);assert.equal(JSON.parse(posts[1].data).resposta,'Sua velocidade muda: ocorre aceleração.');assert.equal(requests.filter(x=>x.method==='post'&&x.url.endsWith('/inteligencia/chat')).length,0);
+  assert.ok(document.querySelector('a[href="/ferramentas-estudo?aba=ferramentas&cartao=141"]'));const result=await axe.run(document.querySelector('.unified-search'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(x=>x.id),[]);
+ }finally{searchMode='';readingHighlightsFixture=[];reviewSaveFailure=false;await screen.close()}
+});
+
+test('search cannot open a withdrawn highlight and preserves a recoverable error',async()=>{
+ searchMode='memory';highlightSaveFailure=true;const screen=await renderRoute('/busca?q=força&tipo=destaques');try{await act(async()=>button('Abrir destaque +').click());await flush();assert.ok(button('Consultar destaque novamente'));assert.equal(document.querySelector('.highlight-review'),null)}finally{searchMode='';highlightSaveFailure=false;await screen.close()}
+});
+
+test('conversation search link opens the exact context preview before restoring or consulting Lumi',async()=>{
+ conversationsFixture=[{id:81,objetivo:'Entender Newton',materia:'Física',itens:[{tipo:'anotacao',titulo:'Meu carrinho',texto:'Força resultante muda a velocidade.'}],mensagens:[{role:'user',content:'Por que ocorre aceleração?'},{role:'assistant',content:'A resultante produz aceleração.'}],versao:1,arquivado:0}];
+ const screen=await renderRoute('/lumi?conversa=81');try{const preview=document.querySelector('.lumi-conversation-preview');assert.ok(preview);assert.match(preview.textContent,/Meu carrinho/);assert.equal(document.querySelectorAll('.lumi-message--assistant').length,0);await act(async()=>button('Retomar com este contexto').click());assert.equal(document.querySelectorAll('.lumi-message--assistant').length,1);assert.equal(requests.filter(x=>x.method==='post'&&x.url.endsWith('/inteligencia/chat')).length,0)}finally{conversationsFixture=[];await screen.close()}
+});
+
+test('reading selection prepares at most five independent questions, preserves a draft on reopening and does not auto-save',async()=>{
+ window.sessionStorage.setItem('900001:active-study-content',JSON.stringify({conteudo:{id:51,id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'}}));readingHighlightsFixture=Array.from({length:6},(_,i)=>({id:91+i,titulo:'Leis de Newton',secao:'Conceito',trecho:`Trecho de estudo número ${i+1}.`,nota:'',versao:1,arquivado:0}));const screen=await renderRoute('/estudar');
+ try{await act(async()=>document.querySelector('.reading-highlights>summary').click());const checks=[...document.querySelectorAll('.highlight-review-selection input')];for(const check of checks.slice(0,5))await act(async()=>check.click());assert.equal(checks[5].disabled,true);await act(async()=>button('Preparar perguntas dos destaques').click());assert.equal(document.querySelectorAll('.highlight-review-card').length,5);assert.equal(requests.filter(x=>x.url.endsWith('/registros/perguntas')).length,0);await inputValue(document.querySelector('.highlight-review textarea'),'Minha pergunta preservada ao reabrir.');await act(async()=>button('Fechar preparação das perguntas').click());await act(async()=>checks[0].click());await act(async()=>button('Preparar perguntas dos destaques').click());assert.equal(document.querySelector('.highlight-review textarea').value,'Minha pergunta preservada ao reabrir.');const result=await axe.run(document.querySelector('.highlight-review'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(x=>x.id),[])}finally{readingHighlightsFixture=[];window.sessionStorage.clear();await screen.close()}
+});
+
+test('the saved review link opens the exact card with its source even outside the first five cards',async()=>{
+ const screen=await renderRoute('/ferramentas-estudo?aba=ferramentas&cartao=141');try{assert.match(document.body.textContent,/Como a força muda o movimento/);await act(async()=>button('Revelar resposta').click());assert.match(document.body.textContent,/A força resultante produz aceleração/);assert.ok(document.body.textContent.includes('Trecho que originou esta pergunta'));await act(async()=>button('Lembrei').click());await flush();assert.ok(!document.body.textContent.includes('Como a força muda o movimento?'));assert.ok(requests.some(x=>x.method==='post'&&x.url.endsWith('/flashcards/141/avaliar')))}finally{await screen.close()}
 });

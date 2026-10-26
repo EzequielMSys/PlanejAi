@@ -1,6 +1,6 @@
 const pool = require('../config/db');
-const TYPES = ['materias', 'materiais', 'anotacoes', 'redacoes'];
-const LABELS = { materias: 'Matérias', materiais: 'Materiais', anotacoes: 'Anotações', redacoes: 'Redações' };
+const TYPES = ['materias', 'materiais', 'anotacoes', 'redacoes', 'destaques', 'conversas'];
+const LABELS = { materias: 'Matérias', materiais: 'Materiais', anotacoes: 'Anotações', redacoes: 'Redações', destaques: 'Destaques', conversas: 'Conversas da Lumi' };
 const LIMIT = 12;
 const staff = user => ['docente', 'admin', 'adm', 'dono'].includes(user.tipo);
 const owner = user => Number(user.id_usuario || user.id);
@@ -31,6 +31,7 @@ function excerpt(text, query, length = 190) {
   return `${start ? '…' : ''}${value.slice(start, start + length)}${value.length > start + length ? '…' : ''}`;
 }
 function resourceTitles(value){try{const items=typeof value==='string'?JSON.parse(value):value;return Array.isArray(items)?items.slice(0,20).map(item=>typeof item?.titulo==='string'?item.titulo.slice(0,300):'').filter(Boolean).join(' · '):''}catch{return ''}}
+function conversationText(value,context){try{const messages=typeof value==='string'?JSON.parse(value):value,items=typeof context==='string'?JSON.parse(context):context;return [...(Array.isArray(messages)?messages.filter(item=>['user','assistant'].includes(item?.role)&&typeof item.content==='string').map(item=>item.content):[]),...(Array.isArray(items)?items.map(item=>[item?.titulo,item?.texto].filter(value=>typeof value==='string').join(' · ')):[])].join(' · ')}catch{return ''}}
 async function search(user, input, db = pool) {
   const opt = options(input);
   const scope = contentScope(user);
@@ -53,6 +54,20 @@ async function search(user, input, db = pool) {
         WHERE a.id_usuario=? AND TRIM(a.texto)<>'' AND (a.texto LIKE ? ESCAPE '!' OR c.titulo LIKE ? ESCAPE '!' OR c.disciplina LIKE ? ESCAPE '!')
         ORDER BY a.atualizado_em DESC,a.id_conteudo LIMIT ${LIMIT + 1} OFFSET ${offset}`;
       params = [owner(user), opt.pattern, opt.pattern, opt.pattern];
+    } else if (type === 'destaques') {
+      sql = `SELECT h.id,h.titulo,CONCAT_WS(' · ',h.secao,h.trecho,NULLIF(h.nota,'')) AS texto,h.atualizado_em AS atualizadoEm
+        FROM leitura_destaques h WHERE h.id_usuario=? AND h.arquivado=0
+        AND (h.titulo LIKE ? ESCAPE '!' OR h.secao LIKE ? ESCAPE '!' OR h.trecho LIKE ? ESCAPE '!' OR h.nota LIKE ? ESCAPE '!')
+        ORDER BY h.atualizado_em DESC,h.id DESC LIMIT ${LIMIT + 1} OFFSET ${offset}`;
+      params = [owner(user), ...Array(4).fill(opt.pattern)];
+    } else if (type === 'conversas') {
+      sql = `SELECT l.id,l.objetivo AS titulo,l.materia AS disciplina,l.mensagens,l.contexto,l.atualizado_em AS atualizadoEm
+        FROM lumi_conversas l WHERE l.id_usuario=? AND l.arquivado=0
+        AND (l.objetivo LIKE ? ESCAPE '!' OR l.materia LIKE ? ESCAPE '!'
+          OR JSON_SEARCH(CAST(l.mensagens AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci,'one',CAST(? AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci,'!','$[*].content') IS NOT NULL
+          OR JSON_SEARCH(CAST(l.contexto AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci,'one',CAST(? AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci,'!','$[*].texto','$[*].titulo') IS NOT NULL)
+        ORDER BY l.atualizado_em DESC,l.id DESC LIMIT ${LIMIT + 1} OFFSET ${offset}`;
+      params = [owner(user), opt.pattern, opt.pattern, opt.pattern, opt.pattern];
     } else {
       sql = `SELECT r.id_redacao AS id,r.tema AS titulo,r.texto,r.enviada_em AS atualizadoEm
         FROM redacoes r WHERE r.id_usuario=? AND (r.tema LIKE ? ESCAPE '!' OR r.texto LIKE ? ESCAPE '!')
@@ -62,7 +77,7 @@ async function search(user, input, db = pool) {
     const [rows] = await db.execute(sql, params);
     return { tipo: type, nome: LABELS[type], mais: rows.length > LIMIT, itens: rows.slice(0,LIMIT).map(row => ({
       id: row.id || row.titulo, titulo: row.titulo, disciplina: row.disciplina || '',
-      trecho: excerpt(type==='materiais'?[row.texto,resourceTitles(row.recursos)].filter(Boolean).join(' · '):row.texto, opt.q), atualizadoEm: row.atualizadoEm || null,
+      trecho: excerpt(type==='materiais'?[row.texto,resourceTitles(row.recursos)].filter(Boolean).join(' · '):type==='conversas'?conversationText(row.mensagens,row.contexto):row.texto, opt.q), atualizadoEm: row.atualizadoEm || null,
     })) };
   }));
   return { query: opt.q, pagina: opt.page, limite: LIMIT, grupos: groups };

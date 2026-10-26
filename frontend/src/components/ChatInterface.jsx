@@ -50,7 +50,7 @@ function Mensagem({ mensagem }) {
   )
 }
 
-export default function ChatInterface({ className = '', redacaoSelecionada, perguntaInicial = '', estudoAtual, compacto = false, praticaAtual, anotacaoAtual }) {
+export default function ChatInterface({ className = '', redacaoSelecionada, perguntaInicial = '', estudoAtual, compacto = false, praticaAtual, anotacaoAtual, conversaSolicitada }) {
   const [mensagens, setMensagens] = useState([])
   const [input, setInput] = useState(perguntaInicial)
   const [materia, setMateria] = useState(estudoAtual?.disciplina || '')
@@ -183,7 +183,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         </button>}
       </div>
 
-      <LumiConversations key={conversationEpoch} snapshot={{itens:items,materia,mensagens}} draftMessage={input} busy={loading} onRestore={record=>{setItems(record.itens.map((item,index)=>({...item,id:`conversation-${index}`})));setMateria(record.materia);setMensagens(record.mensagens);setInput('');setHistory(null);setSendError('');setPracticeEpoch(value=>value+1)}} />
+      <LumiConversations requestedId={conversationEpoch===0?conversaSolicitada:undefined} key={conversationEpoch} snapshot={{itens:items,materia,mensagens}} draftMessage={input} busy={loading} onRestore={record=>{setItems(record.itens.map((item,index)=>({...item,id:`conversation-${index}`})));setMateria(record.materia);setMensagens(record.mensagens);setInput('');setHistory(null);setSendError('');setPracticeEpoch(value=>value+1)}} />
       <LumiContextPicker items={items} candidates={candidates} onChange={resetItems} onFresh={fresh} busy={loading} materia={materia} onRemoveSubject={()=>{resetItems(items);setMateria('')}} />
 
       <div className="lumi-feed flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-live="polite">

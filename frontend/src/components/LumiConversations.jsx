@@ -1,14 +1,15 @@
-import {useId,useMemo,useRef,useState} from 'react'
+import {useEffect,useId,useMemo,useRef,useState} from 'react'
 import memory,{newRecordKey} from '../services/studyMemoryService'
 import {currentUser} from '../utils/offlineStore'
 import SaveFeedback from './SaveFeedback'
 import './LumiConversations.css'
 
 const payload=(objetivo,snapshot)=>({objetivo:objetivo.trim(),materia:snapshot.materia||'',itens:snapshot.itens.map(({tipo,titulo,texto})=>({tipo,titulo,texto})),mensagens:snapshot.mensagens.filter(item=>['user','assistant'].includes(item.role)).map(({role,content})=>({role,content}))})
-export default function LumiConversations({snapshot,onRestore,busy,draftMessage=''}){
+export default function LumiConversations({snapshot,onRestore,busy,draftMessage='',requestedId}){
   const uid=useId(),owner=useRef(currentUser()).current,key=useRef(newRecordKey()),saving=useRef(false),request=useRef(0)
   const [expanded,setExpanded]=useState(false),[title,setTitle]=useState(''),[current,setCurrent]=useState(null),[status,setStatus]=useState('ready'),[error,setError]=useState(''),[lastSaved,setLastSaved]=useState(''),[rows,setRows]=useState(null),[more,setMore]=useState(false),[page,setPage]=useState(1),[archived,setArchived]=useState(false),[pending,setPending]=useState(null),[listing,setListing]=useState(false)
   const serialized=useMemo(()=>JSON.stringify(payload(title,snapshot)),[title,snapshot.materia,snapshot.itens,snapshot.mensagens]),dirty=lastSaved&&serialized!==lastSaved
+  useEffect(()=>{if(!requestedId)return;const controller=new window.AbortController();setExpanded(true);setListing(true);setError('');memory.conversation(requestedId,controller.signal).then(record=>{if(!controller.signal.aborted&&owner===currentUser()){if(Number(record?.arquivado)||!Array.isArray(record?.mensagens)||!Array.isArray(record?.itens))throw Error('unavailable');setPending(record)}}).catch(()=>{if(!controller.signal.aborted&&owner===currentUser())setError('Não foi possível abrir essa conversa. Ela pode ter sido arquivada ou seu acesso mudou.')}).finally(()=>{if(!controller.signal.aborted)setListing(false)});return()=>controller.abort()},[requestedId,owner])
   async function list(nextPage=1,archive=archived){
     const id=++request.current;setListing(true);setError('')
     try{const result=await memory.conversations(nextPage,archive);if(id!==request.current||owner!==currentUser())return;if(!Array.isArray(result?.itens))throw Error('invalid');setRows(old=>nextPage===1?result.itens:[...(old||[]),...result.itens]);setMore(result.mais);setPage(nextPage);setArchived(archive)}catch{if(id===request.current)setError('Não foi possível consultar suas conversas. A conversa aberta continua nesta tela.')}
