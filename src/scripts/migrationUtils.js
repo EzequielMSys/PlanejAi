@@ -51,7 +51,8 @@ const migrationOrder = [
   'flashcard_collection_edit_v63.sql',
   'flashcard_pinned_collections_v67.sql',
   'flashcard_priority_order_v69.sql',
-  'guided_preparation_evidence_v71.sql'
+  'guided_preparation_evidence_v71.sql',
+  'post_exam_laboratory_v73.sql'
 ];
 
 function sortMigrations(files) {

@@ -1,6 +1,7 @@
 const ALL = ['aluno', 'docente', 'admin', 'adm', 'dono']
 const STAFF = ['docente', 'admin', 'adm', 'dono']
 export const PAGES = [
+  { path: '/laboratorio', title: 'Laboratório de problemas', description: 'Investigue situações, compare caminhos e conecte assuntos.', keywords: 'laboratório investigação aplicar situações problemas conectados', group: 'Aprender', icon: 'route', roles: ALL, hidden: true, searchable: true, navParent: '/aprendizagem' },
   { path: '/preparacao-provas', title: 'Preparação para provas', description: 'Diagnóstico, sessões e revisões até a sua prova.', keywords: 'preparação prova estudo plano diagnóstico', group: 'Aprender', icon: 'exam', roles: ALL, hidden: true, searchable: true, navParent: '/provas' },
   { path: '/fontes-estudo', title: 'Fontes para estudar', description: 'Leituras, provas oficiais, redação e acervos.', keywords: 'biblioteca fontes materiais enem gratuitas', group: 'Aprender', icon: 'book', roles: ALL, hidden: true, searchable: true, navParent: '/aprendizagem' },
   { path: '/inicio', title: 'Hoje', description: 'Continue seu estudo ou monte uma sessão guiada.', keywords: 'meu dia inicio jornada sessão guiada', group: 'Sua rotina', icon: 'home', roles: ALL },

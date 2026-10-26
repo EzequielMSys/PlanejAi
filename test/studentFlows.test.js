@@ -80,15 +80,19 @@ function fixture(config) {
     const body=typeof config.data==='string'?JSON.parse(config.data):config.data;
     if(config.method==='get'){
       if(end==='/hoje')return {preparation:null,evidence:null};
+      if(end==='/laboratorio/catalogo')return require('../src/services/studyLabCatalog').cards();
       if(!end)return guidedRecords.filter(r=>r.kind===config.params?.tipo).map(r=>({...r,attempts:Array.isArray(r.attempts)?r.attempts.length:0}));
       if(end.endsWith('/revisao-final'))return {evidence:[],doubts:[]};
       return guidedRecords.find(r=>r.id===end.slice(1));
     }
     if(guidedWriteFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Não foi possível confirmar o envio.'}});
-    if(config.method==='post'&&(end==='/prova'||end==='/evidencia')){
-      const kind=end.slice(1),record={...body,id:body.key,version:1,kind,...(kind==='prova'?require('../src/services/guidedStudyService')._test.createPreparation(body):{attempts:[],due:null})};guidedRecords.push(record);return record;
+    if(config.method==='post'&&(end==='/prova'||end==='/evidencia'||end==='/laboratorio')){
+      const kind=end.slice(1),record={...body,id:body.key,version:1,kind,...(kind==='prova'?require('../src/services/guidedStudyService')._test.createPreparation(body):kind==='laboratorio'?require('../src/services/studyLabService').create(body):{attempts:[],due:null})};if(kind==='laboratorio')record.case=require('../src/services/studyLabCatalog').present(record);guidedRecords.push(record);return record;
     }
+    if(end.endsWith('/recuperacao/previa')){const source=guidedRecords.find(r=>r.id===end.split('/')[1]);return require('../src/services/postExamService').preview(source,body,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()));}
     const record=guidedRecords.find(r=>r.id===end.slice(1));
+    if(['postexam','approveRecovery','completeRecovery'].includes(body.action)){require('../src/services/postExamService').apply(record,body,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()));record.recoverySuggestions=require('../src/services/postExamService').suggestions(record);record.version++;return record;}
+    if(record?.kind==='laboratorio'&&['help','parameter','investigate'].includes(body.action)){require('../src/services/studyLabService').apply(record,body,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()));record.case=require('../src/services/studyLabCatalog').present(record);record.version++;return record;}
     if(body.action==='attempt'){record.attempts.push({id:body.key,text:body.text,correction:body.correction,created:new Date().toISOString()});record.due='2026-10-29';record.version++;return record;}
     if(body.action==='replan'){record.tasks.forEach(t=>{if(!t.done)t.date='2026-10-30'});record.version++;return record;}
     if(body.action==='complete'){record.tasks.find(t=>t.id===body.task).done=true;record.version++;return record;}
@@ -281,6 +285,50 @@ async function renderRoute(route, role = 'aluno', userOverrides = {}, stored = {
   return { root, container, async close() { await act(async () => root.unmount()); } };
 }
 function button(text) { return [...document.querySelectorAll('button')].find(node => node.textContent.trim() === text); }
+
+test('fechamento da prova mantém rascunho após falha e exige conferir a recuperação antes de aprovar',async()=>{
+  const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
+  const plan={...require('../src/services/guidedStudyService')._test.createPreparation({title:'Prova para refletir',date:require('../src/services/guidedStudyService')._test.dateAdd(day,14),minutes:40,days:[0,1,2,3,4,5,6],topics:[{title:'Energia',level:'seguro'}]}),id:'post-exam-fixture',kind:'prova',version:1};
+  guidedRecords=[plan];const screen=await renderRoute('/preparacao-provas?plano=post-exam-fixture');
+  try{
+    await act(async()=>document.querySelector('.post-exam-entry>summary').click());
+    const labels=[...document.querySelectorAll('.post-exam label')],worked=labels.find(l=>l.textContent.startsWith('O que consegui fazer')).querySelector('textarea');
+    await inputValue(worked,'Consegui ler os dados, mas confundi as unidades.');
+    await selectValue(document.querySelector('.post-exam select'),'dificuldade');
+    guidedWriteFailure=true;
+    await act(async()=>document.querySelector('.post-exam .guided-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+    assert.equal(worked.value,'Consegui ler os dados, mas confundi as unidades.');assert.ok(screen.container.textContent.includes('Não foi possível confirmar o envio.'));
+    guidedWriteFailure=false;
+    await act(async()=>document.querySelector('.post-exam .guided-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();
+    assert.ok(screen.container.textContent.includes('Considerava seguro'));assert.ok(screen.container.textContent.includes('Tive dificuldade'));
+    await act(async()=>[...document.querySelectorAll('.post-exam summary')].find(n=>n.textContent.includes('Escolher os próximos passos')).click());
+    assert.equal(requests.filter(r=>r.method==='patch'&&JSON.parse(r.data).action==='approveRecovery').length,0);
+    await act(async()=>document.querySelector('.investigation-recovery form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+    assert.ok(document.querySelector('.investigation-preview'));assert.equal(plan.recovery,undefined);
+    await act(async()=>button('Confirmar estes passos na minha rotina').click());await flush();await flush();
+    assert.ok(document.querySelector('.investigation-recovery-saved'));assert.equal(plan.recovery.tasks.length,1);
+  }finally{await screen.close();guidedRecords=[];guidedWriteFailure=false;}
+});
+test('laboratório guarda tentativas, abre apoios gradualmente e preserva a condição anterior',async()=>{
+  guidedRecords=[];const screen=await renderRoute('/laboratorio?caso=energia-cotidiano');
+  try{
+    assert.equal(document.querySelectorAll('.lab-catalog>article').length,3);
+    await act(async()=>button('Começar esta investigação').click());await flush();await flush();
+    assert.ok(document.querySelector('.lab-desk'));assert.equal(screen.container.textContent.includes('Total: 47,12'),false);
+    await inputValue(document.querySelectorAll('.lab-entry textarea')[3],'A energia depende também do tempo de uso.');
+    await act(async()=>document.querySelector('.lab-entry').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+    await act(async()=>button('Abrir uma pergunta orientadora').click());await flush();
+    assert.ok(screen.container.textContent.includes('Qual unidade de tempo'));assert.equal(screen.container.textContent.includes('Total: 47,12'),false);
+    await act(async()=>button('Mudar uma condição').click());
+    await inputValue(document.querySelectorAll('.lab-entry textarea')[3],'Com 8 minutos o consumo é menor.');
+    await act(async()=>document.querySelector('.lab-entry').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+    await inputValue(document.querySelector('.lab-parameter input'),'12');
+    await act(async()=>document.querySelector('.lab-parameter').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+    assert.match(guidedRecords[0].attempts[1].prompt,/8 minutos/);assert.match(document.querySelector('.lab-problem').textContent,/12 minutos/);
+    assert.equal(requests.filter(r=>r.url.endsWith('/lumi')&&r.method==='post').length,0);
+    assert.ok(screen.container.textContent.includes('Nenhum outro registro da conta nem a resolução de referência é enviado.'));
+  }finally{await screen.close();guidedRecords=[];}
+});
 
 test('preparação de prova preserva diagnóstico após falha, confirma envio e reorganiza dia perdido',async()=>{
   guidedRecords=[];guidedWriteFailure=false;

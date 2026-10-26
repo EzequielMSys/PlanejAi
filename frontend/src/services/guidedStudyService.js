@@ -8,5 +8,8 @@ export default {
   finalReview: (id, signal) => api.get(`/${id}/revisao-final`, { signal, cache: false }).then(r => r.data),
   create: (kind, body) => api.post(`/${kind}`, body, { expectedOwner: currentUser() }).then(r => r.data),
   change: (id, body) => api.patch(`/${id}`, body, { expectedOwner: currentUser() }).then(r => r.data),
-  assist: (id, attempts) => api.post(`/${id}/lumi`, { attempts }, { expectedOwner: currentUser() }).then(r => r.data),
+  assist: (id, attempts, fields) => api.post(`/${id}/lumi`, { attempts,fields }, { expectedOwner: currentUser(),timeout:55000 }).then(r => r.data),
+  catalog: signal=>api.get('/laboratorio/catalogo',{signal,cache:false}).then(r=>r.data),
+  recoveryPreview:(id,body)=>api.post(`/${id}/recuperacao/previa`,body,{expectedOwner:currentUser()}).then(r=>r.data),
+  saveAs:(id,body)=>api.post(`/${id}/guardar`,body,{expectedOwner:currentUser()}).then(r=>r.data),
 }

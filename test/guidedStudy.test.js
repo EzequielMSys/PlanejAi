@@ -5,25 +5,8 @@ const service = require('../src/services/guidedStudyService');
 const {createPreparation, schedule, dateAdd} = service._test;
 const day = require('../src/services/flashcardService').today;
 function preparation(extra={}) {return {key:randomUUID(),title:'Prova de Física',date:dateAdd(day(),14),minutes:40,days:[0,1,2,3,4,5,6],topics:[{title:'Energia',level:'dificuldade',diagnostic:'Confundo trabalho e energia'}],...extra};}
-function database() {
-  const rows = new Map(), calls=[];
-  const db={rows,calls,beginTransaction:async()=>{},commit:async()=>{},rollback:async()=>{},release:()=>{},getConnection:async()=>db};
-  db.execute=async(sql,values)=>{
-    calls.push({sql,values});
-    if(sql.startsWith('SELECT id_usuario FROM usuarios'))return [[{id_usuario:values[0]}]];
-    if(sql.startsWith('SELECT COUNT'))return [[{total:[...rows.values()].filter(r=>r.id_usuario===values[0]&&r.tipo===values[1]).length}]];
-    if(sql.startsWith('SELECT id_usuario,dados'))return [[...rows.values()].filter(r=>r.id===values[0])];
-    if(sql.startsWith('SELECT *'))return [[...rows.values()].filter(r=>r.id===values[0]&&r.id_usuario===values[1])];
-    if(sql.startsWith('SELECT id, versao'))return [[...rows.values()].filter(r=>r.id_usuario===values[0]&&r.tipo===values[1])];
-    if(sql.startsWith('INSERT INTO flashcard_colecoes'))return [{insertId:81}];
-    if(sql.startsWith('INSERT INTO percursos')){rows.set(values[0],{id:values[0],id_usuario:values[1],tipo:values[2],dados:JSON.parse(values[3]),resumo:JSON.parse(values[4]),versao:1});return [{affectedRows:1}];}
-    if(sql.startsWith('UPDATE percursos')){const r=rows.get(values[2]);assert.equal(r.id_usuario,values[3]);r.dados=JSON.parse(values[0]);r.resumo=JSON.parse(values[1]);r.versao++;return [{affectedRows:1}];}
-    if(sql.startsWith('DELETE')){rows.delete(values[0]);return [{affectedRows:1}];}
-    if(sql.includes('diario_lumi_uso'))return [{affectedRows:1}];
-    throw Error(`Unexpected query: ${sql}`);
-  };
-  return db;
-}
+const database=require('./helpers/guidedStore');
+
 test('preparação distribui apenas em dias disponíveis, reserva margem e respeita a prova',()=>{
   const plan=createPreparation(preparation({days:[1,3,5]}));
   const sums=new Map();for(const t of plan.tasks){if(!t.date)continue;assert.ok(t.date<plan.date);assert.ok([1,3,5].includes(new Date(t.date+'T12:00:00Z').getUTCDay()));sums.set(t.date,(sums.get(t.date)||0)+t.minutes);}
