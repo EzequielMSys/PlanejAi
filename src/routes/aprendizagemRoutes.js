@@ -4,6 +4,7 @@ const { authMiddleware } = require('../middlewares/authMiddleware');
 const { idempotency } = require('../middlewares/idempotencyMiddleware');
 
 router.use(authMiddleware);
+router.use('/cartoes',require('./flashcardRoutes'));
 router.use('/registros',require('./studyMemoryRoutes'));
 router.use(require('./personalStudyRoutes'));
 router.use(require('./sessionClosureRoutes'));

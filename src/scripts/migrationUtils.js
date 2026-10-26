@@ -44,7 +44,8 @@ const migrationOrder = [
   'personal_desk_v26.sql',
   'feedback_context_v51.sql',
   'reading_and_conversations_v53.sql',
-  'highlight_reviews_v55.sql'
+  'highlight_reviews_v55.sql',
+  'flashcard_library_v57.sql'
 ];
 
 function sortMigrations(files) {

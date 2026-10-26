@@ -35,6 +35,7 @@ let chatHistoryFixture=[];
 let readingHighlightsFixture=[],highlightSaveFailure=false,conversationsFixture=[],conversationSaveFailure=false,chatPlainReply=false;
 let conversationSaveDeferred=false,resolveConversationSave;
 let reviewSaveFailure=false;
+let cardLibraryFixture=[],cardReadFailure=false,cardWriteFailure=false,cardConflict=false;
 let failScheduleLoad = false;
 let failExamLoad = false;
 let supportMode = '';
@@ -70,6 +71,19 @@ const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de te
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
+  if(url.includes('/aprendizagem/cartoes')){
+    const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
+    if(config.method==='get'&&cardReadFailure)throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
+    if(config.method!=='get'&&cardWriteFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Cartão ainda não confirmado.'}});
+    if(config.method!=='get'&&cardConflict)throw new axios.AxiosError('conflict','ERR_BAD_RESPONSE',config,null,{status:409,data:{message:'O cartão mudou em outra tela.'}});
+    if(url.endsWith('/cartoes/curta')){const due=cardLibraryFixture.filter(c=>!c.arquivado&&c.proxima_revisao<=today).sort((a,b)=>a.proxima_revisao.localeCompare(b.proxima_revisao)||a.id_flashcard-b.id_flashcard),items=due.slice(0,{3:2,5:3,10:5}[config.params.minutos]);return {itens:items,totalPendentes:due.length,minutos:Number(config.params.minutos),minutosEstimados:Math.ceil(items.length*1.5),hoje:today}}
+    if(url.endsWith('/cartoes')){
+      if(config.method==='get'){const p=config.params||{},filtered=cardLibraryFixture.filter(c=>Boolean(c.arquivado)===(p.arquivo==='arquivados')&&(!p.materia||c.disciplina===p.materia)&&(!p.semMateria||!c.disciplina)&&(p.estado!=='pendentes'||c.proxima_revisao<=today));return {itens:filtered.slice(((p.pagina||1)-1)*12,(p.pagina||1)*12),mais:filtered.length>(p.pagina||1)*12,pagina:p.pagina||1,total:filtered.length,materias:[...new Set(cardLibraryFixture.map(c=>c.disciplina).filter(Boolean))],hoje:today}}
+      const data=JSON.parse(config.data),row={id_flashcard:141,frente:data.pergunta,verso:data.resposta,disciplina:data.disciplina,proxima_revisao:today,versao:1,arquivado:0};cardLibraryFixture=[...cardLibraryFixture,row];return {salvo:true,id:141};
+    }
+    const id=Number(url.match(/cartoes\/(\d+)/)?.[1]),row=cardLibraryFixture.find(c=>c.id_flashcard===id)||{id_flashcard:141,frente:'Como a força muda o movimento?',verso:'A força resultante produz aceleração.',disciplina:'Física',fonte_titulo:'Leis de Newton',fonte_secao:'Conceito',fonte_trecho:'Uma força resultante não nula produz aceleração.',proxima_revisao:today,versao:1,arquivado:0};
+    if(config.method==='get')return {...row};const body=JSON.parse(config.data);if(url.endsWith('/arquivo'))row.arquivado=body.arquivado?1:0;else if(url.endsWith('/avaliar')){const date=new Date(today+'T12:00:00Z');date.setUTCDate(date.getUTCDate()+{ERREI:1,DIFICIL:3,LEMBREI:7,DOMINEI:15}[body.resultado]);row.proxima_revisao=date.toISOString().slice(0,10)}else Object.assign(row,{frente:body.pergunta,verso:body.resposta,disciplina:body.disciplina});row.versao++;return {salvo:true,id,versao:row.versao,proximaRevisao:row.proxima_revisao};
+  }
   if(url.endsWith('/registros/perguntas/141'))return {id_flashcard:141,frente:'Como a força muda o movimento?',verso:'A força resultante produz aceleração.',disciplina:'Física',fonte_titulo:'Leis de Newton',fonte_secao:'Conceito',fonte_trecho:'Uma força resultante não nula produz aceleração.'};
   if(url.endsWith('/registros/perguntas')){if(reviewSaveFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Pergunta ainda não confirmada.'}});return {id:141,salvo:true}}
   if(url.endsWith('/registros/destaques')){
@@ -276,6 +290,7 @@ test('landing menu separates account access and closes with Escape or section na
   } finally { await screen.close(); }
 });
 async function inputValue(element, value) { await act(async () => { const setter = Object.getOwnPropertyDescriptor(element.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype, 'value').set; setter.call(element, value); element.dispatchEvent(new window.Event('input', { bubbles: true })); }); }
+async function selectValue(element,value){await act(async()=>{Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype,'value').set.call(element,value);element.dispatchEvent(new window.Event('change',{bubbles:true}))})}
 
 test('class management opens details and reveals creation on demand', async () => {
   const screen = await renderRoute('/turmas', 'dono');
@@ -415,7 +430,7 @@ test('legacy progress link opens study tools with goals, cards and trails intact
     assert.ok(screen.container.textContent.includes('Meta por matéria'));
     await act(async () => button('Cartões e pesquisa').click());
     assert.ok(document.getElementById('progress-search-input'));
-    assert.ok(screen.container.textContent.includes('Flashcards'));
+    assert.ok(screen.container.textContent.includes('Meus cartões de revisão'));
     await act(async () => button('Trilhas e recomendações').click());
     await flush();
     assert.ok(screen.container.textContent.includes('Progresso que vira ação'));
@@ -443,11 +458,13 @@ test('secondary study tools are reachable from their parent and loaded on demand
     assert.equal(count(), 0);
     await act(async () => button('Cartões e pesquisa').click());
     await flush();
-    assert.equal(count(), 2);
+    assert.equal(count(), 1);
+    assert.equal(requests.filter(request=>request.url.endsWith('/aprendizagem/cartoes')).length,1);
     await act(async () => button('Metas e diagnóstico').click());
     await act(async () => button('Cartões e pesquisa').click());
     await flush();
-    assert.equal(count(), 2, 'loaded tools are not fetched repeatedly');
+    assert.equal(count(), 1, 'loaded exam tools are not fetched repeatedly');
+    assert.equal(requests.filter(request=>request.url.endsWith('/aprendizagem/cartoes')).length,2,'reopening the library checks for cards changed in another screen');
   } finally { await screen.close(); }
 });
 test('pedagogical view presents actionable alerts and prevents duplicate intervention', async () => {
@@ -2134,5 +2151,29 @@ test('reading selection prepares at most five independent questions, preserves a
 });
 
 test('the saved review link opens the exact card with its source even outside the first five cards',async()=>{
- const screen=await renderRoute('/ferramentas-estudo?aba=ferramentas&cartao=141');try{assert.match(document.body.textContent,/Como a força muda o movimento/);await act(async()=>button('Revelar resposta').click());assert.match(document.body.textContent,/A força resultante produz aceleração/);assert.ok(document.body.textContent.includes('Trecho que originou esta pergunta'));await act(async()=>button('Lembrei').click());await flush();assert.ok(!document.body.textContent.includes('Como a força muda o movimento?'));assert.ok(requests.some(x=>x.method==='post'&&x.url.endsWith('/flashcards/141/avaliar')))}finally{await screen.close()}
+ const screen=await renderRoute('/ferramentas-estudo?aba=ferramentas&cartao=141');try{assert.match(document.body.textContent,/Como a força muda o movimento/);await act(async()=>button('Revelar resposta').click());assert.match(document.body.textContent,/A força resultante produz aceleração/);assert.ok(document.body.textContent.includes('Trecho que originou esta pergunta'));await act(async()=>button('Lembrei').click());await flush();assert.ok(!document.body.textContent.includes('Como a força muda o movimento?'));assert.ok(requests.some(x=>x.method==='post'&&x.url.endsWith('/cartoes/141/avaliar')))}finally{await screen.close()}
+});
+
+const seedCard=(id=141,patch={})=>({id_flashcard:id,frente:'Como a força muda o movimento?',verso:'A resultante produz aceleração.',disciplina:'Física',versao:1,arquivado:0,proxima_revisao:'2026-01-01',...patch});
+test('card library edits preserve drafts on failure and support archive, restore and subject filters',async()=>{
+ cardLibraryFixture=[seedCard(),seedCard(142,{frente:'Como estudar proporções?',disciplina:'Matemática'})];const screen=await renderRoute('/ferramentas-estudo?aba=ferramentas');
+ try{assert.equal(document.querySelectorAll('.library-card').length,2);await act(async()=>button('Editar cartão').click());const inputs=document.querySelectorAll('.card-editor textarea');await inputValue(inputs[0],'Como a resultante muda a velocidade?');await inputValue(inputs[1],'Ela produz aceleração e muda a velocidade.');cardWriteFailure=true;await act(async()=>button('Salvar alterações do cartão').click());await flush();assert.ok(document.querySelector('.card-editor .save-feedback[data-state="error"]'));assert.equal(inputs[1].value,'Ela produz aceleração e muda a velocidade.');assert.ok(localStorage.getItem('900001:card-editor:141'));cardWriteFailure=false;await act(async()=>document.querySelector('.card-editor .save-feedback button').click());await flush();assert.equal(cardLibraryFixture[0].frente,'Como a resultante muda a velocidade?');assert.equal(cardLibraryFixture[0].proxima_revisao,'2026-01-01');assert.equal(localStorage.getItem('900001:card-editor:141'),null);
+ await act(async()=>button('Arquivar cartão').click());await flush();assert.equal(cardLibraryFixture[0].arquivado,1);const filters=document.querySelectorAll('.card-library-filters select');await selectValue(filters[1],'arquivados');await flush();assert.equal(document.querySelectorAll('.library-card').length,1);await act(async()=>button('Restaurar cartão').click());await flush();assert.equal(cardLibraryFixture[0].arquivado,0);await selectValue(filters[1],'ativos');await selectValue(filters[0],'subject:Matemática');await flush();assert.equal(document.querySelectorAll('.library-card').length,1);assert.match(document.querySelector('.library-card').textContent,/proporções/);const result=await axe.run(document.querySelector('.card-library'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(x=>x.id),[]);
+ }finally{cardLibraryFixture=[];cardWriteFailure=false;await screen.close()}
+});
+test('card editor conflict preserves the draft while showing the version saved in the account',async()=>{
+ cardLibraryFixture=[seedCard()];const screen=await renderRoute('/ferramentas-estudo?aba=ferramentas');try{await act(async()=>button('Editar cartão').click());await inputValue(document.querySelector('.card-editor textarea'),'Minha pergunta que precisa continuar aqui.');cardConflict=true;await act(async()=>button('Salvar alterações do cartão').click());await flush();await act(async()=>button('Conferir versão da conta').click());await flush();assert.equal(document.querySelector('.card-editor textarea').value,'Minha pergunta que precisa continuar aqui.');assert.ok(document.querySelector('[aria-label="Versão atual do cartão"]'));assert.equal(cardLibraryFixture[0].frente,'Como a força muda o movimento?')}finally{cardLibraryFixture=[];cardConflict=false;await screen.close()}
+});
+test('short review adapts the budget, keeps a failed rating open and confirms only an explicit retry',async()=>{
+ cardLibraryFixture=[seedCard(),seedCard(142,{frente:'Como a massa afeta a aceleração?'}),seedCard(143,{frente:'O que é inércia?'}),seedCard(144,{proxima_revisao:'2099-01-01'}),seedCard(145,{arquivado:1})];const screen=await renderRoute('/inicio');try{const panel=document.querySelector('.today-quick-review');assert.match(panel.textContent,/3 cartões escolhidos/);await act(async()=>button('3 minutos').click());await flush();assert.match(panel.textContent,/2 cartões escolhidos/);await act(async()=>button('Começar revisão curta →').click());assert.equal(panel.querySelector('.card-answer'),null);await act(async()=>button('Revelar resposta').click());cardWriteFailure=true;await act(async()=>button('Lembrei').click());await flush();assert.match(panel.textContent,/Cartão 1 de 2/);assert.ok(panel.querySelector('[role="alert"]'));cardWriteFailure=false;await act(async()=>button('Lembrei').click());await flush();assert.match(panel.textContent,/Cartão 2 de 2/);const posts=requests.filter(x=>x.url.endsWith('/cartoes/141/avaliar'));assert.equal(posts.length,2);assert.equal(JSON.parse(posts[0].data).chave,JSON.parse(posts[1].data).chave);await act(async()=>button('Deixar este para depois').click());assert.match(panel.textContent,/1 cartão revisado e salvo/);assert.match(panel.textContent,/1 ficou para depois/);assert.equal(cardLibraryFixture[1].proxima_revisao,'2026-01-01');const result=await axe.run(panel,{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(x=>x.id),[])}finally{cardLibraryFixture=[];cardWriteFailure=false;await screen.close()}
+});
+test('short review distinguishes a connection failure from an empty due queue',async()=>{
+ cardReadFailure=true;const screen=await renderRoute('/inicio');try{assert.ok(button('Consultar revisão curta novamente'));assert.ok(!document.querySelector('.today-quick-review').textContent.includes('Não há cartões pendentes'));cardReadFailure=false;await act(async()=>button('Consultar revisão curta novamente').click());await flush();assert.match(document.querySelector('.today-quick-review').textContent,/Não há cartões pendentes para hoje/);assert.equal(button('Começar revisão curta →'),undefined)}finally{cardReadFailure=false;await screen.close()}
+});
+
+test('new manual cards recover a closed draft and retry with the same creation key',async()=>{
+ const screen=await renderRoute('/ferramentas-estudo?aba=ferramentas');try{await act(async()=>button('Criar novo cartão').click());const fields=document.querySelectorAll('.card-editor textarea');await inputValue(fields[0],'Como reconhecer uma proporção?');await inputValue(fields[1],'Comparando razões entre grandezas.');cardWriteFailure=true;await act(async()=>button('Criar cartão de revisão').click());await flush();await act(async()=>button('Fechar editor').click());await act(async()=>button('Criar novo cartão').click());assert.equal(document.querySelector('.card-editor textarea').value,'Como reconhecer uma proporção?');cardWriteFailure=false;await act(async()=>button('Criar cartão de revisão').click());await flush();assert.equal(cardLibraryFixture.length,1);const posts=requests.filter(x=>x.method==='post'&&x.url.endsWith('/aprendizagem/cartoes'));assert.equal(posts.length,2);assert.equal(JSON.parse(posts[0].data).chave,JSON.parse(posts[1].data).chave);assert.ok(document.querySelector('[aria-label="Cartão aberto pelo link"]'));assert.equal(localStorage.getItem('900001:card-editor:new'),null)}finally{cardLibraryFixture=[];cardWriteFailure=false;await screen.close()}
+});
+test('ending a short round keeps confirmed ratings and leaves untouched cards pending',async()=>{
+ cardLibraryFixture=[seedCard(),seedCard(142),seedCard(143)];const screen=await renderRoute('/inicio');try{await act(async()=>button('Começar revisão curta →').click());await act(async()=>button('Revelar resposta').click());await act(async()=>button('Lembrei').click());await flush();await act(async()=>button('Encerrar por agora').click());await flush();const panel=document.querySelector('.today-quick-review');assert.match(panel.textContent,/1 cartão revisado nesta rodada/);assert.match(panel.textContent,/2 cartões escolhidos/);assert.equal(requests.filter(x=>x.method==='post'&&x.url.includes('/cartoes/')&&x.url.endsWith('/avaliar')).length,1);assert.equal(cardLibraryFixture[1].proxima_revisao,'2026-01-01');assert.equal(cardLibraryFixture[2].proxima_revisao,'2026-01-01')}finally{cardLibraryFixture=[];await screen.close()}
 });

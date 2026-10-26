@@ -17,7 +17,7 @@ async function save(owner,body,db=pool){
   const [[prior]]=await conn.execute('SELECT id_flashcard,hash_payload FROM revisoes_destaques WHERE id_usuario=? AND chave=?',[owner,data.chave])
   if(prior){if(prior.hash_payload!==hash)fail(409,'Este envio já foi confirmado com outro texto. Abra uma nova pergunta para salvar uma versão diferente.');await conn.commit();return {salvo:true,id:prior.id_flashcard}}
   const source=await getHighlight(owner,data.idDestaque,conn)
-  const [card]=await conn.execute("INSERT INTO flashcards_estudo (id_usuario,frente,verso,disciplina,origem) VALUES (?,?,?,?,'ANOTACAO')",[owner,data.pergunta,data.resposta,data.disciplina||null])
+  const [card]=await conn.execute("INSERT INTO flashcards_estudo (id_usuario,frente,verso,disciplina,origem,proxima_revisao) VALUES (?,?,?,?,'ANOTACAO',?)",[owner,data.pergunta,data.resposta,data.disciplina||null,require('./flashcardService').today()])
   await conn.execute('INSERT INTO revisoes_destaques (id_usuario,chave,id_destaque,id_flashcard,hash_payload,fonte_titulo,fonte_secao,fonte_trecho) VALUES (?,?,?,?,?,?,?,?)',[owner,data.chave,source.id,card.insertId,hash,source.titulo,source.secao,source.trecho])
   await conn.commit();return {salvo:true,id:card.insertId}
  }catch(error){await conn.rollback();throw error}finally{conn.release()}

@@ -3,8 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import inteligencia from "../services/inteligenciaService";
 import perfil from "../services/perfilService";
-import memory from '../services/studyMemoryService';
-import {currentUser} from '../utils/offlineStore';
+import FlashcardLibrary from '../components/FlashcardLibrary';
 const AdaptiveLearningHub = lazy(() => import('../components/AdaptiveLearningHub'));
 const LearningPaths = lazy(() => import('../components/LearningPaths'));
 import "./PlanejamentoInteligente.css";
@@ -14,7 +13,6 @@ export default function PlanejamentoInteligente() {
   const [params] = useSearchParams();
   const [aba, setAba] = useState(params.get('aba') === 'ferramentas' ? 'ferramentas' : 'metas');
   const [toolsLoaded, setToolsLoaded] = useState(false);
-  const [cardVirado, setCardVirado] = useState(null);
   const [questoes, setQuestoes] = useState([]);
   const [respostas, setRespostas] = useState({});
   const [metas, setMetas] = useState([]);
@@ -24,11 +22,7 @@ export default function PlanejamentoInteligente() {
     tipo: "QUESTOES",
     alvo: 20,
   });
-  const [flashcards, setFlashcards] = useState([]);
-  const [focusedCard,setFocusedCard]=useState(null),[focusedError,setFocusedError]=useState(false),[focusedAttempt,setFocusedAttempt]=useState(0);
   const requestedCard=params.get('cartao');
-  useEffect(()=>{if(!requestedCard)return;const controller=new window.AbortController(),owner=currentUser();setFocusedCard(null);setFocusedError(false);memory.review(requestedCard,controller.signal).then(value=>{if(!controller.signal.aborted&&owner===currentUser()){if(!value?.id_flashcard)throw Error('invalid');setFocusedCard(value)}}).catch(()=>{if(!controller.signal.aborted&&owner===currentUser())setFocusedError(true)});return()=>controller.abort()},[requestedCard,focusedAttempt]);
-  const [flash, setFlash] = useState({ frente: "", verso: "", disciplina: "" });
   const [busca, setBusca] = useState("");
   const [resultadosBusca, setResultadosBusca] = useState([]);
   const [provas, setProvas] = useState([]);
@@ -51,7 +45,6 @@ export default function PlanejamentoInteligente() {
           .filter(Boolean);
         setMaterias(areas);
         setForm((v) => ({ ...v, disciplina: areas[0] || "" }));
-        setFlash((v) => ({ ...v, disciplina: areas[0] || "" }));
         setMetas(lista.status === "fulfilled" && Array.isArray(lista.value) ? lista.value : []);
         if (priv.status === "fulfilled") setPrivacidade(priv.value?.visibilidade || "RESUMO");
         if ([dados, lista, priv].some(item => item.status === "rejected")) toast.error("Parte das suas ferramentas não pôde ser carregada.");
@@ -61,12 +54,11 @@ export default function PlanejamentoInteligente() {
   useEffect(() => {
     if (aba !== 'ferramentas' || toolsLoaded) return;
     let active = true;
-    Promise.allSettled([inteligencia.flashcards(), inteligencia.provas()]).then(([cards, exams]) => {
+    Promise.allSettled([inteligencia.provas()]).then(([exams]) => {
       if (!active) return;
-      if (cards.status === 'fulfilled' && Array.isArray(cards.value)) setFlashcards(cards.value);
       if (exams.status === 'fulfilled' && Array.isArray(exams.value)) setProvas(exams.value);
-      if (cards.status === 'fulfilled' && exams.status === 'fulfilled') setToolsLoaded(true);
-      else toast.error('Não foi possível carregar todos os cartões e provas. Reabra esta aba para tentar novamente.');
+      if (exams.status === 'fulfilled') setToolsLoaded(true);
+      else toast.error('Não foi possível carregar as provas. Reabra esta aba para tentar novamente.');
     });
     return () => { active = false; };
   }, [aba, toolsLoaded]);
@@ -118,24 +110,6 @@ export default function PlanejamentoInteligente() {
       toast.error("Não foi possível salvar a privacidade.");
     }
   }
-  async function criarFlash(e) {
-    e.preventDefault();
-    try {
-      setFlashcards(await inteligencia.criarFlashcard(flash));
-      setFlash({ frente: "", verso: "", disciplina: materias[0] || "" });
-      toast.success("Flashcard criado.");
-    } catch {
-      toast.error("Preencha frente e verso.");
-    }
-  }
-  async function avaliarFlash(id, resultado) {
-    try {
-      await inteligencia.avaliarFlashcard(id, resultado);
-      setFlashcards((items) => items.filter((item) => item.id_flashcard !== id));
-      setFocusedCard(item=>item?.id_flashcard===id?null:item);
-      toast.success('Revisão registrada.');
-    } catch { toast.error('Não foi possível registrar a revisão. Seu cartão continua aqui.'); }
-  }
   async function pesquisar(valor) {
     setBusca(valor);
     if (valor.trim().length < 2) return setResultadosBusca([]);
@@ -164,7 +138,7 @@ export default function PlanejamentoInteligente() {
           <div><Link to="/aprendizagem">← Voltar para praticar e revisar</Link><span className="progress-eyebrow">APRENDER / FERRAMENTAS DE ESTUDO</span><h1>Prepare o jeito de aprender.</h1><p>Ajuste metas por matéria, organize cartões e explore trilhas. Seu progresso e sua fila de revisões ficam em Praticar e revisar.</p><div className="progress-hero-actions"><button type="button" onClick={() => setAba("metas")}>Ajustar metas por matéria <span aria-hidden="true">→</span></button><Link to="/aprendizagem">Ver meu progresso</Link></div></div>
           <div className="progress-hero-visual" aria-hidden="true"><div><span>CONTINUAR É PROGREDIR</span><strong>{metasConcluidas}<small> / {metas.length}</small></strong><p>metas alcançadas</p><i style={{ width: `${metas.length ? metasConcluidas / metas.length * 100 : 0}%` }} /></div></div>
         </header>
-        <section className="progress-snapshot" aria-label="Resumo das ferramentas"><article><span>MATÉRIAS EM FOCO</span><strong>{materias.length}</strong><p>{materias.length ? materias.slice(0, 2).join(' · ') : 'Escolha suas matérias no perfil'}</p></article><article><span>METAS ATIVAS</span><strong>{metas.length}</strong><p>{metaEmFoco ? `${metaEmFoco.disciplina}: ${metaEmFoco.progresso || 0} de ${metaEmFoco.alvo}` : 'Defina um objetivo para começar'}</p></article><article><span>CARTÕES DE MEMÓRIA</span><strong>{toolsLoaded ? flashcards.length : '—'}</strong><p>Consulte seus cartões em Cartões e pesquisa</p></article></section>
+        <section className="progress-snapshot" aria-label="Resumo das ferramentas"><article><span>MATÉRIAS EM FOCO</span><strong>{materias.length}</strong><p>{materias.length ? materias.slice(0, 2).join(' · ') : 'Escolha suas matérias no perfil'}</p></article><article><span>METAS ATIVAS</span><strong>{metas.length}</strong><p>{metaEmFoco ? `${metaEmFoco.disciplina}: ${metaEmFoco.progresso || 0} de ${metaEmFoco.alvo}` : 'Defina um objetivo para começar'}</p></article><article><span>CARTÕES DE MEMÓRIA</span><strong>No seu ritmo</strong><p>Consulte seus cartões em Cartões e pesquisa</p></article></section>
         <nav className="progress-tabs" aria-label="Ferramentas de estudo">{[["metas", "Metas e diagnóstico"], ["ferramentas", "Cartões e pesquisa"], ["visao", "Trilhas e recomendações"]].map(([id, label]) => <button key={id} type="button" aria-current={aba === id ? "page" : undefined} onClick={() => setAba(id)}>{label}</button>)}</nav>
         {aba === "visao" && <div className="progress-view"><div className="progress-section-heading"><div><span className="progress-eyebrow">SEU PRÓXIMO PASSO</span><h2>Progresso que vira ação.</h2><p>As recomendações se ajustam conforme você pratica e registra seus estudos.</p></div></div>
         <Suspense fallback={<p role="status">Preparando suas trilhas…</p>}><AdaptiveLearningHub /><LearningPaths /></Suspense>
@@ -287,52 +261,8 @@ export default function PlanejamentoInteligente() {
           {provas.map((item) => <p key={item.id_prova} className="mt-3 text-sm"><b>{item.titulo}</b> · {String(item.data_prova).slice(0, 10)} · {(item.materias || []).map((m) => m.disciplina || m).join(', ')}</p>)}
           {prova.materias.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{prova.materias.map((materia, indice) => <label key={materia.disciplina} className="text-sm">{materia.disciplina} peso <input type="number" min="1" max="10" value={materia.peso} onChange={(e) => setProva({ ...prova, materias: prova.materias.map((m, i) => i === indice ? { ...m, peso: Number(e.target.value) || 1 } : m) })} className="ml-1 w-14" /></label>)}</div>}
         </section>
-        <section className="mt-5 grid gap-5 lg:grid-cols-2">
-          <article className="rounded-[2rem] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 dark:bg-[rgb(var(--pn-superficie-rgb)/1)]">
-            <h2 className="text-xl font-black">Flashcards</h2>
-            <form onSubmit={criarFlash} className="mt-3 grid gap-2">
-              <input
-                value={flash.frente}
-                onChange={(e) => setFlash({ ...flash, frente: e.target.value })}
-                placeholder="Pergunta"
-              />
-              <textarea
-                value={flash.verso}
-                onChange={(e) => setFlash({ ...flash, verso: e.target.value })}
-                placeholder="Resposta"
-              />
-              <button className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-4 py-2 font-bold text-white">
-                Criar flashcard
-              </button>
-            </form>
-            {focusedError&&<p role="alert">Não foi possível abrir o cartão escolhido. <button type="button" onClick={()=>setFocusedAttempt(value=>value+1)}>Consultar cartão novamente</button></p>}
-            {(focusedCard?[focusedCard,...flashcards.filter(item=>item.id_flashcard!==focusedCard.id_flashcard)].slice(0,5):flashcards.slice(0,5)).map((card) => (
-              <div
-                key={card.id_flashcard}
-                className="mt-3 rounded-xl border p-3"
-              >
-                <b>{card.frente}</b>
-                {card.fonte_titulo&&<details><summary>Trecho que originou esta pergunta</summary><p>{card.fonte_titulo} · {card.fonte_secao}</p><blockquote>{card.fonte_trecho}</blockquote></details>}
-                <button type="button" className="progress-flash-reveal" aria-expanded={cardVirado === card.id_flashcard} onClick={() => setCardVirado(cardVirado === card.id_flashcard ? null : card.id_flashcard)}>{cardVirado === card.id_flashcard ? "Ocultar resposta" : "Revelar resposta"}</button>
-                {cardVirado === card.id_flashcard && <p className="mt-1 text-sm">{card.verso}</p>}
-                {cardVirado === card.id_flashcard && <div className="mt-2 flex gap-2">
-                  {[
-                    ["ERREI", "Errei"],
-                    ["LEMBREI", "Lembrei"],
-                    ["DOMINEI", "Dominei"],
-                  ].map(([id, label]) => (
-                    <button
-                      key={id}
-                      onClick={() => avaliarFlash(card.id_flashcard, id)}
-                      className="text-xs underline"
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>}
-              </div>
-            ))}
-          </article>
+        <FlashcardLibrary requestedCard={requestedCard}/><section className="mt-5 grid gap-5">
+
           <section className="rounded-[2rem] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 dark:bg-[rgb(var(--pn-superficie-rgb)/1)]">
             <h2 className="text-xl font-black">Privacidade pedagógica</h2>
             <p className="mt-1 text-sm opacity-65">

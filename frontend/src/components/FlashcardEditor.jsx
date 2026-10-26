@@ -1,0 +1,23 @@
+import {useEffect,useId,useRef,useState} from 'react'
+import cards from '../services/flashcardService'
+import {newRecordKey} from '../services/studyMemoryService'
+import {currentUser,scopedCacheKey} from '../utils/offlineStore'
+import {readJournalDraft,keepJournalDraft,clearJournalDraft} from '../utils/journalDrafts'
+import SaveFeedback from './SaveFeedback'
+
+const fromCard=card=>({pergunta:card?.frente||'',resposta:card?.verso||'',disciplina:card?.disciplina||'',versao:card?.versao,chave:newRecordKey()})
+export default function FlashcardEditor({card,onSaved,onClose}){
+ const uid=useId(),owner=useRef(currentUser()).current,storageKey=useRef(scopedCacheKey(`card-editor:${card?.id_flashcard||'new'}`)).current,lock=useRef(false)
+ const [draft,setDraft]=useState(()=>{const saved=readJournalDraft(storageKey);return saved&&['pergunta','resposta','disciplina','chave'].every(key=>typeof saved[key]==='string')?saved:fromCard(card)})
+ const [status,setStatus]=useState('ready'),[error,setError]=useState(''),[conflict,setConflict]=useState(false),[server,setServer]=useState(null)
+ const first=useRef(null)
+ useEffect(()=>{const previous=document.activeElement;first.current?.focus();return()=>{if(previous?.isConnected)previous.focus()}},[])
+ function update(name,value){const next={...draft,[name]:value};setDraft(next);setError('');setStatus(keepJournalDraft(storageKey,next)?'local':'unsaved')}
+ async function save(){
+  if(lock.current||owner!==currentUser())return;lock.current=true;setStatus('saving');setError('');setConflict(false)
+  try{const result=await(card?cards.edit(card.id_flashcard,draft,owner):cards.create(draft,owner));if(owner!==currentUser())return;if(!result?.salvo)throw Error('unconfirmed');clearJournalDraft(storageKey);setStatus('saved');onSaved(result)}
+  catch(failure){if(owner===currentUser()){keepJournalDraft(storageKey,draft);setStatus('error');setConflict(failure.response?.status===409);setError(failure.response?.data?.message||'Não foi possível confirmar o cartão. Seu rascunho continua aqui.')}}finally{lock.current=false}
+ }
+ async function compare(){setError('');try{const value=await cards.get(card.id_flashcard);if(owner===currentUser())setServer(value)}catch{setError('Não foi possível conferir a versão da conta. Seu rascunho continua aqui.')}}
+ return <section className="card-editor" aria-label={card?'Editar cartão':'Criar cartão'}><h3>{card?'Dê mais clareza à sua pergunta.':'Uma pergunta para lembrar depois.'}</h3><p>A edição preserva a data de revisão e o trecho de origem. Fechar mantém seu rascunho nesta conta e aparelho.</p><form onSubmit={event=>{event.preventDefault();save()}}><fieldset disabled={status==='saving'}><label htmlFor={`${uid}-question`}>Pergunta<textarea ref={first} id={`${uid}-question`} minLength={5} maxLength={1000} required rows={3} value={draft.pergunta} onChange={event=>update('pergunta',event.target.value)}/></label><label htmlFor={`${uid}-answer`}>Resposta<textarea id={`${uid}-answer`} minLength={3} maxLength={4000} required rows={4} value={draft.resposta} onChange={event=>update('resposta',event.target.value)}/></label><label htmlFor={`${uid}-subject`}>Matéria (opcional)<input id={`${uid}-subject`} maxLength={100} value={draft.disciplina} onChange={event=>update('disciplina',event.target.value)}/></label><div className="card-actions"><button type="submit">{status==='saving'?'Salvando cartão…':card?'Salvar alterações do cartão':'Criar cartão de revisão'}</button><button type="button" onClick={onClose}>Fechar editor</button></div></fieldset></form>{status!=='ready'&&<SaveFeedback status={error?'error':status} message={error||undefined} onRetry={status==='error'&&!conflict?save:undefined}/ >}{conflict&&!card&&<button type="button" onClick={()=>{if(window.confirm('Preparar outro envio? Confira a lista antes: o envio anterior pode já ter criado um cartão.')){const next={...draft,chave:newRecordKey()};setDraft(next);keepJournalDraft(storageKey,next);setConflict(false);setError('');setStatus('local')}}}>Preparar outro envio com este rascunho</button>}{conflict&&card&&<button type="button" onClick={compare}>Conferir versão da conta</button>}{server&&<section aria-label="Versão atual do cartão"><h4>Versão salva na conta</h4><p>{server.frente}</p><p>{server.verso}</p><p>{Number(server.arquivado)?'Este cartão está arquivado. Restaure-o na lista para editar.':'Seu rascunho acima foi preservado.'}</p>{!Number(server.arquivado)&&<button type="button" onClick={()=>{if(window.confirm('Substituir seu rascunho pelo texto salvo na conta?')){const next=fromCard(server);setDraft(next);keepJournalDraft(storageKey,next);setServer(null);setError('');setConflict(false);setStatus('local')}}}>Usar o texto da conta no editor</button>}</section>}</section>
+}
