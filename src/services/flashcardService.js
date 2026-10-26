@@ -5,7 +5,7 @@ const positive = value => { const n=Number(value); if(!Number.isSafeInteger(n)||
 const text = (value,min,max,label) => {if(typeof value!=='string'||value.trim().length<min||value.trim().length>max)fail(400,`Confira ${label}: use de ${min} a ${max} caracteres.`);return value.trim()}
 const key = value => {if(typeof value!=='string'||!/^[a-zA-Z0-9_-]{8,80}$/.test(value))fail(400,'Reabra o cartão antes de salvar.');return value}
 const today = () => new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date())
-const fields = 'f.id_flashcard,f.frente,f.verso,f.disciplina,f.origem,f.proxima_revisao,f.versao,f.arquivado'
+const fields = 'f.id_flashcard,f.frente,f.verso,f.disciplina,f.origem,f.proxima_revisao,f.versao,f.arquivado,f.melhorar,f.melhoria_nota'
 const sourceFields = ',r.fonte_titulo,r.fonte_secao,r.fonte_trecho'
 const sourceJoin = ' LEFT JOIN revisoes_destaques r ON r.id_flashcard=f.id_flashcard AND r.id_usuario=f.id_usuario '
 const intervals = {ERREI:1,DIFICIL:3,LEMBREI:7,DOMINEI:15}
@@ -15,13 +15,16 @@ function filters(input={}){
  if(pagina>100||!['ativos','arquivados'].includes(input.arquivo||'ativos')||!['todos','pendentes'].includes(input.estado||'todos')||![undefined,'1'].includes(input.semMateria))fail(400,'Confira os filtros dos cartões.')
  const materia=text(input.materia??'',0,100,'o filtro de matéria')
  if(materia&&input.semMateria==='1')fail(400,'Escolha uma matéria por vez.')
- return {pagina,arquivado:input.arquivo==='arquivados'?1:0,pendentes:input.estado==='pendentes',materia,semMateria:input.semMateria==='1'}
+ if(![undefined,'1'].includes(input.melhorar))fail(400,'Confira o filtro de melhoria.')
+ return {pagina,arquivado:input.arquivo==='arquivados'?1:0,pendentes:input.estado==='pendentes',materia,semMateria:input.semMateria==='1',melhorar:input.melhorar==='1',colecao:input.colecao===undefined?null:positive(input.colecao)}
 }
 async function list(owner,input,db=pool){
  const opt=filters(input),params=[owner,opt.arquivado];let where='f.id_usuario=? AND f.arquivado=?'
  if(opt.materia){where+=' AND f.disciplina=?';params.push(opt.materia)}
  if(opt.semMateria)where+=" AND (f.disciplina IS NULL OR TRIM(f.disciplina)='')"
  if(opt.pendentes){where+=' AND f.proxima_revisao<=?';params.push(today())}
+ if(opt.melhorar)where+=' AND f.melhorar=1'
+ if(opt.colecao){const [[collection]]=await db.execute('SELECT id FROM flashcard_colecoes WHERE id=? AND id_usuario=?',[opt.colecao,owner]);if(!collection)fail(404,'Coleção não disponível nesta conta.');where+=' AND EXISTS (SELECT 1 FROM flashcard_colecao_itens ci WHERE ci.id_colecao=? AND ci.id_flashcard=f.id_flashcard AND ci.id_usuario=f.id_usuario)';params.push(opt.colecao)}
  const [[count]]=await db.execute(`SELECT COUNT(*) AS total FROM flashcards_estudo f WHERE ${where}`,params)
  const [rows]=await db.execute(`SELECT ${fields}${sourceFields} FROM flashcards_estudo f ${sourceJoin} WHERE ${where} ORDER BY f.proxima_revisao,f.id_flashcard LIMIT 13 OFFSET ${(opt.pagina-1)*12}`,params)
  const [subjects]=await db.execute("SELECT DISTINCT disciplina FROM flashcards_estudo WHERE id_usuario=? AND disciplina IS NOT NULL AND TRIM(disciplina)<>'' ORDER BY disciplina LIMIT 200",[owner])

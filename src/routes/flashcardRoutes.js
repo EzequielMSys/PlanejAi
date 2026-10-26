@@ -1,9 +1,16 @@
 const router=require('express').Router(),service=require('../services/flashcardService'),limits=require('../services/rateLimitStore')
 const owner=req=>req.usuario.id_usuario||req.usuario.id
+const organization=require('../services/flashcardOrganizationService')
 router.use((req,res,next)=>{res.set('Cache-Control','private, no-store');next()})
 const run=operation=>async(req,res)=>{try{if(req.method!=='GET'&&await limits.consume('FLASHCARD_WRITE',String(owner(req)),60000)>60)return res.status(429).json({message:'Aguarde um minuto antes de tentar novamente. Seu texto continua aqui.'});res.json(await operation(req))}catch(error){const expected=[400,404,409].includes(error.status);res.status(expected?error.status:503).json({message:expected?error.message:'Não foi possível confirmar seus cartões. Seu estudo continua preservado; tente novamente.'})}}
 router.get('/',run(req=>service.list(owner(req),req.query)))
 router.get('/curta',run(req=>service.short(owner(req),req.query)))
+router.get('/colecoes',run(req=>organization.list(owner(req))))
+router.post('/colecoes',run(req=>organization.save(owner(req),req.body)))
+router.delete('/colecoes/:colecao',run(req=>organization.remove(owner(req),req.params.colecao)))
+router.put('/colecoes/:colecao/cartoes/:id',run(req=>organization.member(owner(req),req.params.colecao,req.params.id,req.body)))
+router.get('/:id/colecoes',run(req=>organization.memberships(owner(req),req.params.id)))
+router.patch('/:id/melhoria',run(req=>organization.flag(owner(req),req.params.id,req.body)))
 router.get('/:id/historico',run(req=>service.history(owner(req),req.params.id,req.query)))
 router.get('/:id',run(req=>service.get(owner(req),req.params.id)))
 router.post('/',run(req=>service.create(owner(req),req.body)))
