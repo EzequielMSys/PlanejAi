@@ -34,6 +34,8 @@ const MinhaJornada = lazy(() => import('./pages/MinhaJornada'))
 const Turmas = lazy(() => import('./pages/Turmas'))
 const MinhasTurmas = lazy(() => import('./pages/MinhasTurmas'))
 const MinhasTurmasDetalhe = lazy(() => import('./pages/MinhasTurmasDetalhe'))
+const LearningStrategies = lazy(() => import('./pages/LearningStrategies'))
+const InvestigationProjects = lazy(() => import('./pages/InvestigationProjects'))
 const StudyLaboratory = lazy(() => import('./pages/StudyLaboratory'))
 const ExamPreparation = lazy(() => import('./pages/ExamPreparation'))
 const Provas = lazy(() => import('./pages/Provas'))
@@ -76,6 +78,8 @@ function App() {
                         <Route path="/provas" element={<Provas />} />
 <Route path="/preparacao-provas" element={<ExamPreparation />} />
 <Route path="/laboratorio" element={<StudyLaboratory />} />
+<Route path="/como-aprendo" element={<LearningStrategies />} />
+<Route path="/projetos-investigacao" element={<InvestigationProjects />} />
             <Route path="/lumi" element={<Chat />} />
             <Route path="/chat" element={<Navigate to="/lumi" replace />} />
             <Route path="/preferencias" element={<Preferencias />} />

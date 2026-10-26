@@ -1,4 +1,5 @@
 import DeskPin from './DeskPin'
+import { Link } from 'react-router-dom'
 import { useEffect, useId, useRef, useState } from 'react'
 import journal from '../services/learningJournalService'
 import { currentUser, scopedCacheKey } from '../utils/offlineStore'
@@ -115,6 +116,7 @@ function JournalDetail({id,onBack,onChanged,notes}) {
   return <article className="journal-detail">
     <button type="button" onClick={onBack}>← Voltar aos registros</button><header><span className="pj-eyebrow">{record.tipo==='explicacao'?'MINHAS PALAVRAS':'CAMINHO DA DÚVIDA'}</span><h2>{record.titulo}</h2><p>{record.tipo==='duvida'?(record.resolvido?'Resolvida por você · pode ser reaberta':'Em investigação'):'Uma versão preservada a cada tentativa.'}</p></header>
     {record.tipo==='duvida'&&<DeskPin type="duvida" id={record.id}/>}
+    {record.passos.length>0&&<Link to="/como-aprendo" state={{subject:record.titulo,source:{type:'diario',record:record.passos.at(-1).id}}}>Registrar uma estratégia que experimentei neste caminho →</Link>}
     {saved && <p role="status" className="journal-confirmed">Registro confirmado na sua conta.</p>}
     <JournalEditor key={`${record.id}:${record.resolvido}:${revision}`} record={record} tipo={record.tipo} notes={notes} onSaved={()=>{setRevision(n=>n+1);setHistory(true);setSelected([]);setFeedback('');setSaved(true);onChanged()}}/>
     {record.tipo==='explicacao' && <button type="button" aria-expanded={history} onClick={()=>setHistory(value=>!value)}>{history?'Ocultar versões anteriores':'Consultar versões anteriores / comparar'}</button>}

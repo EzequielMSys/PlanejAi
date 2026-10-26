@@ -56,6 +56,7 @@ function createPreparation(body, day = today()) {
   return schedule({ title: text(body.title, 100), date, minutes, days, topics, tasks }, day);
 }
 function summary(data, kind) {
+  if(['estrategia','projeto'].includes(kind))return require('./personalLearningPaths').summary(data,kind);
   if (kind === 'prova') return { title: data.title, date: data.date, minutes: data.minutes, completed: data.tasks.filter(t => t.done).length, total: data.tasks.length, unallocated: data.tasks.filter(t => !t.done && !t.date).length, reflected: Boolean(data.reflections?.length), recoveryPending: data.recovery?.tasks.filter(t=>!t.done).length || 0 };
   if (kind === 'laboratorio') return {title:data.title,caseId:data.caseId,due:data.due,attempts:data.attempts.length};
   return { title: data.title, mode: data.mode, due: data.due, preparation: data.preparation || null, attempts: data.attempts.length, contested: data.attempts.some(t => t.contest) };
@@ -70,15 +71,17 @@ async function detail(owner, id, db = pool, lock = false) {
   const r = rows[0]; return expose({ id: r.id, version: r.versao, kind: r.tipo, ...parse(r.dados) });
 }
 function expose(record) {
+  if(record.kind==='projeto')return {...record,stages:require('./personalLearningPaths').stages};
   if(record.kind==='laboratorio')return {...record,case:require('./studyLabCatalog').present(record)};
   if(record.kind==='prova')return {...record,recoverySuggestions:require('./postExamService').suggestions(record)};
   return record;
 }
-async function create(owner, kind, body, db = pool) {
-  if (!['prova', 'evidencia','laboratorio'].includes(kind)) fail('Tipo inválido.');
+async function create(owner, kind, body, db = pool, actor) {
+  if (!['prova', 'evidencia','laboratorio','estrategia','projeto'].includes(kind)) fail('Tipo inválido.');
   const id = body.key;
   if (!/^[a-f0-9-]{36}$/i.test(id || '')) fail('Identificador de envio inválido.');
-  const data = kind === 'prova' ? createPreparation(body) : kind==='laboratorio' ? require('./studyLabService').create(body) : { title: text(body.title, 100), mode: body.mode, prompt: text(body.prompt, 2000), attempts: [], due: null };
+  const personal=['estrategia','projeto'].includes(kind);
+  let data = personal?{}:kind === 'prova' ? createPreparation(body) : kind==='laboratorio' ? require('./studyLabService').create(body) : { title: text(body.title, 100), mode: body.mode, prompt: text(body.prompt, 2000), attempts: [], due: null };
   if (kind === 'evidencia' && !modes[data.mode]) fail('Escolha uma forma de verificar seu entendimento.');
   if(kind==='evidencia'&&body.initialText){data.attempts=[{id:randomUUID(),text:text(body.initialText,4000),correction:false,created:new Date().toISOString()}];data.due=dateAdd(today(),3);}
   data.creationHash = fingerprint({ ...body, key: undefined });
@@ -92,7 +95,8 @@ async function create(owner, kind, body, db = pool) {
       await conn.commit(); return detail(owner, id, conn);
     }
     const [counts] = await conn.execute('SELECT COUNT(*) total FROM percursos_estudo WHERE id_usuario=? AND tipo=?', [owner, kind]);
-    if (counts[0].total >= (kind === 'prova' ? 20 : 100)) fail('Limite de registros atingido. Exclua um registro antigo para continuar.');
+    if (counts[0].total >= (['prova','projeto'].includes(kind)?20:kind==='estrategia'?50:100)) fail('Limite de registros atingido. Exclua um registro antigo para continuar.');
+    if(personal){const creationHash=data.creationHash;data=await require('./personalLearningPaths').create(owner,kind,body,conn,actor,today());data.creationHash=creationHash;}
     if (kind === 'prova') {
       const collection = await require('./flashcardOrganizationService').save(owner, { nome: `${data.title.slice(0, 65)} · ${id.slice(0, 8)}`, objetivo: `Preparação até ${data.date}: ${data.topics.map(t => t.title).join(', ').slice(0, 240)}` }, conn);
       data.collection = collection.id;
@@ -106,15 +110,17 @@ async function create(owner, kind, body, db = pool) {
       if(source.kind!=='laboratorio'||!source.attempts.some(a=>a.id===body.sourceAttempt))fail('Tentativa de origem não encontrada nesta conta.',404);
       data.sourceLab=source.id;data.sourceAttempt=body.sourceAttempt;
     }
+    if(kind==='evidencia'&&body.sourceProject){const source=await detail(owner,body.sourceProject,conn);if(source.kind!=='projeto'||!source.entries.some(e=>e.id===body.sourceEntry))fail('Registro de origem não encontrado nesta conta.',404);data.sourceProject=source.id;data.sourceEntry=body.sourceEntry;}
     await conn.execute('INSERT INTO percursos_estudo(id,id_usuario,tipo,dados,resumo) VALUES (?,?,?,?,?)', [id, owner, kind, JSON.stringify(data), JSON.stringify(summary(data, kind))]);
     await conn.commit(); return expose({ id, version: 1, kind, ...data });
   } catch (e) { await conn.rollback(); throw e; } finally { conn.release(); }
 }
-async function change(owner, id, body, db = pool) {
+async function change(owner, id, body, db = pool, actor) {
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
     const current = await detail(owner, id, conn, true);
+    if(['estrategia','projeto'].includes(current.kind)&&require('./personalLearningPaths').replay(current,current.kind,body)){await conn.commit();return current;}
     if((current.kind==='prova'&&require('./postExamService').replay(current,body))||(current.kind==='laboratorio'&&require('./studyLabService').replay(current,body))){await conn.commit();return current;}
     if (current.kind === 'evidencia' && body.action === 'attempt') {
       const prior = current.attempts.find(a => a.id === body.key);
@@ -124,7 +130,7 @@ async function change(owner, id, body, db = pool) {
       }
     }
     if (current.version !== Number(body.version)) fail('O registro mudou em outra aba. Reabra antes de tentar novamente; seu rascunho foi preservado.', 409);
-    const { kind, version, ...data } = current; delete data.id;delete data.case;delete data.recoverySuggestions;
+    const { kind, version, ...data } = current; delete data.id;delete data.case;delete data.recoverySuggestions;delete data.stages;
     if (body.action === 'delete') { await conn.execute('DELETE FROM percursos_estudo WHERE id=? AND id_usuario=?', [id, owner]); await conn.commit(); return { deleted: true }; }
     if (kind === 'prova') {
       if(['postexam','approveRecovery','completeRecovery'].includes(body.action)) {
@@ -149,6 +155,8 @@ async function change(owner, id, body, db = pool) {
         if (!task) fail('Sessão não encontrada.', 404);
         task.done = true; task.completedOn ||= today();
       } else fail('Ação inválida.');
+    } else if(['estrategia','projeto'].includes(kind)&&!['feedback','contest'].includes(body.action)) {
+      await require('./personalLearningPaths').apply(owner,data,kind,body,conn,actor,today());
     } else if(kind==='laboratorio'&&!['feedback','contest'].includes(body.action)) {
       require('./studyLabService').apply(data,body,today());
     } else if (body.action === 'attempt') {
@@ -161,11 +169,11 @@ async function change(owner, id, body, db = pool) {
     } else if (body.action === 'feedback') {
       let receipt; try { receipt = jwt.verify(body.receipt, getJwtSecret(), { algorithms: ['HS256'], audience: 'guided-study-feedback' }); } catch { fail('A devolutiva expirou. Peça uma nova análise.', 409); }
       if (String(receipt.owner) !== String(owner) || receipt.record !== id) fail('Devolutiva não pertence a este registro.', 404);
-      const attempt = data.attempts.find(a => a.id === receipt.attempt);
+      const attempt = ['estrategia','projeto'].includes(kind)?require('./personalLearningPaths').feedbackTarget({...data,kind},receipt.attempt):data.attempts.find(a => a.id === receipt.attempt);
       if (!attempt || fingerprint(attempt.text) !== receipt.hash) fail('A resposta mudou. Peça outra análise.', 409);
       attempt.feedback = receipt.feedback;
     } else if (body.action === 'contest') {
-      const attempt = data.attempts.find(a => a.id === body.attempt);
+      const attempt = ['estrategia','projeto'].includes(kind)?require('./personalLearningPaths').feedbackTarget({...data,kind},body.attempt):data.attempts.find(a => a.id === body.attempt);
       if (!attempt?.feedback) fail('Devolutiva não encontrada.', 404);
       attempt.contest = text(body.text, 1000);
     } else fail('Ação inválida.');
@@ -175,9 +183,10 @@ async function change(owner, id, body, db = pool) {
 }
 async function assist(owner, id, body, db = pool, provider) {
   const record = await detail(owner, id, db);
-  if (!['evidencia','laboratorio'].includes(record.kind)) fail('Escolha um ciclo de entendimento ou uma investigação.');
+  if (!['evidencia','laboratorio','estrategia','projeto'].includes(record.kind)) fail('Escolha um registro de aprendizagem.');
   if (!Array.isArray(body.attempts) || !body.attempts.length || body.attempts.length > 2 || new Set(body.attempts).size !== body.attempts.length) fail('Selecione uma ou duas respostas para enviar à Lumi.');
-  const chosen = record.attempts.filter(a => body.attempts.includes(a.id));
+  const selectedContext=['estrategia','projeto'].includes(record.kind)?require('./personalLearningPaths').context(record,body):null;
+  const chosen = selectedContext?selectedContext.chosen:record.attempts.filter(a => body.attempts.includes(a.id));
   if (chosen.length !== body.attempts.length) fail('Uma resposta selecionada não pertence a este ciclo. Reabra os registros.');
   if(record.kind==='laboratorio'&&(!Array.isArray(body.fields)||!body.fields.length||body.fields.some(f=>!require('./studyLabService').fields.includes(f))))fail('Selecione quais partes do raciocínio quer compartilhar.');
   const client = provider || require('../utils/openaiClient').getOpenAIClient().client;
@@ -192,6 +201,7 @@ async function assist(owner, id, body, db = pool, provider) {
       messages[0].content+=' No laboratório, aja como tutora de investigação: faça perguntas e dê pistas; não revele a resolução, não calcule a resposta pelo estudante e não penalize o uso de apoios. Analise somente os campos selecionados. Declare quando cálculos ou contexto não foram compartilhados.';
       messages[1].content=JSON.stringify({assunto:record.title,respostas:chosen.map(a=>({enunciado:a.prompt,etapa:a.phase,partes:Object.fromEntries(body.fields.map(f=>[f,a[f]]))}))});
     }
+    if(selectedContext){messages[0].content+=' '+selectedContext.policy;messages[1].content=selectedContext.content;}
     const payload = require('./iaService')._test.montarPayloadChat(messages);
     // Groq documents strict schema support for these GPT-OSS models. Other providers
     // retain the existing compatible payload and are still validated below.
@@ -216,7 +226,8 @@ async function overview(owner, db = pool) {
   const due = (await list(owner, 'evidencia', db)).filter(c => c.due && c.due <= day);
   const labs=(await list(owner,'laboratorio',db)).filter(c=>c.due&&c.due<=day);
   const postExam=rows.map(row=>({id:row.id,...parse(row.dados)})).filter(p=>p.date<=day&&!p.reflections?.length).sort((a,b)=>b.date.localeCompare(a.date))[0];
-  return { preparation: options[0] || null, evidence: due[0] || null, recovery, laboratory:labs[0]||null, postExam:postExam?{id:postExam.id,title:postExam.title,date:postExam.date}:null };
+  const project=(await list(owner,'projeto',db)).filter(p=>p.status==='ativo'&&p.next?.date<=day).sort((a,b)=>a.next.date.localeCompare(b.next.date))[0]||null;
+  return { preparation: options[0] || null, evidence: due[0] || null, recovery, laboratory:labs[0]||null, project, postExam:postExam?{id:postExam.id,title:postExam.title,date:postExam.date}:null };
 }
 async function recoveryPreview(owner,id,body,db=pool) {
   const plan=await detail(owner,id,db);if(plan.kind!=='prova')fail('Preparação não encontrada.',404);

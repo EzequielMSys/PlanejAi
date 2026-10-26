@@ -72,7 +72,7 @@ let planningWriteFailure=false;
 let deskItems=[{id:31,tipo:'anotacao',id_origem:9,titulo:'Leis de Newton',trecho:'Um exemplo meu',disponivel:true},{id:32,tipo:'duvida',id_origem:71,titulo:'Força e velocidade',disponivel:true}];
 let journalSteps = [{id:11,tipo:'explicacao',texto:'Primeira versão preservada',criado_em:'2026-10-20T12:00:00'}, {id:12,tipo:'explicacao',texto:'Segunda versão com exemplo',criado_em:'2026-10-25T12:00:00'}];
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
-function fixture(config) {
+async function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
   if(url.includes('/aprendizagem/percursos')){
@@ -81,16 +81,23 @@ function fixture(config) {
     if(config.method==='get'){
       if(end==='/hoje')return {preparation:null,evidence:null};
       if(end==='/laboratorio/catalogo')return require('../src/services/studyLabCatalog').cards();
+      if(end==='/projetos/modelos'){const paths=require('../src/services/personalLearningPaths');return {templates:paths.templates,stages:paths.stages,criteria:paths.criteria};}
+      if(end==='/estrategias/sugestoes')return [];
+      if(end==='/fontes/opcoes')return guidedRecords.filter(r=>['evidencia','laboratorio','projeto'].includes(r.kind)).flatMap(r=>(r.kind==='projeto'?r.entries:r.attempts).map(a=>({type:'caminho',record:r.id,step:a.id,title:r.title})));
+
       if(!end)return guidedRecords.filter(r=>r.kind===config.params?.tipo).map(r=>({...r,attempts:Array.isArray(r.attempts)?r.attempts.length:0}));
       if(end.endsWith('/revisao-final'))return {evidence:[],doubts:[]};
       return guidedRecords.find(r=>r.id===end.slice(1));
     }
     if(guidedWriteFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Não foi possível confirmar o envio.'}});
-    if(config.method==='post'&&(end==='/prova'||end==='/evidencia'||end==='/laboratorio')){
-      const kind=end.slice(1),record={...body,id:body.key,version:1,kind,...(kind==='prova'?require('../src/services/guidedStudyService')._test.createPreparation(body):kind==='laboratorio'?require('../src/services/studyLabService').create(body):{attempts:[],due:null})};if(kind==='laboratorio')record.case=require('../src/services/studyLabCatalog').present(record);guidedRecords.push(record);return record;
+    if(end==='/fontes/conferir'){const original=guidedRecords.find(r=>r.id===body.record),entry=(original?.entries||original?.attempts||[]).find(a=>a.id===body.step);if(!entry)throw Error('origin missing');return {...body,title:original.title,snippet:entry.text,href:'/meu-entendimento?ciclo='+original.id};}
+    const sourceDb={execute:async(sql,v)=>[[...guidedRecords.filter(r=>r.id===v[0]).map(r=>({id:r.id,versao:r.version,tipo:r.kind,dados:r}))]]};
+    if(config.method==='post'&&(end==='/prova'||end==='/evidencia'||end==='/laboratorio'||end==='/estrategia'||end==='/projeto')){
+      const kind=end.slice(1),record={...body,id:body.key,version:1,kind,...(kind==='prova'?require('../src/services/guidedStudyService')._test.createPreparation(body):kind==='laboratorio'?require('../src/services/studyLabService').create(body):['estrategia','projeto'].includes(kind)?await require('../src/services/personalLearningPaths').create(900001,kind,body,sourceDb,undefined,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date())):{attempts:[],due:null})};if(kind==='projeto')record.stages=require('../src/services/personalLearningPaths').stages;if(kind==='laboratorio')record.case=require('../src/services/studyLabCatalog').present(record);guidedRecords.push(record);return record;
     }
     if(end.endsWith('/recuperacao/previa')){const source=guidedRecords.find(r=>r.id===end.split('/')[1]);return require('../src/services/postExamService').preview(source,body,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()));}
     const record=guidedRecords.find(r=>r.id===end.slice(1));
+    if(['estrategia','projeto'].includes(record?.kind)){await require('../src/services/personalLearningPaths').apply(900001,record,record.kind,body,sourceDb,undefined,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()));record.version++;return record;}
     if(['postexam','approveRecovery','completeRecovery'].includes(body.action)){require('../src/services/postExamService').apply(record,body,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()));record.recoverySuggestions=require('../src/services/postExamService').suggestions(record);record.version++;return record;}
     if(record?.kind==='laboratorio'&&['help','parameter','investigate'].includes(body.action)){require('../src/services/studyLabService').apply(record,body,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()));record.case=require('../src/services/studyLabCatalog').present(record);record.version++;return record;}
     if(body.action==='attempt'){record.attempts.push({id:body.key,text:body.text,correction:body.correction,created:new Date().toISOString()});record.due='2026-10-29';record.version++;return record;}
@@ -285,6 +292,31 @@ async function renderRoute(route, role = 'aluno', userOverrides = {}, stored = {
   return { root, container, async close() { await act(async () => root.unmount()); } };
 }
 function button(text) { return [...document.querySelectorAll('button')].find(node => node.textContent.trim() === text); }
+
+function personalControl(prefix,root=document){return [...root.querySelectorAll('label')].find(label=>label.textContent.startsWith(prefix))?.querySelector('input,textarea,select');}
+test('Como eu aprendo preserva rascunho na falha e registra reavaliação com a evidência original',async()=>{
+  guidedRecords=[{id:'strategy-origin',version:1,kind:'evidencia',title:'Energia na prática',mode:'explicar',attempts:[{id:'strategy-attempt',text:'Minha explicação com potência e tempo.',created:new Date().toISOString()}]}];
+  const screen=await renderRoute('/como-aprendo');
+  try{
+    await inputValue(personalControl('Um nome que faça'),'Conferir unidades');await inputValue(personalControl('Como faço, passo'),'Escrevo as unidades em cada etapa.');await inputValue(personalControl('Assunto'),'Energia');await inputValue(personalControl('Dificuldade que'),'Confundi kW e kWh.');await inputValue(personalControl('O que fiz e'),'Converter o tempo ajudou nesta questão.');
+    await selectValue(personalControl('Registro que quero'),'caminho:strategy-origin:strategy-attempt');await flush();
+    guidedWriteFailure=true;await act(async()=>document.querySelector('.strategy-create').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(personalControl('O que fiz e').value,'Converter o tempo ajudou nesta questão.');assert.ok(screen.container.textContent.includes('Não foi possível confirmar o envio.'));
+    guidedWriteFailure=false;await act(async()=>document.querySelector('.strategy-create').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();assert.ok(document.querySelector('.strategy-notebook'));const record=guidedRecords.find(r=>r.kind==='estrategia');assert.equal(record.experiences[0].source.record,'strategy-origin');
+    await act(async()=>[...document.querySelectorAll('summary')].find(n=>n.textContent.startsWith('Registrar outra experiência')).click());await selectValue(personalControl('É uma nova experiência'),record.experiences[0].id);await selectValue(personalControl('Como funcionou'),'nao_ajudou');await inputValue(personalControl('O que fiz e'),'Reavaliei: ainda preciso interpretar melhor os dados.');
+    const form=personalControl('É uma nova experiência').closest('form');await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(record.experiences.length,2);assert.equal(record.experiences[0].outcome,'ajudou');assert.equal(record.experiences[1].outcome,'nao_ajudou');assert.equal(record.experiences[1].reassessOf,record.experiences[0].id);assert.equal(requests.filter(r=>r.url.endsWith('/lumi')&&r.method==='post').length,0);
+  }finally{await screen.close();guidedRecords=[];guidedWriteFailure=false;}
+});
+test('projeto apresenta critérios desde o começo e só agenda o próximo passo após confirmação',async()=>{
+  guidedRecords=[];const screen=await renderRoute('/projetos-investigacao');
+  try{
+    assert.ok(screen.container.textContent.includes('Reconhecimento dos limites'));await selectValue(personalControl('Começar por um modelo'),'energia');await act(async()=>document.querySelector('.project-create').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();const record=guidedRecords.find(r=>r.kind==='projeto');assert.ok(document.querySelector('.project-desk'));assert.equal(record.next,null);
+    await selectValue(personalControl('Tipo de registro'),'hipotese');await inputValue(personalControl('Meu texto, cálculo'),'Acho que o tempo também muda o consumo.');await act(async()=>document.querySelector('.project-entry').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(record.entries.length,1);assert.equal(record.entries[0].type,'hipotese');
+    await act(async()=>[...document.querySelectorAll('.project-next summary')][0].click());await inputValue(personalControl('O que vou fazer'),'Comparar dois períodos');await inputValue(personalControl('Por que este passo'),'Quero confrontar a primeira hipótese.');const form=personalControl('O que vou fazer').closest('form');assert.equal(requests.filter(r=>r.method==='patch'&&JSON.parse(r.data).action==='projectNext').length,0);await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(record.next.title,'Comparar dois períodos');
+    await act(async()=>button('Registrei este próximo passo como realizado').click());await flush();assert.equal(record.next,null);assert.equal(record.actionHistory[0].outcome,'realizado');
+    await act(async()=>document.querySelectorAll('.project-milestones button')[4].click());await inputValue(personalControl('Meu texto, cálculo'),'Meu relatório distingue potência, duração e energia, dentro das condições escolhidas.');await act(async()=>document.querySelector('.project-entry').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(record.entries[1].type,'producao');
+    await act(async()=>[...document.querySelectorAll('.project-evaluation summary')][0].click());await inputValue(personalControl('O que esta investigação'),'Consegui comparar as condições; ainda não generalizo para todos os aparelhos.');const evaluation=personalControl('O que esta investigação').closest('form');await act(async()=>evaluation.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(record.status,'concluido');assert.equal(record.reviews.length,1);assert.equal(record.entries.length,2);
+  }finally{await screen.close();guidedRecords=[];}
+});
 
 test('fechamento da prova mantém rascunho após falha e exige conferir a recuperação antes de aprovar',async()=>{
   const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());

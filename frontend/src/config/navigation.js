@@ -1,6 +1,8 @@
 const ALL = ['aluno', 'docente', 'admin', 'adm', 'dono']
 const STAFF = ['docente', 'admin', 'adm', 'dono']
 export const PAGES = [
+  { path: '/como-aprendo', title: 'Como eu aprendo', description: 'Estratégias pessoais vinculadas a experiências reais.', keywords: 'estratégias repertório experiências aprender', group: 'Aprender', icon: 'book', roles: ALL, hidden: true, searchable: true, navParent: '/meu-entendimento' },
+  { path: '/projetos-investigacao', title: 'Projetos de investigação', description: 'Perguntas, fontes e produções próprias conectando matérias.', keywords: 'projetos investigação pesquisa hipóteses fontes produção', group: 'Aprender', icon: 'route', roles: ALL, hidden: true, searchable: true, navParent: '/aprendizagem' },
   { path: '/laboratorio', title: 'Laboratório de problemas', description: 'Investigue situações, compare caminhos e conecte assuntos.', keywords: 'laboratório investigação aplicar situações problemas conectados', group: 'Aprender', icon: 'route', roles: ALL, hidden: true, searchable: true, navParent: '/aprendizagem' },
   { path: '/preparacao-provas', title: 'Preparação para provas', description: 'Diagnóstico, sessões e revisões até a sua prova.', keywords: 'preparação prova estudo plano diagnóstico', group: 'Aprender', icon: 'exam', roles: ALL, hidden: true, searchable: true, navParent: '/provas' },
   { path: '/fontes-estudo', title: 'Fontes para estudar', description: 'Leituras, provas oficiais, redação e acervos.', keywords: 'biblioteca fontes materiais enem gratuitas', group: 'Aprender', icon: 'book', roles: ALL, hidden: true, searchable: true, navParent: '/aprendizagem' },
