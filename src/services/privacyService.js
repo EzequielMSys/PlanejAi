@@ -8,7 +8,7 @@ const directTables = [
   'missoes_estudo', 'dominio_competencias', 'mensagens_chat_ia', 'suporte_solicitacoes',
   'anotacoes_estudo', 'estudo_em_andamento', 'diario_aprendizagem', 'diario_passos', 'diario_lumi_uso', 'fechamentos_estudo', 'mesa_estudo',
   'leitura_destaques', 'lumi_conversas', 'revisoes_destaques', 'flashcard_revisoes',
-  'flashcard_colecoes', 'flashcard_colecao_itens'
+  'flashcard_colecoes', 'flashcard_colecao_itens', 'percursos_estudo'
 ]
 
 async function safeRows(sql, params) {

@@ -1,3 +1,4 @@
+import TodayPreparation from '../components/TodayPreparation'
 import AreaSignature from '../components/AreaSignature'
 import TodayQuickReview from '../components/TodayQuickReview'
 import { useEffect, useMemo, useState } from 'react'
@@ -207,6 +208,7 @@ export default function TodayDashboard() {
       {planError && <div role="alert" className="study-return-note"><p>O cronograma não pôde ser consultado. Você ainda pode retomar os registros confirmados abaixo.</p><button type="button" onClick={()=>reloadPlan().catch(()=>setPlanError(true))}>Consultar cronograma novamente</button></div>}
 
       {resumeStatus !== 'ready' && <div className="study-return-note" role="status"><p>{resumeStatus === 'loading' ? 'Conferindo onde você parou…' : 'Não conseguimos consultar sua última sessão. Seu histórico não foi apagado.'}</p>{resumeStatus === 'error' && <button type="button" onClick={reloadResume}>Consultar minha retomada</button>}</div>}
+      <TodayPreparation/>
       {firstStudy ? <><FirstStudySteps prepared={perfilCompleto} /><TodayQuickReview/></> : <><section className="dash-v2-spotlight">
         <motion.article className="dash-v2-focus" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <div className="dash-v2-focus-top"><span>SEU PRÓXIMO PASSO</span><small>{nextAction.subject}</small></div>

@@ -1,7 +1,7 @@
 import DeskPin from '../components/DeskPin'
 import AreaSignature from '../components/AreaSignature'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import closures from '../services/sessionClosureService'
 import useClosureDraft from '../hooks/useClosureDraft'
@@ -172,7 +172,7 @@ export default function StudySession() {
     } finally { closingLock.current=false;if(active.current)setFinishing(false) }
   }
 
-  if(closed)return <SessionClosingSummary {...closed} notes={notes} onRetryNotes={async()=>{const result=await flushNotes();if(result.confirmed)setClosed(value=>({...value,notesPending:false,notesReconfirmed:true}));else toast.error('O envio das anotações ainda não foi confirmado. Sua cópia continua neste aparelho.')}}/>
+  if(closed)return <><aside className="guided-today"><h2>O que consigo fazer com o que estudei?</h2><Link to="/meu-entendimento" state={{tema:content?.titulo}}>Explicar, aplicar, comparar ou analisar um exemplo →</Link></aside><SessionClosingSummary {...closed} notes={notes} onRetryNotes={async()=>{const result=await flushNotes();if(result.confirmed)setClosed(value=>({...value,notesPending:false,notesReconfirmed:true}));else toast.error('O envio das anotações ainda não foi confirmado. Sua cópia continua neste aparelho.')}}/></>
   if (resuming) return <RouteLoading label="Buscando sua sessão em andamento…" />
   if (!content) return <main className="pj-page"><div className="session-missing pj-panel"><span className="pj-eyebrow">Sala de estudo</span><h1>{resumeError ? 'Não conseguimos consultar sua sessão.' : 'Nenhum conteúdo foi escolhido.'}</h1><p>Seu progresso continua na conta. Escolha um conteúdo no cronograma para estudar.</p>{resumeError && <button type="button" onClick={() => window.location.reload()}>Tentar novamente</button>}<button className="pj-button pj-button--primary" onClick={() => navigate('/cronograma')}>Ir ao cronograma</button></div></main>
 

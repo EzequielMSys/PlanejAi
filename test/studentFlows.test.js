@@ -31,6 +31,8 @@ const axe = requireFrontend('axe-core');
 let bundle;
 let requests = [];
 let failChat = false;
+let guidedRecords=[],guidedWriteFailure=false;
+
 let chatHistoryFixture=[];
 let readingHighlightsFixture=[],highlightSaveFailure=false,conversationsFixture=[],conversationSaveFailure=false,chatPlainReply=false;
 let conversationSaveDeferred=false,resolveConversationSave;
@@ -73,6 +75,25 @@ const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de te
 function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
+  if(url.includes('/aprendizagem/percursos')){
+    const end=url.split('/percursos')[1]||'';
+    const body=typeof config.data==='string'?JSON.parse(config.data):config.data;
+    if(config.method==='get'){
+      if(end==='/hoje')return {preparation:null,evidence:null};
+      if(!end)return guidedRecords.filter(r=>r.kind===config.params?.tipo).map(r=>({...r,attempts:Array.isArray(r.attempts)?r.attempts.length:0}));
+      if(end.endsWith('/revisao-final'))return {evidence:[],doubts:[]};
+      return guidedRecords.find(r=>r.id===end.slice(1));
+    }
+    if(guidedWriteFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Não foi possível confirmar o envio.'}});
+    if(config.method==='post'&&(end==='/prova'||end==='/evidencia')){
+      const kind=end.slice(1),record={...body,id:body.key,version:1,kind,...(kind==='prova'?require('../src/services/guidedStudyService')._test.createPreparation(body):{attempts:[],due:null})};guidedRecords.push(record);return record;
+    }
+    const record=guidedRecords.find(r=>r.id===end.slice(1));
+    if(body.action==='attempt'){record.attempts.push({id:body.key,text:body.text,correction:body.correction,created:new Date().toISOString()});record.due='2026-10-29';record.version++;return record;}
+    if(body.action==='replan'){record.tasks.forEach(t=>{if(!t.done)t.date='2026-10-30'});record.version++;return record;}
+    if(body.action==='complete'){record.tasks.find(t=>t.id===body.task).done=true;record.version++;return record;}
+    return record;
+  }
   if(url.includes('/aprendizagem/cartoes')){
     const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
     if(config.method==='get'&&cardReadFailure)throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
@@ -260,6 +281,41 @@ async function renderRoute(route, role = 'aluno', userOverrides = {}, stored = {
   return { root, container, async close() { await act(async () => root.unmount()); } };
 }
 function button(text) { return [...document.querySelectorAll('button')].find(node => node.textContent.trim() === text); }
+
+test('preparação de prova preserva diagnóstico após falha, confirma envio e reorganiza dia perdido',async()=>{
+  guidedRecords=[];guidedWriteFailure=false;
+  const screen=await renderRoute('/preparacao-provas');
+  try{
+    const inputs=document.querySelectorAll('.guided-form input');
+    await inputValue(inputs[0],'Prova de energia');await inputValue(inputs[1],require('../src/services/guidedStudyService')._test.dateAdd(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()),14));
+    await inputValue(document.querySelector('fieldset input:not([type=checkbox])'),'Energia');
+    await inputValue(document.querySelector('.guided-form textarea'),'Ainda confundo energia e força.');
+    guidedWriteFailure=true;
+    await act(async()=>document.querySelector('.guided-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+    assert.ok(screen.container.textContent.includes('Não foi possível confirmar o envio.'));assert.equal(document.querySelector('.guided-form textarea').value,'Ainda confundo energia e força.');
+    guidedWriteFailure=false;
+    await act(async()=>document.querySelector('.guided-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();
+    assert.ok(document.querySelector('.guided-timeline'));assert.equal(guidedRecords.length,1);
+    await act(async()=>button('Não consegui estudar hoje').click());await flush();
+    assert.ok(requests.some(r=>r.method==='patch'&&JSON.parse(r.data).action==='replan'&&JSON.parse(r.data).minutes===0));
+    assert.ok(screen.container.textContent.includes('Salvo na sua conta'));
+  }finally{await screen.close();guidedRecords=[];guidedWriteFailure=false;}
+});
+test('entendimento permite quatro formas e guarda versões sem apagar a anterior',async()=>{
+  guidedRecords=[];const screen=await renderRoute('/meu-entendimento');
+  try{
+    assert.equal(document.querySelectorAll('.guided-form select option').length,4);
+    await inputValue(document.querySelector('.guided-form input'),'Energia e trabalho');
+    await act(async()=>document.querySelector('.guided-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();
+    await inputValue(document.querySelector('.guided-cycle .guided-form textarea'),'Minha primeira explicação com exemplo.');
+    await act(async()=>document.querySelector('.guided-cycle .guided-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();
+    await inputValue(document.querySelector('.guided-cycle .guided-form textarea'),'Minha segunda explicação mais precisa.');
+    await act(async()=>document.querySelector('.guided-cycle .guided-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();
+    assert.equal(guidedRecords[0].attempts.length,2);assert.equal(guidedRecords[0].attempts[0].text,'Minha primeira explicação com exemplo.');assert.notEqual(guidedRecords[0].attempts[0].id,guidedRecords[0].attempts[1].id);
+    assert.equal(requests.filter(r=>r.url.endsWith('/lumi')&&r.method==='post').length,0);
+    assert.ok(screen.container.textContent.includes('Nenhum outro registro da conta é consultado.'));
+  }finally{await screen.close();guidedRecords=[];}
+});
 
 test('today highlights the pending lesson and saves a routine adjustment only after confirmation', async () => {
   dailySchedulesFixture = [{ id_cronograma: 11, status: 'ATIVO', dias: [{ id_dia: 51, data_estudo: new Intl.DateTimeFormat("en-CA", {timeZone:"America/Sao_Paulo"}).format(new Date()), tempo_previsto: 60, concluido: 0, conteudos: [{ id: 70, titulo: 'Concluído', concluido: 1 }, { id: 71, id_conteudo: 7, titulo: 'Funções na prática', disciplina: 'Matemática', concluido: 0 }, { id: 72, titulo: 'Revisar equações', concluido: 0 }] }] }];
