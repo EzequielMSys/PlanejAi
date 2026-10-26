@@ -52,3 +52,23 @@ test('revisão curta de coleção valida acesso antes de selecionar e limita som
  let count=0;await assert.rejects(cards.short(7,{colecao:9},{execute:async()=>{count++;return [[]]}}),e=>e.status===404);assert.equal(count,1);
  await assert.rejects(cards.short(7,{colecao:'9 OR 1=1'},{execute:async()=>{throw Error('unexpected')}}),e=>e.status===400);
 });
+
+test('indicadores da coleção excluem arquivados das pendências e melhorias e usam o dia de São Paulo',async()=>{
+ let call;await organization.list(7,{execute:async(sql,params)=>{call={sql,params};return [[]]}});
+ assert.deepEqual(call.params,[cards.today(),7]);assert.match(call.sql,/f.arquivado=0 AND f.proxima_revisao<=\?/);assert.match(call.sql,/f.arquivado=0 AND f.melhorar=1/);assert.match(call.sql,/f.arquivado=1/);assert.match(call.sql,/f.id_usuario=c.id_usuario/);assert.match(call.sql,/WHERE c.id_usuario=\?/);
+});
+function bulkFixture({missingGroup=false,missingCard=false,insertFailure=false}={}) {
+ const calls=[];let committed=0,rolledBack=0,released=0;
+ const conn={beginTransaction:async()=>{},commit:async()=>{committed++},rollback:async()=>{rolledBack++},release:()=>{released++},execute:async(sql,params)=>{calls.push({sql,params});if(sql.startsWith('SELECT id FROM'))return [missingGroup?[]:[{id:9}]];if(sql.startsWith('SELECT id_flashcard'))return [missingCard?[{id_flashcard:41}]:[{id_flashcard:41},{id_flashcard:42}]];if(insertFailure)throw Error('falha de escrita');return [{affectedRows:2}]}};
+ return {db:{getConnection:async()=>conn},calls,stats:()=>({committed,rolledBack,released})};
+}
+test('inclusão em lote valida limites e identificadores antes de abrir transação',async()=>{
+ const db={getConnection:async()=>{throw Error('não deve abrir conexão')}};
+ for(const body of [undefined,null,{}, {cartoes:[]},{cartoes:Array(51).fill(41)},{cartoes:[0]},{cartoes:['41 OR 1=1']}])await assert.rejects(organization.addMany(7,9,body,db),e=>e.status===400);
+});
+test('inclusão em lote trava coleção e cartões do dono e evita duplicação',async()=>{
+ const fixture=bulkFixture();assert.deepEqual(await organization.addMany(7,9,{cartoes:[42,41,42]},fixture.db),{salvo:true,confirmados:2});assert.deepEqual(fixture.calls[0].params,[9,7]);assert.match(fixture.calls[0].sql,/FOR UPDATE/);assert.deepEqual(fixture.calls[1].params,[7,41,42]);assert.match(fixture.calls[1].sql,/id_usuario=\?/);assert.match(fixture.calls[2].sql,/ON DUPLICATE KEY UPDATE/);assert.deepEqual(fixture.calls[2].params,[9,41,7,9,42,7]);assert.deepEqual(fixture.stats(),{committed:1,rolledBack:0,released:1});
+});
+test('lote misto ou coleção alheia não insere parcialmente e falha de escrita reverte tudo',async()=>{
+ for(const options of [{missingGroup:true},{missingCard:true},{insertFailure:true}]){const fixture=bulkFixture(options);await assert.rejects(organization.addMany(7,9,{cartoes:[41,42]},fixture.db));assert.deepEqual(fixture.stats(),{committed:0,rolledBack:1,released:1});if(!options.insertFailure)assert.ok(!fixture.calls.some(c=>c.sql.startsWith('INSERT')))}
+});

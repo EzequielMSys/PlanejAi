@@ -1,4 +1,5 @@
 const pool = require('../config/db')
+const {today}=require('./flashcardService')
 const fail = (status, message) => { throw Object.assign(new Error(message), {status}) }
 const id = value => { const n=Number(value); if(!Number.isSafeInteger(n)||n<1)fail(400,'Identificador inválido.'); return n }
 const text = (value,min,max) => { if(typeof value!=='string'||value.trim().length<min||value.trim().length>max)fail(400,`Use de ${min} a ${max} caracteres.`);return value.trim() }
@@ -11,10 +12,13 @@ async function flag(owner,card,body,db=pool) {
 }
 async function list(owner,db=pool) {
  const [rows]=await db.execute(`SELECT c.id,c.nome,c.objetivo,c.versao,COUNT(f.id_flashcard) AS total,
- SUM(CASE WHEN f.arquivado=0 THEN 1 ELSE 0 END) AS ativos
+ SUM(CASE WHEN f.arquivado=0 THEN 1 ELSE 0 END) AS ativos,
+ SUM(CASE WHEN f.arquivado=0 AND f.proxima_revisao<=? THEN 1 ELSE 0 END) AS pendentes,
+ SUM(CASE WHEN f.arquivado=0 AND f.melhorar=1 THEN 1 ELSE 0 END) AS melhorar,
+ SUM(CASE WHEN f.arquivado=1 THEN 1 ELSE 0 END) AS arquivados
  FROM flashcard_colecoes c LEFT JOIN flashcard_colecao_itens i ON i.id_colecao=c.id AND i.id_usuario=c.id_usuario
  LEFT JOIN flashcards_estudo f ON f.id_flashcard=i.id_flashcard AND f.id_usuario=c.id_usuario
- WHERE c.id_usuario=? GROUP BY c.id,c.nome,c.objetivo,c.versao ORDER BY c.nome,c.id`,[owner])
+ WHERE c.id_usuario=? GROUP BY c.id,c.nome,c.objetivo,c.versao ORDER BY c.nome,c.id`,[today(),owner])
  return rows
 }
 async function save(owner,body,db=pool) {
@@ -57,4 +61,20 @@ async function member(owner,collection,card,body,db=pool) {
  }else await db.execute('DELETE FROM flashcard_colecao_itens WHERE id_colecao=? AND id_flashcard=? AND id_usuario=?',[collectionId,cardId,owner])
  return {salvo:true}
 }
-module.exports={flag,list,save,edit,remove,memberships,member}
+async function addMany(owner,collection,body,db=pool) {
+ const collectionId=id(collection)
+ if(!Array.isArray(body?.cartoes)||body.cartoes.length<1||body.cartoes.length>50)fail(400,'Selecione de 1 a 50 cartões por inclusão.')
+ const ids=[...new Set(body.cartoes.map(id))].sort((a,b)=>a-b)
+ const conn=await db.getConnection()
+ try {
+  await conn.beginTransaction()
+  const [[group]]=await conn.execute('SELECT id FROM flashcard_colecoes WHERE id=? AND id_usuario=? FOR UPDATE',[collectionId,owner])
+  if(!group)fail(404,'Coleção não disponível nesta conta. Confira a seleção antes de tentar novamente.')
+  const [records]=await conn.execute(`SELECT id_flashcard FROM flashcards_estudo WHERE id_usuario=? AND id_flashcard IN (${ids.map(()=>'?').join(',')}) ORDER BY id_flashcard FOR UPDATE`,[owner,...ids])
+  if(records.length!==ids.length)fail(404,'Um ou mais cartões não estão disponíveis nesta conta. Nenhum cartão foi adicionado por este envio.')
+  await conn.execute(`INSERT INTO flashcard_colecao_itens (id_colecao,id_flashcard,id_usuario) VALUES ${ids.map(()=>'(?,?,?)').join(',')} ON DUPLICATE KEY UPDATE id_colecao=VALUES(id_colecao)`,ids.flatMap(cardId=>[collectionId,cardId,owner]))
+  await conn.commit()
+  return {salvo:true,confirmados:ids.length}
+ } catch(error) {await conn.rollback();throw error} finally {conn.release()}
+}
+module.exports={flag,list,save,edit,remove,memberships,member,addMany}

@@ -16,4 +16,5 @@ export default {
  removeCollection:(id,owner)=>api.delete(`/colecoes/${id}`,{expectedOwner:owner}).then(r=>r.data),
  memberships:(id,signal)=>api.get(`/${id}/colecoes`,{signal,cache:false}).then(r=>r.data),
  member:(collection,id,incluir,owner)=>api.put(`/colecoes/${collection}/cartoes/${id}`,{incluir},{expectedOwner:owner}).then(r=>r.data),
+ addMany:(collection,cartoes,owner)=>api.put(`/colecoes/${collection}/cartoes`,{cartoes},{expectedOwner:owner}).then(r=>r.data),
 }
