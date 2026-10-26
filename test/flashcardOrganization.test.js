@@ -30,3 +30,25 @@ test('filtros de melhoria e coleção mantêm o dono e não permitem coleções 
  await assert.rejects(cards.list(7,{colecao:'9'},{execute:async()=>[[]]}),e=>e.status===404);
  for(const input of [{colecao:'9 OR 1=1'},{melhorar:'false'}])await assert.rejects(cards.list(7,input,db),e=>e.status===400);
 });
+
+test('edição de coleção protege versão e dono, preserva membros e confirma reenvio exato',async()=>{
+ const calls=[],body={nome:'Prova de Física',objetivo:'Revisar energia',versao:2};
+ const db={execute:async(sql,params)=>{calls.push({sql,params});return [{affectedRows:1}]}};
+ assert.deepEqual(await organization.edit(7,9,body,db),{salvo:true,id:9,versao:3});
+ assert.deepEqual(calls[0].params,['Prova de Física','Revisar energia',9,7,2]);assert.match(calls[0].sql,/id_usuario=\? AND versao=\?/);assert.doesNotMatch(calls[0].sql,/flashcards_estudo|colecao_itens/);
+ const prior={execute:async(sql)=>sql.startsWith('UPDATE')?[{affectedRows:0}]:[[{nome:body.nome,objetivo:body.objetivo,versao:3}]]};
+ assert.equal((await organization.edit(7,9,body,prior)).salvo,true);
+ await assert.rejects(organization.edit(7,9,{...body,objetivo:'Outro texto'},prior),e=>e.status===409);
+ await assert.rejects(organization.edit(7,9,body,{execute:async(sql)=>sql.startsWith('UPDATE')?[{affectedRows:0}]:[[]]}),e=>e.status===404);
+ await assert.rejects(organization.edit(7,9,{...body,versao:0},db),e=>e.status===400);
+ await assert.rejects(organization.edit(7,9,body,{execute:async()=>{throw Object.assign(Error(),{code:'ER_DUP_ENTRY'})}}),e=>e.status===409);
+});
+test('revisão curta de coleção valida acesso antes de selecionar e limita somente pendentes dela',async()=>{
+ for(const [minutes,budget]of [[3,2],[5,3],[10,5]]){
+ const calls=[],db={execute:async(sql,params)=>{calls.push({sql,params});if(sql.startsWith('SELECT id,nome'))return [[{id:9,nome:'Prova',objetivo:'Revisar energia'}]];if(sql.includes('COUNT'))return [[{total:10}]];return [[{id_flashcard:41}]]}};
+ const result=await cards.short(7,{minutos:minutes,colecao:'9'},db);assert.equal(result.colecao.id,9);assert.equal(result.totalPendentes,10);assert.equal(result.itens.length,1);
+ assert.deepEqual(calls[0].params,[9,7]);assert.match(calls[2].sql,/f.arquivado=0 AND f.proxima_revisao<=\?/);assert.match(calls[2].sql,/ci.id_usuario=f.id_usuario/);assert.match(calls[2].sql,new RegExp('LIMIT '+budget+'$'));assert.deepEqual(calls[1].params,[7,result.hoje,9]);
+ }
+ let count=0;await assert.rejects(cards.short(7,{colecao:9},{execute:async()=>{count++;return [[]]}}),e=>e.status===404);assert.equal(count,1);
+ await assert.rejects(cards.short(7,{colecao:'9 OR 1=1'},{execute:async()=>{throw Error('unexpected')}}),e=>e.status===400);
+});

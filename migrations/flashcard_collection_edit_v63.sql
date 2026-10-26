@@ -1,0 +1,1 @@
+ALTER TABLE flashcard_colecoes ADD COLUMN versao INT NOT NULL DEFAULT 1;

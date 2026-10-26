@@ -10,11 +10,11 @@ async function flag(owner,card,body,db=pool) {
  return {salvo:true}
 }
 async function list(owner,db=pool) {
- const [rows]=await db.execute(`SELECT c.id,c.nome,c.objetivo,COUNT(f.id_flashcard) AS total,
+ const [rows]=await db.execute(`SELECT c.id,c.nome,c.objetivo,c.versao,COUNT(f.id_flashcard) AS total,
  SUM(CASE WHEN f.arquivado=0 THEN 1 ELSE 0 END) AS ativos
  FROM flashcard_colecoes c LEFT JOIN flashcard_colecao_itens i ON i.id_colecao=c.id AND i.id_usuario=c.id_usuario
  LEFT JOIN flashcards_estudo f ON f.id_flashcard=i.id_flashcard AND f.id_usuario=c.id_usuario
- WHERE c.id_usuario=? GROUP BY c.id,c.nome,c.objetivo ORDER BY c.nome,c.id`,[owner])
+ WHERE c.id_usuario=? GROUP BY c.id,c.nome,c.objetivo,c.versao ORDER BY c.nome,c.id`,[owner])
  return rows
 }
 async function save(owner,body,db=pool) {
@@ -24,6 +24,22 @@ async function save(owner,body,db=pool) {
 }
 async function remove(owner,collection,db=pool) {
  await db.execute('DELETE FROM flashcard_colecoes WHERE id=? AND id_usuario=?',[id(collection),owner]);return {salvo:true}
+}
+async function edit(owner,collection,body,db=pool) {
+ const collectionId=id(collection),version=id(body.versao)
+ const name=text(body.nome,2,100),goal=text(body.objetivo,3,300)
+ try {
+  const [result]=await db.execute('UPDATE flashcard_colecoes SET nome=?,objetivo=?,versao=versao+1 WHERE id=? AND id_usuario=? AND versao=?',[name,goal,collectionId,owner,version])
+  if(result.affectedRows)return {salvo:true,id:collectionId,versao:version+1}
+ } catch(error) {
+  if(error.code==='ER_DUP_ENTRY')fail(409,'Já existe uma coleção com esse nome. Escolha outro nome; seu texto continua aqui.')
+  throw error
+ }
+ const [[record]]=await db.execute('SELECT nome,objetivo,versao FROM flashcard_colecoes WHERE id=? AND id_usuario=?',[collectionId,owner])
+ if(!record)fail(404,'Coleção não disponível nesta conta.')
+ // A retry after a lost response confirms only this exact edit, never a newer one.
+ if(Number(record.versao)===version+1&&record.nome===name&&record.objetivo===goal)return {salvo:true,id:collectionId,versao:version+1}
+ fail(409,'A coleção mudou em outra tela. Seu texto continua aqui; consulte a versão atual antes de salvar.')
 }
 async function memberships(owner,card,db=pool) {
  const cardId=id(card),[[record]]=await db.execute('SELECT id_flashcard FROM flashcards_estudo WHERE id_flashcard=? AND id_usuario=?',[cardId,owner]);if(!record)fail(404,'Cartão não disponível nesta conta.')
@@ -41,4 +57,4 @@ async function member(owner,collection,card,body,db=pool) {
  }else await db.execute('DELETE FROM flashcard_colecao_itens WHERE id_colecao=? AND id_flashcard=? AND id_usuario=?',[collectionId,cardId,owner])
  return {salvo:true}
 }
-module.exports={flag,list,save,remove,memberships,member}
+module.exports={flag,list,save,edit,remove,memberships,member}

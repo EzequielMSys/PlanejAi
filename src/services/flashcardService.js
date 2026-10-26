@@ -68,8 +68,18 @@ async function history(owner,id,input={},db=pool){
 }
 async function short(owner,input={},db=pool){
  const minutes=Number(input.minutos??5),limits={3:2,5:3,10:5};if(!Object.hasOwn(limits,minutes))fail(400,'Escolha 3, 5 ou 10 minutos.')
- const date=today(),[[count]]=await db.execute('SELECT COUNT(*) AS total FROM flashcards_estudo WHERE id_usuario=? AND arquivado=0 AND proxima_revisao<=?',[owner,date])
- const [rows]=await db.execute(`SELECT ${fields} FROM flashcards_estudo f WHERE f.id_usuario=? AND f.arquivado=0 AND f.proxima_revisao<=? ORDER BY f.proxima_revisao,f.id_flashcard LIMIT ${limits[minutes]}`,[owner,date])
- return {itens:rows,totalPendentes:Number(count.total),minutos:minutes,minutosEstimados:Math.ceil(rows.length*1.5),hoje:date}
+ const date=today(),params=[owner,date];let collection=null
+ let where='f.id_usuario=? AND f.arquivado=0 AND f.proxima_revisao<=?'
+ if(input.colecao!==undefined){
+  const collectionId=positive(input.colecao)
+  const [[record]]=await db.execute('SELECT id,nome,objetivo FROM flashcard_colecoes WHERE id=? AND id_usuario=?',[collectionId,owner])
+  if(!record)fail(404,'Coleção não disponível nesta conta. Escolha outra coleção ou revise todos os cartões.')
+  collection=record
+  where+=' AND EXISTS (SELECT 1 FROM flashcard_colecao_itens ci WHERE ci.id_colecao=? AND ci.id_flashcard=f.id_flashcard AND ci.id_usuario=f.id_usuario)'
+  params.push(collectionId)
+ }
+ const [[count]]=await db.execute(`SELECT COUNT(*) AS total FROM flashcards_estudo f WHERE ${where}`,params)
+ const [rows]=await db.execute(`SELECT ${fields} FROM flashcards_estudo f WHERE ${where} ORDER BY f.proxima_revisao,f.id_flashcard LIMIT ${limits[minutes]}`,params)
+ return {itens:rows,totalPendentes:Number(count.total),minutos:minutes,minutosEstimados:Math.ceil(rows.length*1.5),hoje:date,colecao:collection}
 }
 module.exports={content,filters,list,get,create,edit,archive,review,history,short,today}
