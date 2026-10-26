@@ -49,7 +49,8 @@ const migrationOrder = [
   'flashcard_history_v59.sql',
   'flashcard_objectives_v61.sql',
   'flashcard_collection_edit_v63.sql',
-  'flashcard_pinned_collections_v67.sql'
+  'flashcard_pinned_collections_v67.sql',
+  'flashcard_priority_order_v69.sql'
 ];
 
 function sortMigrations(files) {

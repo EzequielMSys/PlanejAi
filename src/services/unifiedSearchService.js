@@ -1,6 +1,6 @@
 const pool = require('../config/db');
-const TYPES = ['materias', 'materiais', 'anotacoes', 'redacoes', 'destaques', 'conversas', 'cartoes'];
-const LABELS = { materias: 'Matérias', materiais: 'Materiais', anotacoes: 'Anotações', redacoes: 'Redações', destaques: 'Destaques', conversas: 'Conversas da Lumi', cartoes: 'Cartões de revisão' };
+const TYPES = ['materias', 'materiais', 'anotacoes', 'redacoes', 'destaques', 'conversas', 'cartoes', 'colecoes'];
+const LABELS = { materias: 'Matérias', materiais: 'Materiais', anotacoes: 'Anotações', redacoes: 'Redações', destaques: 'Destaques', conversas: 'Conversas da Lumi', cartoes: 'Cartões de revisão', colecoes: 'Coleções de cartões' };
 const LIMIT = 12;
 const staff = user => ['docente', 'admin', 'adm', 'dono'].includes(user.tipo);
 const owner = user => Number(user.id_usuario || user.id);
@@ -74,6 +74,11 @@ async function search(user, input, db = pool) {
         AND (f.frente LIKE ? ESCAPE '!' OR f.verso LIKE ? ESCAPE '!' OR f.disciplina LIKE ? ESCAPE '!')
         ORDER BY (f.frente LIKE ? ESCAPE '!') DESC,f.id_flashcard DESC LIMIT ${LIMIT + 1} OFFSET ${offset}`;
       params = [owner(user), opt.pattern, opt.pattern, opt.pattern, opt.prefix];
+    } else if (type === 'colecoes') {
+      sql = `SELECT c.id,c.nome AS titulo,c.objetivo AS texto FROM flashcard_colecoes c
+        WHERE c.id_usuario=? AND (c.nome LIKE ? ESCAPE '!' OR c.objetivo LIKE ? ESCAPE '!')
+        ORDER BY (c.nome LIKE ? ESCAPE '!') DESC,c.fixada DESC,c.nome,c.id LIMIT ${LIMIT + 1} OFFSET ${offset}`;
+      params = [owner(user), opt.pattern, opt.pattern, opt.prefix];
     } else {
       sql = `SELECT r.id_redacao AS id,r.tema AS titulo,r.texto,r.enviada_em AS atualizadoEm
         FROM redacoes r WHERE r.id_usuario=? AND (r.tema LIKE ? ESCAPE '!' OR r.texto LIKE ? ESCAPE '!')

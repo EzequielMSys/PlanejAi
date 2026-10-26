@@ -19,4 +19,5 @@ export default {
  addMany:(collection,cartoes,owner)=>api.put(`/colecoes/${collection}/cartoes`,{cartoes},{expectedOwner:owner}).then(r=>r.data),
  removeMany:(collection,cartoes,owner)=>api.post(`/colecoes/${collection}/retirar`,{cartoes},{expectedOwner:owner}).then(r=>r.data),
  pin:(collection,fixada,owner)=>api.patch(`/colecoes/${collection}/fixada`,{fixada},{expectedOwner:owner}).then(r=>r.data),
+ reorder:(anterior,ordem,owner)=>api.put('/colecoes/ordem',{anterior,ordem},{expectedOwner:owner}).then(r=>r.data),
 }

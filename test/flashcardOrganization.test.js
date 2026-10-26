@@ -78,15 +78,29 @@ test('retirada em lote apaga somente vínculos da coleção do dono e aceita ree
  const missing=bulkFixture({missingCard:true});await assert.rejects(organization.removeMany(7,9,body,missing.db),e=>e.status===404);assert.ok(!missing.calls.some(c=>c.sql.startsWith('DELETE')));assert.equal(missing.stats().rolledBack,1);
 });
 function pinFixture({pinned=0,count=0,missing=false}={}){
- const calls=[];let committed=0,rolledBack=0,released=0;const conn={beginTransaction:async()=>{},commit:async()=>{committed++},rollback:async()=>{rolledBack++},release:()=>{released++},execute:async(sql,params)=>{calls.push({sql,params});if(sql.startsWith('SELECT id_usuario'))return [[{id_usuario:7}]];if(sql.startsWith('SELECT fixada'))return [missing?[]:[{fixada:pinned}]];if(sql.includes('COUNT'))return [[{total:count}]];return [{affectedRows:1}]}};return {calls,db:{getConnection:async()=>conn},stats:()=>({committed,rolledBack,released})};
+ const calls=[];let committed=0,rolledBack=0,released=0;const conn={beginTransaction:async()=>{},commit:async()=>{committed++},rollback:async()=>{rolledBack++},release:()=>{released++},execute:async(sql,params)=>{calls.push({sql,params});if(sql.startsWith('SELECT id_usuario'))return [[{id_usuario:7}]];if(sql.startsWith('SELECT fixada'))return [missing?[]:[{fixada:pinned}]];if(sql.includes('COUNT'))return [[{total:count}]];if(sql.includes('MAX(ordem_prioridade)'))return [[{ultima:2}]];return [{affectedRows:1}]}};return {calls,db:{getConnection:async()=>conn},stats:()=>({committed,rolledBack,released})};
 }
 test('prioridades serializam mudanças por conta, limitam a três e mantêm versão editorial',async()=>{
- const fixture=pinFixture({count:2});assert.deepEqual(await organization.pin(7,9,{fixada:true},fixture.db),{salvo:true,fixada:true});assert.equal(fixture.calls[0].sql,'SELECT id_usuario FROM usuarios WHERE id_usuario=? FOR UPDATE');assert.deepEqual(fixture.calls[0].params,[7]);assert.deepEqual(fixture.calls[1].params,[9,7]);assert.deepEqual(fixture.calls.at(-1).params,[1,9,7]);assert.doesNotMatch(fixture.calls.at(-1).sql,/versao/);
+ const fixture=pinFixture({count:2});assert.deepEqual(await organization.pin(7,9,{fixada:true},fixture.db),{salvo:true,fixada:true});assert.equal(fixture.calls[0].sql,'SELECT id_usuario FROM usuarios WHERE id_usuario=? FOR UPDATE');assert.deepEqual(fixture.calls[0].params,[7]);assert.deepEqual(fixture.calls[1].params,[9,7]);assert.deepEqual(fixture.calls.at(-1).params,[1,3,9,7]);assert.doesNotMatch(fixture.calls.at(-1).sql,/versao/);
  const full=pinFixture({count:3});await assert.rejects(organization.pin(7,9,{fixada:true},full.db),e=>e.status===409);assert.ok(!full.calls.some(c=>c.sql.startsWith('UPDATE')));assert.equal(full.stats().rolledBack,1);
  const retry=pinFixture({pinned:1,count:3});assert.equal((await organization.pin(7,9,{fixada:true},retry.db)).salvo,true);assert.ok(!retry.calls.some(c=>c.sql.includes('COUNT')));
- const unpin=pinFixture({pinned:1,count:3});assert.equal((await organization.pin(7,9,{fixada:false},unpin.db)).fixada,false);assert.deepEqual(unpin.calls.at(-1).params,[0,9,7]);
+ const unpin=pinFixture({pinned:1,count:3});assert.equal((await organization.pin(7,9,{fixada:false},unpin.db)).fixada,false);assert.deepEqual(unpin.calls.at(-1).params,[0,0,9,7]);
 });
 test('prioridades rejeitam coleção alheia e booleanos ambíguos',async()=>{
  const fixture=pinFixture({missing:true});await assert.rejects(organization.pin(7,9,{fixada:true},fixture.db),e=>e.status===404);assert.equal(fixture.stats().rolledBack,1);assert.equal(fixture.stats().released,1);
  for(const body of [null,{}, {fixada:'true'},{fixada:1}])await assert.rejects(organization.pin(7,9,body,{getConnection:()=>{throw Error('SQL inesperado')}}),e=>e.status===400);
+});
+
+function orderFixture(initial) {
+ let actual=[...initial],committed=0,rolledBack=0;const calls=[],positions=new Map();
+ const conn={beginTransaction:async()=>{},execute:async(sql,params)=>{calls.push({sql,params});if(sql.startsWith('SELECT id_usuario'))return [[{id_usuario:7}]];if(sql.startsWith('SELECT id FROM'))return [actual.map(id=>({id}))];positions.set(params[1],params[0]);return [{affectedRows:1}]},commit:async()=>{committed++;if(positions.size)actual.sort((a,b)=>positions.get(a)-positions.get(b))},rollback:async()=>{rolledBack++},release:()=>{}};
+ return {db:{getConnection:async()=>conn},calls,stats:()=>({actual,committed,rolledBack})};
+}
+test('ordem de prioridades é atômica, restrita à conta e confirma reenvio sem alterar versões',async()=>{
+ const fixture=orderFixture([31,32,33]),body={anterior:[31,32,33],ordem:[33,31,32]};assert.deepEqual(await organization.reorder(7,body,fixture.db),{salvo:true,ordem:[33,31,32]});assert.match(fixture.calls[0].sql,/usuarios WHERE id_usuario=\? FOR UPDATE/);assert.deepEqual(fixture.calls[0].params,[7]);assert.match(fixture.calls[1].sql,/id_usuario=\? AND fixada=1.*FOR UPDATE/);assert.equal(fixture.calls.filter(c=>c.sql.startsWith('UPDATE')).length,3);for(const call of fixture.calls.filter(c=>c.sql.startsWith('UPDATE'))){assert.equal(call.params[2],7);assert.doesNotMatch(call.sql.split(' WHERE ')[0],/versao|fixada=/)}
+ const writes=fixture.calls.filter(c=>c.sql.startsWith('UPDATE')).length;await organization.reorder(7,body,fixture.db);assert.equal(fixture.calls.filter(c=>c.sql.startsWith('UPDATE')).length,writes);assert.deepEqual(fixture.stats().actual,[33,31,32]);
+});
+test('ordem incompleta, de outra conta ou alterada em outra tela não sobrescreve prioridades',async()=>{
+ for(const body of [{anterior:[31,32],ordem:[32,31]},{anterior:[99,98,97],ordem:[97,99,98]},{anterior:[32,31,33],ordem:[33,32,31]}]){const fixture=orderFixture([31,32,33]);await assert.rejects(organization.reorder(7,body,fixture.db),e=>e.status===409);assert.equal(fixture.calls.filter(c=>c.sql.startsWith('UPDATE')).length,0);assert.equal(fixture.stats().rolledBack,1)}
+ const db={getConnection:async()=>{throw Error('SQL inesperado')}};for(const body of [null,{}, {anterior:[],ordem:[]},{anterior:[1,1],ordem:[1,1]},{anterior:[1,2],ordem:[1,3]},{anterior:[1,2,3,4],ordem:[4,3,2,1]},{anterior:[1],ordem:['1 OR 1=1']}])await assert.rejects(organization.reorder(7,body,db),e=>e.status===400);
 });

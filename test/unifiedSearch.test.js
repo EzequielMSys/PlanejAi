@@ -17,10 +17,10 @@ test('search rejects broad, oversized, malformed and unbounded requests before q
 test('search escapes wildcard literals, binds the term and uses only authenticated owner scopes',async()=>{
   const search=service(),calls=[];
   await search.search({id:11,tipo:'aluno'},{q:"50%_! ' OR 1=1",id_usuario:22},{execute:async(sql,params)=>{calls.push({sql,params});return [[]]}});
-  assert.equal(calls.length,7);
+  assert.equal(calls.length,8);
   for(const call of calls){assert.ok(!call.sql.includes("OR 1=1"));assert.ok(call.params.includes("%50!%!_!! ' OR 1=1%"));assert.ok(!call.params.includes(22));}
   for(const call of calls.slice(0,2)) {assert.match(call.sql,/p.id_usuario=\?/);assert.deepEqual(Array.from(call.params.slice(0,1)),[11]);}
-  for(const call of calls.slice(2)) {assert.match(call.sql,/WHERE [arhlf].id_usuario=\?/);assert.equal(call.params[0],11);}
+  for(const call of calls.slice(2)) {assert.match(call.sql,/WHERE [arhlfc].id_usuario=\?/);assert.equal(call.params[0],11);}
 });
 test('staff catalog access never expands ownership of personal notes and essays',async()=>{
   const calls=[];
@@ -87,3 +87,7 @@ test('highlight and conversation search remain private for staff, exclude archiv
 });
 
 test('card search finds question and answer text without returning archived or foreign records',async()=>{for(const tipo of ['aluno','dono']){let captured;const result=await service().search({id:33,tipo},{q:'aceleração',tipo:'cartoes',pagina:2},{execute:async(sql,params)=>{captured={sql,params};return [[{id:141,titulo:'O que muda no movimento?',disciplina:'Física',texto:'x'.repeat(300)+' aceleração muda a velocidade.',verso:'private full answer',id_usuario:33}]]}});assert.match(captured.sql,/f.id_usuario=\? AND f.arquivado=0/);assert.match(captured.sql,/f.frente LIKE \? ESCAPE '!' OR f.verso LIKE \? ESCAPE '!'/);assert.match(captured.sql,/LIMIT 13 OFFSET 12/);assert.equal(captured.params[0],33);const item=result.grupos[0].itens[0];assert.equal(result.grupos[0].nome,'Cartões de revisão');assert.match(item.trecho,/aceleração/);assert.ok(item.trecho.length<200);assert.equal(item.verso,undefined);assert.equal(item.id_usuario,undefined)}});
+
+test('collections search matches name and objective with private scopes for students and owners',async()=>{
+ for(const tipo of ['aluno','dono']){let call;const result=await service().search({id:33,tipo},{q:'energia',tipo:'colecoes',pagina:2},{execute:async(sql,params)=>{call={sql,params};return [[{id:31,titulo:'Prova de Física',texto:'x'.repeat(230)+' energia em exemplos próprios.',id_usuario:33,fixada:1,ordem_prioridade:2}]]}});assert.match(call.sql,/WHERE c.id_usuario=\?/);assert.match(call.sql,/c.nome LIKE \? ESCAPE '!' OR c.objetivo LIKE \? ESCAPE '!'/);assert.match(call.sql,/LIMIT 13 OFFSET 12/);assert.equal(call.params[0],33);assert.equal(result.grupos[0].nome,'Coleções de cartões');const item=result.grupos[0].itens[0];assert.match(item.trecho,/energia/);assert.ok(item.trecho.length<200);assert.equal(item.id_usuario,undefined);assert.equal(item.ordem_prioridade,undefined)}
+});

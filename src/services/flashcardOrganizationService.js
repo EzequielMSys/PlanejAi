@@ -11,14 +11,14 @@ async function flag(owner,card,body,db=pool) {
  return {salvo:true}
 }
 async function list(owner,db=pool) {
- const [rows]=await db.execute(`SELECT c.id,c.nome,c.objetivo,c.versao,c.fixada,COUNT(f.id_flashcard) AS total,
+ const [rows]=await db.execute(`SELECT c.id,c.nome,c.objetivo,c.versao,c.fixada,c.ordem_prioridade,COUNT(f.id_flashcard) AS total,
  SUM(CASE WHEN f.arquivado=0 THEN 1 ELSE 0 END) AS ativos,
  SUM(CASE WHEN f.arquivado=0 AND f.proxima_revisao<=? THEN 1 ELSE 0 END) AS pendentes,
  SUM(CASE WHEN f.arquivado=0 AND f.melhorar=1 THEN 1 ELSE 0 END) AS melhorar,
  SUM(CASE WHEN f.arquivado=1 THEN 1 ELSE 0 END) AS arquivados
  FROM flashcard_colecoes c LEFT JOIN flashcard_colecao_itens i ON i.id_colecao=c.id AND i.id_usuario=c.id_usuario
  LEFT JOIN flashcards_estudo f ON f.id_flashcard=i.id_flashcard AND f.id_usuario=c.id_usuario
- WHERE c.id_usuario=? GROUP BY c.id,c.nome,c.objetivo,c.versao,c.fixada ORDER BY c.fixada DESC,c.nome,c.id`,[today(),owner])
+ WHERE c.id_usuario=? GROUP BY c.id,c.nome,c.objetivo,c.versao,c.fixada,c.ordem_prioridade ORDER BY c.fixada DESC,c.ordem_prioridade,c.nome,c.id`,[today(),owner])
  return rows
 }
 async function save(owner,body,db=pool) {
@@ -89,14 +89,34 @@ async function pin(owner,collection,body,db=pool) {
   // Serialize priority changes in this account, including concurrent requests.
   const [[user]]=await conn.execute('SELECT id_usuario FROM usuarios WHERE id_usuario=? FOR UPDATE',[owner])
   if(!user)fail(404,'Conta não disponível.')
-  const [[record]]=await conn.execute('SELECT fixada FROM flashcard_colecoes WHERE id=? AND id_usuario=? FOR UPDATE',[collectionId,owner])
+  const [[record]]=await conn.execute('SELECT fixada,ordem_prioridade FROM flashcard_colecoes WHERE id=? AND id_usuario=? FOR UPDATE',[collectionId,owner])
   if(!record)fail(404,'Coleção não disponível nesta conta.')
+  let position=body.fixada?Number(record.ordem_prioridade||0):0
   if(body.fixada&&!Number(record.fixada)){
    const [[count]]=await conn.execute('SELECT COUNT(*) AS total FROM flashcard_colecoes WHERE id_usuario=? AND fixada=1',[owner])
    if(Number(count.total)>=3)fail(409,'Você já tem três coleções fixadas em Hoje. Desafixe uma delas antes de escolher outra.')
+   const [[last]]=await conn.execute('SELECT COALESCE(MAX(ordem_prioridade),0) AS ultima FROM flashcard_colecoes WHERE id_usuario=? AND fixada=1',[owner])
+   position=Number(last.ultima||0)+1
   }
-  await conn.execute('UPDATE flashcard_colecoes SET fixada=? WHERE id=? AND id_usuario=?',[body.fixada?1:0,collectionId,owner])
+  await conn.execute('UPDATE flashcard_colecoes SET fixada=?,ordem_prioridade=? WHERE id=? AND id_usuario=?',[body.fixada?1:0,position,collectionId,owner])
   await conn.commit();return {salvo:true,fixada:body.fixada}
  }catch(error){await conn.rollback();throw error}finally{conn.release()}
 }
-module.exports={flag,list,save,edit,remove,memberships,member,addMany,removeMany,pin}
+async function reorder(owner,body,db=pool) {
+ const parse=value=>{if(!Array.isArray(value)||value.length<1||value.length>3)fail(400,'Confira as coleções prioritárias.');const values=value.map(id);if(new Set(values).size!==values.length)fail(400,'Cada coleção deve aparecer uma única vez.');return values}
+ const desired=parse(body?.ordem),previous=parse(body?.anterior)
+ if(JSON.stringify([...desired].sort((a,b)=>a-b))!==JSON.stringify([...previous].sort((a,b)=>a-b)))fail(400,'Envie a mesma seleção de prioridades nas duas ordens.')
+ const conn=await db.getConnection()
+ try {
+  await conn.beginTransaction()
+  const [[user]]=await conn.execute('SELECT id_usuario FROM usuarios WHERE id_usuario=? FOR UPDATE',[owner])
+  if(!user)fail(404,'Conta não disponível.')
+  const [records]=await conn.execute('SELECT id FROM flashcard_colecoes WHERE id_usuario=? AND fixada=1 ORDER BY ordem_prioridade,nome,id FOR UPDATE',[owner])
+  const actual=records.map(row=>Number(row.id))
+  if(JSON.stringify(actual)===JSON.stringify(desired)){await conn.commit();return {salvo:true,ordem:desired}}
+  if(JSON.stringify(actual)!==JSON.stringify(previous))fail(409,'As prioridades mudaram em outra tela. Atualize a lista antes de salvar uma nova ordem.')
+  for(const [index,collectionId] of desired.entries())await conn.execute('UPDATE flashcard_colecoes SET ordem_prioridade=? WHERE id=? AND id_usuario=? AND fixada=1',[index+1,collectionId,owner])
+  await conn.commit();return {salvo:true,ordem:desired}
+ }catch(error){await conn.rollback();throw error}finally{conn.release()}
+}
+module.exports={flag,list,save,edit,remove,memberships,member,addMany,removeMany,pin,reorder}
