@@ -122,7 +122,7 @@ async function suggestions(owner,theme,difficulty,db) {
 function feedbackTarget(record,id){return (record.kind==='estrategia'?record.experiences:record.entries).find(e=>e.id===id)||require('./learningExperiments').target(record,id)||require('./sourceInquiryService').target(record,id)||require('./projectEvidenceService').target(record,id);}
 function context(record,body) {
   if(!Array.isArray(body.attempts)||!body.attempts.length||body.attempts.length>2||new Set(body.attempts).size!==body.attempts.length)fail('Escolha um ou dois registros para compartilhar.');
-  if(['observations','argument'].includes(body.mode))return require('./projectEvidenceService').context(record,body);
+  if(['observations','argument','prediction','counterInquiry'].includes(body.mode))return require('./projectEvidenceService').context(record,body);
   if(body.mode==='sources')return require('./sourceInquiryService').context(record,body);
   if(body.mode)return require('./learningExperiments').context(record,body);
   const allowed=record.kind==='estrategia'?['procedure','subject','difficulty','observation','limits','sourceSnippet']:['text','reason','sources'];

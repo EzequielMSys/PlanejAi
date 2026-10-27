@@ -8,7 +8,9 @@ const stamp=b=>{if(!/^[a-f0-9-]{36}$/i.test(b.key||''))fail('Identificador de en
 const parts={question:'Pergunta inicial',attempt:'Tentativa escolhida',evidence:'Evidência apresentada',change:'Mudança de raciocínio',conclusion:'Conclusão do estudante',lumi:'Orientação da Lumi'};
 function blocks(record,ref){
   let chosen,values,references=[],href;
-  if(record.kind==='projeto'&&['coleta','argumento','fonte'].includes(ref.type)){
+  if(record.kind==='projeto'&&['previsao','contraponto'].includes(ref.type)){
+    ({chosen,values,references}=require('./investigationCycleService').projection(record,ref));href=`/projetos-investigacao?projeto=${record.id}`;
+  }else if(record.kind==='projeto'&&['coleta','argumento','fonte'].includes(ref.type)){
     href=`/projetos-investigacao?projeto=${record.id}`;
     if(ref.type==='coleta'){
       chosen=record.observationSelections?.find(v=>v.id===ref.step);if(!chosen)fail('Seleção de observações não encontrada nesta conta.',404);
@@ -35,7 +37,7 @@ function blocks(record,ref){
   if(chosen.feedback)values.lumi=Object.entries({claro:'O que aparece no registro',lacuna:'O que investigar',pergunta:'Pergunta',proximoPasso:'Sugestão',incerteza:'Incertezas'}).map(([f,label])=>`${label}: ${chosen.feedback[f]}`).join('\n')+(chosen.contest?`\nContestação do estudante: ${chosen.contest}`:'');
   return {title:record.title,ref:{type:ref.type,record:record.id,step:ref.step,...(ref.experiment?{experiment:ref.experiment}:{})},href,created:chosen.created,blocks:Object.entries(parts).filter(([key])=>values[key]).map(([key,label])=>({key,label,authorship:key==='lumi'?'Orientação da Lumi - pode conter erros':'Registro do estudante',text:values[key]})),references:references.filter((s,i,a)=>a.findIndex(v=>v.id===s.id)===i).map(s=>({id:s.id,origin:s.origin,purpose:s.purpose||'',limits:s.limits||'',url:s.url||''}))};
 }
-function projectOptions(r,id){return [...r.entries.slice(-5).map((e,i)=>({ref:{type:'projeto',record:id,step:e.id},label:`Registro ${Math.max(1,r.entries.length-4)+i} · ${e.type}`})),...(r.observationSelections||[]).slice(-5).map(v=>({ref:{type:'coleta',record:id,step:v.id},label:`Coleta: ${v.title}`})),...(r.sourceInquiries||[]).slice(-5).map((v)=>({ref:{type:'fonte',record:id,step:v.id},label:`Análise de fontes: ${v.claim.slice(0,80)}`})),...(r.argumentVersions||[]).slice(-5).map(v=>({ref:{type:'argumento',record:id,step:v.id},label:`Argumento: ${v.title}`}))];}
+function projectOptions(r,id){return [...(r.predictionComparisons||[]).slice(-5).map(v=>({ref:{type:'previsao',record:id,step:v.id},label:`Previsão confrontada: ${v.prediction.expected.slice(0,60)}`})),...(r.counterInquiryResults||[]).slice(-5).map(v=>({ref:{type:'contraponto',record:id,step:v.id},label:`Investigação de contraponto: ${v.plan.title}`})),...r.entries.slice(-5).map((e,i)=>({ref:{type:'projeto',record:id,step:e.id},label:`Registro ${Math.max(1,r.entries.length-4)+i} · ${e.type}`})),...(r.observationSelections||[]).slice(-5).map(v=>({ref:{type:'coleta',record:id,step:v.id},label:`Coleta: ${v.title}`})),...(r.sourceInquiries||[]).slice(-5).map((v)=>({ref:{type:'fonte',record:id,step:v.id},label:`Análise de fontes: ${v.claim.slice(0,80)}`})),...(r.argumentVersions||[]).slice(-5).map(v=>({ref:{type:'argumento',record:id,step:v.id},label:`Argumento: ${v.title}`}))];}
 async function resolve(owner,ref,db=pool){if(!ref||typeof ref.record!=='string')fail('Escolha uma origem da sua conta.');const source=blocks(await require('./guidedStudyService').detail(owner,ref.record,db),ref);return {...source,sourceHash:createHash('sha256').update(JSON.stringify(source)).digest('hex')};}
 async function options(owner,q='',db=pool){
   if(typeof q!=='string'||q.length>100)fail('Busque por até 100 caracteres.');

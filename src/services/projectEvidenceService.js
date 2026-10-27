@@ -8,9 +8,10 @@ const room=(list,max)=>{if(list.length>=max)fail('O limite deste histórico foi 
 const kinds={medido:'Medido',estimado:'Estimado',ausente:'Ausente'};
 function latestRows(data,notebook){const rows=(data.observations||[]).filter(r=>r.notebook===notebook),replaced=new Set(rows.map(r=>r.replaces).filter(Boolean));return rows.filter(r=>!replaced.has(r.id)).sort((a,b)=>a.position-b.position);}
 function rowText(row){return `${row.position}. ${row.label} · ${row.date}\n${kinds[row.kind]}: ${row.value===null?'sem valor registrado':`${row.value} ${row.unit}`}\nCondições: ${row.conditions}\nObservações / ausência: ${row.note||'Sem observação adicional.'}${row.reason?`\nMotivo da correção: ${row.reason}`:''}`;}
-function replay(data,body){const prior=[...(data.observationPlans||[]),...(data.observations||[]),...(data.observationSelections||[]),...(data.argumentVersions||[]),...(data.evidencePublications||[])].find(v=>v.id===body.key);if(!prior)return false;if(prior.hash!==hash(body))fail('Este envio já foi confirmado com outros dados. Reabra o histórico.',409);return true;}
+function replay(data,body){if(require('./investigationCycleService').replay(data,body))return true;const prior=[...(data.observationPlans||[]),...(data.observations||[]),...(data.observationSelections||[]),...(data.argumentVersions||[]),...(data.evidencePublications||[])].find(v=>v.id===body.key);if(!prior)return false;if(prior.hash!==hash(body))fail('Este envio já foi confirmado com outros dados. Reabra o histórico.',409);return true;}
 function selectionText(selection){return `Pergunta: ${selection.plan.question}\nO que observei: ${selection.plan.observe}\nUnidade: ${selection.plan.unit}\nCondições planejadas: ${selection.plan.conditions}\n\n${selection.rows.map(rowText).join('\n\n')}\n\nPor que escolhi estes dados: ${selection.purpose}\nLimites desta seleção: ${selection.limits}`;}
 async function apply(owner,data,body,db){
+  if(await require('./investigationCycleService').apply(data,body))return true;
   if(body.action==='observationPlan'){
     const plans=data.observationPlans||[],prior=body.replaces?find(plans,body.replaces):null;room(plans,24);
     if(prior&&plans.filter(p=>p.notebook===prior.notebook).at(-1).id!==prior.id)fail('O plano já possui outra versão. Reabra o caderno.',409);
@@ -47,6 +48,9 @@ async function apply(owner,data,body,db){
     if(!prior&&versions.filter(v=>!v.replaces).length>=8)fail('Este projeto já possui oito linhas de argumentação.');
     if(!Array.isArray(body.evidences)||!body.evidences.length||body.evidences.length>3||body.evidences.some(e=>!e||!e.ref))fail('Escolha de uma a três evidências do seu acervo.');
     const identities=body.evidences.map(e=>[e.ref.type,e.ref.record,e.ref.experiment||'',e.ref.step].join(':'));if(new Set(identities).size!==identities.length)fail('Cada versão deve aparecer uma única vez no argumento.');
+    const inquiry=body.inquiry?find(data.counterInquiryResults,body.inquiry):null;
+    if(inquiry&&(!prior||prior.thread!==inquiry.plan.origin.thread))fail('Retorne à linha de argumentação que originou esta investigação.');
+    if(inquiry&&!body.evidences.some(e=>e.ref.type==='contraponto'&&e.ref.step===inquiry.id))fail('Vincule o resultado escolhido como evidência da revisão.');
     const evidences=[];
     for(const evidence of body.evidences){
       if(evidence.ref.type==='argumento')fail('Vincule um registro ou uma fonte analisada, em vez de usar outro argumento como evidência.');
@@ -57,6 +61,7 @@ async function apply(owner,data,body,db){
       evidences.push({id:require('crypto').randomUUID(),ref:source.ref,title:source.title,href:source.href,date:source.created,blocks:source.blocks.filter(b=>evidence.parts.includes(b.key)),references:source.references.filter(r=>evidence.references.includes(r.id)),justification:text(evidence.justification,2000)});
     }
     const version={...stamp(body),thread:prior?.thread||body.key,question:data.question,title:text(body.title,120),claim:text(body.claim,1600),evidences,counterpoint:text(body.counterpoint,2000),alternative:text(body.alternative,2000),limits:text(body.limits,2000),replaces:prior?.id||null,reason:text(body.reason,1600,Boolean(prior))};
+    if(inquiry)version.sourceInquiry={id:inquiry.id,origin:inquiry.plan.origin.id};
     version.text=`Afirmação: ${version.claim}\n\n${evidences.map(e=>`Evidência: ${e.title}\n${e.blocks.map(b=>`${b.label}: ${b.text}`).join('\n')}\nPor que sustenta a afirmação: ${e.justification}`).join('\n\n')}\n\nContraponto: ${version.counterpoint}\nInterpretação alternativa: ${version.alternative}\nLimites: ${version.limits}`;
     if(version.text.length>24000)fail('Esta linha ficou extensa. Escolha menos trechos (até 24 mil caracteres).');data.argumentVersions=[...versions,version];return true;
   }
@@ -68,8 +73,9 @@ async function apply(owner,data,body,db){
   }
   return false;
 }
-function target(data,id){return (data.observationSelections||[]).find(s=>s.id===id)||(data.argumentVersions||[]).find(v=>v.id===id);}
+function target(data,id){return require('./investigationCycleService').target(data,id)||(data.observationSelections||[]).find(s=>s.id===id)||(data.argumentVersions||[]).find(v=>v.id===id);}
 function context(record,body){
+  if(['prediction','counterInquiry'].includes(body.mode))return require('./investigationCycleService').context(record,body);
   if(record.kind!=='projeto'||body.attempts.length!==1)fail('Escolha uma seleção ou versão deste projeto.');
   const goal=text(body.goal,1000,false);
   if(body.mode==='observations'){
