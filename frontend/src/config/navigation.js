@@ -1,6 +1,7 @@
 const ALL = ['aluno', 'docente', 'admin', 'adm', 'dono']
 const STAFF = ['docente', 'admin', 'adm', 'dono']
 export const PAGES = [
+  { path: '/leituras-criticas', title: 'Leituras recebidas', description: 'Versões de projetos que outra conta convidou você a comentar.', keywords: 'leitura crítica convite comentários colega professor', group: 'Aprender', icon: 'book', roles: ALL, hidden: true, searchable: true, navParent: '/aprendizagem' },
   { path: '/portfolio-investigacao', title: 'Meu portfólio de investigação', description: 'Seleções próprias de projetos, estratégias e evidências, com exportação em PDF.', keywords: 'portfólio investigação seleção narrativa pdf', group: 'Aprender', icon: 'book', roles: ALL, hidden: true, searchable: true, navParent: '/meu-entendimento' },
   { path: '/como-aprendo', title: 'Como eu aprendo', description: 'Estratégias pessoais vinculadas a experiências reais.', keywords: 'estratégias repertório experiências aprender', group: 'Aprender', icon: 'book', roles: ALL, hidden: true, searchable: true, navParent: '/meu-entendimento' },
   { path: '/projetos-investigacao', title: 'Projetos de investigação', description: 'Perguntas, fontes e produções próprias conectando matérias.', keywords: 'projetos investigação pesquisa hipóteses fontes produção', group: 'Aprender', icon: 'route', roles: ALL, hidden: true, searchable: true, navParent: '/aprendizagem' },

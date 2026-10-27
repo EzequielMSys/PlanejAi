@@ -222,7 +222,7 @@ async function assist(owner, id, body, db = pool, provider) {
     const raw = result.choices?.[0]?.message?.content || '';
     const parsed = JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, ''));
     feedback = Object.fromEntries(['claro', 'lacuna', 'pergunta', 'proximoPasso', 'incerteza'].map(key => [key, text(parsed[key], 1800)]));
-    if((body.mode==='defence'&&body.request!=='hint'||body.mode==='presentation')&&(feedback.pergunta.match(/\?/g)||[]).length!==1)throw Error('A conversa requer uma única pergunta.');
+    if((body.mode==='defence'&&body.request!=='hint'||['presentation','glossary'].includes(body.mode))&&(feedback.pergunta.match(/\?/g)||[]).length!==1)throw Error('A conversa requer uma única pergunta.');
     if(body.mode==='defence'&&body.request==='hint'&&feedback.pergunta.includes('?'))throw Error('Uma pista deve orientar sem formular outra pergunta.');
   } catch { fail('Não foi possível obter uma devolutiva confiável. Suas respostas estão preservadas.', 503); }
   const last = chosen[chosen.length - 1];

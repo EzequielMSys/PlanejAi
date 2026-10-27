@@ -72,6 +72,7 @@ let planningWriteFailure=false;
 let deskItems=[{id:31,tipo:'anotacao',id_origem:9,titulo:'Leis de Newton',trecho:'Um exemplo meu',disponivel:true},{id:32,tipo:'duvida',id_origem:71,titulo:'Força e velocidade',disponivel:true}];
 let journalSteps = [{id:11,tipo:'explicacao',texto:'Primeira versão preservada',criado_em:'2026-10-20T12:00:00'}, {id:12,tipo:'explicacao',texto:'Segunda versão com exemplo',criado_em:'2026-10-25T12:00:00'}];
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
+let criticalReadingsFixture=[];
 async function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
@@ -79,6 +80,9 @@ async function fixture(config) {
     const end=url.split('/percursos')[1]||'';
     const body=typeof config.data==='string'?JSON.parse(config.data):config.data;
     if(config.method==='get'){
+      if(end==='/leituras/recebidas')return criticalReadingsFixture;
+      if(end.startsWith('/leituras/recebidas/'))return criticalReadingsFixture.find(r=>r.id===end.split('/')[3]);
+      if(end.endsWith('/leituras'))return criticalReadingsFixture.filter(r=>r.project===end.split('/')[1]);
       if(end==='/hoje')return {preparation:null,evidence:null};
       if(end==='/laboratorio/catalogo')return require('../src/services/studyLabCatalog').cards();
       if(end==='/projetos/modelos'){const paths=require('../src/services/personalLearningPaths');return {templates:paths.templates,stages:paths.stages,criteria:paths.criteria};}
@@ -91,6 +95,9 @@ async function fixture(config) {
       return guidedRecords.find(r=>r.id===end.slice(1));
     }
     if(guidedWriteFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Não foi possível confirmar o envio.'}});
+    if(end.includes('/leituras/recebidas/')&&end.endsWith('/comentarios')){const item=criticalReadingsFixture.find(r=>r.id===end.split('/')[3]);item.comments.push({...body,id:body.key,created:new Date().toISOString()});return {saved:true};}
+    if(end.endsWith('/leituras/previa')){const r=guidedRecords.find(r=>r.id===end.split('/')[1]),p=r.entries.find(p=>p.id===body.production);return {...body,production:{id:p.id,text:p.text,created:p.created},references:[],expires:new Date(Date.now()+body.days*86400000).toISOString(),receipt:'preview-fixture'};}
+    if(end.endsWith('/leituras/confirmar')){criticalReadingsFixture.push({...body,id:body.key,project:end.split('/')[1],production:{id:body.production,text:'Versão conferida',created:new Date().toISOString()},references:[],expires:new Date(Date.now()+86400000).toISOString(),status:'aberta',comments:[]});return {id:body.key};}
     if(end==='/fontes/conferir'){const original=guidedRecords.find(r=>r.id===body.record),entry=(original?.entries||original?.attempts||[]).find(a=>a.id===body.step);if(!entry)throw Error('origin missing');return {...body,title:original.title,snippet:entry.text,href:'/meu-entendimento?ciclo='+original.id};}
     if(end.endsWith('/lumi')&&body.mode==='defence'){
       const r=guidedRecords.find(r=>r.id===end.split('/')[1]),experiments=require('../src/services/learningExperiments');
@@ -2619,4 +2626,27 @@ test('collection search highlights the objective, opens the exact collection and
  searchMode='collections';cardLibraryFixture=[seedCard()];cardCollectionsFixture=[{id:31,nome:'Prova de Física',objetivo:'Revisar energia em exemplos próprios.',versao:1,fixada:1}];cardMembershipsFixture=[{collection:31,card:141}];const screen=await renderRoute('/busca?q=energia&tipo=colecoes');try{
  assert.ok(button('Coleções de cartões'));assert.equal(document.querySelector('.unified-search-card p mark').textContent,'energia');assert.equal(document.querySelector('.unified-search-card h3').textContent,'Prova de Física');const link=document.querySelector('a[href="/ferramentas-estudo?aba=ferramentas&colecao=31"]');assert.ok(link);const recent=JSON.parse(localStorage.getItem('900001:recent-searches:v1'));assert.ok(recent.some(x=>x.q==='energia'&&x.type==='colecoes'));const audit=await axe.run(document.querySelector('.unified-search'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(audit.violations.map(x=>x.id),[]);await act(async()=>link.click());await flush();assert.equal(document.querySelector('.card-objective-filters select').value,'31');assert.equal(document.querySelectorAll('.library-card').length,1);assert.ok(requests.some(x=>x.url.endsWith('/cartoes')&&x.params.colecao==='31'));
  }finally{searchMode='';cardLibraryFixture=[];cardCollectionsFixture=[];cardMembershipsFixture=[];await screen.close()}
+});
+
+
+test('glossário confere contexto literal e preserva rascunho após falha sem enviar à Lumi',async()=>{
+  const r=await stage79Project();guidedRecords=[r];const screen=await renderRoute('/projetos-investigacao?projeto='+r.id);
+  try{
+    await focusProject('produzir');const area=document.querySelector('.project-glossary');await act(async()=>area.querySelector('summary').click());await flush();const form=area.querySelector('form');
+    for(const [label,value]of [['Termo do meu projeto','Energia'],['Minha definição','Uma grandeza que relaciono à potência e à duração.'],['Exemplo','O consumo de uma lâmpada durante uma hora.'],['Contraexemplo','Potência isolada não informa a energia consumida.'],['Origem consultada','Meu livro de Física.']])await inputValue(personalControl(label,form),value);
+    await selectValue(personalControl('Produção que escolho',form),r.entries[0].id);await inputValue(personalControl('Trecho literal',form),'trecho inventado');assert.ok(form.textContent.includes('Copie um trecho exato'));await inputValue(personalControl('Trecho literal',form),r.entries[0].text);await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(r.glossaryVersions,undefined);assert.ok(area.querySelector('.glossary-definition'));
+    guidedWriteFailure=true;await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(personalControl('Termo do meu projeto',form).value,'Energia');guidedWriteFailure=false;await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(r.glossaryVersions.length,1);assert.equal(requests.filter(q=>q.url.endsWith('/lumi')).length,0);const a=await axe.run(area,{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(a.violations.map(v=>v.id),[]);
+  }finally{guidedWriteFailure=false;guidedRecords=[];await screen.close()}
+});
+test('leitor confere comentário literal antes de enviar e mantém texto quando a conexão falha',async()=>{
+  const id=window.crypto.randomUUID();criticalReadingsFixture=[{id,title:'Uma leitura delimitada',question:'A conclusão ficou clara?',production:{id:window.crypto.randomUUID(),text:'Minha conclusão reconhece limites do recorte.',created:new Date().toISOString()},references:[],expires:new Date(Date.now()+86400000).toISOString(),comments:[]}];const screen=await renderRoute('/leituras-criticas?leitura='+id);
+  try{const form=document.querySelector('.reading-recipient-page form');assert.ok(form);await inputValue(personalControl('Trecho literal',form),'Não existe');assert.ok(form.textContent.includes('Copie um trecho exato'));await inputValue(personalControl('Trecho literal',form),'limites do recorte.');await inputValue(personalControl('Comentário para o autor',form),'Quais limites você escolheu reconhecer?');await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(criticalReadingsFixture[0].comments.length,0);guidedWriteFailure=true;await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.ok(personalControl('Comentário para o autor',form).value.includes('limites'));guidedWriteFailure=false;await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(criticalReadingsFixture[0].comments.length,1);assert.equal(criticalReadingsFixture[0].production.text,'Minha conclusão reconhece limites do recorte.');const a=await axe.run(document.querySelector('.reading-recipient-page'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(a.violations.map(v=>v.id),[]);
+  }finally{criticalReadingsFixture=[];guidedWriteFailure=false;await screen.close()}
+});
+
+
+test('convite mostra conta, prazo e texto na prévia e só libera acesso após confirmar',async()=>{
+  const r=await stage79Project();guidedRecords=[r];criticalReadingsFixture=[];const screen=await renderRoute('/projetos-investigacao?projeto='+r.id);
+  try{await focusProject('produzir');const area=document.querySelector('.project-critical-reading');await act(async()=>area.querySelector('summary').click());await flush();const form=area.querySelector('form');await inputValue(personalControl('Título que o leitor',form),'Um olhar sobre minha conclusão');await selectValue(personalControl('Produção que escolho',form),r.entries[0].id);await inputValue(personalControl('E-mail da conta',form),'colega@example.com');await inputValue(personalControl('Pergunta que quero',form),'Meus limites ficaram claros?');await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(criticalReadingsFixture.length,0);assert.ok(area.textContent.includes('Prévia de acesso'));assert.ok(area.textContent.includes('colega@example.com'));assert.ok(area.querySelector('.reading-snapshot').textContent.includes(r.entries[0].text));guidedWriteFailure=true;await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(criticalReadingsFixture.length,0);assert.equal(personalControl('E-mail da conta',form).value,'colega@example.com');guidedWriteFailure=false;await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(criticalReadingsFixture.length,1);assert.ok(area.textContent.includes('Leitura liberada somente'));const a=await axe.run(area,{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(a.violations.map(v=>v.id),[]);
+  }finally{criticalReadingsFixture=[];guidedRecords=[];guidedWriteFailure=false;await screen.close()}
 });

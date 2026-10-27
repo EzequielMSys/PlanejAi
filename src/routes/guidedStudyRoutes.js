@@ -5,6 +5,14 @@ const wrap = handler => async (req, res) => {
   try { res.json(await handler(req, req.usuario.id_usuario || req.usuario.id)); }
   catch (error) { const expected = [400,404,409,429,503].includes(error.status); res.status(expected ? error.status : 503).json({ message: expected ? error.message : 'Não foi possível confirmar a operação. Seu rascunho permanece neste aparelho; tente novamente.' }); }
 };
+const reading=require('../services/criticalReadingService');
+router.get('/leituras/recebidas',wrap((req,owner)=>reading.inbox(owner)));
+router.get('/leituras/recebidas/:reading',wrap((req,owner)=>reading.read(owner,req.params.reading)));
+router.post('/leituras/recebidas/:reading/comentarios',wrap((req,owner)=>reading.comment(owner,req.params.reading,req.body)));
+router.post('/leituras/:reading/revogar',wrap((req,owner)=>reading.revoke(owner,req.params.reading)));
+router.get('/:id/leituras',wrap((req,owner)=>reading.authorList(owner,req.params.id)));
+router.post('/:id/leituras/previa',wrap((req,owner)=>reading.preview(owner,req.params.id,req.body)));
+router.post('/:id/leituras/confirmar',wrap((req,owner)=>reading.create(owner,req.params.id,req.body)));
 router.get('/hoje', wrap((req, owner) => service.overview(owner)));
 router.get('/laboratorio/catalogo',wrap(()=>require('../services/studyLabCatalog').cards()));
 router.get('/portfolio/opcoes',wrap((req,owner)=>require('../services/researchPortfolioService').options(owner,req.query.q||'')));

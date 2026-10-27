@@ -11,6 +11,8 @@ test('ordena todas as migrations e mantém dependências do motor de estudo', ()
 
   assert.deepEqual(new Set(ordered), new Set(files));
   assert.equal(ordered[0], '000_base_schema.sql');
+  assert.ok(ordered.indexOf('critical_reading_v89.sql') < ordered.indexOf('critical_reading_integrity_v89.sql'));
+  assert.ok(ordered.indexOf('guided_preparation_evidence_v71.sql') < ordered.indexOf('critical_reading_v89.sql'));
   assert.ok(ordered.indexOf('add_learning_engine.sql') < ordered.indexOf('add_learning_progress.sql'));
   assert.ok(ordered.indexOf('add_learning_engine.sql') < ordered.indexOf('add_cronograma_progression.sql'));
   assert.ok(ordered.includes('add_study_intelligence.sql'));

@@ -2,6 +2,13 @@ import { createApiClient } from './apiClient'
 import { currentUser } from '../utils/offlineStore'
 const api = createApiClient('/api/aprendizagem/percursos')
 export default {
+  readingPreview:(id,body)=>api.post(`/${id}/leituras/previa`,body,{expectedOwner:currentUser()}).then(r=>r.data),
+  readingCreate:(id,body)=>api.post(`/${id}/leituras/confirmar`,body,{expectedOwner:currentUser()}).then(r=>r.data),
+  readingAuthorList:(id,signal)=>api.get(`/${id}/leituras`,{signal,cache:false}).then(r=>r.data),
+  readingInbox:signal=>api.get('/leituras/recebidas',{signal,cache:false}).then(r=>r.data),
+  readingRead:(id,signal)=>api.get(`/leituras/recebidas/${id}`,{signal,cache:false}).then(r=>r.data),
+  readingComment:(id,body)=>api.post(`/leituras/recebidas/${id}/comentarios`,body,{expectedOwner:currentUser()}).then(r=>r.data),
+  readingRevoke:id=>api.post(`/leituras/${id}/revogar`,{},{expectedOwner:currentUser()}).then(r=>r.data),
   list: (kind, signal) => api.get('/', { params: { tipo: kind }, signal, cache: false }).then(r => r.data),
   detail: (id, signal) => api.get(`/${id}`, { signal, cache: false }).then(r => r.data),
   today: signal => api.get('/hoje', { signal, cache: false }).then(r => r.data),

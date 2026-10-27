@@ -54,7 +54,9 @@ const migrationOrder = [
   'guided_preparation_evidence_v71.sql',
   'post_exam_laboratory_v73.sql',
   'personal_strategies_projects_v75.sql',
-  'research_portfolio_v79.sql'
+  'research_portfolio_v79.sql',
+  'critical_reading_v89.sql',
+  'critical_reading_integrity_v89.sql'
 ];
 
 function sortMigrations(files) {
