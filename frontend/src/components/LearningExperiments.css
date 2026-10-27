@@ -1,0 +1,21 @@
+.learning-experiments,.conclusion-defences{margin-block:2.5rem;padding:clamp(1rem,3vw,2rem);border:1px solid var(--pn-borda);border-radius:1.25rem;background:var(--pn-superficie)}
+.learning-experiments>header,.conclusion-defences>header{max-width:65ch;margin-bottom:1.5rem}
+.learning-experiments h2,.conclusion-defences h2{font-family:var(--font-heading,inherit);font-size:clamp(1.4rem,3vw,2rem);line-height:1.25}
+.experiment-saved,.defence-saved{margin-block:1.25rem;border:1px solid var(--pn-borda);border-radius:1rem;padding:1rem}
+.experiment-saved>summary,.defence-saved>summary{font-weight:650;line-height:1.6;overflow-wrap:anywhere;cursor:pointer;min-height:44px}
+.learning-experiment,.conclusion-defence{padding-top:1.25rem;min-width:0}
+.experiment-pair,.experiment-premises{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem;margin-block:1.5rem}
+.experiment-pair>fieldset,.experiment-activity{min-width:0;padding:clamp(.85rem,2vw,1.4rem);border:1px solid var(--pn-borda);border-radius:1rem;background:var(--pn-fundo)}
+.experiment-activity p,.conclusion-defence p,.experiment-decision-record p,.defence-original{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8}
+.experiment-premises{border-block:1px solid var(--pn-borda);padding-block:1rem}
+.experiment-notice,.experiment-decision-record,.defence-preview{padding:1.25rem;border-inline-start:3px solid var(--pn-primaria);background:var(--pn-fundo);margin-block:1.5rem}
+.defence-original{padding:1.25rem;border-inline-start:3px solid var(--pn-primaria);max-width:70ch}
+.defence-turns{padding-left:1.5rem;max-width:75ch;margin:2rem 0}
+.defence-turns>li{padding-left:.5rem;margin-block:1.5rem}
+.defence-turns>li>article{border:1px solid var(--pn-borda);border-radius:1rem;padding:clamp(1rem,2vw,1.5rem)}
+.defence-turns h4{font-size:1.15rem;line-height:1.6}
+.defence-turns aside{border-top:1px solid var(--pn-borda);padding-block:1rem}
+.defence-own-answer{padding-inline:1rem;background:var(--pn-fundo)}
+.defence-lumi{margin-block:1.5rem;padding-block:1rem;border-block:1px solid var(--pn-borda)}
+.learning-experiments :focus-visible,.conclusion-defences :focus-visible{outline:2px solid var(--pn-primaria);outline-offset:3px}
+@media(max-width:700px){.experiment-pair,.experiment-premises{grid-template-columns:1fr}.learning-experiments,.conclusion-defences{padding:1rem}.experiment-saved,.defence-saved{padding:.75rem}.defence-turns{padding-left:1.1rem}.learning-experiments input,.learning-experiments textarea,.learning-experiments select,.conclusion-defences input,.conclusion-defences textarea,.conclusion-defences select{font-size:16px}.learning-experiments button,.conclusion-defences button{min-height:44px;white-space:normal}.learning-experiments fieldset,.conclusion-defences fieldset{min-width:0}}

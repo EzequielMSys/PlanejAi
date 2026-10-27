@@ -91,12 +91,18 @@ async function fixture(config) {
     }
     if(guidedWriteFailure)throw new axios.AxiosError('offline','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Não foi possível confirmar o envio.'}});
     if(end==='/fontes/conferir'){const original=guidedRecords.find(r=>r.id===body.record),entry=(original?.entries||original?.attempts||[]).find(a=>a.id===body.step);if(!entry)throw Error('origin missing');return {...body,title:original.title,snippet:entry.text,href:'/meu-entendimento?ciclo='+original.id};}
+    if(end.endsWith('/lumi')&&body.mode==='defence'){
+      const r=guidedRecords.find(r=>r.id===end.split('/')[1]),experiments=require('../src/services/learningExperiments');
+      const context=experiments.context(r,body),feedback={claro:'Você relacionou potência e duração.',lacuna:'A comparação precisa explicitar as condições.',pergunta:body.request==='hint'?'Compare o mesmo intervalo de tempo.':'Que condição precisa permanecer igual nesta comparação?',proximoPasso:'Examinar as condições.',incerteza:'Só examinei o contexto escolhido.'};
+      return {feedback,receipt:JSON.stringify({owner:'900001',record:r.id,attempt:context.chosen[0].id,hash:require('node:crypto').createHash('sha256').update(JSON.stringify(context.chosen[0].text)).digest('hex'),purpose:'defence',request:body.request||'question',feedback})};
+    }
     const sourceDb={execute:async(sql,v)=>[[...guidedRecords.filter(r=>r.id===v[0]).map(r=>({id:r.id,versao:r.version,tipo:r.kind,dados:r}))]]};
     if(config.method==='post'&&(end==='/prova'||end==='/evidencia'||end==='/laboratorio'||end==='/estrategia'||end==='/projeto')){
       const kind=end.slice(1),record={...body,id:body.key,version:1,kind,...(kind==='prova'?require('../src/services/guidedStudyService')._test.createPreparation(body):kind==='laboratorio'?require('../src/services/studyLabService').create(body):['estrategia','projeto'].includes(kind)?await require('../src/services/personalLearningPaths').create(900001,kind,body,sourceDb,undefined,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date())):{attempts:[],due:null})};if(kind==='projeto')record.stages=require('../src/services/personalLearningPaths').stages;if(kind==='laboratorio')record.case=require('../src/services/studyLabCatalog').present(record);guidedRecords.push(record);return record;
     }
     if(end.endsWith('/recuperacao/previa')){const source=guidedRecords.find(r=>r.id===end.split('/')[1]);return require('../src/services/postExamService').preview(source,body,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()));}
     const record=guidedRecords.find(r=>r.id===end.slice(1));
+    if(record?.kind==='projeto'&&body.action==='defenceQuestion'){require('../src/services/learningExperiments').acceptQuestion(record,body,JSON.parse(body.receipt),900001,record.id);record.version++;return record;}
     if(['estrategia','projeto'].includes(record?.kind)){await require('../src/services/personalLearningPaths').apply(900001,record,record.kind,body,sourceDb,undefined,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()));record.version++;return record;}
     if(['postexam','approveRecovery','completeRecovery'].includes(body.action)){require('../src/services/postExamService').apply(record,body,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()));record.recoverySuggestions=require('../src/services/postExamService').suggestions(record);record.version++;return record;}
     if(record?.kind==='laboratorio'&&['help','parameter','investigate'].includes(body.action)){require('../src/services/studyLabService').apply(record,body,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()));record.case=require('../src/services/studyLabCatalog').present(record);record.version++;return record;}
@@ -294,6 +300,44 @@ async function renderRoute(route, role = 'aluno', userOverrides = {}, stored = {
 function button(text) { return [...document.querySelectorAll('button')].find(node => node.textContent.trim() === text); }
 
 function personalControl(prefix,root=document){return [...root.querySelectorAll('label')].find(label=>label.textContent.startsWith(prefix))?.querySelector('input,textarea,select');}
+
+async function stage76Records() {
+  const paths=require('../src/services/personalLearningPaths'),day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
+  const origin={id:'stage76-origin',version:1,kind:'evidencia',title:'Energia',attempts:[{id:'stage76-attempt',text:'Minha explicação original.',created:new Date().toISOString()}]};
+  const db={execute:async()=>[[{id:origin.id,versao:1,tipo:'evidencia',dados:origin}]]};
+  const strategy={id:'stage76-strategy',version:1,kind:'estrategia',...await paths.create(900001,'estrategia',{key:window.crypto.randomUUID(),title:'Conferir unidades',procedure:'Converter a duração antes de calcular.',experience:{subject:'Energia',difficulty:'Unidades',outcome:'parcial',observation:'Precisei converter minutos.',source:{type:'caminho',record:origin.id,step:origin.attempts[0].id}}},db,undefined,day)};
+  return [origin,strategy];
+}
+test('comparação planejada preserva rascunho, tentativas e decisão sem alterar repertório',async()=>{
+  guidedRecords=await stage76Records();const r=guidedRecords[1],screen=await renderRoute('/como-aprendo?estrategia='+r.id);
+  try{
+    await act(async()=>document.querySelector('.experiment-create>summary').click());await flush();
+    const form=document.querySelector('.experiment-create form');
+    for(const [label,value] of [['Nome desta comparação','Conferir dois contextos'],['Dificuldade que quero','Conversão de unidades'],['O que espero','Identificar quando converter'],['O que as duas','Energia e duração'],['O que é diferente','Minutos e horas'],['Título da atividade 1','Um aparelho'],['Enunciado da atividade 1','Investigue durante 30 minutos.'],['Título da atividade 2','Outro aparelho'],['Enunciado da atividade 2','Investigue durante duas horas.']])await inputValue(personalControl(label,form),value);
+    guidedWriteFailure=true;await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(personalControl('O que espero',form).value,'Identificar quando converter');assert.equal(r.experiments,undefined);
+    guidedWriteFailure=false;await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(r.experiments.length,1);await act(async()=>document.querySelector('.experiment-saved>summary').click());await flush();
+    for(const section of document.querySelectorAll('.experiment-activity')){
+      const attemptForm=section.querySelector('form');for(const [label,value] of [['Minha resposta','Meu raciocínio nesta atividade.'],['Como apliquei','Conferi o tempo.'],['Apoios utilizados','Consultei um exemplo.'],['Condições da tentativa','Sem interrupções.'],['Dificuldade percebida','Ainda preciso interpretar os dados.']])await inputValue(personalControl(label,attemptForm),value);
+      await act(async()=>attemptForm.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+    }
+    assert.equal(r.experiments[0].attempts.length,2);const compare=document.querySelector('.experiment-decision');
+    await inputValue(personalControl('O que percebi',compare),'Precisei converter apenas no primeiro caso.');await inputValue(personalControl('Diferenças e limites',compare),'A segunda atividade já era familiar.');await inputValue(personalControl('Por que tomei',compare),'Quero testar em outro contexto.');await act(async()=>compare.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+    assert.equal(r.experiments[0].decisions.length,1);assert.equal(r.procedure,'Converter a duração antes de calcular.');assert.equal(requests.filter(v=>v.url.endsWith('/lumi')).length,0);
+    const accessibility=await axe.run(document.querySelector('.learning-experiments'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(accessibility.violations.map(v=>v.id),[]);
+  }finally{guidedWriteFailure=false;guidedRecords=[];await screen.close();}
+});
+test('mesa de argumentação exige contexto confirmado e preserva contestação e versão autoral',async()=>{
+  const paths=require('../src/services/personalLearningPaths'),day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()),r={id:'stage77-project',version:1,kind:'projeto',...await paths.create(900001,'projeto',{title:'Consumo',question:'Como comparar aparelhos?',scope:'Mesmo intervalo',subjects:['Física'],minutes:30,deliverable:'texto'},null,undefined,day)};
+  await paths.apply(900001,r,'projeto',{action:'projectEntry',key:window.crypto.randomUUID(),stage:'producao',entryType:'producao',text:'Minha conclusão relaciona potência e duração.',sources:[]},null,undefined,day);r.stages=paths.stages;guidedRecords=[r];const screen=await renderRoute('/projetos-investigacao?projeto='+r.id);
+  try{
+    await act(async()=>document.querySelector('.defence-create>summary').click());await flush();const create=document.querySelector('.defence-create form');await selectValue(personalControl('Produção de origem',create),r.entries[0].id);await inputValue(personalControl('Trecho exato',create),'relaciona potência e duração');await inputValue(personalControl('Afirmação que quero defender',create),'A duração precisa ser considerada.');await act(async()=>create.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(r.defences[0].turns.length,0);await act(async()=>document.querySelector('.defence-saved>summary').click());await flush();
+    assert.equal(button('Pedir a primeira pergunta').disabled,true);await act(async()=>personalControl('Conferi o contexto').click());await act(async()=>button('Pedir a primeira pergunta').click());await flush();assert.equal(r.defences[0].turns.length,0);assert.ok(document.querySelector('.defence-preview'));await act(async()=>button('Guardar pergunta nesta conversa').click());await flush();assert.equal(r.defences[0].turns.length,1);
+    const answer=document.querySelector('.defence-response');await selectValue(personalControl('Minha escolha',answer),'contestar');await inputValue(personalControl('Por que discordo',answer),'O trecho já delimita a duração.');guidedWriteFailure=true;await act(async()=>answer.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(personalControl('Por que discordo',answer).value,'O trecho já delimita a duração.');guidedWriteFailure=false;await act(async()=>answer.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(r.defences[0].turns[0].events[0].type,'contestar');
+    const revision=personalControl('Minha produção revisada').closest('form');await inputValue(personalControl('Minha produção revisada',revision),'Minha nova conclusão considera intervalos iguais.');await inputValue(personalControl('O que me fez rever',revision),'Explicitei a condição na conclusão.');await act(async()=>revision.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(r.entries.length,2);assert.equal(r.entries[0].text,'Minha conclusão relaciona potência e duração.');assert.equal(r.defences[0].revisions.length,1);assert.equal(r.next,null);
+    const accessibility=await axe.run(document.querySelector('.conclusion-defences'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(accessibility.violations.map(v=>v.id),[]);
+  }finally{guidedWriteFailure=false;guidedRecords=[];await screen.close();}
+});
+
 test('Como eu aprendo preserva rascunho na falha e registra reavaliação com a evidência original',async()=>{
   guidedRecords=[{id:'strategy-origin',version:1,kind:'evidencia',title:'Energia na prática',mode:'explicar',attempts:[{id:'strategy-attempt',text:'Minha explicação com potência e tempo.',created:new Date().toISOString()}]}];
   const screen=await renderRoute('/como-aprendo');

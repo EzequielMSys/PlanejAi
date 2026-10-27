@@ -6,7 +6,7 @@ import { pathError } from '../hooks/usePersonalPath'
 import { currentUser } from '../utils/offlineStore'
 import './PersonalPaths.css'
 export const pathDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date())
-export const pathDate=value=>new Date(`${value.slice(0,10)}T12:00:00`).toLocaleDateString('pt-BR')
+export const pathDate=value=>new Date(/^\d{4}-\d{2}-\d{2}$/.test(value)?`${value}T12:00:00-03:00`:value).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'})
 export const sourceRef=value=>value?{type:value.type,record:value.record,...(value.step?{step:value.step}:{})}:null
 export function DeletePathButton({record,mutate,busy}) {
   const label=record.kind==='projeto'?'projeto':'estratégia'

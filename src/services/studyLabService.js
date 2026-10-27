@@ -44,10 +44,11 @@ function apply(data,body,day) {
 async function saveAs(owner,id,body,db) {
   const guided=require('./guidedStudyService');
   const record=await guided.detail(owner,id,db);
-  if(!['laboratorio','projeto'].includes(record.kind)||!(record.kind==='projeto'?record.entries:record.attempts).some(a=>a.id===body.attempt))fail('Registro não encontrado nesta investigação.',404);
+  const strategyAttempt=record.kind==='estrategia'&&(record.experiments||[]).flatMap(e=>e.attempts).find(a=>a.id===body.attempt);
+  if(!strategyAttempt&&(!['laboratorio','projeto'].includes(record.kind)||!(record.kind==='projeto'?record.entries:record.attempts).some(a=>a.id===body.attempt)))fail('Registro não encontrado nesta investigação.',404);
   if(!/^[a-f0-9-]{36}$/i.test(body.key||''))fail('Identificador de envio inválido.');
   if(typeof body.text!=='string'||!body.text.trim()||body.text.trim().length>4000)fail('Confira o texto que escolheu guardar (até 4.000 caracteres).');
-  if(body.type==='evidencia')return {type:body.type,...await guided.create(owner,'evidencia',{key:body.key,title:body.title,mode:'aplicar',prompt:body.prompt,initialText:body.text,...(record.kind==='projeto'?{sourceProject:id,sourceEntry:body.attempt}:{sourceLab:id,sourceAttempt:body.attempt}),preparation:record.preparation||null},db)};
+  if(body.type==='evidencia')return {type:body.type,...await guided.create(owner,'evidencia',{key:body.key,title:body.title,mode:'aplicar',prompt:body.prompt,initialText:body.text,...(record.kind==='estrategia'?{sourceStrategy:id,sourceAttempt:body.attempt}:record.kind==='projeto'?{sourceProject:id,sourceEntry:body.attempt}:{sourceLab:id,sourceAttempt:body.attempt}),preparation:record.preparation||null},db)};
   if(body.type==='duvida')return {type:body.type,...await require('./learningJournalService').write(owner,null,{tipo:'duvida',chave:body.key,titulo:body.title,texto:body.text},db)};
   if(body.type==='cartao')return {type:body.type,...await require('./flashcardService').create(owner,{chave:body.key,pergunta:body.title,resposta:body.text,disciplina:''},db)};
   fail('Escolha entendimento, dúvida ou cartão.');

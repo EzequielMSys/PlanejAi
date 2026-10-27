@@ -9,6 +9,7 @@ export default {
   create: (kind, body) => api.post(`/${kind}`, body, { expectedOwner: currentUser() }).then(r => r.data),
   change: (id, body) => api.patch(`/${id}`, body, { expectedOwner: currentUser() }).then(r => r.data),
   assist: (id, attempts, fields, goal) => api.post(`/${id}/lumi`, { attempts,fields,goal }, { expectedOwner: currentUser(),timeout:55000 }).then(r => r.data),
+  investigate: (id, body) => api.post(`/${id}/lumi`, body, { expectedOwner: currentUser(),timeout:55000 }).then(r => r.data),
   sources:(type,q,signal)=>api.get('/fontes/opcoes',{params:{tipo:type,q},signal,cache:false}).then(r=>r.data),
   source:(ref,signal,open=false)=>api.post('/fontes/conferir',{...ref,open},{signal,expectedOwner:currentUser()}).then(r=>r.data),
   templates:signal=>api.get('/projetos/modelos',{signal,cache:false}).then(r=>r.data),

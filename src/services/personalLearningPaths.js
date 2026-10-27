@@ -39,6 +39,7 @@ async function create(owner,kind,body,db,actor,day) {
   return data;
 }
 function replay(data,kind,body) {
+  if(require('./learningExperiments').replay(data,body))return true;
   if(kind==='projeto'&&body.action==='completeProjectAction'&&data.actionHistory.some(a=>a.id===body.task&&a.outcome==='realizado'))return true;
   const candidates=kind==='estrategia'?body.action==='strategyEdit'?data.versions:data.experiences:[...data.entries,...data.sources,...data.reviews,...data.actionHistory,...data.settingsHistory,...data.stageHistory,...(data.next?[data.next]:[])];
   const prior=candidates.find(e=>e.id===body.key);if(!prior)return false;
@@ -49,6 +50,7 @@ function url(value) {
   if(!['http:','https:'].includes(parsed.protocol)||parsed.username||parsed.password)fail('Informe um endereço http ou https sem credenciais.');return parsed.href;
 }
 async function apply(owner,data,kind,body,db,actor,day) {
+  if(await require('./learningExperiments').apply(owner,data,kind,body,db,actor))return data;
   if(kind==='estrategia') {
     if(body.action==='strategyExperience') {
       if(data.experiences.length>=50)fail('Esta estratégia já tem 50 experiências. O histórico foi preservado.');
@@ -113,9 +115,10 @@ async function suggestions(owner,theme,difficulty,db) {
   const words=normalize(theme+' '+difficulty).split(/\W+/).filter(w=>w.length>=4);
   return rows.flatMap(r=>{const data=typeof r.dados==='string'?JSON.parse(r.dados):r.dados;if(data.archived)return [];const last=data.experiences.at(-1);if(!last||last.outcome==='nao_ajudou')return [];const matches=words.filter(w=>normalize(last.subject+' '+last.difficulty).includes(w));if(!matches.length)return [];return [{id:r.id,title:data.title,procedure:data.procedure,limits:data.limits,experience:last,reason:`Você relatou ${last.outcome==='ajudou'?'que ajudou':'ajuda parcial'} em “${last.subject}”. Há termos em comum com o contexto atual: ${[...new Set(matches)].slice(0,3).join(', ')}. Isso não garante o mesmo resultado.`}];}).slice(0,3);
 }
-function feedbackTarget(record,id){return (record.kind==='estrategia'?record.experiences:record.entries).find(e=>e.id===id);}
+function feedbackTarget(record,id){return (record.kind==='estrategia'?record.experiences:record.entries).find(e=>e.id===id)||require('./learningExperiments').target(record,id);}
 function context(record,body) {
   if(!Array.isArray(body.attempts)||!body.attempts.length||body.attempts.length>2||new Set(body.attempts).size!==body.attempts.length)fail('Escolha um ou dois registros para compartilhar.');
+  if(body.mode)return require('./learningExperiments').context(record,body);
   const allowed=record.kind==='estrategia'?['procedure','subject','difficulty','observation','limits','sourceSnippet']:['text','reason','sources'];
   if(!Array.isArray(body.fields)||!body.fields.length||body.fields.length>allowed.length||body.fields.some(f=>!allowed.includes(f)))fail('Escolha quais partes quer compartilhar.');
   const chosen=body.attempts.map(id=>feedbackTarget(record,id));if(chosen.some(e=>!e))fail('Um registro não pertence a este percurso.',404);
