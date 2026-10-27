@@ -53,7 +53,7 @@ async function apply(owner,data,body,db){
     if(inquiry&&!body.evidences.some(e=>e.ref.type==='contraponto'&&e.ref.step===inquiry.id))fail('Vincule o resultado escolhido como evidência da revisão.');
     const evidences=[];
     for(const evidence of body.evidences){
-      if(evidence.ref.type==='argumento')fail('Vincule um registro ou uma fonte analisada, em vez de usar outro argumento como evidência.');
+      if(['argumento','revisao'].includes(evidence.ref.type))fail('Vincule um registro ou uma fonte analisada, em vez de usar outro argumento como evidência.');
       const source=await require('./researchPortfolioService').resolve(owner,evidence.ref,db);
       if(evidence.sourceHash!==source.sourceHash)fail('Uma evidência mudou desde a prévia. Confira novamente os trechos antes de salvar.',409);
       if(!Array.isArray(evidence.parts)||!evidence.parts.length||new Set(evidence.parts).size!==evidence.parts.length||evidence.parts.some(p=>p==='lumi'||!source.blocks.some(b=>b.key===p)))fail('Escolha os trechos do registro. Uma orientação da Lumi não será usada como evidência.');

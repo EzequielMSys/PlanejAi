@@ -164,7 +164,7 @@ async function change(owner, id, body, db = pool, actor) {
       let receipt;try{receipt=jwt.verify(body.receipt,getJwtSecret(),{algorithms:['HS256'],audience:'guided-study-feedback'});}catch{fail('A pergunta expirou. Peça outra orientação.',409);}
       require('./learningExperiments').acceptQuestion(data,body,receipt,owner,id);
     } else if(['estrategia','projeto'].includes(kind)&&!['feedback','contest'].includes(body.action)) {
-      await require('./personalLearningPaths').apply(owner,data,kind,body,conn,actor,today());
+      await require('./personalLearningPaths').apply(owner,data,kind,body,conn,actor,today(),id);
     } else if(kind==='laboratorio'&&!['feedback','contest'].includes(body.action)) {
       require('./studyLabService').apply(data,body,today());
     } else if (body.action === 'attempt') {

@@ -19,6 +19,7 @@ router.get('/:id', wrap((req, owner) => service.detail(owner, req.params.id)));
 router.get('/:id/revisao-final', wrap((req, owner) => service.finalReview(owner, req.params.id)));
 router.patch('/:id', wrap((req, owner) => service.change(owner, req.params.id, req.body,require('../config/db'),req.usuario)));
 router.post('/:id/lumi', wrap((req, owner) => service.assist(owner, req.params.id, req.body)));
+router.post('/:id/coerencia/previa',wrap(async(req,owner)=>require('../services/projectWorkspaceService').preview(owner,await service.detail(owner,req.params.id),req.body,require('../config/db'))));
 router.post('/:id/recuperacao/previa',wrap((req,owner)=>service.recoveryPreview(owner,req.params.id,req.body)));
 router.post('/:id/guardar',wrap((req,owner)=>require('../services/studyLabService').saveAs(owner,req.params.id,req.body,require('../config/db'))));
 module.exports = router;

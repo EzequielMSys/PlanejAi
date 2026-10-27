@@ -10,6 +10,7 @@ export default {
   change: (id, body) => api.patch(`/${id}`, body, { expectedOwner: currentUser() }).then(r => r.data),
   assist: (id, attempts, fields, goal) => api.post(`/${id}/lumi`, { attempts,fields,goal }, { expectedOwner: currentUser(),timeout:55000 }).then(r => r.data),
   investigate: (id, body) => api.post(`/${id}/lumi`, body, { expectedOwner: currentUser(),timeout:55000 }).then(r => r.data),
+  coherencePreview:(id,body)=>api.post(`/${id}/coerencia/previa`,body,{expectedOwner:currentUser()}).then(r=>r.data),
   portfolioOptions:(q,signal)=>api.get('/portfolio/opcoes',{params:{q},signal,cache:false}).then(r=>r.data),
   portfolioSource:(ref,signal)=>api.post('/portfolio/origem',ref,{signal,expectedOwner:currentUser()}).then(r=>r.data),
   sources:(type,q,signal)=>api.get('/fontes/opcoes',{params:{tipo:type,q},signal,cache:false}).then(r=>r.data),
