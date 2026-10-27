@@ -7,11 +7,13 @@ const wrap = handler => async (req, res) => {
 };
 router.get('/hoje', wrap((req, owner) => service.overview(owner)));
 router.get('/laboratorio/catalogo',wrap(()=>require('../services/studyLabCatalog').cards()));
+router.get('/portfolio/opcoes',wrap((req,owner)=>require('../services/researchPortfolioService').options(owner,req.query.q||'')));
+router.post('/portfolio/origem',wrap((req,owner)=>require('../services/researchPortfolioService').resolve(owner,req.body)));
 router.get('/projetos/modelos',wrap(()=>{const paths=require('../services/personalLearningPaths');return {templates:paths.templates,stages:paths.stages,criteria:paths.criteria};}));
 router.get('/fontes/opcoes',wrap((req,owner)=>require('../services/studyPathSources').options(owner,req.query.tipo,req.query.q||'',require('../config/db'),req.usuario)));
 router.post('/fontes/conferir',wrap((req,owner)=>require('../services/studyPathSources')[req.body.open===true?'open':'resolve'](owner,req.body,require('../config/db'),req.usuario)));
 router.get('/estrategias/sugestoes',wrap((req,owner)=>require('../services/personalLearningPaths').suggestions(owner,req.query.tema||'',req.query.dificuldade||'',require('../config/db'))));
-router.get('/', wrap((req, owner) => { if (!['prova','evidencia','laboratorio','estrategia','projeto'].includes(req.query.tipo)) throw Object.assign(new Error('Tipo inválido.'),{status:400}); return service.list(owner, req.query.tipo); }));
+router.get('/', wrap((req, owner) => { if (!['prova','evidencia','laboratorio','estrategia','projeto','portfolio'].includes(req.query.tipo)) throw Object.assign(new Error('Tipo inválido.'),{status:400}); return service.list(owner, req.query.tipo); }));
 router.post('/:tipo', wrap((req, owner) => service.create(owner, req.params.tipo, req.body,require('../config/db'),req.usuario)));
 router.get('/:id', wrap((req, owner) => service.detail(owner, req.params.id)));
 router.get('/:id/revisao-final', wrap((req, owner) => service.finalReview(owner, req.params.id)));

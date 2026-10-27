@@ -1,6 +1,7 @@
 const ALL = ['aluno', 'docente', 'admin', 'adm', 'dono']
 const STAFF = ['docente', 'admin', 'adm', 'dono']
 export const PAGES = [
+  { path: '/portfolio-investigacao', title: 'Meu portfólio de investigação', description: 'Seleções próprias de projetos, estratégias e evidências, com exportação em PDF.', keywords: 'portfólio investigação seleção narrativa pdf', group: 'Aprender', icon: 'book', roles: ALL, hidden: true, searchable: true, navParent: '/meu-entendimento' },
   { path: '/como-aprendo', title: 'Como eu aprendo', description: 'Estratégias pessoais vinculadas a experiências reais.', keywords: 'estratégias repertório experiências aprender', group: 'Aprender', icon: 'book', roles: ALL, hidden: true, searchable: true, navParent: '/meu-entendimento' },
   { path: '/projetos-investigacao', title: 'Projetos de investigação', description: 'Perguntas, fontes e produções próprias conectando matérias.', keywords: 'projetos investigação pesquisa hipóteses fontes produção', group: 'Aprender', icon: 'route', roles: ALL, hidden: true, searchable: true, navParent: '/aprendizagem' },
   { path: '/laboratorio', title: 'Laboratório de problemas', description: 'Investigue situações, compare caminhos e conecte assuntos.', keywords: 'laboratório investigação aplicar situações problemas conectados', group: 'Aprender', icon: 'route', roles: ALL, hidden: true, searchable: true, navParent: '/aprendizagem' },

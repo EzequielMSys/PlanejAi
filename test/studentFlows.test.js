@@ -83,6 +83,7 @@ async function fixture(config) {
       if(end==='/laboratorio/catalogo')return require('../src/services/studyLabCatalog').cards();
       if(end==='/projetos/modelos'){const paths=require('../src/services/personalLearningPaths');return {templates:paths.templates,stages:paths.stages,criteria:paths.criteria};}
       if(end==='/estrategias/sugestoes')return [];
+      if(end==='/portfolio/opcoes')return guidedRecords.filter(r=>r.kind==='projeto').flatMap(r=>r.entries.map((e,i)=>({ref:{type:'projeto',record:r.id,step:e.id},title:r.title,label:'Registro '+(i+1)})));
       if(end==='/fontes/opcoes')return guidedRecords.filter(r=>['evidencia','laboratorio','projeto'].includes(r.kind)).flatMap(r=>(r.kind==='projeto'?r.entries:r.attempts).map(a=>({type:'caminho',record:r.id,step:a.id,title:r.title})));
 
       if(!end)return guidedRecords.filter(r=>r.kind===config.params?.tipo).map(r=>({...r,attempts:Array.isArray(r.attempts)?r.attempts.length:0}));
@@ -97,6 +98,8 @@ async function fixture(config) {
       return {feedback,receipt:JSON.stringify({owner:'900001',record:r.id,attempt:context.chosen[0].id,hash:require('node:crypto').createHash('sha256').update(JSON.stringify(context.chosen[0].text)).digest('hex'),purpose:'defence',request:body.request||'question',feedback})};
     }
     const sourceDb={execute:async(sql,v)=>[[...guidedRecords.filter(r=>r.id===v[0]).map(r=>({id:r.id,versao:r.version,tipo:r.kind,dados:r}))]]};
+    if(end==='/portfolio/origem')return require('../src/services/researchPortfolioService').resolve(900001,body,sourceDb);
+    if(end==='/portfolio'&&config.method==='post'){const r={id:body.key,version:1,kind:'portfolio',...await require('../src/services/researchPortfolioService').create(900001,body,sourceDb)};guidedRecords.push(r);return r;}
     if(config.method==='post'&&(end==='/prova'||end==='/evidencia'||end==='/laboratorio'||end==='/estrategia'||end==='/projeto')){
       const kind=end.slice(1),record={...body,id:body.key,version:1,kind,...(kind==='prova'?require('../src/services/guidedStudyService')._test.createPreparation(body):kind==='laboratorio'?require('../src/services/studyLabService').create(body):['estrategia','projeto'].includes(kind)?await require('../src/services/personalLearningPaths').create(900001,kind,body,sourceDb,undefined,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date())):{attempts:[],due:null})};if(kind==='projeto')record.stages=require('../src/services/personalLearningPaths').stages;if(kind==='laboratorio')record.case=require('../src/services/studyLabCatalog').present(record);guidedRecords.push(record);return record;
     }
@@ -269,7 +272,7 @@ async function getBundle() {
   const esbuild = requireFrontend('esbuild');
   const result = await esbuild.build({
     stdin: { contents: `export { default as Login } from './src/pages/Login'; export { AuthContext } from './src/context/AuthContext'; export { default as App } from './src/App'; export { default as RouteLoading } from './src/components/RouteLoading'; export { default as PageExperience } from './src/components/PageExperience'; export { ThemeProvider } from './src/context/ThemeContext'; export { AccessibilityProvider } from './src/context/AccessibilityContext'; export { default as ErrorBoundary } from './src/components/ErrorBoundary';`, resolveDir: frontendDir, loader: 'jsx' },
-    bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic', loader: { '.css': 'empty' },
+    bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic', loader: { '.css': 'empty', '.ttf':'empty' },
     define: { 'import.meta.env': JSON.stringify({ VITE_API_URL: 'http://fixture.invalid', BASE_URL: '/', DEV: true }) },
     plugins: [{ name: 'defer-nonessential-widgets', setup(build) { build.onResolve({ filter: /LumiMessage$/ }, () => ({ path: 'lumi-message-test', namespace: 'test' })); build.onResolve({ filter: /Deferred$/ }, () => ({ path: 'deferred-test', namespace: 'test' })); build.onLoad({ filter: /lumi-message-test/, namespace: 'test' }, () => ({ contents: "import React from 'react'; export default function LumiMessage({ content }) { return React.createElement('div', { className: 'lumi-message' }, content) }", loader: 'js', resolveDir: frontendDir })); build.onLoad({ filter: /deferred-test/, namespace: 'test' }, () => ({ contents: 'export default function Deferred(){ return null }', loader: 'js' })); } }],
     logLevel: 'silent',
@@ -308,6 +311,37 @@ async function stage76Records() {
   const strategy={id:'stage76-strategy',version:1,kind:'estrategia',...await paths.create(900001,'estrategia',{key:window.crypto.randomUUID(),title:'Conferir unidades',procedure:'Converter a duração antes de calcular.',experience:{subject:'Energia',difficulty:'Unidades',outcome:'parcial',observation:'Precisei converter minutos.',source:{type:'caminho',record:origin.id,step:origin.attempts[0].id}}},db,undefined,day)};
   return [origin,strategy];
 }
+async function stage79Project(){
+  const paths=require('../src/services/personalLearningPaths'),day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
+  const r={id:'stage79-project',version:1,kind:'projeto',...await paths.create(900001,'projeto',{title:'Investigação de fontes',question:'O que os dados permitem concluir?',scope:'Dois textos',subjects:['Matemática'],minutes:30,deliverable:'texto'},null,undefined,day)};
+  for(const origin of ['Fonte A','Fonte B'])await paths.apply(900001,r,'projeto',{action:'projectSource',key:window.crypto.randomUUID(),origin,question:r.question,purpose:'Comparar os dados.',limits:'Recorte limitado.'},null,undefined,day);
+  await paths.apply(900001,r,'projeto',{action:'projectEntry',key:window.crypto.randomUUID(),stage:'producao',entryType:'producao',text:'TEXTO_QUE_ESCOLHI_PARA_PORTFOLIO',reason:'MOTIVO_QUE_NAO_ESCOLHI',sources:[r.sources[0].id]},null,undefined,day);r.stages=paths.stages;return r;
+}
+test('ficha de fontes preserva rascunho na falha e aplica decisões às referências só após confirmar',async()=>{
+  const r=await stage79Project();guidedRecords=[r];const screen=await renderRoute('/projetos-investigacao?projeto='+r.id);
+  try{
+    await act(async()=>document.querySelector('.inquiry-create>summary').click());await flush();const form=document.querySelector('.inquiry-create form');
+    await inputValue(personalControl('Afirmação que quero',form),'Os valores permitem generalizar?');await selectValue(personalControl('Referência do projeto',form),r.sources[0].id);
+    for(const [label,value] of [['Trecho que estou','O texto apresenta um valor.'],['Finalidade percebida','Informar sobre o resultado.'],['Evidências que','Um número sem método descrito.'],['Informações ausentes','Preciso localizar o método.'],['Fatos ou dados','Um valor no recorte apresentado.'],['Interpretações que','O título generaliza.'],['Conclusões que','Não sei se o recorte é representativo.'],['Motivo da minha','Preciso conferir os dados.']])await inputValue(personalControl(label,form),value);
+    guidedWriteFailure=true;await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(personalControl('Trecho que estou',form).value,'O texto apresenta um valor.');assert.equal(r.sourceInquiries,undefined);
+    guidedWriteFailure=false;await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(r.sourceInquiries.length,1);assert.equal(r.inquiryLinks,undefined);
+    await act(async()=>document.querySelector('.inquiry-saved>summary').click());await flush();await act(async()=>button('Vincular estas decisões às referências do projeto').click());await flush();assert.equal(r.inquiryLinks.length,1);assert.ok(document.querySelector('.reference-assessments'));assert.equal(requests.filter(v=>v.url.endsWith('/lumi')).length,0);
+    const a=await axe.run(document.querySelector('.source-inquiries'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(a.violations.map(v=>v.id),[]);
+  }finally{guidedWriteFailure=false;guidedRecords=[];await screen.close()}
+});
+test('portfólio exige escolha de trechos e prévia, não salva automaticamente e conserva seleção na falha',async()=>{
+  const r=await stage79Project();guidedRecords=[r];const screen=await renderRoute('/portfolio-investigacao');
+  try{
+    await inputValue(personalControl('Título do portfólio'),'Minha investigação');await inputValue(personalControl('O percurso que quero'),'Como confrontei uma afirmação.');
+    await selectValue(personalControl('Versão que quero'),['projeto',r.id,'',r.entries[0].id].join(':'));await flush();
+    const item=document.querySelector('.portfolio-item-editor');await inputValue(personalControl('Papel deste registro',item),'Conclusão provisória');await inputValue(personalControl('O que este registro demonstra',item),'Delimitei o que posso concluir.');await inputValue(personalControl('Limites que reconheço',item),'O recorte é pequeno.');
+    assert.equal(button('Conferir a prévia da minha seleção').disabled,true);await act(async()=>personalControl('Tentativa escolhida',item).click());await inputValue(personalControl('O que concluo e'),'Ainda preciso examinar outro recorte.');const form=document.querySelector('.portfolio-editor form');await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+    assert.ok(document.querySelector('.portfolio-preview'));assert.ok(document.querySelector('.portfolio-preview').textContent.includes('TEXTO_QUE_ESCOLHI_PARA_PORTFOLIO'));assert.ok(!document.querySelector('.portfolio-preview').textContent.includes('MOTIVO_QUE_NAO_ESCOLHI'));assert.equal(guidedRecords.filter(v=>v.kind==='portfolio').length,0);
+    guidedWriteFailure=true;await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(personalControl('Título do portfólio').value,'Minha investigação');assert.ok(document.querySelector('.portfolio-preview'));
+    guidedWriteFailure=false;await act(async()=>form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();assert.equal(guidedRecords.filter(v=>v.kind==='portfolio').length,1);assert.ok(button('Exportar esta edição em PDF'));assert.equal(guidedRecords.find(v=>v.kind==='portfolio').editions[0].items[0].blocks.length,1);
+    const a=await axe.run(document.querySelector('.portfolio-saved'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(a.violations.map(v=>v.id),[]);
+  }finally{guidedWriteFailure=false;guidedRecords=[];await screen.close()}
+});
 test('comparação planejada preserva rascunho, tentativas e decisão sem alterar repertório',async()=>{
   guidedRecords=await stage76Records();const r=guidedRecords[1],screen=await renderRoute('/como-aprendo?estrategia='+r.id);
   try{
