@@ -12,12 +12,7 @@ const tipoLabel = {
   aluno: 'Aluno'
 }
 
-const tipoBadge = {
-  dono: 'bg-black text-white border-black',
-  admin: 'bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white border-[rgb(var(--pn-primaria-borda-rgb)/1)]',
-  docente: 'bg-[rgb(var(--pn-primaria-forte-rgb)/0.25)] text-[rgb(var(--pn-texto-rgb)/1)] border-[rgb(var(--pn-primaria-borda-rgb)/1)]',
-  aluno: 'bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] border-[rgb(var(--pn-primaria-borda-rgb)/0.4)]'
-}
+
 
 const USUARIOS_POR_PAGINA = 10
 
@@ -27,7 +22,7 @@ function getId(usuario) {
 
 function formatarData(dataStr) {
   if (!dataStr) return '-'
-  return new Date(dataStr).toLocaleDateString('pt-BR')
+  return new Date(/^\d{4}-\d{2}-\d{2}$/.test(dataStr)?dataStr+'T12:00:00':dataStr).toLocaleDateString('pt-BR')
 }
 
 export default function UsuariosAdmin() {
@@ -35,6 +30,9 @@ export default function UsuariosAdmin() {
 
   const [usuarios, setUsuarios] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loaded,setLoaded]=useState(false)
+  const [listError,setListError]=useState('')
+  const listRequest=useRef(0)
   const [busca, setBusca] = useState('')
   const [tipoFiltro, setTipoFiltro] = useState('')
   const [paginaAtual, setPaginaAtual] = useState(1)
@@ -53,6 +51,8 @@ export default function UsuariosAdmin() {
   useDialogFocus(dialogRef,Boolean(modalSenha||senhaTemporaria),()=>modalSenha?fecharModalSenha():setSenhaTemporaria(null),salvandoSenha)
 
   const carregarUsuarios = useCallback(async () => {
+    const request=++listRequest.current
+    setListError('')
     setLoading(true)
 
     try {
@@ -62,14 +62,16 @@ export default function UsuariosAdmin() {
         search: busca,
         tipo: tipoFiltro
       })
+      if(request!==listRequest.current)return
+      setLoaded(true)
       setUsuarios(data.usuarios || [])
       setTotalPaginas(data.total_paginas || 1)
       setTotalRegistros(data.total_registros || 0)
       setStats(data.stats || { total: 0, ativos: 0, alunos: 0, admins: 0 })
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erro ao carregar usuários.')
+      if(request===listRequest.current){const message=error.response?.data?.error || 'Não foi possível carregar as pessoas.';setListError(message);toast.error(message)}
     } finally {
-      setLoading(false)
+      if(request===listRequest.current)setLoading(false)
     }
   }, [paginaAtual, busca, tipoFiltro])
 
@@ -96,7 +98,7 @@ export default function UsuariosAdmin() {
     const usuarioLogadoId = user?.id_usuario || user?.id
     const alvoId = getId(usuario)
 
-    if (usuarioLogadoId === alvoId) return false
+    if (String(usuarioLogadoId) === String(alvoId)) return false
     if (usuario.tipo === 'dono') return false
 
     return true
@@ -240,7 +242,7 @@ export default function UsuariosAdmin() {
     setConfirmarSenha('')
   }
 
-  if (loading) {
+  if (loading && !loaded) {
     return (
       <div className="min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] flex items-center justify-center">
         <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[3rem] p-10 shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] text-center">
@@ -254,7 +256,7 @@ export default function UsuariosAdmin() {
   return (
     <main className="users-admin-page min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] px-4 sm:px-6 lg:px-8 py-10">
       <div className="max-w-7xl mx-auto">
-        <header className="users-hero"><div><span className="users-kicker">PLANEJAI · GESTÃO DE ACESSOS</span><h1>Pessoas e acessos</h1><p>Consulte quem faz parte da plataforma e acompanhe as permissões de cada pessoa com clareza.</p></div><aside><span>CONTROLE DE ACESSO</span><p>{isDono ? 'Alterações de perfil e status são reservadas ao dono.' : 'Seu acesso administrativo permite consultar e gerenciar contas conforme sua permissão.'}</p><strong>{stats.ativos} de {stats.total} contas ativas</strong></aside></header>
+        <header className="users-hero"><div><span className="users-kicker">PLANEJAI · GESTÃO DE ACESSOS</span><h1>Pessoas e acessos</h1><p>Encontre uma pessoa e gerencie seu acesso.</p></div><details className="users-permissions"><summary>Sobre as permissões</summary><p>{isDono?'Só o dono pode alterar perfis e ativar ou desativar contas.':'As ações disponíveis respeitam as permissões da sua conta.'}</p></details></header>
 
         <section className="users-stats grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" aria-label="Resumo das contas">
           <CardStat titulo="Total" valor={stats.total} />
@@ -303,13 +305,14 @@ export default function UsuariosAdmin() {
           </div>
         </section>
 
+        {listError&&<p className="users-list-error" role="alert">{listError} <button type="button" onClick={carregarUsuarios}>Tentar novamente</button></p>}
+        {loaded&&loading&&<p className="users-updating" role="status">Atualizando pessoas…</p>}
         <section className="users-table-shell bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[850px]">
+            <table className="users-directory" aria-busy={loading}>
               <thead className="bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)]">
                 <tr>
                   <Th>Usuário</Th>
-                  <Th>Email</Th>
                   <Th>Tipo</Th>
                   <Th>Status</Th>
                   <Th>Cadastro</Th>
@@ -324,52 +327,35 @@ export default function UsuariosAdmin() {
 
                   return (
                     <tr key={id} className="hover:bg-[rgb(var(--pn-superficie-alt-rgb)/1)] transition-colors">
-                      <td className="p-5">
-                        <div className="users-person"><span aria-hidden="true">{(usuario.nome || usuario.email || '?').charAt(0).toUpperCase()}</span><div><strong>{usuario.nome || 'Sem nome'}</strong><small>ID #{id}</small></div></div>
+                      <td className="p-5" data-label="Pessoa">
+                        <div className="users-person"><span aria-hidden="true">{(usuario.nome || usuario.email || '?').charAt(0).toUpperCase()}</span><div><strong>{usuario.nome || 'Sem nome'}</strong><span className="users-email">{usuario.email}</span><small>ID #{id}</small></div></div>
                       </td>
 
-                      <td className="p-5 text-sm text-[rgb(var(--pn-texto-rgb)/0.65)] font-mono">
-                        {usuario.email}
+                      <td className="p-5" data-label="Perfil">
+                        <span className="users-role">{tipoLabel[usuario.tipo] || usuario.tipo}</span>
                       </td>
 
-                      <td className="p-5">
-                        {isDono && podeAlterar ? (
+                      <td className="p-5" data-label="Status">
+                        <span className={`users-status ${Number(usuario.ativo)?'is-active':'is-inactive'}`}><i aria-hidden="true"/>{Number(usuario.ativo)?'Ativo':'Inativo'}</span>
+                      </td>
+
+                      <td className="p-5 text-sm text-[rgb(var(--pn-texto-rgb)/0.6)]" data-label="Cadastro">
+                        {formatarData(usuario.data_cadastro || usuario.data_criacao || usuario.criado_em)}
+                      </td>
+
+                      <td className="p-5" data-label="Ações">
+                        <details className="users-actions"><summary>Gerenciar <span aria-hidden="true">⌄</span></summary><div>{isDono&&podeAlterar&&<label className="users-role-field">Perfil da conta
                           <select
                             aria-label={`Tipo de conta de ${usuario.nome || usuario.email}`}
                             value={usuario.tipo}
                             disabled={acaoLoading === `tipo-${id}`}
                             onChange={(e) => alterarTipo(usuario, e.target.value)}
-                            className={`px-4 py-2 rounded-full text-sm font-bold border outline-none ${tipoBadge[usuario.tipo] || tipoBadge.aluno}`}
+                            className="users-role-select"
                           >
                             <option value="admin">Admin</option>
                             <option value="docente">Docente</option>
                             <option value="aluno">Aluno</option>
-                          </select>
-                        ) : (
-                          <span className={`inline-flex px-4 py-2 rounded-full text-sm font-bold border ${tipoBadge[usuario.tipo] || tipoBadge.aluno}`}>
-                            {tipoLabel[usuario.tipo] || usuario.tipo}
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="p-5">
-                        <span
-                          className={`inline-flex px-4 py-2 rounded-full text-sm font-bold border ${
-                            Number(usuario.ativo)
-                              ? 'bg-green-100 text-green-700 border-green-300'
-                              : 'bg-red-100 text-red-700 border-red-300'
-                          }`}
-                        >
-                          {Number(usuario.ativo) ? 'Ativo' : 'Inativo'}
-                        </span>
-                      </td>
-
-                      <td className="p-5 text-sm text-[rgb(var(--pn-texto-rgb)/0.6)]">
-                        {formatarData(usuario.data_cadastro || usuario.data_criacao || usuario.criado_em)}
-                      </td>
-
-                      <td className="p-5">
-                        <details className="users-actions"><summary>Gerenciar <span aria-hidden="true">⌄</span></summary><div>
+                          </select></label>}
                           <button
                             type="button"
                             disabled={!isDono || !podeAlterar || acaoLoading === `status-${id}`}
@@ -405,7 +391,7 @@ export default function UsuariosAdmin() {
             </table>
           </div>
 
-          {usuarios.length === 0 && (
+          {usuarios.length === 0 && !listError && (
             <div className="text-center py-16">
               <h3 className="text-2xl font-black text-[rgb(var(--pn-texto-rgb)/1)] mb-2">
                 Nenhum usuário encontrado

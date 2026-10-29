@@ -1,15 +1,14 @@
 import {useId,useState} from 'react'
 import './LumiContextPicker.css'
 
-export default function LumiContextPicker({items,candidates,onChange,onFresh,busy,materia,onRemoveSubject}) {
+export default function LumiContextPicker({items,candidates,onChange,busy,materia,onRemoveSubject}) {
   const uid=useId(),[text,setText]=useState(''),[type,setType]=useState('duvida')
-  return <details className="lumi-context-picker" open>
+  return <details className="lumi-context-picker">
     <summary>O que a Lumi vai usar <span>{items.length+(materia?1:0)} {items.length+(materia?1:0)===1?'item':'itens'}</span></summary>
-    <div><p>Além da sua mensagem, somente os itens abaixo e até 12 mensagens recentes desta conversa serão enviados. Alterar o contexto inicia uma conversa nova nesta tela, sem apagar o histórico salvo.</p>
+    <div><p>A Lumi recebe estes itens e até 12 mensagens desta conversa. Trocar os itens inicia outra conversa.</p>
       {materia && <article><strong>Matéria · {materia}</strong><button type="button" disabled={busy} onClick={onRemoveSubject} aria-label="Retirar matéria do contexto">Retirar</button></article>}
       {items.map(item=><article key={item.id}><div><strong>{item.titulo}</strong><p>{item.texto}</p></div><button type="button" disabled={busy} onClick={()=>onChange(items.filter(value=>value.id!==item.id))} aria-label={`Retirar ${item.titulo} do contexto`}>Retirar</button></article>)}
-      {!items.length && !materia && <p className="lumi-context-empty">Nenhum registro selecionado. Perfil e redações completas não são incluídos automaticamente.</p>}
-      <button type="button" disabled={busy} onClick={onFresh}>Começar sem contexto anterior</button>
+      {!items.length && !materia && <p className="lumi-context-empty">Sem registros adicionais. Você pode conversar normalmente.</p>}
       <details><summary>Adicionar um registro ou trecho</summary><div className="lumi-context-add">
         {candidates.filter(item=>!items.some(selected=>selected.id===item.id)).map(item=><button type="button" disabled={busy || items.length>=8} key={item.id} onClick={()=>onChange([...items,item])}>Adicionar: {item.titulo}</button>)}
         <label htmlFor={`${uid}-type`}>Tipo de registro<select id={`${uid}-type`} value={type} disabled={busy} onChange={e=>setType(e.target.value)}><option value="duvida">Dúvida</option><option value="anotacao">Anotação</option><option value="redacao">Trecho da redação</option></select></label>

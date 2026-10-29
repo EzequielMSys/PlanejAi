@@ -2,3 +2,7 @@
 .lumi-context-evidence{display:grid;gap:.45rem;max-height:7rem;overflow:auto;background:var(--pn-superficie-alt)}
 .lumi-context-evidence>div{display:flex;flex-wrap:wrap;gap:.4rem}
 .lumi-context-evidence>div>span{padding:.35rem .55rem;border:1px solid var(--pn-borda);border-radius:.45rem;background:var(--pn-superficie);line-height:1.35}
+
+.lumi-chat-card .lumi-chat-body{height:auto;flex:1;min-height:0}.lumi-page .lumi-intro-note{margin-top:1.5rem}.lumi-page .lumi-chat-heading-tip{display:none}@media(max-width:600px){html[data-mobile-keyboard] .lumi-page .lumi-chat-card{height:calc(var(--visible-viewport-height,100dvh) - 1rem);min-height:18rem}.lumi-page .lumi-intro{display:none}}
+
+.lumi-page .lumi-chat-card{height:var(--lumi-card-height,36rem);min-height:0}@media(max-width:600px){html[data-mobile-keyboard] .lumi-page .lumi-chat-card{height:var(--lumi-card-height,24rem);min-height:0}}

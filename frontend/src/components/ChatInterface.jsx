@@ -59,14 +59,16 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
   const [sendError, setSendError] = useState('')
   const [history,setHistory]=useState(null)
   const [historyBusy,setHistoryBusy]=useState(false)
+  const [freshNotice,setFreshNotice]=useState('')
   const fimRef = useRef(null)
   const inputRef = useRef(null)
+  const toolsRef = useRef(null)
   const sendingRef = useRef(false)
   const [practiceEpoch,setPracticeEpoch]=useState(0)
   const [conversationEpoch,setConversationEpoch]=useState(0)
   const [items,setItems]=useState(()=>estudoAtual?.titulo?[{id:'session',tipo:'sessao',titulo:'Sessão atual',texto:[estudoAtual.disciplina,estudoAtual.titulo].filter(Boolean).join(' · ')}]:[])
   const resetItems=next=>{if(sendingRef.current)return;setConversationEpoch(value=>value+1);setItems(next);setMensagens([]);setHistory(null);setSendError('')}
-  const fresh=()=>{if(sendingRef.current)return;resetItems([]);setMateria('');setInput('');setPracticeEpoch(value=>value+1)}
+  const fresh=()=>{if(sendingRef.current)return;resetItems([]);setMateria('');setPracticeEpoch(value=>value+1);setFreshNotice('Conversa nova, sem contexto anterior. Escreva sua mensagem.');if(toolsRef.current)toolsRef.current.open=false;inputRef.current?.focus()}
   const candidates=[...(estudoAtual?.titulo?[{id:'session',tipo:'sessao',titulo:'Sessão atual',texto:[estudoAtual.disciplina,estudoAtual.titulo].filter(Boolean).join(' · ')}]:[]),...(anotacaoAtual?.trim()?[{id:'note',tipo:'anotacao',titulo:'Anotação da sessão',texto:anotacaoAtual.slice(0,1500)}]:[]),...(redacaoSelecionada?.tema?[{id:'essay',tipo:'redacao',titulo:'Tema da redação selecionada',texto:redacaoSelecionada.tema.slice(0,1500)}]:[]),...(Array.isArray(contexto?.licoes)?contexto.licoes:[]).slice(0,4).map((item,index)=>({id:'lesson-'+index,tipo:'registro',titulo:'Lição: '+item.titulo,texto:item.disciplina+' · '+item.titulo}))]
 
 
@@ -79,6 +81,8 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
     inteligencia.chatContext().then(value=>{if(active)setContexto(value)}).catch(() => {})
     return()=>{active=false}
   }, [])
+
+  useEffect(()=>{if((conversaSolicitada||praticaAtual)&&toolsRef.current)toolsRef.current.open=true},[conversaSolicitada,praticaAtual])
 
   function append(mensagem) {
     setMensagens((prev) => [...prev, { ...mensagem, id: Date.now() + Math.random() }])
@@ -97,6 +101,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
     sendingRef.current = true
     const envioId = Date.now() + Math.random()
     setSendError('')
+    setFreshNotice('')
     setMensagens((prev) => [...prev, {
       id: envioId,
       role: 'user',
@@ -155,7 +160,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
   }
 
   return (
-    <div className={`flex min-h-0 flex-col h-full ${className}`}>
+    <div className={`lumi-chat-interface flex min-h-0 flex-col h-full ${className}`}>
       <div className="lumi-controls flex items-center justify-between gap-2 border-b border-study-line/10 px-3 py-2">
         <label className="flex items-center gap-2 text-xs font-bold text-black/60 dark:text-white/60">
           Matéria
@@ -164,7 +169,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
             disabled={loading} onChange={(event) => {resetItems(items);setMateria(event.target.value)}}
             className="rounded-lg border border-study-line/25 bg-study-paper px-2 py-1 text-xs font-semibold text-study-ink dark:bg-study-paper dark:text-white"
           >
-            <option value="">Todas</option>
+            <option value="">Conversa livre</option>
             {[...new Set([...DISCIPLINAS, estudoAtual?.disciplina].filter(Boolean))].map((item) => (
               <option key={item} value={item}>
                 {item}
@@ -172,7 +177,15 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
             ))}
           </select>
         </label>
+        <button type="button" disabled={loading} onClick={fresh}>Começar sem contexto anterior</button>
         {!compacto && <button type="button" disabled={historyBusy || loading} onClick={viewHistory}>{historyBusy?'Consultando…':history?'Fechar histórico':'Ver histórico salvo'}</button>}
+
+      </div>
+
+      <details ref={toolsRef} className="lumi-toolbox"><summary>Contexto e ferramentas <span>{items.length+(materia?1:0)?`${items.length+(materia?1:0)} itens escolhidos`:'Opcional'}</span></summary>
+      <LumiConversations requestedId={conversationEpoch===0?conversaSolicitada:undefined} key={conversationEpoch} snapshot={{itens:items,materia,mensagens}} draftMessage={input} busy={loading} onRestore={record=>{setItems(record.itens.map((item,index)=>({...item,id:`conversation-${index}`})));setMateria(record.materia);setMensagens(record.mensagens);setInput('');setHistory(null);setSendError('');setPracticeEpoch(value=>value+1)}} />
+      <LumiContextPicker items={items} candidates={candidates} onChange={resetItems} busy={loading} materia={materia} onRemoveSubject={()=>{resetItems(items);setMateria('')}} />
+      <LumiPractice key={`${praticaAtual?.id || 'livre'}:${practiceEpoch}`} context={practiceEpoch ? undefined : praticaAtual} loading={loading} onSend={pratica => enviar(`${pratica.modo === 'pista' ? 'Quero uma pista' : pratica.modo === 'feedback' ? 'Confira minha tentativa' : 'Quero ver a resolução comentada'}: ${pratica.pergunta}${pratica.tentativa ? `\nMinha tentativa: ${pratica.tentativa}` : ''}`, materia || undefined, pratica)} />
         {!compacto && <button
           type="button"
           onClick={limparConversa}
@@ -181,19 +194,17 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         >
           Limpar histórico geral
         </button>}
-      </div>
-
-      <LumiConversations requestedId={conversationEpoch===0?conversaSolicitada:undefined} key={conversationEpoch} snapshot={{itens:items,materia,mensagens}} draftMessage={input} busy={loading} onRestore={record=>{setItems(record.itens.map((item,index)=>({...item,id:`conversation-${index}`})));setMateria(record.materia);setMensagens(record.mensagens);setInput('');setHistory(null);setSendError('');setPracticeEpoch(value=>value+1)}} />
-      <LumiContextPicker items={items} candidates={candidates} onChange={resetItems} onFresh={fresh} busy={loading} materia={materia} onRemoveSubject={()=>{resetItems(items);setMateria('')}} />
+      </details>
+      {freshNotice&&<p role="status" className="lumi-fresh-notice">{freshNotice}</p>}
 
       <div className="lumi-feed flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-live="polite">
         {history && <section className="lumi-history-readonly" aria-label="Histórico salvo, apenas para consulta"><h3>Histórico salvo · apenas consulta</h3><p>Estas mensagens não são incluídas no contexto desta conversa.</p>{!history.length && <p>Nenhuma mensagem foi encontrada.</p>}{history.map((message,index)=><Mensagem key={index} mensagem={{role:message.role,content:message.conteudo,criado_em:message.criado_em}}/>)}</section>}
         {!mensagens.length && !loading && (
           <div className="lumi-welcome-content">
-            <div className="lumi-welcome-top"><TutorLumi tamanho={compacto ? 38 : 64} /><div><strong>{compacto && items.some(item=>item.id==='session') && estudoAtual?.titulo ? `Vamos estudar ${estudoAtual.titulo}` : 'Por onde começamos?'}</strong><span>{compacto ? 'Pergunte qualquer coisa ou comece pelo tema de hoje.' : 'Escolha um caminho ou escreva sua própria pergunta abaixo.'}</span></div></div>
+            <div className="lumi-welcome-top"><TutorLumi tamanho={compacto ? 38 : 64} /><div><strong>{compacto && items.some(item=>item.id==='session') && estudoAtual?.titulo ? `Vamos estudar ${estudoAtual.titulo}` : 'Por onde começamos?'}</strong><span>{compacto ? 'Pergunte qualquer coisa ou comece pelo tema de hoje.' : 'Escreva uma mensagem ou escolha uma ideia.'}</span></div></div>
             {compacto && items.some(item=>item.id==='session') && estudoAtual?.titulo && <div className="lumi-starter-section"><div className="lumi-starters"><button type="button" onClick={() => { setInput(`Me ensine ${estudoAtual.titulo}${estudoAtual.disciplina ? ` em ${estudoAtual.disciplina}` : ''} passo a passo, com um exemplo e uma pergunta curta para eu praticar.`); inputRef.current?.focus() }}>Começar por este conteúdo →</button></div></div>}
             {!compacto && <div className="lumi-starter-section"><span>EXPLORAR UMA DÚVIDA</span><div className="lumi-starters">
-              {SUGESTOES_INICIO.map((sugestao) => (
+              {SUGESTOES_INICIO.slice(0,2).map((sugestao) => (
                 <button
                   key={sugestao}
                   type="button"
@@ -234,14 +245,14 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         ['Confira se entendi', `Faça uma única pergunta curta sobre ${estudoAtual.titulo} para conferir se entendi. Não revele a resposta agora. Espere minha tentativa e depois explique o que acertei e o que devo revisar.`],
       ].map(([label, prompt]) => <button type="button" key={label} disabled={loading} onClick={() => enviar(prompt, estudoAtual.disciplina)}>{label}</button>)}</div><small>O atalho envia uma pergunta sobre a sessão atual.</small></div>}
       {sendError && <p role="alert" className="px-3 text-xs text-red-700 dark:text-red-300">{sendError}</p>}
-      <LumiPractice key={`${praticaAtual?.id || 'livre'}:${practiceEpoch}`} context={practiceEpoch ? undefined : praticaAtual} loading={loading} onSend={pratica => enviar(`${pratica.modo === 'pista' ? 'Quero uma pista' : pratica.modo === 'feedback' ? 'Confira minha tentativa' : 'Quero ver a resolução comentada'}: ${pratica.pergunta}${pratica.tentativa ? `\nMinha tentativa: ${pratica.tentativa}` : ''}`, materia || undefined, pratica)} />
+
 
       <form
         onSubmit={(event) => {
           event.preventDefault()
           enviar()
         }}
-        className="flex items-end gap-2 border-t border-study-line/15 p-3"
+        className="lumi-composer flex items-end gap-2 border-t border-study-line/15 p-3"
       >
         <textarea
           id="lumi-message"
@@ -256,7 +267,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
           }}
           rows={1}
           maxLength={2000}
-          placeholder="Digite sua dúvida..."
+          placeholder="Converse com a Lumi…"
           aria-label="Mensagem para a Lumi"
           className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-xl border border-study-line/25 bg-study-paper px-3 py-2 text-sm text-study-ink outline-none focus:border-study-line dark:bg-study-paper dark:text-white"
         />

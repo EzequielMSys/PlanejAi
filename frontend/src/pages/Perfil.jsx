@@ -505,18 +505,11 @@ const handleSaveEstudos = async (e) => {
                   <label className="profile-field">Como quer que a gente chame você?<input value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Nome de preferência (opcional)" /></label>
                 </div>
 
-                <label className="profile-field">Pronomes<select value={form.pronome} onChange={(e) => setForm((f) => ({ ...f, pronome: e.target.value }))}>
-                  <option value="">Prefiro não informar</option>
-                  <option value="ela_dela">Ela / dela</option>
-                  <option value="ele_dele">Ele / dele</option>
-                  <option value="elu_delu">Elu / delu</option>
-                  <option value="nome_proprio">Prefiro que use meu nome</option>
-                  <option value="personalizado">Quero informar outros pronomes</option>
-                </select><small className="profile-field-hint">Essa preferência é opcional e serve para adaptar a linguagem da Lumi. Você pode alterá-la quando quiser.</small></label>
+                <fieldset className="profile-pronoun-choice"><legend>Pronomes</legend><p className="profile-field-hint">Opcional. Escolha uma preferência de tratamento.</p><div className="profile-pronoun-options">{[['','Prefiro não informar'],['ela_dela','Ela / dela'],['ele_dele','Ele / dele'],['elu_delu','Elu / delu'],['nome_proprio','Use meu nome'],['personalizado','Outros pronomes']].map(([value,label])=><label key={value} className={form.pronome===value?'is-selected':''}><input type="radio" name="pronome" value={value} checked={form.pronome===value} onChange={()=>setForm(f=>({...f,pronome:value}))}/><span>{label}</span></label>)}</div></fieldset>
 
-                {form.pronome === 'personalizado' && <label className="profile-field">Quais pronomes você usa?<input value={form.pronomePersonalizado} onChange={(e) => setForm((f) => ({ ...f, pronomePersonalizado: e.target.value }))} maxLength={80} placeholder="Ex.: they/them, xe/xem ou ela/elu" /><small className="profile-field-hint">Opcional. A Lumi mantém linguagem neutra nos textos que não podem ser adaptados com segurança.</small></label>}
+                {form.pronome === 'personalizado' && <label className="profile-field">Quais pronomes você usa?<input value={form.pronomePersonalizado} onChange={(e) => setForm((f) => ({ ...f, pronomePersonalizado: e.target.value }))} maxLength={80} placeholder="Ex.: they/them, xe/xem ou ela/elu" /><small className="profile-field-hint">Escreva do jeito que prefere.</small></label>}
 
-                <div className="profile-pronoun-preview" aria-live="polite"><span>PRÉVIA DE TRATAMENTO</span><p>“{fraseConviteLumi(form.pronome === 'personalizado' ? form.pronomePersonalizado : form.pronome)}”</p><small>{form.pronome === 'personalizado' && form.pronomePersonalizado.trim() ? `Preferência informada: ${form.pronomePersonalizado.trim()}. ` : ''}A preferência só muda no perfil quando você salvar; nos textos sem flexão, a linguagem continua neutra.</small></div>
+                <div className="profile-pronoun-preview" aria-live="polite"><span>PRÉVIA DE TRATAMENTO</span><p>“{fraseConviteLumi(form.pronome === 'personalizado' ? form.pronomePersonalizado : form.pronome)}”</p><small>{form.pronome === 'personalizado' && form.pronomePersonalizado.trim() ? `Preferência informada: ${form.pronomePersonalizado.trim()}. ` : ''}Sua preferência só muda ao salvar.</small></div>
 
                 <label className="profile-field">Email da conta<input autoComplete="email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required /></label>
 
