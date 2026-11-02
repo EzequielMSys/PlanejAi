@@ -2902,3 +2902,33 @@ test('ajuda da oficina abre o passo correspondente e preserva a intervenção ao
   await act(async()=>button('Sair do guia').click());assert.equal(document.querySelector('.writing-workshop-editor textarea').value,'MINHA INTERVENÇÃO EM ELABORAÇÃO.');assert.equal(document.querySelector('.writing-workshop nav [aria-current]').textContent.includes('intervenção'),true);
  }finally{await screen.close()}
 });
+
+
+test('propostas por percurso mostram fonte e roteiro específicos sem alterar o rascunho ao navegar',async()=>{
+ const screen=await renderRoute('/redacoes');
+ try{
+  await act(async()=>document.querySelector('.redacoes-intro-actions button').click());await flush();
+  await inputValue(document.getElementById('essay-topic'),'MEU TEMA');await inputValue(document.querySelector('[aria-label="Texto da redação"]'),'MINHA VERSÃO ORIGINAL.');
+  await act(async()=>button('Prática').click());assert.equal(button('Prática').getAttribute('aria-pressed'),'true');assert.equal(document.querySelectorAll('.proposal-options button').length,2);
+  const card=[...document.querySelectorAll('.proposal-options button')].find(x=>x.textContent.includes('educação midiática'));await act(async()=>card.click());
+  await act(async()=>[...document.querySelectorAll('.proposal-preview summary')].find(x=>x.textContent==='Consultar fonte e limites').click());assert.match(document.querySelector('.proposal-source a').href,/unesco.org/);assert.match(document.querySelector('.proposal-source').textContent,/2017/);
+  await act(async()=>[...document.querySelectorAll('.proposal-preview summary')].find(x=>x.textContent==='Roteiro para este tema').click());assert.match(document.querySelector('.proposal-roadmap').textContent,/autoria, contexto e evidências/);
+  assert.equal(document.getElementById('essay-topic').value,'MEU TEMA');assert.equal(document.querySelector('[aria-label="Texto da redação"]').value,'MINHA VERSÃO ORIGINAL.');assert.equal(requests.filter(x=>x.method==='post').length,0);
+  const result=await axe.run(document.querySelector('.essay-proposal'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(x=>x.id),[]);
+ }finally{await screen.close()}
+});
+test('confirmação de proposta é cancelada ao mudar a prévia e nunca substitui o texto',async()=>{
+ const screen=await renderRoute('/redacoes');
+ try{
+  await act(async()=>document.querySelector('.redacoes-intro-actions button').click());await flush();await inputValue(document.getElementById('essay-topic'),'TEMA AUTORAL');await inputValue(document.querySelector('[aria-label="Texto da redação"]'),'NÃO SUBSTITUIR MEU TEXTO.');
+  await act(async()=>button('Usar esta proposta').click());assert.ok(document.querySelector('.essay-proposal-confirm'));await act(async()=>button('Desafio').click());assert.equal(document.querySelector('.essay-proposal-confirm'),null);assert.equal(document.getElementById('essay-topic').value,'TEMA AUTORAL');
+  const card=[...document.querySelectorAll('.proposal-options button')].find(x=>x.textContent.includes('desastres'));await act(async()=>card.click());await act(async()=>button('Usar esta proposta').click());assert.match(document.querySelector('.essay-proposal-confirm').textContent,/desastres/);await act(async()=>button('Trocar apenas o tema').click());assert.match(document.getElementById('essay-topic').value,/desastres/);assert.equal(document.querySelector('[aria-label="Texto da redação"]').value,'NÃO SUBSTITUIR MEU TEXTO.');assert.equal(requests.filter(x=>x.method==='post').length,0);
+ }finally{await screen.close()}
+});
+test('reabrir uma redação recupera o percurso e a referência do tema aplicado nesta conta',async()=>{
+ const {ESSAY_PROPOSALS}=await import('../frontend/src/utils/essayProposals.mjs');const topic=ESSAY_PROPOSALS.find(x=>x.id==='desinformacao').title;
+ const screen=await renderRoute('/redacoes','aluno',{}, {'900001:essay-draft:v3':JSON.stringify({tema:topic,texto:'MEU RASCUNHO CONTINUA.',salvoEm:new Date().toISOString()})});
+ try{
+  await act(async()=>document.querySelector('.redacoes-intro-actions button').click());await flush();assert.equal(button('Prática').getAttribute('aria-pressed'),'true');assert.equal(document.querySelector('.proposal-options [aria-pressed="true"] strong').textContent,topic);assert.match(document.querySelector('.proposal-preview-status').textContent,/Em uso/);assert.match(document.querySelector('.proposal-source a').href,/unesco.org/);assert.equal(document.querySelector('[aria-label="Texto da redação"]').value,'MEU RASCUNHO CONTINUA.');
+ }finally{await screen.close()}
+});

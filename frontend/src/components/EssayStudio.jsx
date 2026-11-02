@@ -101,7 +101,7 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
     const frame = requestAnimationFrame(() => {
       if (focusTarget === 'proposal' && proposalRef.current) proposalRef.current.open = true
       const field = focusTarget === 'proposal' ? proposalRef.current?.querySelector('summary') : editorRef.current
-      field?.scrollIntoView({block:'center',behavior:'auto'}); field?.focus({preventScroll:true})
+      field?.scrollIntoView({block:focusTarget === 'proposal' ? 'start' : 'center',behavior:'auto'}); field?.focus({preventScroll:true})
     })
     return () => window.cancelAnimationFrame(frame)
   }, [focusRequest, focusTarget, draftReady])
@@ -124,7 +124,7 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
     {draftFailed && <SaveFeedback status="unsaved" message="Não conseguimos guardar o rascunho neste aparelho. Mantenha esta tela aberta e copie seu texto antes de sair." onRetry={() => { const saved = writeEssayDraft(form); setSalvoEm(saved); setDraftFailed(!saved) }} />}
     {draftFailed && <button type="button" className="study-button" onClick={() => downloadTextCopy(`${form.tema}\n\n${form.texto}`, 'planejai-rascunho-redacao.txt')}>Baixar cópia do meu texto</button>}
     {queued && <SaveFeedback status="local" message="Esta versão já foi encaminhada pela fila deste aparelho. Ao reconectar, confira o histórico antes de tentar outro envio. Seu texto continua aqui." />}
-    <EssayProposal detailsRef={proposalRef} topic={form.tema} onUse={tema=>{if(enviando)return;setForm(current=>({...current,tema}));if(proposalRef.current)proposalRef.current.open=false;requestAnimationFrame(()=>{editorRef.current?.scrollIntoView({block:'center'});editorRef.current?.focus({preventScroll:true})})}} onGuide={onGuide} />
+    <EssayProposal busy={enviando} detailsRef={proposalRef} topic={form.tema} onUse={tema=>{if(enviando)return;setForm(current=>({...current,tema}));if(proposalRef.current)proposalRef.current.open=false;requestAnimationFrame(()=>{editorRef.current?.scrollIntoView({block:'center'});editorRef.current?.focus({preventScroll:true})})}} onGuide={onGuide} />
     {planning && <details className="essay-planning-reference"><summary>Consultar meu planejamento</summary><dl>{[['Tese',planning.tese],['Argumento 1',planning.argumentoUm],['Argumento 2',planning.argumentoDois],['Repertório',planning.repertorio],['Intervenção',planning.intervencao]].filter(([,text])=>text?.trim()).map(([label,text])=><div key={label}><dt>{label}</dt><dd>{text}</dd></div>)}</dl></details>}
     <form onSubmit={onSubmit} aria-busy={enviando}>
       <aside className="essay-outline">
