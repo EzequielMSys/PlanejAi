@@ -1,14 +1,27 @@
 // Convert the delimiters used by older replies before Markdown consumes their
 // backslashes. Code examples stay literal, and ordinary brackets stay text.
+function normalizeCurrency(text) {
+  // remark-math treats even LaTeX's escaped dollar as a math delimiter.
+  // Protect literal dollars first; use a dollar-free KaTeX character command
+  // inside math and restore Markdown escapes everywhere else.
+  let marker = '\uE000'
+  while (text.includes(marker)) marker += '\uE000'
+  return text.replace(/\\\$/g, marker)
+    .replace(/R\$(?=\s*\d|})/g, () => `R${marker}`)
+    .replace(/(?<![\\$])(\${1,2})(?!\$)([\s\S]*?)(?<![\\$])\1(?!\$)/g,
+      (_, delimiter, formula) => `${delimiter}${formula.replaceAll(marker, '\\char"0024 ')}${delimiter}`)
+    .replaceAll(marker, '\\$')
+}
+
 function normalizeText(text) {
-  return text
+  return normalizeCurrency(text
     .replace(/\\\[([\s\S]*?)\\\]/g, (_, formula) => `\n$$\n${formula.trim()}\n$$\n`)
     .replace(/\\\(([\s\S]*?)\\\)/g, (_, formula) => `$${formula.trim()}$`)
     .replace(/(^|\n)([ \t]*)\[[ \t]*([^\n]+?)\][ \t]*(?=\n|$)/g, (original, newline, indent, formula) => {
       if (!/\\(?:frac|sqrt|text|sum|int|begin|mathrm|cdot|times)\b|[_^]\s*\{/.test(formula)) return original
       return `${newline}${indent}$$\n${indent}${formula.trim()}\n${indent}$$`
     })
-    .replace(/(?<!\\)R\$(?=\s*\d)/g, 'R\\$')
+  )
 }
 
 function outsideInlineCode(text) {

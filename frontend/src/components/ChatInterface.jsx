@@ -57,6 +57,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
   const [loading, setLoading] = useState(false)
   const [contexto, setContexto] = useState(null)
   const [sendError, setSendError] = useState('')
+  const [attachmentNotice, setAttachmentNotice] = useState('')
   const [history,setHistory]=useState(null)
   const [historyBusy,setHistoryBusy]=useState(false)
   const [freshNotice,setFreshNotice]=useState('')
@@ -244,6 +245,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         ['Dê um exemplo', `Dê um exemplo concreto sobre ${estudoAtual.titulo}. Resolva passo a passo e conecte cada passo ao conceito. Termine propondo uma pequena variação para eu tentar.`],
         ['Confira se entendi', `Faça uma única pergunta curta sobre ${estudoAtual.titulo} para conferir se entendi. Não revele a resposta agora. Espere minha tentativa e depois explique o que acertei e o que devo revisar.`],
       ].map(([label, prompt]) => <button type="button" key={label} disabled={loading} onClick={() => enviar(prompt, estudoAtual.disciplina)}>{label}</button>)}</div><small>O atalho envia uma pergunta sobre a sessão atual.</small></div>}
+      {attachmentNotice && <p role="alert" className="px-3 text-sm text-study-ink dark:text-white/90">{attachmentNotice}</p>}
       {sendError && <p role="alert" className="px-3 text-xs text-red-700 dark:text-red-300">{sendError}</p>}
 
 
@@ -259,6 +261,19 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
           ref={inputRef}
           value={input}
           onChange={(event) => setInput(event.target.value)}
+          onPaste={(event) => {
+            if ([...event.clipboardData.items].some(item => item.kind === 'file')) {
+              event.preventDefault()
+              setAttachmentNotice('Esta conversa ainda não recebe fotos ou arquivos. Cole ou digite o enunciado da atividade; a imagem não foi enviada.')
+            } else setAttachmentNotice('')
+          }}
+          onDragOver={(event) => { if ([...event.dataTransfer.types].includes('Files')) event.preventDefault() }}
+          onDrop={(event) => {
+            if (event.dataTransfer.files.length) {
+              event.preventDefault()
+              setAttachmentNotice('Esta conversa ainda não recebe fotos ou arquivos. Cole ou digite o enunciado da atividade; a imagem não foi enviada.')
+            }
+          }}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault()

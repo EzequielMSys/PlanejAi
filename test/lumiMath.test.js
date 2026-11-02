@@ -57,3 +57,23 @@ $\includegraphics{https://example.invalid/image.png}$
 $\htmlClass{inject}{x}$`);
   assert.equal(doc.querySelectorAll('script,img,a,iframe').length,0);assert.equal(doc.querySelectorAll('[onerror],[onclick]').length,0);assert.equal(doc.querySelectorAll('.inject').length,0);
 });
+
+
+test('reais dentro da fórmula não encerram a expressão nem perdem o valor',async()=>{
+  for(const text of [String.raw`- **Capital inicial** $P = \text{R\$}200,00$`,String.raw`Capital inicial \(P = \text{R\$}200,00\)`,String.raw`\[P=\text{R$}200,00\]`,String.raw`$P=R$ 200,00$`]){
+    const doc=await render(text);assert.equal(doc.querySelectorAll('.lumi-math-error,.katex-error').length,0,text);assert.equal(doc.querySelectorAll('.katex').length,1,text);assert.match(doc.querySelector('.katex-mathml').textContent,/200/);assert.match(doc.querySelector('.katex-mathml').textContent,/R\$/);
+  }
+});
+
+test('preços e símbolos escapados fora de fórmulas ficam literais junto a matemática válida',async()=>{
+  const doc=await render(String.raw`O capital é R$ 200,00 e o montante é R$240,00. Use $M=P(1+i)^t$. O símbolo é \$ e a variável é $R$.`);
+  assert.equal(doc.querySelectorAll('.katex').length,2);assert.equal(doc.querySelectorAll('.lumi-math-error').length,0);assert.match(doc.body.textContent,/R\$ 200,00/);assert.match(doc.body.textContent,/R\$240,00/);assert.match(doc.body.textContent,/símbolo é \$/);
+});
+
+
+test('moeda em exemplos de código e caracteres privados permanecem intactos',async()=>{
+ const {default:normalize}=await import('../frontend/src/utils/normalizeLumiMath.js');
+ const code='`$P=\\text{R\\$}200$`';assert.equal(normalize(code),code);
+ const text='\uE000 \uE000\uE000 '+String.raw`R$200 e $P=\text{R\$}200$`;
+ const doc=await render(text);assert.match(doc.body.textContent,/^\uE000 \uE000\uE000 /);assert.equal(doc.querySelectorAll('.lumi-math-error').length,0);assert.equal(doc.querySelectorAll('.katex').length,1);
+});

@@ -2765,3 +2765,16 @@ test('tempo encerrado mostra fechamento parcial sem penalizar questões não res
     assert.ok(document.querySelector('.simulation-balance').textContent.includes('—'));
   }finally{Date.now=realNow;await screen.close()}
 });
+
+
+test('foto colada ou arrastada na Lumi avisa que não foi enviada e preserva o rascunho',async()=>{
+ const screen=await renderRoute('/lumi');try{
+  const field=document.getElementById('lumi-message');await inputValue(field,'Meu enunciado ainda está aqui.');
+  const paste=new window.Event('paste',{bubbles:true,cancelable:true});Object.defineProperty(paste,'clipboardData',{value:{items:[{kind:'file',type:'image/jpeg'}]}});
+  await act(async()=>field.dispatchEvent(paste));assert.ok(paste.defaultPrevented);assert.equal(field.value,'Meu enunciado ainda está aqui.');assert.ok(screen.container.textContent.includes('a imagem não foi enviada'));assert.equal(requests.filter(r=>r.method==='post'&&r.url.endsWith('/inteligencia/chat')).length,0);
+  const textPaste=new window.Event('paste',{bubbles:true,cancelable:true});Object.defineProperty(textPaste,'clipboardData',{value:{items:[{kind:'string',type:'text/plain'}]}});
+  await act(async()=>field.dispatchEvent(textPaste));assert.ok(!textPaste.defaultPrevented);assert.ok(!screen.container.textContent.includes('a imagem não foi enviada'));
+  const drop=new window.Event('drop',{bubbles:true,cancelable:true});Object.defineProperty(drop,'dataTransfer',{value:{files:[{type:'image/jpeg'}]}});
+  await act(async()=>field.dispatchEvent(drop));assert.ok(drop.defaultPrevented);assert.equal(field.value,'Meu enunciado ainda está aqui.');assert.ok(screen.container.textContent.includes('a imagem não foi enviada'));
+ }finally{await screen.close()}
+});
