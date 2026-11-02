@@ -149,7 +149,7 @@
   background: var(--pn-primaria-suave); height: 11rem; max-width: 13rem; margin-inline: auto;
 }
 .sd-workspace .lumi-page .lumi-intro-note { margin-top: 1.5rem; font-size: .85rem; }
-.sd-workspace .lumi-page .lumi-chat-card { box-shadow: none; border-radius: 1.3rem; height: clamp(32rem, calc(100dvh - 18rem), 48rem); }
+.sd-workspace .lumi-page .lumi-chat-card { box-shadow: none; border-radius: 1.3rem; height: var(--lumi-card-height, 40rem); }
 .sd-workspace .lumi-page .lumi-chat-heading { background: var(--pn-superficie-alt); }
 .sd-workspace .lumi-page .lumi-starters button { font-size: .9rem; padding: 1rem; min-height: 4rem; }
 .sd-workspace .lumi-page .lumi-starters button[data-personalized=true] { background: var(--pn-superficie); }

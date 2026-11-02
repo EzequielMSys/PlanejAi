@@ -45,12 +45,12 @@
   .sd-workspace .setup-page details{border:1px solid var(--pn-borda);border-radius:.8rem;padding:1rem}
   .setup-page details summary{display:list-item;cursor:pointer;color:var(--pn-link);font-weight:700}
   .setup-page details[open]>div{margin-top:1rem}
-  .sd-workspace .lumi-page.lumi-page .lumi-chat-card{height:min(42rem,calc(var(--visible-viewport-height,100dvh) - 5rem));min-height:26rem}
+  .sd-workspace .lumi-page.lumi-page .lumi-chat-card{height:var(--lumi-card-height,36rem);min-height:480px}
   .sd-workspace .lumi-page .lumi-chat-body>form{flex-shrink:0;padding-bottom:max(.75rem,env(safe-area-inset-bottom))}
   html[data-mobile-keyboard] .sd-workspace .focus-tool{visibility:hidden}
   html[data-mobile-keyboard] .sd-workspace:has(.lumi-page) .setup-invitation{display:none}
   html[data-mobile-keyboard] .sd-workspace .lumi-page :is(.lumi-page-heading,.lumi-intro){display:none!important}
-  html[data-mobile-keyboard] .sd-workspace .lumi-page .lumi-chat-card{height:calc(var(--visible-viewport-height,100dvh) - var(--ui-topbar) - 1.5rem);min-height:12rem}
+  html[data-mobile-keyboard] .sd-workspace .lumi-page .lumi-chat-card{height:var(--lumi-card-height,24rem);min-height:280px}
   html[data-mobile-keyboard] .sd-workspace .lumi-page{padding-top:.5rem;padding-bottom:.5rem}
 }
 .setup-step-progress{display:flex;gap:.75rem;list-style:none;margin-bottom:1.25rem;padding:0;color:var(--pn-texto-suave);font-size:.85rem}.setup-step-progress li{flex:1;border-top:3px solid var(--pn-borda);padding-top:.6rem}.setup-step-progress li[aria-current=step]{border-color:var(--pn-primaria);color:var(--pn-texto);font-weight:750}

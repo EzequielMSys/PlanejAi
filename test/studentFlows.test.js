@@ -317,17 +317,17 @@ async function getBundle() {
   return bundle;
 }
 async function flush() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); }); }
-async function renderRoute(route, role = 'aluno', userOverrides = {}, stored = {}) {
+async function renderRoute(route, role = 'aluno', userOverrides = {}, stored = {}, withExperience = false) {
   setupCompleteFixture = route !== '/onboarding' && !incompleteAccount;
   localStorage.clear();
   const token = [Buffer.from('{"alg":"HS256"}').toString('base64'), Buffer.from(JSON.stringify({ id: 900001, exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64'), 'fixture'].join('.');
   for (const [key, value] of Object.entries({ token, user: JSON.stringify({ ...person(role), ...userOverrides }), perfil_completo: route === '/onboarding' ? 'false' : 'true', primeiro_acesso: route === '/primeiro-acesso' ? 'true' : 'false', theme: 'light' })) localStorage.setItem(key, value);
   requests = [];
   for(const [key,value] of Object.entries(stored))localStorage.setItem(key,value);
-  const { App, ThemeProvider, AccessibilityProvider, ErrorBoundary } = await getBundle();
+  const { App, PageExperience, ThemeProvider, AccessibilityProvider, ErrorBoundary } = await getBundle();
   const container = document.getElementById('root');
   const root = createRoot(container);
-  await act(async () => root.render(React.createElement(MemoryRouter, { initialEntries: [route] }, React.createElement(ThemeProvider, null, React.createElement(AccessibilityProvider, null, React.createElement(ErrorBoundary, null, React.createElement(App)))))));
+  await act(async () => root.render(React.createElement(MemoryRouter, { initialEntries: [route] }, React.createElement(ThemeProvider, null, React.createElement(AccessibilityProvider, null, React.createElement(ErrorBoundary, null, React.createElement(App), withExperience && React.createElement(PageExperience)))))));
   await flush(); await flush();
   if (route === '/usuarios' || route === '/dono/usuarios') await act(async () => { await new Promise(resolve => setTimeout(resolve, 350)); });
   return { root, container, async close() { await act(async () => root.unmount()); } };
@@ -2812,4 +2812,21 @@ test('texto de foto acima do espaço disponível não substitui nem corta o rasc
  const screen=await renderRoute('/lumi');try{
   const field=document.getElementById('lumi-message');await inputValue(field,'m'.repeat(500));const photo=new window.File(['fixture'],'atividade.jpg',{type:'image/jpeg'}),drop=new window.Event('drop',{bubbles:true,cancelable:true});Object.defineProperty(drop,'dataTransfer',{value:{files:[photo]}});await act(async()=>field.dispatchEvent(drop));await flush();photoReadMode='long';await act(async()=>button('Ler enunciado').click());await flush();await act(async()=>document.querySelector('.lumi-photo-confirm input').click());await act(async()=>button('Usar enunciado na mensagem').click());assert.ok(document.querySelector('.lumi-photo-error').textContent.includes('2000'));assert.equal(field.value,'m'.repeat(500));assert.equal(document.querySelector('.lumi-photo textarea').value.length,1800);
  }finally{photoReadMode='';await screen.close()}
+});
+
+
+test('reading preferences open from the workspace header and return keyboard focus', async () => {
+  const screen = await renderRoute('/lumi', 'aluno', {}, {}, true);
+  try {
+    const trigger = document.querySelector('.sd-reading-shortcut');
+    assert.equal(trigger.tagName, 'BUTTON');
+    await act(async () => trigger.click());
+    await flush();
+    assert.equal(trigger.getAttribute('aria-expanded'), 'true');
+    assert.ok(document.getElementById('a11y-panel'));
+    await act(async () => window.dispatchEvent(new window.KeyboardEvent('keydown', {key:'Escape'})));
+    await flush();
+    assert.equal(document.getElementById('a11y-panel'), null);
+    assert.equal(document.activeElement, trigger);
+  } finally { await screen.close(); }
 });

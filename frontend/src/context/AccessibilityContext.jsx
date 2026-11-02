@@ -1,7 +1,9 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { normalizeReadingPreferences, READING_DEFAULTS } from '../utils/readingPreferences'
 const Context = createContext(null)
 export function AccessibilityProvider({ children }) {
+  const [preferencesOpen, setPreferencesOpen] = useState(false)
+  const preferencesTrigger = useRef(null)
   const [settings, setSettings] = useState(() => { try { return normalizeReadingPreferences(JSON.parse(localStorage.getItem('planejai:accessibility') || '{}')) } catch { return { ...READING_DEFAULTS } } })
   useEffect(() => {
     const root = document.documentElement
@@ -14,6 +16,6 @@ export function AccessibilityProvider({ children }) {
     try { localStorage.setItem('planejai:accessibility', JSON.stringify(settings)) } catch { /* Preferences still apply when browser storage is unavailable. */ }
   }, [settings])
   function update(key, value) { setSettings(current => normalizeReadingPreferences({ ...current, [key]: value })) }
-  return <Context.Provider value={{ settings, update, reset: () => setSettings({ ...READING_DEFAULTS }) }}>{children}</Context.Provider>
+  return <Context.Provider value={{ settings, update, preferencesOpen, setPreferencesOpen, preferencesTrigger, reset: () => setSettings({ ...READING_DEFAULTS }) }}>{children}</Context.Provider>
 }
 export const useAccessibility = () => useContext(Context)

@@ -1,5 +1,4 @@
 import {useEffect,useRef} from 'react'
-import AreaSignature from '../components/AreaSignature'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ChatInterface from '../components/ChatInterface'
@@ -18,14 +17,13 @@ export default function Chat() {
 
   useEffect(()=>{
     let active=true
-    const fit=()=>{const card=cardRef.current;if(!active||!card)return;const height=window.visualViewport?.height||window.innerHeight;card.style.setProperty('--lumi-card-height',`${Math.max(360,height-Math.max(16,card.getBoundingClientRect().top)-16)}px`)}
+    const fit=()=>{const card=cardRef.current;if(!active||!card)return;const height=window.visualViewport?.height||window.innerHeight;card.style.setProperty('--lumi-card-height',`${Math.max(360,height-Math.max(16,card.getBoundingClientRect().top)-88)}px`)}
     fit();const frame=window.requestAnimationFrame(fit);window.addEventListener('resize',fit);window.visualViewport?.addEventListener('resize',fit);document.fonts?.ready.then(fit)
     return()=>{active=false;window.cancelAnimationFrame(frame);window.removeEventListener('resize',fit);window.visualViewport?.removeEventListener('resize',fit)}
   },[])
 
   return (
     <main className="lumi-page">
-      <AreaSignature area="lumi"/>
       <header className="lumi-page-heading">
         <button type="button" onClick={() => navigate(-1)} aria-label="Voltar à página anterior" className="lumi-back">← Voltar</button>
         <div className="lumi-page-heading-row"><div><span className="lumi-page-kicker">SEU ESPAÇO DE ESTUDOS</span><h1>Converse com a Lumi.</h1></div><p>Uma dúvida, uma ideia ou só uma conversa.</p></div>

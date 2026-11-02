@@ -70,3 +70,9 @@
   .has-open-menu :is(.focus-tool, .study-audio-v2, .a11y-toolbar, .chatbot-widget) { visibility: hidden; pointer-events: none; }
   .has-open-menu .app-workspace::after { display: none; }
 }
+
+/* O cabeçalho abre o painel global sem um segundo botão sobre o conteúdo. */
+body:has(.sd-topbar) .a11y-trigger{display:none!important}
+.sd-topbar .sd-reading-shortcut{display:inline-grid;flex:none;min-width:44px;min-height:44px}
+body:has(.sd-topbar) .a11y-panel{position:fixed;top:calc(var(--ui-topbar,5rem) + .75rem);right:1rem;bottom:auto;max-height:calc(var(--visible-viewport-height,100dvh) - var(--ui-topbar,5rem) - 2rem)}
+@media(max-width:640px){body:has(.sd-topbar) .a11y-panel{left:.75rem;right:.75rem;width:auto}}

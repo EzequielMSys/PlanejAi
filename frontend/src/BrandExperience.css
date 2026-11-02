@@ -42,7 +42,7 @@
 .sd-workspace .lumi-page .lumi-chat-heading { background:var(--pn-superficie); }
 .sd-workspace .lumi-page .lumi-page-kicker { display:none; }
 .sd-workspace .lumi-page .area-signature { margin-bottom:.8rem; }
-@media(min-width:901px) { .sd-workspace .lumi-page .lumi-chat-card { height:clamp(26rem,calc(100dvh - 18rem),44rem); } }
+
 /* Study: the reading surface keeps its own generous, quiet border. */
 .sd-workspace .study-desk .session-workspace { border-radius:.3rem 1.3rem 1.3rem .3rem; border-left:3px solid var(--pn-link); }
 .sd-workspace .study-desk .study-desk-wrap-up { border-radius:var(--brand-corner); }

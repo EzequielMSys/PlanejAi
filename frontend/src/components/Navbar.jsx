@@ -10,7 +10,7 @@ import ColorPicker from './ColorPicker'
 
 export default function Navbar({ onMenuClick, sidebarOpen }) {
   const { user, logout } = useAuth()
-  const { settings, update } = useAccessibility()
+  const { settings, update, preferencesOpen, setPreferencesOpen, preferencesTrigger } = useAccessibility()
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const page = pageFor(pathname)
@@ -33,6 +33,6 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
     <div className="sd-search"><form role="search" onSubmit={event => { event.preventDefault(); setSearchOpen(false); navigate(searchPath) }}><button className="sd-search-trigger" type="button" aria-label="Abrir busca unificada" aria-expanded={searchOpen} aria-controls="page-search-results" onClick={() => { setSearchOpen(true); searchRef.current?.focus() }}><Icon name="search" size={18} /></button><input ref={searchRef} type="search" value={query} placeholder="Encontre seu próximo passo" aria-label="Buscar no meu espaço" maxLength={100} onFocus={() => setSearchOpen(true)} onChange={event => { setQuery(event.target.value); setSearchOpen(true) }} /><kbd>Ctrl K</kbd></form>
       {searchOpen && <><button className="sd-search-dismiss" type="button" aria-label="Fechar busca" onClick={() => setSearchOpen(false)} /><div className="sd-search-results" id="page-search-results"><Link className="sd-unified-search-link" to={searchPath} onClick={() => setSearchOpen(false)}><Icon name="search"/><span><strong>Buscar no meu acervo</strong><small>Matérias, materiais, anotações e redações</small></span><Icon name="arrow" size={15}/></Link><span>PÁGINAS DO SEU ESPAÇO</span>{results.length ? results.map(item => <Link key={item.path} to={item.path} onClick={() => setSearchOpen(false)}><Icon name={item.icon} /><span><strong>{item.title}</strong><small>{item.group}</small></span><Icon name="arrow" size={15} /></Link>) : <p>Nenhuma página encontrada. Tente outro nome.</p>}</div></>}
     </div>
-    <div className="sd-topbar-actions">{settings.focusMode && <button type="button" className="sd-focus-exit" onClick={() => update('focusMode', false)}>Sair do modo foco</button>}<ColorPicker /><ThemeToggle /><Link className="sd-icon-button sd-reading-shortcut" to="/preferencias" aria-label="Preferências de leitura"><span aria-hidden="true">Aa</span></Link><button type="button" className="sd-icon-button sd-signout" onClick={logout} aria-label="Sair da conta"><Icon name="logout" size={18} /></button></div>
+    <div className="sd-topbar-actions">{settings.focusMode && <button type="button" className="sd-focus-exit" onClick={() => update('focusMode', false)}>Sair do modo foco</button>}<ColorPicker /><ThemeToggle /><button type="button" className="sd-icon-button sd-reading-shortcut" aria-label="Preferências de leitura" aria-expanded={preferencesOpen} aria-controls="a11y-panel" onClick={event => { preferencesTrigger.current = event.currentTarget; setPreferencesOpen(value => !value) }}><span aria-hidden="true">Aa</span></button><button type="button" className="sd-icon-button sd-signout" onClick={logout} aria-label="Sair da conta"><Icon name="logout" size={18} /></button></div>
   </header>
 }

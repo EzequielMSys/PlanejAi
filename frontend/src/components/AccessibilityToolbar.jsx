@@ -1,14 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useAccessibility } from '../context/AccessibilityContext'
 import './Accessibility.css'
 
 export default function AccessibilityToolbar() {
-  const [open, setOpen] = useState(false)
   const panelRef = useRef(null)
-  const triggerRef = useRef(null)
   const hoverTimer = useRef(null)
   const lastRead = useRef({ text: '', time: 0 })
-  const { settings, update, reset } = useAccessibility()
+  const { settings, update, reset, preferencesOpen: open, setPreferencesOpen: setOpen, preferencesTrigger: triggerRef } = useAccessibility()
 
   useEffect(() => {
     if (!open) return undefined
@@ -83,7 +81,7 @@ export default function AccessibilityToolbar() {
           <div className="a11y-actions"><button type="button" onClick={read}>Ler página ou seleção</button><button type="button" onClick={() => window.speechSynthesis.cancel()}>Parar</button><button type="button" onClick={reset}>Restaurar</button></div>
         </section>
       )}
-      <button ref={triggerRef} type="button" aria-expanded={open} aria-controls="a11y-panel" onClick={() => open ? closePanel() : setOpen(true)} className="a11y-trigger"><span aria-hidden="true">Aa</span><strong>Acessibilidade</strong></button>
+      <button type="button" aria-expanded={open} aria-controls="a11y-panel" onClick={event => { triggerRef.current = event.currentTarget; open ? closePanel() : setOpen(true) }} className="a11y-trigger"><span aria-hidden="true">Aa</span><strong>Acessibilidade</strong></button>
     </aside>
   )
 }
