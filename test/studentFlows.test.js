@@ -37,6 +37,7 @@ let failChat = false;
 let guidedRecords=[],guidedWriteFailure=false;
 
 let chatHistoryFixture=[];
+let lumiContextFixture={};
 let readingHighlightsFixture=[],highlightSaveFailure=false,conversationsFixture=[],conversationSaveFailure=false,chatPlainReply=false;
 let conversationSaveDeferred=false,resolveConversationSave;
 let reviewSaveFailure=false;
@@ -81,6 +82,7 @@ const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de te
 let criticalReadingsFixture=[];
 async function fixture(config) {
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
+  if(url.endsWith('/inteligencia/chat/contexto')) return lumiContextFixture;
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });
   if(url.includes('/aprendizagem/percursos')){
     const end=url.split('/percursos')[1]||'';
@@ -852,12 +854,12 @@ test('Lumi starters prepare a question, then send one request and render safe st
   failChat = false;
   const screen = await renderRoute('/lumi');
   try {
-    assert.ok(screen.container.textContent.includes('EXPLORAR UMA DÚVIDA'));
+    assert.ok(screen.container.textContent.includes('POR ONDE VOCÊ QUER COMEÇAR?'));
     assert.equal(document.querySelectorAll('.lumi-starters button').length, 2);
     const starter = [...document.querySelectorAll('.lumi-starters button')][0];
     await act(async () => starter.click());
     const textarea = document.getElementById('lumi-message');
-    assert.match(textarea.value, /funções do 2º grau/);
+    assert.match(textarea.value, /Pergunte o que estou estudando/);
     assert.equal(requests.filter(request => request.method === 'post').length, 0, 'a suggestion must not send without confirmation');
     await act(async () => textarea.closest('form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true })));
     await flush();
@@ -2829,4 +2831,17 @@ test('reading preferences open from the workspace header and return keyboard foc
     assert.equal(document.getElementById('a11y-panel'), null);
     assert.equal(document.activeElement, trigger);
   } finally { await screen.close(); }
+});
+
+
+test('Lumi sugere estudos da conta com motivo e só preenche a mensagem após escolha',async()=>{
+ lumiContextFixture={dificuldades:[{disciplina:'Física',competencia:'Energia',erros:3}],recentes:[{disciplina:'Biologia',titulo:'Células',data:'2026-11-01'}]};
+ const screen=await renderRoute('/lumi');
+ try{
+  assert.equal(document.querySelectorAll('.lumi-starters button').length,2);
+  const suggestion=[...document.querySelectorAll('.lumi-starters button')].find(x=>x.textContent.includes('Energia'));
+  assert.match(suggestion.textContent,/errou/);assert.equal(document.getElementById('lumi-message').value,'');
+  await act(async()=>suggestion.click());assert.match(document.getElementById('lumi-message').value,/Energia/);assert.equal(document.activeElement.id,'lumi-message');
+  assert.equal(requests.filter(x=>x.method==='post'&&x.url.endsWith('/inteligencia/chat')).length,0);
+ }finally{lumiContextFixture={};await screen.close();}
 });

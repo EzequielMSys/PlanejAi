@@ -1,3 +1,4 @@
+import { lumiSuggestions } from '../utils/lumiSuggestions.mjs'
 import LumiConversations from './LumiConversations'
 import LumiContextPicker from './LumiContextPicker'
 import './LumiPhoto.css'
@@ -12,13 +13,6 @@ function PhotoLoadFallback({onCancel}) { return <div role="alert" className="px-
 const LumiPhoto = lazy(() => import('./LumiPhoto').catch(() => ({default:PhotoLoadFallback})))
 const LumiMessage = lazy(() => import('./LumiMessage').catch(() => ({ default: PlainLumiMessage })))
 import LumiPractice from './LumiPractice'
-
-const SUGESTOES_INICIO = [
-  'Como estudar funções do 2º grau de forma prática?',
-  'Qual a diferença entre mitose e meiose?',
-  'Qual a técnica para não perder pontos na redação do ENEM?',
-  'Como resolver um problema de cinemática?',
-]
 
 const DISCIPLINAS = ['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português', 'Inglês']
 
@@ -75,6 +69,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
   const [items,setItems]=useState(()=>estudoAtual?.titulo?[{id:'session',tipo:'sessao',titulo:'Sessão atual',texto:[estudoAtual.disciplina,estudoAtual.titulo].filter(Boolean).join(' · ')}]:[])
   const resetItems=next=>{if(sendingRef.current)return;setConversationEpoch(value=>value+1);setItems(next);setMensagens([]);setHistory(null);setSendError('')}
   const fresh=()=>{if(sendingRef.current)return;resetItems([]);setMateria('');setPracticeEpoch(value=>value+1);setFreshNotice('Conversa nova, sem contexto anterior. Escreva sua mensagem.');if(toolsRef.current)toolsRef.current.open=false;inputRef.current?.focus()}
+  const suggestions = lumiSuggestions(contexto, materia)
   const candidates=[...(estudoAtual?.titulo?[{id:'session',tipo:'sessao',titulo:'Sessão atual',texto:[estudoAtual.disciplina,estudoAtual.titulo].filter(Boolean).join(' · ')}]:[]),...(anotacaoAtual?.trim()?[{id:'note',tipo:'anotacao',titulo:'Anotação da sessão',texto:anotacaoAtual.slice(0,1500)}]:[]),...(redacaoSelecionada?.tema?[{id:'essay',tipo:'redacao',titulo:'Tema da redação selecionada',texto:redacaoSelecionada.tema.slice(0,1500)}]:[]),...(Array.isArray(contexto?.licoes)?contexto.licoes:[]).slice(0,4).map((item,index)=>({id:'lesson-'+index,tipo:'registro',titulo:'Lição: '+item.titulo,texto:item.disciplina+' · '+item.titulo}))]
 
 
@@ -221,14 +216,15 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
           <div className="lumi-welcome-content">
             <div className="lumi-welcome-top"><TutorLumi tamanho={compacto ? 38 : 64} /><div><strong>{compacto && items.some(item=>item.id==='session') && estudoAtual?.titulo ? `Vamos estudar ${estudoAtual.titulo}` : 'Por onde começamos?'}</strong><span>{compacto ? 'Pergunte qualquer coisa ou comece pelo tema de hoje.' : 'Escreva uma mensagem ou escolha uma ideia.'}</span></div></div>
             {compacto && items.some(item=>item.id==='session') && estudoAtual?.titulo && <div className="lumi-starter-section"><div className="lumi-starters"><button type="button" onClick={() => { setInput(`Me ensine ${estudoAtual.titulo}${estudoAtual.disciplina ? ` em ${estudoAtual.disciplina}` : ''} passo a passo, com um exemplo e uma pergunta curta para eu praticar.`); inputRef.current?.focus() }}>Começar por este conteúdo →</button></div></div>}
-            {!compacto && <div className="lumi-starter-section"><span>EXPLORAR UMA DÚVIDA</span><div className="lumi-starters">
-              {SUGESTOES_INICIO.slice(0,2).map((sugestao) => (
+            {!compacto && <div className="lumi-starter-section"><span>{suggestions.some(item => item.personal) ? 'A PARTIR DOS SEUS ESTUDOS' : 'POR ONDE VOCÊ QUER COMEÇAR?'}</span><div className="lumi-starters">
+              {suggestions.map((sugestao) => (
                 <button
-                  key={sugestao}
+                  key={`${sugestao.discipline || 'livre'}-${sugestao.title}`}
+                  data-personalized={sugestao.personal}
                   type="button"
-                  onClick={() => { setInput(sugestao); inputRef.current?.focus() }}
+                  onClick={() => { setInput(sugestao.prompt); inputRef.current?.focus() }}
                 >
-                  {sugestao}
+                  <strong>{sugestao.title}</strong><small>{sugestao.reason}</small>
                 </button>
               ))}
             </div></div>}

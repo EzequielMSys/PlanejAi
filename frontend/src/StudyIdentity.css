@@ -159,7 +159,7 @@
 }
 .sd-workspace .lumi-page .lumi-feed { scrollbar-gutter: stable; }
 .sd-workspace .lumi-page .lumi-feed:has(.lumi-welcome-content) { display: block; }
-.sd-workspace .lumi-page .lumi-welcome-content { padding-block: 1rem; }
+.sd-workspace .lumi-page .lumi-welcome-content { margin: 0; padding-block: 1rem; }
 .sd-workspace .lumi-page .lumi-feed > div { margin-block: 1.25rem; }
 .sd-workspace .lumi-page .lumi-feed time { font-size: .75rem; opacity: .8; }
 

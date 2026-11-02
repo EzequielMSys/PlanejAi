@@ -43,6 +43,10 @@ async function carregarContexto(idUsuario, executar = pool.execute.bind(pool), o
       FROM tentativas_questoes t JOIN questoes_estudo q ON q.id_questao = t.id_questao
       WHERE t.id_usuario = ? AND t.acertou = 0 AND t.criado_em >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY)
       GROUP BY q.disciplina, q.competencia ORDER BY erros DESC LIMIT 6`],
+    ['recentes', `SELECT co.disciplina, co.titulo, s.resultado, s.concluida_em
+      FROM sessoes_estudo s JOIN conteudos co ON co.id_conteudo = s.id_conteudo
+      WHERE s.id_usuario = ? AND s.concluida_em >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY)
+      ORDER BY s.concluida_em DESC, s.id_sessao DESC LIMIT 12`],
     ['revisoes', `SELECT co.disciplina, co.titulo, r.nivel_dominio, r.proxima_revisao
       FROM revisoes_estudo r JOIN conteudos co ON co.id_conteudo = r.id_conteudo
       WHERE r.id_usuario = ? AND r.proxima_revisao <= CURRENT_DATE()
@@ -71,6 +75,7 @@ async function carregarContexto(idUsuario, executar = pool.execute.bind(pool), o
   const ultimaRedacao = dados.ultimaRedacao?.[0]
   return {
     ...perfil, cronograma, licoes, dificuldades, revisoes, redacoes,
+    recentes: dados.recentes.map(row => ({disciplina: texto(row.disciplina, 80), titulo: texto(row.titulo, 180), resultado: texto(row.resultado, 20), data: row.concluida_em})),
     ...(opcoes.idRedacao && !ultimaRedacao ? { redacaoSelecionadaIndisponivel: true } : {}),
     ...(ultimaRedacao ? { ultimaRedacao: {
       tema: texto(ultimaRedacao.tema, 180),

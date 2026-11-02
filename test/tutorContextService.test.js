@@ -12,7 +12,7 @@ test('contexto da Lumi consulta apenas dados pedagógicos da conta autenticada',
     return [[]]
   }
   const contexto = await carregarContexto(42, executar)
-  assert.equal(consultas.length, 6)
+  assert.equal(consultas.length, 7)
   assert.ok(consultas.every((item) => item.params.length === 1 && item.params[0] === 42 && item.timeout === 1200))
   assert.equal(contexto.objetivo, 'ENEM')
   assert.deepEqual(contexto.licoes.map((item) => item.titulo), ['Funções'])
@@ -56,3 +56,9 @@ test('redação selecionada exige ID e proprietário na mesma consulta', async (
   assert.equal(contexto.redacaoSelecionadaIndisponivel, true)
   assert.equal(contexto.ultimaRedacao, undefined)
 })
+
+
+test('sugestões recentes usam sessões realizadas da própria conta e falham de forma independente', async () => {
+ const calls=[];const result=await carregarContexto(42,async({sql},params)=>{calls.push({sql,params});if(sql.includes('FROM sessoes_estudo'))return [[{disciplina:'Física',titulo:'Energia',resultado:'DIFICIL',concluida_em:'2026-11-01'}]];return [[]]});
+ assert.equal(result.recentes[0].titulo,'Energia');assert.equal(result.recentes[0].resultado,'DIFICIL');const query=calls.find(x=>x.sql.includes('FROM sessoes_estudo'));assert.match(query.sql,/s.id_usuario = \?/);assert.deepEqual(query.params,[42]);assert.match(query.sql,/ORDER BY s.concluida_em DESC/);
+});

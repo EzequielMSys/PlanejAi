@@ -33,3 +33,34 @@ html[data-mobile-keyboard] .lumi-page .lumi-chat-card{min-height:280px}
 .sd-workspace .lumi-page .lumi-page-heading-row h1{font-size:2rem!important}
 .lumi-page .lumi-back{margin-bottom:0;min-height:2rem}
 .lumi-page .lumi-page-heading{margin-bottom:1rem!important}
+
+/* Distância entre os grupos, sem centralizar conteúdo maior que a área visível. */
+.sd-workspace .lumi-page .lumi-chat-card{min-height:42rem}
+.sd-workspace .lumi-page .lumi-controls{column-gap:2rem;row-gap:1rem;padding:1.25rem 1.75rem}
+.sd-workspace .lumi-page .lumi-controls>button{padding-inline:.5rem}
+.sd-workspace .lumi-page .lumi-toolbox>summary{padding:1rem 1.75rem}
+.sd-workspace .lumi-page .lumi-feed{padding:2.5rem 2rem;scroll-padding-block:2.5rem;overflow-anchor:none}
+.sd-workspace .lumi-page .lumi-welcome-content{gap:2rem;margin:0;padding:0}
+.sd-workspace .lumi-page .lumi-welcome-top{align-items:flex-start;gap:1.25rem}
+.sd-workspace .lumi-page .lumi-welcome-top>div{gap:.75rem}
+.sd-workspace .lumi-page .lumi-starter-section{gap:1rem;margin-top:.5rem}
+.sd-workspace .lumi-page .lumi-starters{gap:1.25rem}
+.sd-workspace .lumi-page .lumi-starters button{display:flex;flex-direction:column;align-items:flex-start;gap:.75rem;padding:1.25rem;min-height:7rem}
+.lumi-starters button small{font-size:.75rem;font-weight:400;line-height:1.6;color:var(--pn-texto-suave)}
+.sd-workspace .lumi-page .lumi-composer{padding:1.5rem 1.75rem;gap:1rem}
+@media(max-width:600px){
+.sd-workspace .lumi-page .lumi-chat-card{min-height:480px}
+.sd-workspace .lumi-page .lumi-controls{padding:1rem;column-gap:1rem;row-gap:.5rem}
+.sd-workspace .lumi-page .lumi-toolbox>summary{padding:1rem}
+.sd-workspace .lumi-page .lumi-feed{padding:1.75rem 1.25rem}
+.sd-workspace .lumi-page .lumi-welcome-content{gap:1.75rem}
+.sd-workspace .lumi-page .lumi-composer{padding:1rem .75rem;gap:.5rem}
+html[data-mobile-keyboard] .sd-workspace .lumi-page .lumi-chat-card{min-height:280px}
+}
+
+.sd-workspace .lumi-page .lumi-controls select,
+.sd-workspace .lumi-page .lumi-composer textarea{background:var(--pn-superficie);color:var(--pn-texto);border-color:var(--pn-borda)}
+@media(min-width:641px){
+.sd-workspace:has(.lumi-page) .focus-tool{position:relative;inset:auto;display:flex;justify-content:flex-end;margin:0 2rem 1.5rem}
+.sd-workspace:has(.lumi-page) .lumi-page{padding-bottom:1.5rem}
+}
