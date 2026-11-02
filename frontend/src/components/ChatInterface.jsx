@@ -1,5 +1,6 @@
 import LumiConversations from './LumiConversations'
 import LumiContextPicker from './LumiContextPicker'
+import './LumiPhoto.css'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import inteligencia from '../services/inteligenciaService'
@@ -7,6 +8,8 @@ import TutorLumi from './TutorLumi'
 function PlainLumiMessage({ content }) {
   return <p className="whitespace-pre-wrap break-words leading-relaxed">{content}</p>
 }
+function PhotoLoadFallback({onCancel}) { return <div role="alert" className="px-3 py-2 text-sm">Não foi possível abrir a prévia. Seu texto continua preservado. Feche e tente anexar novamente.<button type="button" onClick={onCancel} className="ml-2 underline">Fechar prévia</button></div> }
+const LumiPhoto = lazy(() => import('./LumiPhoto').catch(() => ({default:PhotoLoadFallback})))
 const LumiMessage = lazy(() => import('./LumiMessage').catch(() => ({ default: PlainLumiMessage })))
 import LumiPractice from './LumiPractice'
 
@@ -57,7 +60,9 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
   const [loading, setLoading] = useState(false)
   const [contexto, setContexto] = useState(null)
   const [sendError, setSendError] = useState('')
-  const [attachmentNotice, setAttachmentNotice] = useState('')
+  const [photoFile, setPhotoFile] = useState(null)
+  const [photoError, setPhotoError] = useState('')
+  const photoInput = useRef(null)
   const [history,setHistory]=useState(null)
   const [historyBusy,setHistoryBusy]=useState(false)
   const [freshNotice,setFreshNotice]=useState('')
@@ -94,6 +99,18 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
     try{const rows=await inteligencia.chatHistory();setHistory(Array.isArray(rows)?rows:[])}
     catch{toast.error('Não foi possível consultar o histórico. A conversa atual continua disponível.')}
     finally{setHistoryBusy(false)}
+  }
+
+  function choosePhoto(file) {
+    if (!file || sendingRef.current) return
+    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { setPhotoError('Escolha uma foto JPG, PNG ou WEBP da atividade.'); return }
+    setPhotoError(''); setPhotoFile(file)
+  }
+  function closePhoto() { setPhotoFile(null); window.requestAnimationFrame(() => inputRef.current?.focus()) }
+  function usePhotoText(text) {
+    const combined = [input.trim(), `Atividade transcrita de uma foto e conferida por mim:\n${text}`].filter(Boolean).join('\n\n')
+    if (combined.length > 2000) return 'Sua mensagem junto ao enunciado ultrapassa 2000 caracteres. Reduza o enunciado ou volte e ajuste sua mensagem; nada foi apagado.'
+    setInput(combined); closePhoto()
   }
 
   async function enviar(texto, disciplinaOverride, pratica) {
@@ -245,7 +262,8 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         ['Dê um exemplo', `Dê um exemplo concreto sobre ${estudoAtual.titulo}. Resolva passo a passo e conecte cada passo ao conceito. Termine propondo uma pequena variação para eu tentar.`],
         ['Confira se entendi', `Faça uma única pergunta curta sobre ${estudoAtual.titulo} para conferir se entendi. Não revele a resposta agora. Espere minha tentativa e depois explique o que acertei e o que devo revisar.`],
       ].map(([label, prompt]) => <button type="button" key={label} disabled={loading} onClick={() => enviar(prompt, estudoAtual.disciplina)}>{label}</button>)}</div><small>O atalho envia uma pergunta sobre a sessão atual.</small></div>}
-      {attachmentNotice && <p role="alert" className="px-3 text-sm text-study-ink dark:text-white/90">{attachmentNotice}</p>}
+      {photoError && <p role="alert" className="px-3 text-sm text-study-ink dark:text-white/90">{photoError}</p>}
+      {photoFile && <Suspense fallback={<p role="status">Abrindo a prévia da foto…</p>}><LumiPhoto file={photoFile} onCancel={closePhoto} onUse={usePhotoText}/></Suspense>}
       {sendError && <p role="alert" className="px-3 text-xs text-red-700 dark:text-red-300">{sendError}</p>}
 
 
@@ -256,31 +274,26 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         }}
         className="lumi-composer flex items-end gap-2 border-t border-study-line/15 p-3"
       >
+        <input type="file" accept="image/jpeg,image/png,image/webp" hidden ref={photoInput} disabled={loading} onChange={event => { choosePhoto(event.target.files?.[0]); event.target.value = '' }}/>
+        <button type="button" className="lumi-photo-attach" aria-label="Anexar foto de atividade" title="Anexar foto de atividade" disabled={loading} onClick={() => photoInput.current?.click()}><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M5 3h12l6 6v16H5Z M17 3v7h6 M9 16h10 M9 20h6"/><circle cx="10" cy="10" r="1.5"/></svg><span>Foto</span></button>
         <textarea
           id="lumi-message"
           ref={inputRef}
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onPaste={(event) => {
-            if ([...event.clipboardData.items].some(item => item.kind === 'file')) {
-              event.preventDefault()
-              setAttachmentNotice('Esta conversa ainda não recebe fotos ou arquivos. Cole ou digite o enunciado da atividade; a imagem não foi enviada.')
-            } else setAttachmentNotice('')
+            const item = Array.from(event.clipboardData?.items || []).find(item => item.kind === 'file')
+            if (item) { event.preventDefault(); choosePhoto(item.getAsFile()) }
           }}
-          onDragOver={(event) => { if ([...event.dataTransfer.types].includes('Files')) event.preventDefault() }}
-          onDrop={(event) => {
-            if (event.dataTransfer.files.length) {
-              event.preventDefault()
-              setAttachmentNotice('Esta conversa ainda não recebe fotos ou arquivos. Cole ou digite o enunciado da atividade; a imagem não foi enviada.')
-            }
-          }}
+          onDragOver={event => { if (Array.from(event.dataTransfer.types).includes('Files')) event.preventDefault() }}
+          onDrop={event => { if (event.dataTransfer.files.length) { event.preventDefault(); choosePhoto(event.dataTransfer.files[0]) } }}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault()
               enviar()
             }
           }}
-          rows={1}
+          rows={input.includes('\n') ? 3 : 1}
           maxLength={2000}
           placeholder="Converse com a Lumi…"
           aria-label="Mensagem para a Lumi"

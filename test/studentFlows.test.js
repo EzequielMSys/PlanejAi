@@ -14,6 +14,9 @@ window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventL
 window.scrollTo = () => {};
 window.HTMLElement.prototype.scrollIntoView = () => {};
 window.confirm = () => false;
+window.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};
+window.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')};
+window.URL.createObjectURL=()=> 'blob:photo-fixture';window.URL.revokeObjectURL=()=>{};
 global.requestAnimationFrame = window.requestAnimationFrame.bind(window);
 global.cancelAnimationFrame = window.cancelAnimationFrame.bind(window);
 global.IntersectionObserver = class { observe() {} unobserve() {} disconnect() {} };
@@ -55,6 +58,7 @@ let onboardingProfileFixture = null;
 let incompleteAccount = false;
 let failLearningLoad = false;
 let practiceMode = '', resolvePractice, resolveAnswer;
+let photoReadMode='',resolvePhoto;
 const practiceQuestions = [1,2].map(id => ({id_questao:id,disciplina:'Física',competencia:'Energia',dificuldade:'MEDIA',enunciado:`Questão de energia ${id}`,alternativas:['Primeira opção','Segunda opção','Terceira opção','Quarta opção'],embaralhamento:'signed-fixture'}));
 let essayMode = '';
 let deferredEssay;
@@ -252,6 +256,11 @@ async function fixture(config) {
     }
     return chatHistoryFixture;
   }
+  if (url.endsWith('/inteligencia/chat/foto')) {
+    if(photoReadMode==='failed')throw new axios.AxiosError('failed','ERR_BAD_RESPONSE',config,null,{status:503,data:{message:'Tente novamente em instantes.'}});
+    if(photoReadMode==='deferred')return new Promise(resolve=>{resolvePhoto=()=>resolve({texto:'Leitura atrasada',conferir:[],legivel:true})});
+    return photoReadMode==='uncertain'?{texto:'Taxa [ilegível]',conferir:['Confira a taxa.'],legivel:false}:photoReadMode==='long'?{texto:'x'.repeat(1800),conferir:[],legivel:true}:{texto:'Capital inicial R$ 200,00. Taxa de 5% ao mês.',conferir:[],legivel:true};
+  }
   if (url.endsWith('/aprendizagem/jornada')) return { blocks: [], plannedMinutes: 25, summary: { reviews: 0, errors: 0, weeklyMinutes: 0, weeklyGoal: 180, criticalDiscipline: null } };
   if (url.endsWith('/aprendizagem/simulado') || url.endsWith('/adaptativo/simulado')) {
     if(practiceMode==='failed')throw new axios.AxiosError('timeout','ECONNABORTED',config);
@@ -297,7 +306,7 @@ async function getBundle() {
     stdin: { contents: `export { default as Login } from './src/pages/Login'; export { AuthContext } from './src/context/AuthContext'; export { default as App } from './src/App'; export { default as RouteLoading } from './src/components/RouteLoading'; export { default as PageExperience } from './src/components/PageExperience'; export { ThemeProvider } from './src/context/ThemeContext'; export { AccessibilityProvider } from './src/context/AccessibilityContext'; export { default as ErrorBoundary } from './src/components/ErrorBoundary';`, resolveDir: frontendDir, loader: 'jsx' },
     bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic', loader: { '.css': 'empty', '.ttf':'empty' },
     define: { 'import.meta.env': JSON.stringify({ VITE_API_URL: 'http://fixture.invalid', BASE_URL: '/', DEV: true }) },
-    plugins: [{ name: 'defer-nonessential-widgets', setup(build) { build.onResolve({ filter: /LumiMessage$/ }, () => ({ path: 'lumi-message-test', namespace: 'test' })); build.onResolve({ filter: /Deferred$/ }, () => ({ path: 'deferred-test', namespace: 'test' })); build.onLoad({ filter: /lumi-message-test/, namespace: 'test' }, () => ({ contents: "import React from 'react'; export default function LumiMessage({ content }) { return React.createElement('div', { className: 'lumi-message' }, content) }", loader: 'js', resolveDir: frontendDir })); build.onLoad({ filter: /deferred-test/, namespace: 'test' }, () => ({ contents: 'export default function Deferred(){ return null }', loader: 'js' })); } }],
+    plugins: [{ name: 'defer-nonessential-widgets', setup(build) { build.onResolve({filter:/prepareActivityPhoto$/},()=>({path:'photo-prepare',namespace:'test'}));build.onLoad({filter:/photo-prepare/,namespace:'test'},()=>({contents:'export default async function(){return new Blob(["fixture"],{type:"image/jpeg"})}',loader:'js',resolveDir:frontendDir}));build.onResolve({ filter: /LumiMessage$/ }, () => ({ path: 'lumi-message-test', namespace: 'test' })); build.onResolve({ filter: /Deferred$/ }, () => ({ path: 'deferred-test', namespace: 'test' })); build.onLoad({ filter: /lumi-message-test/, namespace: 'test' }, () => ({ contents: "import React from 'react'; export default function LumiMessage({ content }) { return React.createElement('div', { className: 'lumi-message' }, content) }", loader: 'js', resolveDir: frontendDir })); build.onLoad({ filter: /deferred-test/, namespace: 'test' }, () => ({ contents: 'export default function Deferred(){ return null }', loader: 'js' })); } }],
     logLevel: 'silent',
   });
   const filename = path.join(frontendDir, '__student_test_bundle.cjs');
@@ -2767,14 +2776,40 @@ test('tempo encerrado mostra fechamento parcial sem penalizar questões não res
 });
 
 
-test('foto colada ou arrastada na Lumi avisa que não foi enviada e preserva o rascunho',async()=>{
+test('foto na Lumi só é lida ao pedir e só entra na mensagem após conferir, sem envio automático',async()=>{
  const screen=await renderRoute('/lumi');try{
-  const field=document.getElementById('lumi-message');await inputValue(field,'Meu enunciado ainda está aqui.');
-  const paste=new window.Event('paste',{bubbles:true,cancelable:true});Object.defineProperty(paste,'clipboardData',{value:{items:[{kind:'file',type:'image/jpeg'}]}});
-  await act(async()=>field.dispatchEvent(paste));assert.ok(paste.defaultPrevented);assert.equal(field.value,'Meu enunciado ainda está aqui.');assert.ok(screen.container.textContent.includes('a imagem não foi enviada'));assert.equal(requests.filter(r=>r.method==='post'&&r.url.endsWith('/inteligencia/chat')).length,0);
-  const textPaste=new window.Event('paste',{bubbles:true,cancelable:true});Object.defineProperty(textPaste,'clipboardData',{value:{items:[{kind:'string',type:'text/plain'}]}});
-  await act(async()=>field.dispatchEvent(textPaste));assert.ok(!textPaste.defaultPrevented);assert.ok(!screen.container.textContent.includes('a imagem não foi enviada'));
-  const drop=new window.Event('drop',{bubbles:true,cancelable:true});Object.defineProperty(drop,'dataTransfer',{value:{files:[{type:'image/jpeg'}]}});
-  await act(async()=>field.dispatchEvent(drop));assert.ok(drop.defaultPrevented);assert.equal(field.value,'Meu enunciado ainda está aqui.');assert.ok(screen.container.textContent.includes('a imagem não foi enviada'));
+  const field=document.getElementById('lumi-message');await inputValue(field,'Quero entender esta atividade.');
+  const photo=new window.File(['fixture'],'atividade.jpg',{type:'image/jpeg'});
+  const paste=new window.Event('paste',{bubbles:true,cancelable:true});Object.defineProperty(paste,'clipboardData',{value:{items:[{kind:'file',type:'image/jpeg',getAsFile:()=>photo}]}});
+  await act(async()=>field.dispatchEvent(paste));await flush();assert.ok(paste.defaultPrevented);assert.equal(field.value,'Quero entender esta atividade.');assert.ok(document.querySelector('.lumi-photo[open]'));assert.equal(requests.filter(r=>r.url.endsWith('/chat/foto')).length,0);
+  await act(async()=>button('Ler enunciado').click());await flush();assert.equal(requests.filter(r=>r.url.endsWith('/chat/foto')).length,1);assert.equal(requests.filter(r=>r.method==='post'&&r.url.endsWith('/inteligencia/chat')).length,0);
+  assert.ok(button('Usar enunciado na mensagem').disabled);await act(async()=>document.querySelector('.lumi-photo-confirm input').click());await act(async()=>button('Usar enunciado na mensagem').click());await flush();
+  assert.ok(!document.querySelector('.lumi-photo'));assert.match(field.value,/Quero entender esta atividade/);assert.match(field.value,/Capital inicial R\$ 200,00/);assert.equal(requests.filter(r=>r.method==='post'&&r.url.endsWith('/inteligencia/chat')).length,0);
+  await act(async()=>field.closest('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();const sent=JSON.parse(requests.find(r=>r.method==='post'&&r.url.endsWith('/inteligencia/chat')).data);assert.match(sent.mensagem,/conferida por mim/);assert.ok(!JSON.stringify(sent).includes('base64'));
  }finally{await screen.close()}
+});
+
+
+test('foto mantém prévia ao falhar, exige completar trechos ilegíveis e confirma a edição mais recente',async()=>{
+ const screen=await renderRoute('/lumi');try{
+  const field=document.getElementById('lumi-message'),photo=new window.File(['fixture'],'atividade.jpg',{type:'image/jpeg'}),drop=new window.Event('drop',{bubbles:true,cancelable:true});Object.defineProperty(drop,'dataTransfer',{value:{files:[photo]}});
+  await act(async()=>field.dispatchEvent(drop));await flush();photoReadMode='failed';await act(async()=>button('Ler enunciado').click());await flush();assert.ok(document.querySelector('.lumi-photo img'));assert.ok(document.querySelector('.lumi-photo-error').textContent.includes('Tente novamente'));
+  photoReadMode='uncertain';await act(async()=>button('Ler enunciado').click());await flush();assert.ok(document.querySelector('.lumi-photo-warnings').textContent.includes('Confira a taxa'));assert.equal(document.activeElement,document.querySelector('.lumi-photo textarea'));
+  await act(async()=>document.querySelector('.lumi-photo-confirm input').click());assert.ok(button('Usar enunciado na mensagem').disabled);
+  await inputValue(document.querySelector('.lumi-photo textarea'),'Taxa de 5% ao mês.');assert.ok(!document.querySelector('.lumi-photo-confirm input').checked);await act(async()=>document.querySelector('.lumi-photo-confirm input').click());assert.ok(!button('Usar enunciado na mensagem').disabled);
+  const a=await axe.run(document.querySelector('.lumi-photo'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(a.violations.map(v=>v.id),[]);
+  await act(async()=>button('Usar enunciado na mensagem').click());assert.match(field.value,/Taxa de 5%/);
+ }finally{photoReadMode='';await screen.close()}
+});
+
+test('fechar leitura de foto descarta resposta atrasada sem alterar a conversa ou o rascunho',async()=>{
+ const screen=await renderRoute('/lumi');try{
+  const field=document.getElementById('lumi-message');await inputValue(field,'Meu rascunho.');const photo=new window.File(['fixture'],'atividade.jpg',{type:'image/jpeg'}),drop=new window.Event('drop',{bubbles:true,cancelable:true});Object.defineProperty(drop,'dataTransfer',{value:{files:[photo]}});await act(async()=>field.dispatchEvent(drop));await flush();photoReadMode='deferred';await act(async()=>button('Ler enunciado').click());await flush();await act(async()=>button('Voltar sem usar a foto').click());await act(async()=>resolvePhoto());await flush();assert.equal(field.value,'Meu rascunho.');assert.ok(!document.querySelector('.lumi-photo'));assert.equal(document.querySelectorAll('.lumi-message--assistant').length,0);
+ }finally{photoReadMode='';await screen.close()}
+});
+
+test('texto de foto acima do espaço disponível não substitui nem corta o rascunho',async()=>{
+ const screen=await renderRoute('/lumi');try{
+  const field=document.getElementById('lumi-message');await inputValue(field,'m'.repeat(500));const photo=new window.File(['fixture'],'atividade.jpg',{type:'image/jpeg'}),drop=new window.Event('drop',{bubbles:true,cancelable:true});Object.defineProperty(drop,'dataTransfer',{value:{files:[photo]}});await act(async()=>field.dispatchEvent(drop));await flush();photoReadMode='long';await act(async()=>button('Ler enunciado').click());await flush();await act(async()=>document.querySelector('.lumi-photo-confirm input').click());await act(async()=>button('Usar enunciado na mensagem').click());assert.ok(document.querySelector('.lumi-photo-error').textContent.includes('2000'));assert.equal(field.value,'m'.repeat(500));assert.equal(document.querySelector('.lumi-photo textarea').value.length,1800);
+ }finally{photoReadMode='';await screen.close()}
 });

@@ -23,6 +23,11 @@ exports.historicoSimulados = (req, res) => responder(res, model.historicoSimulad
 exports.trilhas = (req, res) => responder(res, model.trilhas(idUsuario(req)))
 exports.chat = (req, res) => responder(res, iaService.listarConversa(idUsuario(req), req.query.limite))
 exports.contextoChat = (req, res) => responder(res, contextoDisponivel(idUsuario(req)).then((dados) => dados || {}))
+exports.lerFoto = async (req, res) => {
+  try { res.json(await require('../services/activityPhotoService').readActivityPhoto(idUsuario(req), req.file)) }
+  catch (error) { res.status(error.status || 503).json({ message: error.status ? error.message : 'Não foi possível ler a foto agora. Tente novamente em instantes.' }) }
+  finally { if (req.file) req.file.buffer = null }
+}
 // Status HTTP por tipo de falha: entrada inválida fica em 400; limite diário
 // do usuário em 429; indisponibilidade do provedor de IA (saldo esgotado,
 // erro de API, chave ausente) em 503 — é o servidor que precisa agir, não o
