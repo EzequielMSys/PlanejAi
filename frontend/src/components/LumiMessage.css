@@ -15,3 +15,10 @@
 .lumi-message table { display:block; max-width:100%; overflow-x:auto; border-collapse:collapse; }
 .lumi-message :is(th,td) { padding:.4rem .6rem; border:1px solid var(--pn-borda); text-align:left; }
 .lumi-message hr { margin:1rem 0; border:0; border-top:1px solid var(--pn-borda); }
+.lumi-message .katex { font-size:1.12em; overflow-wrap:normal; text-indent:0; }
+.lumi-message .katex-display { max-width:100%; overflow-x:auto; overflow-y:hidden; padding:.65rem .2rem; margin:.75rem 0; text-align:left; overscroll-behavior-x:contain; }
+.lumi-message .katex-display>.katex { text-align:left; }
+.lumi-message .katex-error { color:inherit!important; white-space:pre-wrap; overflow-wrap:anywhere; font-family:ui-monospace,monospace; }
+.lumi-message .lumi-math-error { display:inline-grid; gap:.3rem; max-width:100%; color:var(--pn-texto-suave); }
+.lumi-message .lumi-math-error>span { font:inherit; font-size:.8em; }
+.lumi-message .lumi-math-error code { white-space:pre-wrap; overflow-wrap:anywhere; }
