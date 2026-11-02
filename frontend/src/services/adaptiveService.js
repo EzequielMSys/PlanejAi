@@ -11,5 +11,5 @@ export default {
   missoes: () => api.get('/missoes').then((r) => r.data),
   sequencia: () => api.get('/sequencia').then((r) => r.data),
   pistas: (id) => api.get(`/questoes/${id}/pistas`).then((r) => r.data),
-  simulado: (params) => api.get('/simulado', { params }).then((r) => r.data)
+  simulado: (params) => api.get('/simulado', { params, cache: false }).then((r) => r.data)
 }

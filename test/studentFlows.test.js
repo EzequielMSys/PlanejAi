@@ -54,6 +54,8 @@ let postponeFailure = false;
 let onboardingProfileFixture = null;
 let incompleteAccount = false;
 let failLearningLoad = false;
+let practiceMode = '', resolvePractice, resolveAnswer;
+const practiceQuestions = [1,2].map(id => ({id_questao:id,disciplina:'Física',competencia:'Energia',dificuldade:'MEDIA',enunciado:`Questão de energia ${id}`,alternativas:['Primeira opção','Segunda opção','Terceira opção','Quarta opção'],embaralhamento:'signed-fixture'}));
 let essayMode = '';
 let deferredEssay;
 let searchMode = '';
@@ -251,6 +253,19 @@ async function fixture(config) {
     return chatHistoryFixture;
   }
   if (url.endsWith('/aprendizagem/jornada')) return { blocks: [], plannedMinutes: 25, summary: { reviews: 0, errors: 0, weeklyMinutes: 0, weeklyGoal: 180, criticalDiscipline: null } };
+  if (url.endsWith('/aprendizagem/simulado') || url.endsWith('/adaptativo/simulado')) {
+    if(practiceMode==='failed')throw new axios.AxiosError('timeout','ECONNABORTED',config);
+    const data=practiceMode==='empty'?[]:practiceQuestions;
+    if(practiceMode==='deferred')return new Promise(resolve=>{resolvePractice=()=>resolve(data)});
+    return url.includes('/adaptativo/')?{questoes:data}:data;
+  }
+  if (/\/aprendizagem\/questoes\/\d+\/responder$/.test(url)) {
+    if(practiceMode==='answer-failed')throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
+    if(practiceMode==='offline')return {offline:true};
+    const data={acertou:true,respostaCorreta:0,explicacao:'A energia depende da massa e da velocidade.'};
+    if(practiceMode==='answer-deferred')return new Promise(resolve=>{resolveAnswer=()=>resolve(data)});
+    return data;
+  }
   if (url.endsWith('/aprendizagem/resumo')) return dashboardLearningFixture || { metaSemanal: 180, minutosSemana: 0, revisoesHoje: 0, errosPendentes: 0, porDisciplina: [], porDificuldade: [], recomendacoes: [], competenciasEnem: [] };
   if (url.endsWith('/perfil')) return { perfil: onboardingProfileFixture || (setupCompleteFixture ? { areas_foco: 'Matemática', objetivo: 'ENEM', ano_escolar: '3', tempo_diario_min: 60 } : null), disponibilidade: [] };
   if (url.endsWith('/inteligencia/privacidade')) return { visibilidade: 'RESUMO' };
@@ -2657,4 +2672,96 @@ test('conversa livre da Lumi preserva o rascunho e reinicia sem enviar históric
   assert.equal(document.querySelector('.lumi-toolbox').open,false);await inputValue(document.getElementById('lumi-message'),'Oi, Lumi. Quero conversar.');await act(async()=>document.getElementById('lumi-message').closest('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();assert.equal(document.querySelectorAll('.lumi-message--assistant').length,1);
   await inputValue(document.getElementById('lumi-message'),'Posso mudar de assunto?');await act(async()=>button('Começar sem contexto anterior').click());assert.equal(document.activeElement.id,'lumi-message');assert.equal(document.getElementById('lumi-message').value,'Posso mudar de assunto?');assert.equal(document.querySelectorAll('.lumi-message--assistant').length,0);assert.ok(document.querySelector('.lumi-fresh-notice'));await act(async()=>document.getElementById('lumi-message').closest('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();const data=JSON.parse(requests.filter(r=>r.method==='post'&&r.url.endsWith('/inteligencia/chat')).at(-1).data);assert.equal(data.mensagem,'Posso mudar de assunto?');assert.deepEqual(data.contextoEscolhido.itens,[]);assert.deepEqual(data.contextoEscolhido.historico,[]);assert.equal(document.querySelectorAll('.lumi-message--assistant').length,1);const a=await axe.run(document.querySelector('.lumi-page'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(a.violations.map(v=>v.id),[]);
  }finally{chatPlainReply=false;await screen.close()}
+});
+
+
+test('simulado tem montagem única, confirmação visível, foco e resultado com a última resposta', async () => {
+  const screen=await renderRoute('/aprendizagem');
+  try{
+    await act(async()=>button('Simulado').click());
+    assert.equal(document.querySelector('.learning-hero'),null);
+    assert.equal(document.activeElement,document.querySelector('.learning-workspace'));
+    practiceMode='deferred';
+    const start=button('Montar meu simulado');
+    await act(async()=>{start.click();start.click()});await flush();
+    assert.ok(button('Montando seu simulado…').disabled);
+    assert.equal(requests.filter(r=>r.url.endsWith('/aprendizagem/simulado')).length,1);
+    assert.equal(requests.find(r=>r.url.endsWith('/aprendizagem/simulado')).cache,false);
+    await act(async()=>resolvePractice());await flush();
+    assert.ok(screen.container.textContent.includes('Seu simuladoestá pronto.'));
+    assert.ok(screen.container.textContent.includes('Encontramos 2 das 10'));
+    assert.equal(document.querySelector('.practice-clock'),null);
+    await act(async()=>button('Começar a primeira questão').click());
+    assert.equal(document.activeElement,document.getElementById('practice-question-heading'));
+    assert.equal(document.querySelector('.practice-clock').textContent,'15:00');
+    assert.ok(button('Conferir minha resposta').disabled);
+    await act(async()=>document.querySelector('.practice-alternatives input').click());
+    practiceMode='answer-deferred';
+    const confirm=button('Conferir minha resposta');
+    await act(async()=>{confirm.click();confirm.click()});await flush();
+    assert.equal(requests.filter(r=>r.url.endsWith('/questoes/1/responder')).length,1);
+    await act(async()=>resolveAnswer());await flush();
+    await act(async()=>button('Ir para a próxima questão').click());
+    assert.ok(document.activeElement.textContent.includes('energia 2'));
+    await act(async()=>document.querySelector('.practice-alternatives input').click());
+    practiceMode='';await act(async()=>button('Conferir minha resposta').click());await flush();
+    await act(async()=>button('Ver meu resultado').click());await flush();
+    assert.ok(screen.container.textContent.includes('2 de 2 questões respondidas'));
+    assert.ok(document.querySelector('.simulation-balance').textContent.includes('100%'));
+    assert.equal(document.querySelectorAll('.simulation-review-list details').length,2);
+    assert.equal(document.activeElement,document.querySelector('.learning-workspace'));
+  }finally{practiceMode='';await screen.close()}
+});
+
+test('simulado preserva filtros na falha e ao ajustar uma montagem pronta', async () => {
+  const screen=await renderRoute('/aprendizagem');
+  try{
+    await act(async()=>button('Simulado').click());
+    const discipline=personalControl('Disciplina');await selectValue(discipline,'Física');
+    practiceMode='failed';await act(async()=>button('Montar meu simulado').click());await flush();
+    assert.ok(document.querySelector('.practice-error').textContent.includes('demorou'));
+    assert.equal(personalControl('Disciplina').value,'Física');
+    practiceMode='empty';await act(async()=>button('Montar meu simulado').click());await flush();
+    assert.ok(document.querySelector('.practice-error').textContent.includes('Não há questões'));
+    practiceMode='';await act(async()=>button('Montar meu simulado').click());await flush();
+    await act(async()=>button('Ajustar seleção').click());
+    assert.equal(personalControl('Disciplina').value,'Física');
+    const result=await axe.run(document.querySelector('.practice-studio'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(v=>v.id),[]);
+  }finally{practiceMode='';await screen.close()}
+});
+
+test('falha no envio mantém alternativa e resultado offline não é contado como erro', async () => {
+  const screen=await renderRoute('/aprendizagem');
+  try{
+    await act(async()=>button('Simulado').click());
+    await act(async()=>button('Montar meu simulado').click());await flush();
+    await act(async()=>button('Começar a primeira questão').click());
+    await act(async()=>document.querySelector('.practice-alternatives input').click());
+    practiceMode='answer-failed';await act(async()=>button('Conferir minha resposta').click());await flush();
+    assert.ok(document.querySelector('.practice-alternatives input').checked);
+    assert.ok(document.querySelector('.practice-error').textContent.includes('continua selecionada'));
+    practiceMode='offline';await act(async()=>button('Conferir minha resposta').click());await flush();
+    assert.ok(document.querySelector('.practice-feedback').textContent.includes('ainda não conta como acerto ou erro'));
+    await act(async()=>button('Encerrar por aqui').click());
+    await act(async()=>button('Encerrar e ver resultado').click());await flush();
+    assert.ok(document.querySelector('.simulation-balance').textContent.includes('—'));
+    assert.ok(document.querySelector('.simulation-review-list .is-pending'));
+    assert.ok(!document.querySelector('.simulation-review-list .is-wrong'));
+    assert.ok(!screen.container.textContent.includes('Correta: A'));
+  }finally{practiceMode='';await screen.close()}
+});
+
+test('tempo encerrado mostra fechamento parcial sem penalizar questões não respondidas', async () => {
+  const screen=await renderRoute('/aprendizagem');
+  const realNow=Date.now;
+  try{
+    await act(async()=>button('Simulado').click());
+    await act(async()=>button('Montar meu simulado').click());await flush();
+    await act(async()=>button('Começar a primeira questão').click());
+    const now=realNow();Date.now=()=>now+16*60000;
+    await act(async()=>new Promise(resolve=>setTimeout(resolve,1100)));
+    assert.ok(document.querySelector('.simulation-report h2').textContent.includes('tempo terminou'));
+    assert.ok(screen.container.textContent.includes('0 de 2 questões respondidas'));
+    assert.ok(document.querySelector('.simulation-balance').textContent.includes('—'));
+  }finally{Date.now=realNow;await screen.close()}
 });

@@ -5,7 +5,7 @@ export default {
   resumo: () => api.get('/resumo').then((r) => r.data),
   evolucao: () => api.get('/evolucao').then((r) => r.data),
   jornada: (minutos) => api.get('/jornada', { params: { minutos } }).then((r) => r.data),
-  simulado: (opcoes = {}) => api.get('/simulado', { params: opcoes }).then((r) => r.data),
+  simulado: (opcoes = {}) => api.get('/simulado', { params: opcoes, cache: false }).then((r) => r.data),
   responder: (id, resposta, duracaoSegundos, embaralhamento, confianca = 'DUVIDA', pistasUsadas = 0) => api.post(`/questoes/${id}/responder`, { resposta, duracaoSegundos, embaralhamento, confianca, pistasUsadas }, { offlineQueue: true }).then((r) => r.data),
   erros: () => api.get('/erros').then((r) => r.data),
   atualizarErro: (id, dados) => api.patch(`/erros/${id}`, dados).then((r) => r.data),

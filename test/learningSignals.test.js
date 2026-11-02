@@ -31,7 +31,7 @@ test('evolution API distinguishes absent baseline from zero accuracy', async () 
     assert.equal(params[0], 101)
     assert.match(sql, /amostra_atual/)
     return [rows]
-  } } : {} }
+  } } : key === '../services/questionBankSync' ? require('../src/services/questionBankSync') : {} }
   vm.runInNewContext(fs.readFileSync(require.resolve('../src/models/aprendizagemModel'), 'utf8'), scope)
   const model = scope.module.exports
   const result = await model.obterEvolucao(101)

@@ -5,24 +5,7 @@ const { embaralharSimulado, validarEmbaralhamento } = require('../utils/question
 const adaptive = require('./adaptiveLearningModel');
 const { planJourney } = require('../utils/journeyPlanner');
 
-async function garantirBancoQuestoes() {
-  for (const questao of questionBank) {
-    const valores = [questao.disciplina, questao.competencia, JSON.stringify(questao.alternativas), questao.resposta, questao.explicacao, questao.dificuldade, questao.enunciado];
-    const [existentes] = await pool.execute('SELECT id_questao FROM questoes_estudo WHERE enunciado = ? LIMIT 1', [questao.enunciado]);
-    if (existentes[0]) {
-      await pool.execute(
-      `UPDATE questoes_estudo SET disciplina = ?, competencia = ?, alternativas = ?, resposta_correta = ?, explicacao = ?, dificuldade = ?
-       WHERE enunciado = ?`, valores
-      );
-    } else {
-      await pool.execute(
-        `INSERT INTO questoes_estudo (disciplina, competencia, enunciado, alternativas, resposta_correta, explicacao, dificuldade)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [questao.disciplina, questao.competencia, questao.enunciado, JSON.stringify(questao.alternativas), questao.resposta, questao.explicacao, questao.dificuldade]
-      );
-    }
-  }
-}
+const garantirBancoQuestoes = require('../services/questionBankSync').createQuestionBankSync(pool, questionBank);
 
 function desserializarQuestao(row, incluirResposta = false) {
   let alternativas = row.alternativas;

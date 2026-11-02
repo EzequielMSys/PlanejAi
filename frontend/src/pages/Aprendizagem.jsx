@@ -5,7 +5,8 @@ import { toast } from 'react-hot-toast'
 import { Link, useLocation } from 'react-router-dom'
 import aprendizagem from '../services/aprendizagemService'
 import adaptive from '../services/adaptiveService'
-import SimulatorSetup from '../components/SimulatorSetup'
+import SimulatorSetup, { SimulationReady } from '../components/SimulatorSetup'
+import SimulatorSession from '../components/SimulatorSession'
 import EnemCompetencies from '../components/EnemCompetencies'
 import LearningSignals from '../components/LearningSignals'
 import RecoveryState from '../components/RecoveryState'
@@ -42,12 +43,31 @@ export default function Aprendizagem() {
   const [loadError, setLoadError] = useState(false)
   const inicioQuestao = useRef(Date.now())
   const [tempoRestante, setTempoRestante] = useState(null)
-  const [resultados, setResultados] = useState([])
   const [relatorio, setRelatorio] = useState(null)
   const [evolucao, setEvolucao] = useState([])
   const [confianca, setConfianca] = useState('DUVIDA')
   const [pistas, setPistas] = useState([])
   const [disciplinaPratica, setDisciplinaPratica] = useState(location.state?.disciplina || '')
+
+  const [montando, setMontando] = useState(false)
+  const [simuladoError, setSimuladoError] = useState('')
+  const [pronto, setPronto] = useState(false)
+  const [opcoesSimulado, setOpcoesSimulado] = useState(null)
+  const [enviando, setEnviando] = useState(false)
+  const [respostaError, setRespostaError] = useState('')
+  const [buscandoPista, setBuscandoPista] = useState(false)
+  const startLock = useRef(false), answerLock = useRef(false)
+  const workspace = useRef(null), focusRequested = useRef(false)
+  const resultsRef = useRef([])
+  const sessionVersion = useRef(0), deadline = useRef(null)
+
+  function abrirAba(next) { focusRequested.current = true; setAba(next) }
+  useEffect(() => {
+    if (!focusRequested.current) return
+    focusRequested.current = false
+    const target = document.getElementById('practice-question-heading') || workspace.current
+    target?.focus({preventScroll:true}); workspace.current?.scrollIntoView({block:'start',behavior:'auto'})
+  }, [aba, pronto, indice, questoes.length, relatorio])
 
   async function carregar() {
     setLoadError(false)
@@ -67,66 +87,74 @@ export default function Aprendizagem() {
   },[aba,carregando,location.state?.idRevisao,location.state?.idErro])
 
   async function iniciarSimulado(opcoes = { quantidade: 10 }) {
+    if (startLock.current) return
+    startLock.current = true; setMontando(true); setSimuladoError(''); abrirAba('simulado')
     try {
-      const respostaSimulado = opcoes.adaptativo ? await adaptive.simulado(opcoes) : await aprendizagem.simulado(opcoes)
-      const lista = opcoes.adaptativo ? respostaSimulado.questoes : respostaSimulado
-      if (!lista.length) return toast.error(opcoes.origem === 'erros' ? 'Seu caderno não possui erros pendentes para este filtro.' : 'Nenhuma questão encontrada para esse recorte.')
-      setQuestoes(lista); setIndice(0); setResposta(null); setFeedback(null); setResultados([]); setRelatorio(null); setTempoRestante(Number(opcoes.minutos) > 0 ? Number(opcoes.minutos) * 60 : null); inicioQuestao.current = Date.now(); setAba('simulado')
-    } catch { toast.error('Não foi possível montar o simulado.') }
+      const payload = opcoes.adaptativo ? await adaptive.simulado(opcoes) : await aprendizagem.simulado(opcoes)
+      const lista = opcoes.adaptativo ? payload?.questoes : payload
+      if (!Array.isArray(lista) || lista.some(q => !q.id_questao || !Array.isArray(q.alternativas) || q.alternativas.length !== 4 || !q.embaralhamento)) throw new Error('invalid-payload')
+      if (!lista.length) { setSimuladoError(opcoes.origem === 'erros' ? 'Não há erros pendentes para praticar agora.' : 'Não há questões disponíveis com essa combinação de disciplina e dificuldade.'); return }
+      sessionVersion.current++; setOpcoesSimulado(opcoes); setQuestoes(lista); setPronto(true); setIndice(0); setResposta(null); setFeedback(null); setConfianca('DUVIDA'); setPistas([]); resultsRef.current = []; setRelatorio(null); setTempoRestante(null); setRespostaError(''); focusRequested.current = true
+    } catch (error) { setSimuladoError(error.code === 'ECONNABORTED' ? 'A montagem demorou além do esperado. Tente novamente em instantes.' : 'Não foi possível carregar as questões agora. Confira sua conexão e tente novamente.') }
+    finally { startLock.current = false; setMontando(false) }
+  }
+
+  function comecarSimulado() {
+    focusRequested.current = true; setPronto(false); inicioQuestao.current = Date.now()
+    deadline.current = Number(opcoesSimulado?.minutos) > 0 ? Date.now() + Number(opcoesSimulado.minutos) * 60000 : null
+    setTempoRestante(deadline.current ? Math.ceil((deadline.current - Date.now()) / 1000) : null)
+  }
+
+  function concluirSimulado(reason = 'concluido') {
+    sessionVersion.current++; focusRequested.current = true
+    setRelatorio({ items: resultsRef.current, total: questoes.length, reason }); setQuestoes([]); setPronto(false); setTempoRestante(null); setResposta(null); setFeedback(null); setRespostaError(''); carregar()
   }
 
   async function confirmarResposta() {
-    if (resposta === null) return toast.error('Escolha uma alternativa.')
+    if (resposta === null || answerLock.current || feedback) return
+    answerLock.current = true; setEnviando(true); setRespostaError('')
+    const version = sessionVersion.current
     try {
       const resultado = await aprendizagem.responder(questao.id_questao, resposta, Math.round((Date.now() - inicioQuestao.current) / 1000), questao.embaralhamento, confianca, pistas.length)
-      if (resultado.offline) {
-        setFeedback({ offline: true, respostaCorreta: -2, explicacao: 'A correção e o domínio serão calculados quando a conexão voltar.' })
-        setResultados((items) => [...items, { id: questao.id_questao, disciplina: questao.disciplina, enunciado: questao.enunciado, answer: resposta, acertou: null }])
-        toast('Resposta salva neste aparelho. A correção aparecerá após sincronizar.', { icon: '📥' })
-        return
-      }
-      setFeedback(resultado)
-      if (resultado.acertou) toast.success('Boa! Resposta correta.')
-      setResultados((items) => [...items, {
-        id: questao.id_questao,
-        disciplina: questao.disciplina,
-        enunciado: questao.enunciado,
-        answer: resposta,
-        correctAnswer: resultado.respostaCorreta,
-        acertou: resultado.acertou,
-        explanation: resultado.explicacao
-      }])
-    } catch { toast.error('Não foi possível registrar a resposta.') }
+      if (version !== sessionVersion.current) return
+      setFeedback(resultado.offline ? { offline: true, explicacao: 'A correção ficará disponível depois da sincronização. Esta resposta ainda não conta como acerto ou erro.' } : resultado)
+      const item = { id: questao.id_questao, disciplina: questao.disciplina, enunciado: questao.enunciado, answer: resposta, correctAnswer: resultado.respostaCorreta, acertou: resultado.offline ? null : resultado.acertou, explanation: resultado.explicacao }
+      resultsRef.current = [...resultsRef.current, item]
+    } catch (error) { if (version === sessionVersion.current) setRespostaError(/expirada|adulterada/i.test(error.response?.data?.message || '') ? 'Esta tentativa expirou. Encerre e monte outro simulado; as respostas já enviadas continuam registradas.' : 'Não foi possível confirmar o registro. Sua alternativa continua selecionada; tente enviar novamente.') }
+    finally { answerLock.current = false; setEnviando(false) }
   }
 
   function proximaQuestao() {
-    if (indice + 1 >= questoes.length) { toast.success('Simulado concluído. Revise o relatório antes de sair.'); setRelatorio({ items: resultados, total: questoes.length }); setQuestoes([]); carregar(); return }
-    setIndice((i) => i + 1); setResposta(null); setFeedback(null); setConfianca('DUVIDA'); setPistas([]); inicioQuestao.current = Date.now()
+    if (indice + 1 >= questoes.length) { concluirSimulado(); return }
+    sessionVersion.current++; focusRequested.current = true; setIndice(i => i + 1); setResposta(null); setFeedback(null); setRespostaError(''); setConfianca('DUVIDA'); setPistas([]); inicioQuestao.current = Date.now()
   }
 
   async function pedirPista() {
-    try { const lista = await adaptive.pistas(questao.id_questao); setPistas(lista.slice(0, Math.min(3, pistas.length + 1))) }
+    if (buscandoPista) return
+    const version = sessionVersion.current, id = questao.id_questao
+    setBuscandoPista(true)
+    try { const lista = await adaptive.pistas(id); if (version === sessionVersion.current) setPistas(lista.slice(0, Math.min(3, pistas.length + 1))) }
     catch { toast.error('Não foi possível carregar uma pista.') }
+    finally { setBuscandoPista(false) }
   }
 
   useEffect(() => {
-    if (!questoes.length || tempoRestante === null || tempoRestante <= 0) return undefined
-    const intervalo = window.setInterval(() => setTempoRestante((atual) => Math.max(0, atual - 1)), 1000)
+    if (!questoes.length || pronto || tempoRestante === null || tempoRestante <= 0) return undefined
+    const intervalo = window.setInterval(() => setTempoRestante(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000))), 1000)
     return () => window.clearInterval(intervalo)
-  }, [questoes.length, tempoRestante])
+  }, [questoes.length, pronto, tempoRestante])
 
   useEffect(() => {
-    if (tempoRestante !== 0 || !questoes.length) return
-    toast('Tempo encerrado. Seu resultado parcial foi salvo.', { icon: '⏱️' })
-    setQuestoes([]); setResposta(null); setFeedback(null); carregar(); setAba('dominio')
-  }, [tempoRestante])
+    if (tempoRestante !== 0 || !questoes.length || enviando) return
+    concluirSimulado('tempo')
+  }, [tempoRestante, enviando])
 
   async function avaliar(item, resultado) {
     try { await aprendizagem.avaliarRevisao(item.id_conteudo, resultado); setRevisoes((lista) => lista.filter((r) => r.id_revisao !== item.id_revisao)); carregar(); toast.success('Próxima revisão recalculada.') }
     catch { toast.error('Não foi possível registrar a revisão.') }
   }
 
-  const questao = questoes[indice]
+  const questao = pronto ? null : questoes[indice]
   const disciplinaCritica = useMemo(() => resumo?.porDisciplina?.[0], [resumo])
   const totalRespostas = Number(resumo?.questoesRespondidas || 0)
   const revisoesHoje = Number(resumo?.revisoesHoje || 0)
@@ -139,27 +167,28 @@ export default function Aprendizagem() {
   function imprimirRelatorio() { window.print() }
 
   if (carregando) return <RouteLoading label="Preparando sua trilha…" />
-  if (loadError && !questoes.length) return <RecoveryState title="Não conseguimos consultar seu progresso." onRetry={() => { setCarregando(true); carregar() }} />
+  if (loadError && !questoes.length && aba !== 'simulado') return <RecoveryState title="Não conseguimos consultar seu progresso." onRetry={() => { setCarregando(true); carregar() }} />
 
   return <main className="learning-page min-h-screen bg-study-canvas px-4 py-6 text-study-ink dark:bg-study-canvas dark:text-white sm:px-8">
     <div className="mx-auto max-w-6xl">
-      {!questao && <><AreaSignature area="learning"/><motion.header initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="learning-hero">
+      {!questao && aba !== 'simulado' && <><AreaSignature area="learning"/><motion.header initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="learning-hero">
         <div className="learning-hero-copy"><span>SEU DIÁRIO DE APRENDIZAGEM</span><h1>Seu esforço<br /><em>ganha forma.</em></h1><p>Veja o que melhorou, retome o que ainda pede atenção e escolha sua próxima prática.</p><div className="learning-hero-actions"><button type="button" onClick={() => iniciarSimulado({ quantidade: 10, minutos: 15 })}>Começar simulado <span aria-hidden="true">→</span></button><button type="button" onClick={() => iniciarSimulado({ quantidade: 8, minutos: 15, adaptativo: true })}>Prática adaptativa</button></div></div>
-        <aside className="learning-next"><span>PRÓXIMO PASSO SUGERIDO</span><div aria-hidden="true">↗</div><h2>{proximaAcao.titulo}</h2><p>{proximaAcao.texto}</p><button type="button" onClick={() => setAba(proximaAcao.aba)}>{proximaAcao.botao} <span aria-hidden="true">→</span></button></aside>
+        <aside className="learning-next"><span>PRÓXIMO PASSO SUGERIDO</span><div aria-hidden="true">↗</div><h2>{proximaAcao.titulo}</h2><p>{proximaAcao.texto}</p><button type="button" onClick={() => abrirAba(proximaAcao.aba)}>{proximaAcao.botao} <span aria-hidden="true">→</span></button></aside>
       </motion.header>
-      <LearningSignals summary={resumo} reviews={revisoes} evolution={evolucao} onAction={(next, disciplina) => { setDisciplinaPratica(disciplina || ""); setAba(next) }} /></>}
+      <LearningSignals summary={resumo} reviews={revisoes} evolution={evolucao} onAction={(next, disciplina) => { setDisciplinaPratica(disciplina || ""); setOpcoesSimulado(null); abrirAba(next) }} /></>}
 
-      {!questao && <><div className="learning-tools-entry"><span>Uma boa fonte para sua próxima dúvida<small>Leituras, provas oficiais e recursos de redação, com o tipo de acesso indicado.</small></span><Link to="/fontes-estudo">Explorar fontes para estudar →</Link></div><div className="learning-tools-entry"><span>Precisa preparar seus estudos?<small>Metas por matéria, diagnóstico, cartões e trilhas ficam nas ferramentas extras.</small></span><Link to="/ferramentas-estudo">Abrir ferramentas de estudo →</Link></div></>}
-      {!questao && <div className="learning-toolbar"><nav className="learning-tabs" aria-label="Seções de aprendizagem">
-        {tabs.map(([id, label]) => <button key={id} type="button" aria-pressed={aba === id} onClick={() => setAba(id)}>{label}</button>)}
-      </nav><button type="button" onClick={imprimirRelatorio} className="learning-print print:hidden">Imprimir relatório / PDF</button></div>}
+      {!questao && aba !== 'simulado' && <><div className="learning-tools-entry"><span>Uma boa fonte para sua próxima dúvida<small>Leituras, provas oficiais e recursos de redação, com o tipo de acesso indicado.</small></span><Link to="/fontes-estudo">Explorar fontes para estudar →</Link></div><div className="learning-tools-entry"><span>Precisa preparar seus estudos?<small>Metas por matéria, diagnóstico, cartões e trilhas ficam nas ferramentas extras.</small></span><Link to="/ferramentas-estudo">Abrir ferramentas de estudo →</Link></div></>}
+      {!questao && <div className={`learning-toolbar ${aba === 'simulado' ? 'is-practice-nav' : ''}`}>{aba === 'simulado' && <button type="button" className="practice-mobile-back" onClick={() => abrirAba('revisoes')}>← Praticar e revisar</button>}<nav className="learning-tabs" aria-label="Seções de aprendizagem">
+        {tabs.map(([id, label]) => <button key={id} type="button" aria-pressed={aba === id} onClick={() => abrirAba(id)}>{label}</button>)}
+      </nav>{(aba !== 'simulado' || relatorio) && <button type="button" onClick={imprimirRelatorio} className="learning-print print:hidden">Imprimir relatório / PDF</button>}</div>}
 
-      <section className="learning-workspace">
+      {loadError && aba === 'simulado' && <p className="practice-error" role="status">Não conseguimos atualizar os indicadores de progresso. Seu simulado continua disponível nesta tela.</p>}
+      <section className={`learning-workspace ${aba === 'simulado' ? 'is-practice' : ''}`} ref={workspace} tabIndex={-1} aria-label={aba === 'simulado' ? 'Seu simulado' : 'Área de prática'}>
         {aba === 'diario' && <Suspense fallback={<RouteLoading label="Preparando seu diário…"/>}><LearningJournal initialRegistro={location.state?.registro} initialTipo={location.state?.tipo}/></Suspense>}
         {aba === 'revisoes' && <div><h2 className="text-2xl font-black">Fila de hoje</h2><p className="mt-1 text-sm text-black/55 dark:text-white/55">Diga honestamente como a lembrança veio. O intervalo se ajusta sozinho.</p>
-          <div className="mt-6 grid gap-4">{revisoes.length === 0 ? <Empty title="Tudo em dia por aqui." text="Sua fila está limpa. Um simulado curto pode revelar o próximo conteúdo que vale revisar." action={() => setAba('simulado')} actionLabel="Preparar simulado" /> : revisoes.map((item) => <article key={item.id_revisao} id={`learning-review-${item.id_revisao}`} tabIndex={-1} className="learning-review rounded-2xl border border-study-line/15 bg-study-canvas p-5 dark:bg-study-paper"><p className="text-xs font-black uppercase tracking-wider text-study-accent dark:text-study-accent">{item.disciplina}</p><h3 className="mt-1 text-xl font-black">{item.titulo}</h3><p className="mt-2 text-xs text-black/50 dark:text-white/50">Domínio {Number(item.nivel_dominio) * 10}% · última resposta {item.ultimo_resultado || 'ainda não avaliada'}</p><ReviewRecommendation item={item} onSaved={carregar} /><div className="mt-4 flex flex-wrap gap-2">{[['ESQUECI','Esqueci'],['DIFICIL','Foi difícil'],['LEMBREI','Lembrei'],['DOMINEI','Dominei']].map(([id,label]) => <button key={id} onClick={() => avaliar(item,id)} className="rounded-full border border-study-line/25 px-4 py-2 text-xs font-black hover:bg-study-accent hover:text-white">{label}</button>)}</div></article>)}</div></div>}
+          <div className="mt-6 grid gap-4">{revisoes.length === 0 ? <Empty title="Tudo em dia por aqui." text="Sua fila está limpa. Um simulado curto pode revelar o próximo conteúdo que vale revisar." action={() => abrirAba('simulado')} actionLabel="Preparar simulado" /> : revisoes.map((item) => <article key={item.id_revisao} id={`learning-review-${item.id_revisao}`} tabIndex={-1} className="learning-review rounded-2xl border border-study-line/15 bg-study-canvas p-5 dark:bg-study-paper"><p className="text-xs font-black uppercase tracking-wider text-study-accent dark:text-study-accent">{item.disciplina}</p><h3 className="mt-1 text-xl font-black">{item.titulo}</h3><p className="mt-2 text-xs text-black/50 dark:text-white/50">Domínio {Number(item.nivel_dominio) * 10}% · última resposta {item.ultimo_resultado || 'ainda não avaliada'}</p><ReviewRecommendation item={item} onSaved={carregar} /><div className="mt-4 flex flex-wrap gap-2">{[['ESQUECI','Esqueci'],['DIFICIL','Foi difícil'],['LEMBREI','Lembrei'],['DOMINEI','Dominei']].map(([id,label]) => <button key={id} onClick={() => avaliar(item,id)} className="rounded-full border border-study-line/25 px-4 py-2 text-xs font-black hover:bg-study-accent hover:text-white">{label}</button>)}</div></article>)}</div></div>}
 
-        {aba === 'simulado' && (!questao ? (relatorio ? <SimulationReport report={relatorio} onRetry={() => iniciarSimulado({ quantidade: relatorio.total, minutos: 15 })} onClose={() => { setRelatorio(null); setAba('dominio') }} /> : <SimulatorSetup onStart={iniciarSimulado} errosPendentes={Number(resumo?.errosPendentes || 0)} key={disciplinaPratica} initialDisciplina={disciplinaPratica} />) : <div><div className="flex flex-wrap items-center justify-between gap-3"><span className="text-xs font-black uppercase tracking-wider text-study-accent dark:text-study-accent">{questao.disciplina} · {questao.competencia} · {questao.dificuldade}</span><div className="flex items-center gap-2"><b className="rounded-full bg-study-tint px-3 py-1.5 text-xs dark:bg-study-paper">{indice + 1}/{questoes.length}</b>{tempoRestante !== null && <b className={`rounded-full px-3 py-1.5 text-xs ${tempoRestante < 60 ? 'bg-red-100 text-red-700' : 'bg-study-accent text-white'}`}>⏱ {Math.floor(tempoRestante / 60)}:{String(tempoRestante % 60).padStart(2,'0')}</b>}</div></div><h2 className="mt-5 max-w-3xl text-xl font-black leading-8">{questao.enunciado}</h2><div className="mt-6 grid gap-3">{questao.alternativas.map((alt, i) => <button disabled={Boolean(feedback)} onClick={() => setResposta(i)} key={`${questao.id_questao}-${i}`} className={`rounded-2xl border p-4 text-left text-sm font-bold transition ${resposta === i ? 'border-study-line bg-[#EEE5FA] dark:bg-[#392653]' : 'border-black/10 hover:border-study-line/50 dark:border-white/10'}`}><span className="mr-3 text-study-accent">{String.fromCharCode(65+i)}</span>{alt}</button>)}</div>{!feedback && <div className="mt-4 flex flex-wrap items-center gap-2"><span className="text-xs font-black">Confiança:</span>{[['CHUTEI','Chutei'],['DUVIDA','Tenho dúvida'],['CERTEZA','Tenho certeza']].map(([id,label]) => <button type="button" key={id} onClick={() => setConfianca(id)} className={`rounded-full border px-3 py-2 text-xs font-bold ${confianca === id ? 'bg-study-accent text-white' : ''}`}>{label}</button>)}<button type="button" onClick={pedirPista} disabled={pistas.length >= 3} className="rounded-full border px-3 py-2 text-xs font-bold">Pedir pista ({pistas.length}/3)</button></div>}{pistas.map((pista, i) => <p key={pista} className="mt-2 rounded-xl bg-study-tint p-3 text-sm dark:bg-study-paper"><b>Pista {i + 1}:</b> {pista}</p>)}{feedback && <div className={`mt-5 rounded-2xl p-5 ${feedback.acertou ? 'bg-emerald-50 text-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-100' : 'bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100'}`}><b>{feedback.acertou ? 'Raciocínio confirmado' : `Resposta correta: ${String.fromCharCode(65 + Number(feedback.respostaCorreta))}`}</b><p className="mt-1 text-sm">{feedback.explicacao}</p>{feedback.dominio && <p className="mt-2 text-xs font-bold">Domínio atualizado: {feedback.dominio.dominio}%</p>}</div>}<button onClick={feedback ? proximaQuestao : confirmarResposta} className="mt-6 rounded-full bg-study-accent px-6 py-3 text-sm font-black text-white">{feedback ? 'Próxima questão' : 'Confirmar resposta'}</button></div>)}
+        {aba === 'simulado' && (relatorio ? <SimulationReport report={relatorio} onRetry={() => { setRelatorio(null); focusRequested.current = true }} onClose={() => { setRelatorio(null); abrirAba('dominio') }} /> : pronto ? <SimulationReady count={questoes.length} requested={opcoesSimulado?.quantidade || 10} options={opcoesSimulado || {}} onBegin={comecarSimulado} onEdit={() => { focusRequested.current = true; setPronto(false); setQuestoes([]) }}/> : questao ? <SimulatorSession question={questao} index={indice} total={questoes.length} answer={resposta} onAnswer={setResposta} feedback={feedback} busy={enviando} error={respostaError} confidence={confianca} onConfidence={setConfianca} hints={pistas} hintBusy={buscandoPista} onHint={pedirPista} remaining={tempoRestante} onConfirm={confirmarResposta} onNext={proximaQuestao} onFinish={() => concluirSimulado('encerrado')}/> : <SimulatorSetup onStart={iniciarSimulado} busy={montando} error={simuladoError} initialOptions={opcoesSimulado} errosPendentes={Number(resumo?.errosPendentes || 0)} key={disciplinaPratica} initialDisciplina={disciplinaPratica} />)}
 
         {aba === 'erros' && <div><h2 className="text-2xl font-black">Caderno de erros</h2><p className="mt-1 text-sm text-black/55 dark:text-white/55">Aqui o erro não vira punição: vira evidência, reflexão e nova tentativa.</p><div className="mt-6 grid gap-4">{erros.length === 0 ? <Empty title="Nenhum erro pendente" text="Quando uma questão escapar, ela aparecerá aqui automaticamente com data de retomada." /> : erros.map((item) => <article key={item.id_erro} id={`learning-error-${item.id_erro}`} tabIndex={-1} className={`rounded-2xl border p-5 ${item.resolvido ? 'border-emerald-500/20 opacity-65' : 'border-study-line/15'}`}><div className="flex flex-wrap justify-between gap-2"><b className="text-sm text-study-accent dark:text-study-accent">{item.disciplina}</b><span className="text-xs font-bold">{item.total_erros} erro(s)</span></div><h3 className="mt-2 font-black">{item.enunciado}</h3><p className="mt-3 text-sm text-black/55 dark:text-white/55">{item.explicacao}</p><select defaultValue={item.tipo_erro || 'NAO_CLASSIFICADO'} onChange={(e) => aprendizagem.atualizarErro(item.id_erro,{ tipoErro:e.target.value })} className="mt-4 rounded-xl border p-2 text-sm text-black"><option value="NAO_CLASSIFICADO">Classificar erro</option><option value="CONCEITO">Conceito</option><option value="INTERPRETACAO">Interpretação</option><option value="CALCULO">Cálculo</option><option value="DISTRACAO">Distração</option></select><textarea defaultValue={item.reflexao || ''} onBlur={(e) => aprendizagem.atualizarErro(item.id_erro,{ reflexao:e.target.value })} placeholder="O que me confundiu?" className="mt-3 min-h-20 w-full rounded-xl border border-study-line/20 bg-transparent p-3 text-sm"/><textarea defaultValue={item.como_evitar || ''} onBlur={(e) => aprendizagem.atualizarErro(item.id_erro,{ comoEvitar:e.target.value })} placeholder="Como vou evitar este erro na próxima vez?" className="mt-2 min-h-20 w-full rounded-xl border border-study-line/20 bg-transparent p-3 text-sm"/><button onClick={async()=>{const lista=await aprendizagem.atualizarErro(item.id_erro,{resolvido:!item.resolvido});setErros(lista)}} className="mt-3 rounded-full border border-study-line/30 px-4 py-2 text-xs font-black">{item.resolvido ? 'Reabrir' : 'Marcar como retomado'}</button></article>)}</div></div>}
 
