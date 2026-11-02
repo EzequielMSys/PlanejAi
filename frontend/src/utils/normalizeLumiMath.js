@@ -7,7 +7,7 @@ function normalizeCurrency(text) {
   let marker = '\uE000'
   while (text.includes(marker)) marker += '\uE000'
   return text.replace(/\\\$/g, marker)
-    .replace(/R\$(?=\s*\d|})/g, () => `R${marker}`)
+    .replace(/(?<!\$)R\$(?=\s*\d|})/g, () => `R${marker}`)
     .replace(/(?<![\\$])(\${1,2})(?!\$)([\s\S]*?)(?<![\\$])\1(?!\$)/g,
       (_, delimiter, formula) => `${delimiter}${formula.replaceAll(marker, '\\char"0024 ')}${delimiter}`)
     .replaceAll(marker, '\\$')

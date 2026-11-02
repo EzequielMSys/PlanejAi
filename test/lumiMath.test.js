@@ -77,3 +77,9 @@ test('moeda em exemplos de código e caracteres privados permanecem intactos',as
  const text='\uE000 \uE000\uE000 '+String.raw`R$200 e $P=\text{R\$}200$`;
  const doc=await render(text);assert.match(doc.body.textContent,/^\uE000 \uE000\uE000 /);assert.equal(doc.querySelectorAll('.lumi-math-error').length,0);assert.equal(doc.querySelectorAll('.katex').length,1);
 });
+
+
+test('a variável R seguida de um número não é confundida com preço em reais',async()=>{
+ const doc=await render(String.raw`Use $R$ 10 vezes e $R$200 como variável seguida de texto. O preço é R$ 200,00.`);
+ assert.equal(doc.querySelectorAll('.katex').length,2);assert.equal(doc.querySelectorAll('.lumi-math-error').length,0);assert.match(doc.body.textContent,/R\$ 200,00/);
+});
