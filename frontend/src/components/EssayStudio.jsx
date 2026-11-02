@@ -1,3 +1,4 @@
+import EssayProposal from './EssayProposal'
 import EssayIntentReview from './EssayIntentReview'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
@@ -25,7 +26,7 @@ function checarEstrutura(texto) {
     { nome: 'Introdução', ok: paragrafos.length >= 1 && contar(paragrafos[0] || '').palavras >= 35, dica: 'Contexto + recorte + tese' },
     { nome: 'Argumento 1', ok: paragrafos.length >= 2 && contar(paragrafos[1] || '').palavras >= 45, dica: 'Causa, prova e análise' },
     { nome: 'Argumento 2', ok: paragrafos.length >= 3 && contar(paragrafos[2] || '').palavras >= 45, dica: 'Novo eixo, sem repetir' },
-    { nome: 'Intervenção', ok: paragrafos.length >= 4 && ['deve', 'por meio', 'a fim de', 'para que'].some((x) => t.includes(x)), dica: 'Agente + ação + meio + fim' }
+    { nome: 'Conclusão e proposta', ok: paragrafos.length >= 4 && ['deve', 'por meio', 'a fim de', 'para que'].some((x) => t.includes(x)), dica: 'Ação, agente, meio, finalidade e detalhe' }
   ]
 }
 
@@ -56,8 +57,9 @@ function DiagnosticPanel({ diagnostico }) {
   </section>
 }
 
-export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviando, queued, sendError, sugestao, sugerindo, onSugerir }) {
+export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviando, queued, sendError, sugestao, sugerindo, onSugerir, focusRequest, focusTarget, onGuide, planning }) {
   const editorRef=useRef(null)
+  const proposalRef=useRef(null)
   const [selection,setSelection]=useState(null)
   const [foco, setFoco] = useState(false)
   const [salvoEm, setSalvoEm] = useState(null)
@@ -94,6 +96,16 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
     setDraftFailed(!saved)
   }, [form, draftReady])
 
+  useEffect(() => {
+    if (!focusRequest || !draftReady) return
+    const frame = requestAnimationFrame(() => {
+      if (focusTarget === 'proposal' && proposalRef.current) proposalRef.current.open = true
+      const field = focusTarget === 'proposal' ? proposalRef.current?.querySelector('summary') : editorRef.current
+      field?.scrollIntoView({block:'center',behavior:'auto'}); field?.focus({preventScroll:true})
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [focusRequest, focusTarget, draftReady])
+
   async function analisar() {
     if (form.texto.trim().length < 80) return toast.error('Escreva mais um pouco antes da pré-análise.')
     if (!form.tema.trim()) return toast.error('Informe o tema para que a Lumi avalie a aderência do texto.')
@@ -112,27 +124,28 @@ export default function EssayStudio({ form, setForm, onSubmit, onCancel, enviand
     {draftFailed && <SaveFeedback status="unsaved" message="Não conseguimos guardar o rascunho neste aparelho. Mantenha esta tela aberta e copie seu texto antes de sair." onRetry={() => { const saved = writeEssayDraft(form); setSalvoEm(saved); setDraftFailed(!saved) }} />}
     {draftFailed && <button type="button" className="study-button" onClick={() => downloadTextCopy(`${form.tema}\n\n${form.texto}`, 'planejai-rascunho-redacao.txt')}>Baixar cópia do meu texto</button>}
     {queued && <SaveFeedback status="local" message="Esta versão já foi encaminhada pela fila deste aparelho. Ao reconectar, confira o histórico antes de tentar outro envio. Seu texto continua aqui." />}
+    <EssayProposal detailsRef={proposalRef} topic={form.tema} onUse={tema=>{if(enviando)return;setForm(current=>({...current,tema}));if(proposalRef.current)proposalRef.current.open=false;requestAnimationFrame(()=>{editorRef.current?.scrollIntoView({block:'center'});editorRef.current?.focus({preventScroll:true})})}} onGuide={onGuide} />
+    {planning && <details className="essay-planning-reference"><summary>Consultar meu planejamento</summary><dl>{[['Tese',planning.tese],['Argumento 1',planning.argumentoUm],['Argumento 2',planning.argumentoDois],['Repertório',planning.repertorio],['Intervenção',planning.intervencao]].filter(([,text])=>text?.trim()).map(([label,text])=><div key={label}><dt>{label}</dt><dd>{text}</dd></div>)}</dl></details>}
     <form onSubmit={onSubmit} aria-busy={enviando}>
       <aside className="essay-outline">
-        <span className="essay-kicker">MAPA DO TEXTO</span>
-        <div className="essay-progress"><div><b>{progresso}%</b><small>meta de 280 palavras</small></div><i><i style={{ width: `${progresso}%` }} /></i></div>
-        <div className="essay-outline-list">{estrutura.map((item, i) => <article className={item.ok ? 'is-done' : ''} key={item.nome}><span>{item.ok ? '✓' : i + 1}</span><div><b>{item.nome}</b><small>{item.dica}</small></div></article>)}</div>
+        <span className="essay-kicker">SEU ROTEIRO DE ESCRITA</span>
+        <div className="essay-progress"><div><b>{progresso}%</b><small>referência pessoal: 280 palavras</small></div><i><i style={{ width: `${progresso}%` }} /></i></div>
+        <div className="essay-outline-list">{estrutura.map((item, i) => <article className={item.ok ? 'is-done' : ''} key={item.nome}><span>{item.ok ? '✓' : i + 1}</span><div><b>{item.nome}</b><small>{item.dica}</small></div></article>)}</div><small className="essay-structure-note">Os sinais do roteiro são aproximados. Eles não avaliam a qualidade do texto.</small>
         <div className="essay-mini-stats"><div><b>{metricas.palavras}</b><span>palavras</span></div><div><b>{metricas.linhas}</b><span>linhas estim.</span></div><div><b>{metricas.paragrafos}</b><span>parágrafos</span></div><div><b>{metricas.leitura} min</b><span>leitura</span></div></div>
-        <button className="essay-outline-analysis" type="button" onClick={analisar} disabled={analisando}>{analisando ? 'Lendo o projeto...' : 'Analisar meu rascunho'}</button>
         <small className="essay-private-note">A prévia usa a Lumi e envia o texto ao provedor de IA configurado pelo PlanejAI. A nota é apenas estimada.</small>
       </aside>
 
       <section className="essay-sheet" aria-label="Texto e envio da redação">
-        <div className="essay-sheet-meta"><span>RASCUNHO</span><span role="status">{salvoEm ? `Salvo neste aparelho · ${new Date(salvoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Ainda não salvo neste aparelho'}</span></div>
+        <div className="essay-sheet-meta"><span>03 / SEU TEXTO</span><span role="status">{salvoEm ? `Salvo neste aparelho · ${new Date(salvoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Ainda não salvo neste aparelho'}</span></div>
         <label htmlFor="essay-topic">Tema da redação</label>
-        <div className="essay-topic-row"><input id="essay-topic" disabled={enviando} value={form.tema} onChange={(e) => setForm((f) => ({ ...f, tema: e.target.value }))} placeholder="Delimite o tema aqui" /><button type="button" onClick={onSugerir} disabled={sugerindo || enviando}>{sugerindo ? 'Criando...' : 'Tema Lab'}</button></div>
-        <textarea ref={editorRef} onSelect={event=>{const node=event.currentTarget;setSelection({source:node.value,start:node.selectionStart,end:node.selectionEnd})}} aria-label="Texto da redação" disabled={enviando} value={form.texto} onChange={(e) => setForm((f) => ({ ...f, texto: e.target.value }))} placeholder={'Comece pela sua tese.\n\nDepois, desenvolva um argumento por parágrafo...'} spellCheck="true" />
+        <div className="essay-topic-row"><input id="essay-topic" disabled={enviando} value={form.tema} onChange={(e) => setForm((f) => ({ ...f, tema: e.target.value }))} placeholder="Delimite o tema aqui" /><button type="button" onClick={onSugerir} disabled={sugerindo || enviando}>{sugerindo ? 'Buscando…' : 'Explorar outro tema'}</button></div>
+        <textarea ref={editorRef} onSelect={event=>{const node=event.currentTarget;setSelection({source:node.value,start:node.selectionStart,end:node.selectionEnd})}} aria-label="Texto da redação" disabled={enviando} value={form.texto} onChange={(e) => setForm((f) => ({ ...f, texto: e.target.value }))} placeholder={'Apresente o tema e a posição que você vai defender.\n\nDesenvolva seus argumentos e explique como sustentam sua tese.\n\nConclua retomando o problema e propondo uma intervenção.'} spellCheck="true" />
         <EssayIntentReview text={form.texto} selection={selection} onReturn={()=>editorRef.current?.focus()}/>
         {enviando && <SaveFeedback status="saving" message="Salvando a versão enviada na sua conta…" />}
         {sendError && !enviando && <SaveFeedback status="error" message={`${sendError} Seu texto continua aqui.`} onRetry={!queued && metricas.palavras >= 30 ? () => onSubmit({preventDefault(){}}) : undefined} />}
-        <div className="essay-sheet-actions"><div><button type="button" onClick={descartar} disabled={enviando}>Descartar</button><DictationButton onText={(texto) => { if (!enviando) setForm((f) => ({ ...f, texto: `${f.texto}${f.texto ? ' ' : ''}${texto}` })) }}/></div><div><button type="button" onClick={analisar} disabled={analisando}>Pré-corrigir</button><button type="submit" disabled={enviando || queued || metricas.palavras < 30}>{enviando ? 'Enviando...' : queued ? 'Nesta versão: envio na fila' : 'Finalizar e enviar'}</button></div></div>
+        <div className="essay-sheet-actions"><div><button type="button" onClick={descartar} disabled={enviando}>Descartar</button><DictationButton onText={(texto) => { if (!enviando) setForm((f) => ({ ...f, texto: `${f.texto}${f.texto ? ' ' : ''}${texto}` })) }}/></div><div><button type="button" onClick={analisar} disabled={analisando || enviando}>{analisando ? 'Analisando…' : 'Pedir pré-análise à Lumi'}</button><button type="submit" disabled={enviando || queued || metricas.palavras < 30}>{enviando ? 'Enviando...' : queued ? 'Nesta versão: envio na fila' : 'Finalizar e enviar'}</button></div></div>
       </section>
-      {!foco && <aside className="essay-coach"><span className="essay-kicker">COACH DE REVISÃO</span><WritingRadar text={form.texto} />{diagnostico ? <DiagnosticPanel diagnostico={diagnostico} /> : <><h3>Antes de entregar</h3><p>O bom texto não nasce pronto. Faça três leituras, cada uma com uma missão.</p><ol><li><b>Ideia</b><span>A tese responde exatamente ao tema?</span></li><li><b>Prova</b><span>Cada argumento tem explicação e consequência?</span></li><li><b>Forma</b><span>Há clareza, coesão e pontuação?</span></li></ol><blockquote>Repertório bom não enfeita. Ele ajuda a provar alguma coisa.</blockquote></>}</aside>}
+      {!foco && <details className="essay-coach" open={Boolean(diagnostico)||undefined}><summary>Ajuda para revisar meu texto</summary><span className="essay-kicker">COACH DE REVISÃO</span><WritingRadar text={form.texto} />{diagnostico ? <DiagnosticPanel diagnostico={diagnostico} /> : <><h3>Antes de entregar</h3><p>O bom texto não nasce pronto. Faça três leituras, cada uma com uma missão.</p><ol><li><b>Ideia</b><span>A tese responde exatamente ao tema?</span></li><li><b>Prova</b><span>Cada argumento tem explicação e consequência?</span></li><li><b>Forma</b><span>Há clareza, coesão e pontuação?</span></li></ol><blockquote>Repertório bom não enfeita. Ele ajuda a provar alguma coisa.</blockquote></>}</details>}
     </form>
     {!foco && <TemaLab sugestao={sugestao} usarTema={(tema) => { if (!enviando) setForm((f) => ({ ...f, tema })) }} />}
   </div>

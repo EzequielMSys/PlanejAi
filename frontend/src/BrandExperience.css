@@ -25,11 +25,8 @@
 .sd-workspace .learning-page .learning-tools-entry { border-radius:0; border-inline:0; background:transparent; }
 .sd-workspace .learning-page .learning-tabs { border-radius:0; background:transparent; border:0; border-bottom:1px solid var(--pn-borda); padding-bottom:.6rem; }
 /* Writing: manuscript and margin, rather than a dashboard of identical tiles. */
-.sd-workspace .redacoes-page .redacoes-intro { border:0; border-bottom:1px solid var(--pn-borda); border-radius:0; background:transparent; box-shadow:none; padding:0 0 2rem; }
-.sd-workspace .redacoes-page .redacoes-intro h1 { font-size:clamp(2.3rem,4.6vw,4.3rem); line-height:1.1; max-width:18ch; }
-.sd-workspace .redacoes-page .redacoes-intro-copy { padding:clamp(.5rem,2vw,1.5rem) clamp(0rem,2vw,1.5rem) 1rem 0; }
 .sd-workspace .redacoes-page .redacoes-brand-symbol { width:7rem; height:7rem; }
-.sd-workspace .redacoes-page .redacoes-intro-actions button { color:var(--pn-on-primaria); }
+.sd-workspace .redacoes-page .redacoes-intro-actions button:not(.essay-guide-open) { color:var(--pn-on-primaria); }
 .sd-workspace .redacoes-page .redacoes-path { border-radius:0; border-inline:0; background:transparent; box-shadow:none; }
 .sd-workspace .redacoes-page .redacoes-lumi { border-radius:var(--brand-corner); background:var(--pn-superficie); border:1px solid var(--pn-borda); }
 .sd-workspace .redacoes-page .essay-record { border-radius:.25rem 1rem 1rem .25rem; border-left:4px solid var(--pn-link); box-shadow:none; }

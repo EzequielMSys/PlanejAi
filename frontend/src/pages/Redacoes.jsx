@@ -1,6 +1,4 @@
 import DeskPin from '../components/DeskPin'
-import Logo from '../components/Logo'
-import AreaSignature from '../components/AreaSignature'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import SectionLink from '../components/SectionLink'
 import { motion } from 'framer-motion'
@@ -9,12 +7,12 @@ import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import redacaoService from '../services/redacaoService'
 import '../components/EssayRecords.css'
+const EssayGuide = lazy(() => import('../components/EssayGuide'))
 const EssayStudio = lazy(() => import('../components/EssayStudio'))
 const EssayVersions = lazy(() => import('../components/EssayVersionsPro'))
 import WritingWorkshop from '../components/WritingWorkshop'
 const PeerReview = lazy(() => import('../components/PeerReview'))
 const EssayPortfolio = lazy(() => import('../components/EssayPortfolio'))
-import TutorLumi from '../components/TutorLumi'
 import './RedacoesExperience.css'
 import { essayDraftKey, readEssayDraft, markEssayQueued } from '../utils/essayDraft'
 import RecoveryState from '../components/RecoveryState'
@@ -149,6 +147,13 @@ export default function Redacoes() {
   const [selecionada, setSelecionada] = useState(null)
   const [aba, setAba] = useState('minhas')
   const [extraTools, setExtraTools] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
+  const [guideStep, setGuideStep] = useState(0)
+  const [editorVisit, setEditorVisit] = useState(0)
+  const [editorTarget, setEditorTarget] = useState('editor')
+  const [planning, setPlanning] = useState(null)
+  const [pendingPlan, setPendingPlan] = useState(null)
+  const guideTrigger = useRef(null)
 
   // Estado para avaliação manual (admin/dono)
   const [avaliando, setAvaliando] = useState(null)
@@ -164,6 +169,20 @@ export default function Redacoes() {
   let rascunhoSalvo = null
   rascunhoSalvo = readEssayDraft()
   const temRascunho = Boolean(rascunhoSalvo?.tema || rascunhoSalvo?.texto)
+
+  function openStudio(target = 'editor') { setEditorTarget(target === 'proposal' ? 'proposal' : 'editor'); setGuideOpen(false); setModoEscrita(true); setEditorVisit(value => value + 1) }
+  function openGuide(step = 0) { setGuideStep(Number.isInteger(step) ? step : 0); setGuideOpen(true) }
+  function openPlanning() {
+    const target = document.querySelector('.writing-workshop')
+    const trigger = target?.querySelector('.writing-workshop-intro>button')
+    if (!target?.classList.contains('is-open')) trigger?.click()
+    requestAnimationFrame(() => { target?.scrollIntoView({block:'start'}); trigger?.focus({preventScroll:true}) })
+  }
+  function closeGuide() { setGuideOpen(false); if (modoEscrita) setEditorVisit(value => value + 1); else requestAnimationFrame(() => guideTrigger.current?.focus()) }
+  function applyPlan(replace) {
+    if (replace) setForm({tema: pendingPlan.tema || '', texto: pendingPlan.rascunho || ''})
+    setPlanning(pendingPlan); setPendingPlan(null); openStudio()
+  }
 
   // Estado para sugestão de tema e repertório
   const [sugerindoTema, setSugerindoTema] = useState(false)
@@ -302,33 +321,34 @@ export default function Redacoes() {
   if (loading) return <RouteLoading label="Buscando suas redações…" />
 
   return (
-    <main className="redacoes-page min-h-screen px-4 sm:px-6 lg:px-8 py-10">
+    <>
+    {guideOpen && <Suspense fallback={<RouteLoading label="Abrindo o guia de escrita…" />}><EssayGuide initialStep={guideStep} onClose={closeGuide} onStart={openStudio} /></Suspense>}
+    <main hidden={guideOpen} className="redacoes-page min-h-screen px-4 sm:px-6 lg:px-8 py-10">
       {loadError && <RecoveryState title="Não conseguimos consultar o histórico de redações." onRetry={carregarRedacoes}><p>Você ainda pode abrir o estúdio e continuar seu rascunho. Não foi possível confirmar a lista de textos salvos na conta.</p></RecoveryState>}
       {!loadError && requestedEssay && !redacoes.some(item => String(item.id_redacao) === requestedEssay) && <p role="status">A redação encontrada na busca não está mais neste histórico. Confira os textos disponíveis abaixo.</p>}
       <div className="redacoes-shell max-w-6xl mx-auto">
-      <AreaSignature area="writing"/>
       {confirmedAt && !modoEscrita && <SaveFeedback status="saved" savedAt={confirmedAt} message="Redação salva na sua conta. Ela já está no histórico abaixo." />}
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <section className="redacoes-intro" aria-labelledby="redacoes-title">
+          <section className={`redacoes-intro redacoes-intro--compact${modoEscrita ? ' is-writing' : ''}`} aria-labelledby="redacoes-title">
             <div className="redacoes-intro-copy">
-              <span className="redacoes-eyebrow">PLANEJAI · ATELIÊ DE ESCRITA</span>
-              <h1 id="redacoes-title">Sua próxima versão começa aqui.</h1>
-              <p>Escreva no seu ritmo, revise com critérios do ENEM e acompanhe como cada texto evolui. A Lumi ajuda a enxergar o próximo ajuste.</p>
+              <span className="redacoes-eyebrow">SEU CADERNO DE REDAÇÃO</span>
+              <h1 id="redacoes-title">Uma ideia. Sua voz. Um texto.</h1>
+              <p>{modoEscrita ? 'Seu texto continua no estúdio. Consulte o guia quando precisar.' : 'Escolha um tema, organize suas ideias e escreva. O próximo passo fica sempre à mão.'}</p>
               <div className="redacoes-intro-actions">
-                <button type="button" onClick={() => setModoEscrita(true)}>{modoEscrita ? 'Voltar ao texto' : temRascunho ? 'Continuar rascunho' : 'Começar uma redação'} <span aria-hidden="true">↗</span></button>
+                <button type="button" onClick={()=>openStudio(modoEscrita || temRascunho ? 'editor' : 'proposal')}>{modoEscrita ? 'Voltar ao texto' : temRascunho ? 'Continuar rascunho' : 'Começar uma redação'} <span aria-hidden="true">↗</span></button>
+                <button ref={guideTrigger} className="essay-guide-open" type="button" onClick={()=>openGuide()}>Como fazer uma redação</button>
               </div>
-              <div className="redacoes-intro-meta"><span>{loadError ? 'Histórico não confirmado' : <><strong>{redacoes.length}</strong> {redacoes.length === 1 ? 'texto enviado' : 'textos enviados'}</>}</span><span>{temRascunho ? 'Rascunho salvo neste dispositivo' : 'Um texto por vez, sem pressa'}</span></div>
             </div>
-            <div className="redacoes-intro-art" aria-hidden="true"><div className="redacoes-paper"><span>UM PROCESSO, NÃO UMA NOTA</span><i /><i /><i /><i /><b>ideia → argumento → revisão</b></div><span className="redacoes-art-mark"><Logo decorative monochrome className="redacoes-brand-symbol" animado={false}/></span></div>
           </section>
-
-          {!modoEscrita && aba === 'minhas' && <section className="redacoes-guidance" aria-label="Seu próximo passo na escrita">
-            <div className="redacoes-path"><span className="redacoes-eyebrow">ESCOLHA UM CAMINHO</span><h2>Onde você quer avançar hoje?</h2><div className="redacoes-path-grid">
-              <Link to="/lumi" state={{ perguntaInicial: 'Quero planejar uma redação no modelo ENEM. Ajude-me a definir uma tese, dois argumentos e uma proposta de intervenção sem escrever o texto por mim.' }}><span>01 · PENSAR COM A LUMI</span><strong>Destrave seu argumento</strong><small>Converse sobre tese, repertório e intervenção.</small><b aria-hidden="true">↗</b></Link>
-              <SectionLink target="redacoes-historico"><span>02 · REVISAR</span><strong>Aprenda com seus textos</strong><small>Volte aos comentários e escolha um ajuste.</small><b aria-hidden="true">↗</b></SectionLink>
-            </div></div>
-            <div className="redacoes-lumi"><TutorLumi tamanho={62} rotulo="Lumi, tutora de redação" /><span className="redacoes-eyebrow">LUMI NO ATELIÊ</span><h2>Uma dúvida pode virar uma tese melhor.</h2><p>Peça ajuda para organizar ideias ou compreender o feedback. No estúdio, a Lumi também faz uma pré-análise do seu rascunho antes do envio.</p></div>
-          </section>}
+          {!modoEscrita && aba === 'minhas' && <>
+            <nav className="essay-journey" aria-label="Seu caminho na redação">
+              <button type="button" onClick={()=>openStudio('proposal')}><span>01</span><strong>Proposta</strong><small>Leia o tema e os apoios</small></button>
+              <button type="button" onClick={openPlanning}><span>02</span><strong>Planejar</strong><small>Organize sua posição</small></button>
+              <button type="button" onClick={openStudio}><span>03</span><strong>Escrever</strong><small>Abra seu estúdio</small></button>
+              <SectionLink target="redacoes-historico"><span>04</span><strong>Revisar</strong><small>Retome textos enviados</small></SectionLink>
+            </nav>
+            <div className="essay-lumi-link"><span>Quer pensar em voz alta?</span><Link to="/lumi" state={{ perguntaInicial: 'Quero planejar uma redação no modelo ENEM. Ajude-me a definir uma tese, dois argumentos e uma proposta de intervenção sem escrever o texto por mim.' }}>Destrave seu argumento com a Lumi →</Link></div>
+          </>}
 
           {isGestor && (
             <div className="redacoes-tabs" role="tablist" aria-label="Área de redações">
@@ -362,8 +382,13 @@ export default function Redacoes() {
             </div>
           )}
 
-          {!modoEscrita && aba === 'minhas' && <><WritingWorkshop /><button className="sd-button" type="button" onClick={() => setExtraTools(value => !value)} aria-expanded={extraTools}>{extraTools ? 'Recolher ferramentas extras' : 'Abrir portfólio e revisão em pares'}</button>{extraTools && <Suspense fallback={<RouteLoading embedded />}><EssayPortfolio /><PeerReview /></Suspense>}</>}
+          {!modoEscrita && aba === 'minhas' && <><WritingWorkshop onWrite={setPendingPlan} onGuide={openGuide} /><button className="sd-button" type="button" onClick={() => setExtraTools(value => !value)} aria-expanded={extraTools}>{extraTools ? 'Recolher ferramentas extras' : 'Abrir portfólio e revisão em pares'}</button>{extraTools && <Suspense fallback={<RouteLoading embedded />}><EssayPortfolio /><PeerReview /></Suspense>}</>}
+          {pendingPlan && <section className="essay-plan-preview" aria-label="Conferir planejamento antes de abrir o estúdio"><h2>Levar seu planejamento para o texto</h2><p>Confira o tema e o rascunho antes de continuar. As anotações do plano ficarão disponíveis para consulta no estúdio.</p><strong>{pendingPlan.tema || 'Tema ainda não definido'}</strong><pre>{pendingPlan.rascunho || 'Você ainda não escreveu um rascunho na oficina.'}</pre>{temRascunho || form.texto || form.tema ? <p>Já existe um rascunho no estúdio. Você pode mantê-lo ou substituí-lo pelo tema e pelo texto acima.</p> : null}<div><button type="button" onClick={()=>applyPlan(true)}>Usar tema e rascunho da oficina</button><button type="button" onClick={()=>applyPlan(false)}>Manter meu rascunho e consultar o plano</button><button type="button" onClick={()=>setPendingPlan(null)}>Cancelar transferência</button></div></section>}
           {modoEscrita ? (<Suspense fallback={<RouteLoading embedded label="Abrindo seu estúdio…" />}><EssayStudio
+            focusRequest={editorVisit}
+            focusTarget={editorTarget}
+            onGuide={()=>setGuideOpen(true)}
+            planning={planning}
             form={form}
             setForm={setForm}
             onSubmit={handleEnviar}
@@ -374,160 +399,10 @@ export default function Redacoes() {
             sugestao={sugestaoTema}
             sugerindo={sugerindoTema}
             onSugerir={buscarSugestaoTema}
-          /></Suspense>) : modoEscrita ? (
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              animate="visible"
-              className="bg-study-paper rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-study-line/20"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-black text-black">
-                  Escrever redação
-                </h2>
-
-                <button
-                  type="button"
-                  onClick={() => setModoEscrita(false)}
-                  className="text-sm font-bold text-black/60 hover:text-black transition"
-                >
-                  Cancelar
-                </button>
-              </div>
-
-              <form onSubmit={handleEnviar} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-bold text-black mb-2">
-                    Tema
-                  </label>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input
-                      type="text"
-                      value={form.tema}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, tema: e.target.value }))
-                      }
-                      placeholder="Ex: O papel da tecnologia na educação brasileira"
-                      className="w-full rounded-[1.5rem] px-5 py-3 bg-study-canvas border border-study-line/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={buscarSugestaoTema}
-                      disabled={sugerindoTema}
-                      className="bg-study-canvas border border-study-line/40 text-study-accent px-5 py-3 rounded-full text-sm font-bold hover:bg-study-accent/20 transition disabled:opacity-60 shrink-0"
-                    >
-                      {sugerindoTema ? 'Buscando...' : 'Sugerir tema e repertório'}
-                    </button>
-                  </div>
-
-                  {sugestaoTema && (
-                    <div className="mt-3 p-4 rounded-[1.5rem] bg-study-canvas border border-study-line/30">
-                      {sugestaoTema.tema && (
-                        <>
-                          <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-1">
-                            Tema sugerido
-                          </p>
-                          <p className="text-sm font-bold text-black mb-3">
-                            {sugestaoTema.tema}
-                          </p>
-                        </>
-                      )}
-
-                      {sugestaoTema.repertorio && sugestaoTema.repertorio.length > 0 && (
-                        <>
-                          <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-2">
-                            Repertórios socioculturais
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {sugestaoTema.repertorio.map((rep, idx) => (
-                              <span
-                                key={idx}
-                                className="px-3 py-1 rounded-full bg-study-paper border border-study-line/30 text-study-accent text-xs font-semibold capitalize"
-                              >
-                                {rep.titulo || rep}
-                                {rep.tipo && <span className="text-study-accent"> • {rep.tipo}</span>}
-                              </span>
-                            ))}
-                          </div>
-                        </>
-                      )}
-
-                      {sugestaoTema.resumo && (
-                        <div className="mt-3">
-                          <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-1">
-                            Repertório sugerido
-                          </p>
-                          <p className="text-sm text-black/75 leading-relaxed">
-                            {sugestaoTema.resumo}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-black mb-2">
-                    Texto (dissertativo-argumentativo)
-                  </label>
-                  <textarea
-                    value={form.texto}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, texto: e.target.value }))
-                    }
-                    rows={12}
-                    placeholder="Escreva sua redação aqui..."
-                    className="writing-paper w-full rounded-[1.5rem] px-5 py-3 bg-study-canvas border border-study-line/40 text-black placeholder-black/40 focus:ring-2 focus:ring-[#9394CF] focus:outline-none resize-y"
-                  />
-                  <p className="text-xs text-black/50 mt-1">
-                    {form.texto.trim().length} caracteres
-                  </p>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={enviando}
-                  className="bg-study-accent text-white px-8 py-3 rounded-full font-black hover:bg-black transition disabled:opacity-60"
-                >
-                  {enviando ? 'Enviando...' : 'Enviar redação'}
-                </button>
-              </form>
-            </motion.div>
-          ) : (
+          /></Suspense>) : (
             <>
               {loadError && !redacoes.length ? null : redacoes.length === 0 ? (
-                <section id="redacoes-historico" className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.85fr] lg:items-center">
-                  <div>
-                  <span className="mb-5 inline-flex rounded-full border border-study-line bg-study-paper px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-study-accent dark:border-white/10 dark:bg-study-paper dark:text-[#C4B5FD]">Oficina de texto</span>
-                  <h2 className="max-w-xl text-3xl font-black tracking-[-.04em] text-study-ink dark:text-white sm:text-4xl">
-                    {aba === 'gestor' ? 'Nenhuma redação para avaliar' : 'Nenhuma redação enviada'}
-                  </h2>
-                  <p className="mt-4 max-w-lg leading-relaxed text-[#74627F] dark:text-[#B7A9C1]">
-                    {aba === 'gestor'
-                      ? 'Quando os alunos enviarem redações, elas aparecerão aqui para você avaliar.'
-                      : 'Comece com um tema e um primeiro parágrafo. Seu rascunho fica neste navegador enquanto você escreve; envie quando quiser uma avaliação formativa da Lumi.'}
-                  </p>
-
-                  {aba !== 'gestor' && (
-                    <button
-                      type="button"
-                      onClick={() => setModoEscrita(true)}
-                      className="mt-7 rounded-xl bg-study-accent px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-study-accent"
-                    >
-                      Escrever redação
-                    </button>
-                  )}
-                  </div>
-                  <div className="essay-preview" aria-hidden="true">
-                    <div className="essay-preview-top"><span>PLANEJAI / REDAÇÃO</span><b>01</b></div>
-                    <p className="essay-preview-title">Todo texto começa com uma ideia.</p>
-                    <div className="essay-preview-line w-full" />
-                    <div className="essay-preview-line w-11/12" />
-                    <div className="essay-preview-line w-4/5" />
-                    <div className="mt-7 flex gap-2"><i>tese</i><i>argumento</i><i>revisão</i></div>
-                  </div>
-                </section>
+                <section id="redacoes-historico" className="essay-history-empty" aria-labelledby="essay-history-empty-title"><div><span className="redacoes-eyebrow">MEUS TEXTOS</span><h2 id="essay-history-empty-title">{aba === 'gestor' ? 'Nenhuma redação para avaliar' : 'Nenhuma redação enviada'}</h2><p>{aba === 'gestor' ? 'Os textos enviados pelos estudantes aparecerão aqui.' : 'Depois de enviar, abra seu texto aqui para conferir o feedback e revisar.'}</p></div>{aba !== 'gestor' && <button type="button" onClick={openStudio}>Escrever redação</button>}</section>
               ) : (
                 <section id="redacoes-historico" className="essay-records grid gap-4" aria-label="Redações enviadas">
                   <div className="redacoes-history-heading"><div><span className="redacoes-eyebrow">SEU ARQUIVO</span><h2>{aba === 'gestor' ? 'Textos para acompanhar' : 'Textos que contam sua evolução'}</h2><p>Abra uma produção para reler o feedback e planejar a próxima versão.</p></div><strong>{redacoes.length} {redacoes.length === 1 ? 'redação' : 'redações'}</strong></div>
@@ -861,5 +736,6 @@ export default function Redacoes() {
         </motion.div>
       </div>
     </main>
+    </>
   )
 }

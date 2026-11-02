@@ -2845,3 +2845,60 @@ test('Lumi sugere estudos da conta com motivo e só preenche a mensagem após es
   assert.equal(requests.filter(x=>x.method==='post'&&x.url.endsWith('/inteligencia/chat')).length,0);
  }finally{lumiContextFixture={};await screen.close();}
 });
+
+
+test('redação abre proposta, preserva o texto no guia e Voltar ao texto reencontra o editor',async()=>{
+ const screen=await renderRoute('/redacoes');
+ try{
+  await act(async()=>document.querySelector('.redacoes-intro-actions button').click());await flush();
+  assert.ok(document.querySelector('.essay-proposal').open);
+  await act(async()=>button('Usar esta proposta').click());
+  const editor=document.querySelector('[aria-label="Texto da redação"]');await inputValue(editor,'MINHA EXPLICAÇÃO ORIGINAL, AINDA EM CONSTRUÇÃO.');
+  await act(async()=>button('Como fazer uma redação').click());await flush();assert.ok(document.querySelector('.essay-guide'));assert.equal(document.querySelector('.redacoes-shell').closest('main').hidden,true);
+  await act(async()=>button('Voltar às redações').click());await flush();
+  assert.equal(document.querySelector('[aria-label="Texto da redação"]').value,'MINHA EXPLICAÇÃO ORIGINAL, AINDA EM CONSTRUÇÃO.');
+  await act(async()=>button('Voltar ao texto ↗').click());await flush();assert.equal(document.activeElement,editor);
+  assert.equal(requests.filter(x=>x.method==='post').length,0);
+ }finally{await screen.close()}
+});
+test('guia de redação explica conclusão e proposta com cinco elementos e exemplo identificado',async()=>{
+ const screen=await renderRoute('/redacoes');
+ try{
+  await act(async()=>button('Como fazer uma redação').click());await flush();
+  const step=[...document.querySelectorAll('.essay-guide nav button')].find(x=>x.textContent.includes('Conclua'));
+  await act(async()=>step.click());await act(async()=>document.querySelector('.essay-guide-elements summary').click());
+  assert.equal(document.querySelectorAll('.essay-guide-elements dt').length,5);assert.match(document.querySelector('.essay-guide').textContent,/EXEMPLO DIDÁTICO/);assert.match(document.querySelector('.essay-guide').textContent,/direitos humanos/);assert.equal(document.activeElement,document.querySelector('.essay-guide h2'));
+  const result=await axe.run(document.querySelector('.essay-guide'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(x=>x.id),[]);
+ }finally{await screen.close()}
+});
+test('trocar a proposta de redação exige conferir um tema existente e mantém a autoria',async()=>{
+ const screen=await renderRoute('/redacoes');
+ try{
+  await act(async()=>document.querySelector('.redacoes-intro-actions button').click());await flush();
+  await inputValue(document.getElementById('essay-topic'),'MEU TEMA');await inputValue(document.querySelector('[aria-label="Texto da redação"]'),'TEXTO QUE NÃO PODE SER SUBSTITUÍDO.');
+  await act(async()=>button('Usar esta proposta').click());assert.equal(document.getElementById('essay-topic').value,'MEU TEMA');assert.ok(document.querySelector('.essay-proposal-confirm'));
+  await act(async()=>button('Trocar apenas o tema').click());assert.match(document.getElementById('essay-topic').value,/leitura/);assert.equal(document.querySelector('[aria-label="Texto da redação"]').value,'TEXTO QUE NÃO PODE SER SUBSTITUÍDO.');
+ }finally{await screen.close()}
+});
+test('planejamento chega ao estúdio com prévia e permite manter o rascunho existente',async()=>{
+ const stored={'900001:essay-draft:v3':JSON.stringify({tema:'Tema preservado',texto:'VERSÃO DO ESTÚDIO',salvoEm:new Date().toISOString()})};
+ const screen=await renderRoute('/redacoes','aluno',{},stored);
+ try{
+  await act(async()=>button('Abrir oficina →').click());await flush();await inputValue(document.querySelector('.writing-workshop-editor input'),'Tema da oficina');
+  await act(async()=>button('Levar planejamento ao estúdio →').click());assert.ok(document.querySelector('.essay-plan-preview'));assert.equal(document.querySelector('.essay-studio'),null);
+  await act(async()=>button('Manter meu rascunho e consultar o plano').click());await flush();
+  assert.equal(document.getElementById('essay-topic').value,'Tema preservado');assert.equal(document.querySelector('[aria-label="Texto da redação"]').value,'VERSÃO DO ESTÚDIO');assert.ok(document.querySelector('.essay-planning-reference'));assert.equal(requests.filter(x=>x.method==='post').length,0);
+ }finally{await screen.close()}
+});
+
+
+test('ajuda da oficina abre o passo correspondente e preserva a intervenção ao voltar',async()=>{
+ const screen=await renderRoute('/redacoes');
+ try{
+  await act(async()=>button('Abrir oficina →').click());await flush();
+  const step=[...document.querySelectorAll('.writing-workshop nav button')].find(x=>x.textContent.includes('Proposta de intervenção'));await act(async()=>step.click());
+  await inputValue(document.querySelector('.writing-workshop-editor textarea'),'MINHA INTERVENÇÃO EM ELABORAÇÃO.');
+  await act(async()=>button('Ver explicação e exemplo desta construção').click());await flush();assert.equal(document.querySelector('.essay-guide h2').textContent,'Conclua com intervenção');
+  await act(async()=>button('Sair do guia').click());assert.equal(document.querySelector('.writing-workshop-editor textarea').value,'MINHA INTERVENÇÃO EM ELABORAÇÃO.');assert.equal(document.querySelector('.writing-workshop nav [aria-current]').textContent.includes('intervenção'),true);
+ }finally{await screen.close()}
+});
