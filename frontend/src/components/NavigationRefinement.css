@@ -1,0 +1,9 @@
+.sd-navigation .sd-nav-folder{margin-top:1rem;border-top:1px solid var(--pn-borda);padding-top:.4rem}
+.sd-navigation .sd-nav-folder>summary{display:flex;align-items:center;justify-content:space-between;gap:.75rem;min-height:44px;padding:.5rem .65rem;cursor:pointer;list-style:none;color:var(--pn-texto-suave);font-size:.75rem;font-weight:700}
+.sd-nav-folder>summary::-webkit-details-marker{display:none}
+.sd-nav-folder>summary>span{font-size:1.1rem;color:var(--pn-primaria)}
+.sd-nav-folder[open]>summary>span{transform:rotate(45deg)}
+.sd-nav-folder>summary:focus-visible{outline:2px solid var(--pn-primaria);outline-offset:-2px;border-radius:.4rem}
+.sd-navigation .sd-nav-extras .sd-nav-link{font-size:.78rem;padding-block:.7rem;min-height:44px}
+.sd-parent-return{display:inline-flex;align-items:center;gap:.5rem;min-height:44px;padding:.5rem clamp(1rem,3vw,2rem);color:var(--pn-primaria);font-size:.8rem;font-weight:700;text-decoration:none}
+.sd-parent-return:focus-visible{outline:2px solid var(--pn-primaria);outline-offset:-2px}

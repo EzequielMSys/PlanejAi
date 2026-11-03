@@ -2989,3 +2989,27 @@ test('Enter durante composição de texto na Lumi não envia uma mensagem incomp
   assert.equal(field.value,'Estou escrevendo.');assert.equal(requests.filter(x=>x.method==='post').length,0);
  }finally{await screen.close()}
 });
+
+
+test('navegação reúne caminhos extras e devolve a área principal sem expor gestão ao estudante',async()=>{
+ const screen=await renderRoute('/inicio');try{
+  const extras=document.querySelector('.sd-nav-extras');assert.equal(extras.open,false);
+  assert.equal(document.querySelector('#app-sidebar a[href="/usuarios"]'),null);
+  await act(async()=>extras.querySelector('summary').click());
+  await act(async()=>extras.querySelector('a[href="/fontes-estudo"]').click());await flush();
+  assert.ok(document.querySelector('.sd-nav-extras').open);
+  assert.equal(document.querySelector('.sd-parent-return').getAttribute('href'),'/aprendizagem');
+  assert.equal(document.querySelector('.sd-nav-extras [aria-current="location"]').getAttribute('href'),'/fontes-estudo');
+  await act(async()=>document.querySelector('.sd-parent-return').click());await flush();
+  assert.equal(document.querySelector('.sd-parent-return'),null);
+  assert.equal(document.querySelector('.sd-nav-extras').open,false);
+ }finally{await screen.close()}
+});
+
+test('grupo de gestão abre automaticamente na sua página e fica recolhido na rotina',async()=>{
+ const screen=await renderRoute('/usuarios','dono');try{
+  const folder=document.querySelector('#app-sidebar a[href="/usuarios"]').closest('details');assert.ok(folder.open);
+  await act(async()=>document.querySelector('#app-sidebar a[href="/inicio"]').click());await flush();
+  assert.equal(document.querySelector('#app-sidebar a[href="/usuarios"]').closest('details').open,false);
+ }finally{await screen.close()}
+});

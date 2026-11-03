@@ -8,6 +8,7 @@ import ConnectionStatus from '../components/ConnectionStatus'
 import Deferred from '../components/Deferred'
 import RouteLoading from '../components/RouteLoading'
 import ErrorBoundary from '../components/ErrorBoundary'
+import { pageFor } from '../config/navigation'
 import '../components/LearningSurfaces.css'
 import '../components/WorkspaceUtilities.css'
 import '../MobileExperience.css'
@@ -37,6 +38,7 @@ function CarregadoAposPintura({ children }) {
 function Layout() {
   const { isAuthenticated, perfilCompleto, isGestor, isPrimeiroAcesso } = useAuth()
   const location = useLocation()
+  const parentPath = pageFor(location.pathname).navParent
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), [])
@@ -64,6 +66,7 @@ function Layout() {
           <ConnectionStatus />
           {!perfilCompleto && !isGestor && !isPrimeiroAcesso && location.pathname !== '/onboarding' && <aside className="setup-invitation"><div><strong>Explore no seu ritmo.</strong><p>Lumi, fontes e exercícios já estão disponíveis. Para criar seu cronograma, escolha as matérias e os horários.</p></div><Link to="/onboarding">Preparar meu plano →</Link></aside>}
           <div className="app-route-outlet sd-route">
+            {isAuthenticated && parentPath && <nav aria-label="Retornar à área principal"><Link to={parentPath} className="sd-parent-return"><span aria-hidden="true">←</span> Voltar a {pageFor(parentPath).title}</Link></nav>}
             <ErrorBoundary resetKey={location.pathname}>
               <Suspense fallback={<RouteLoading embedded />}><Outlet /></Suspense>
             </ErrorBoundary>
