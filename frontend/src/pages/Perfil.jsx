@@ -495,6 +495,8 @@ const handleSaveEstudos = async (e) => {
               <IconBook /> Estudos
             </button>
           </nav>
+          {tab!=='info' && ['pending','error'].includes(infoSave.status) && <p className="profile-pending-summary" role="status">Suas informações pessoais têm alterações não confirmadas.<button type="button" onClick={()=>setTab('info')}>Revisar informações</button></p>}
+          {tab!=='estudos' && ['pending','error'].includes(studySave.status) && <p className="profile-pending-summary" role="status">Seu perfil de estudo tem alterações não confirmadas.<button type="button" onClick={()=>setTab('estudos')}>Revisar perfil de estudo</button></p>}
 
           {tab === 'info' && (
             <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card">
@@ -505,11 +507,11 @@ const handleSaveEstudos = async (e) => {
                   <label className="profile-field">Como quer que a gente chame você?<input value={form.apelido} onChange={(e) => setForm((f) => ({ ...f, apelido: e.target.value }))} placeholder="Nome de preferência (opcional)" /></label>
                 </div>
 
-                <fieldset className="profile-pronoun-choice"><legend>Pronomes</legend><p className="profile-field-hint">Opcional. Escolha uma preferência de tratamento.</p><div className="profile-pronoun-options">{[['','Prefiro não informar'],['ela_dela','Ela / dela'],['ele_dele','Ele / dele'],['elu_delu','Elu / delu'],['nome_proprio','Use meu nome'],['personalizado','Outros pronomes']].map(([value,label])=><label key={value} className={form.pronome===value?'is-selected':''}><input type="radio" name="pronome" value={value} checked={form.pronome===value} onChange={()=>setForm(f=>({...f,pronome:value}))}/><span>{label}</span></label>)}</div></fieldset>
+                <details className="profile-treatment"><summary>Tratamento e pronomes<span>{form.pronome==='personalizado' ? form.pronomePersonalizado.trim() || 'Outros pronomes' : ({ela_dela:'Ela / dela',ele_dele:'Ele / dele',elu_delu:'Elu / delu',nome_proprio:'Use meu nome'}[form.pronome] || 'Prefiro não informar')}</span></summary><fieldset className="profile-pronoun-choice"><legend>Pronomes</legend><p className="profile-field-hint">Opcional. Escolha uma preferência de tratamento.</p><div className="profile-pronoun-options">{[['','Prefiro não informar'],['ela_dela','Ela / dela'],['ele_dele','Ele / dele'],['elu_delu','Elu / delu'],['nome_proprio','Use meu nome'],['personalizado','Outros pronomes']].map(([value,label])=><label key={value} className={form.pronome===value?'is-selected':''}><input type="radio" name="pronome" value={value} checked={form.pronome===value} onChange={()=>setForm(f=>({...f,pronome:value}))}/><span>{label}</span></label>)}</div></fieldset>
 
                 {form.pronome === 'personalizado' && <label className="profile-field">Quais pronomes você usa?<input value={form.pronomePersonalizado} onChange={(e) => setForm((f) => ({ ...f, pronomePersonalizado: e.target.value }))} maxLength={80} placeholder="Ex.: they/them, xe/xem ou ela/elu" /><small className="profile-field-hint">Escreva do jeito que prefere.</small></label>}
 
-                <div className="profile-pronoun-preview" aria-live="polite"><span>PRÉVIA DE TRATAMENTO</span><p>“{fraseConviteLumi(form.pronome === 'personalizado' ? form.pronomePersonalizado : form.pronome)}”</p><small>{form.pronome === 'personalizado' && form.pronomePersonalizado.trim() ? `Preferência informada: ${form.pronomePersonalizado.trim()}. ` : ''}Sua preferência só muda ao salvar.</small></div>
+                <div className="profile-pronoun-preview" aria-live="polite"><span>PRÉVIA DE TRATAMENTO</span><p>“{fraseConviteLumi(form.pronome === 'personalizado' ? form.pronomePersonalizado : form.pronome)}”</p><small>{form.pronome === 'personalizado' && form.pronomePersonalizado.trim() ? `Preferência informada: ${form.pronomePersonalizado.trim()}. ` : ''}Sua preferência só muda ao salvar.</small></div></details>
 
                 <label className="profile-field">Email da conta<input autoComplete="email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required /></label>
 

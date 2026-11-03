@@ -35,7 +35,9 @@ export default function UsuariosAdmin() {
   const listRequest=useRef(0)
   const [busca, setBusca] = useState('')
   const [tipoFiltro, setTipoFiltro] = useState('')
+  const [managingId,setManagingId]=useState(null)
   const [paginaAtual, setPaginaAtual] = useState(1)
+  useEffect(()=>{setManagingId(null)},[busca,tipoFiltro,paginaAtual])
   const [totalPaginas, setTotalPaginas] = useState(1)
   const [totalRegistros, setTotalRegistros] = useState(0)
   const [stats, setStats] = useState({ total: 0, ativos: 0, alunos: 0, admins: 0 })
@@ -258,12 +260,12 @@ export default function UsuariosAdmin() {
       <div className="max-w-7xl mx-auto">
         <header className="users-hero"><div><span className="users-kicker">PLANEJAI · GESTÃO DE ACESSOS</span><h1>Pessoas e acessos</h1><p>Encontre uma pessoa e gerencie seu acesso.</p></div><details className="users-permissions"><summary>Sobre as permissões</summary><p>{isDono?'Só o dono pode alterar perfis e ativar ou desativar contas.':'As ações disponíveis respeitam as permissões da sua conta.'}</p></details></header>
 
-        <section className="users-stats grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" aria-label="Resumo das contas">
+        {loaded && <details className="users-overview"><summary>Resumo das contas<span>Total, atividade e perfis</span></summary><section className="users-stats grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" aria-label="Resumo das contas">
           <CardStat titulo="Total" valor={stats.total} />
           <CardStat titulo="Ativos" valor={stats.ativos} />
           <CardStat titulo="Alunos" valor={stats.alunos} />
           <CardStat titulo="Admins" valor={stats.admins} />
-        </section>
+        </section></details>}
 
         <section className="users-toolbar bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-5 sm:p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] mb-6">
           <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
@@ -280,16 +282,16 @@ export default function UsuariosAdmin() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
+              <label className="users-filter-label">Nome ou email<input
+                type="search"
                 value={busca}
                 onChange={(e) => atualizarBusca(e.target.value)}
                 placeholder="Buscar por nome ou email..."
                 aria-label="Buscar usuário por nome ou email"
                 className="rounded-full px-5 py-3 bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] outline-none focus:ring-2 focus:ring-[rgb(var(--pn-primaria-borda-rgb)/1)]"
-              />
+              /></label>
 
-              <select
+              <label className="users-filter-label">Perfil da conta<select
                 value={tipoFiltro}
                 onChange={(e) => atualizarTipoFiltro(e.target.value)}
                 aria-label="Filtrar usuários por tipo"
@@ -300,11 +302,12 @@ export default function UsuariosAdmin() {
                 <option value="admin">Admin</option>
                 <option value="docente">Docente</option>
                 <option value="aluno">Aluno</option>
-              </select>
+              </select></label>
             </div>
           </div>
         </section>
 
+        {(busca || tipoFiltro) && <div className="users-filter-summary"><span>Filtros ativos{tipoFiltro ? ' · '+(tipoLabel[tipoFiltro]||tipoFiltro) : ''}</span><button type="button" onClick={()=>{atualizarBusca('');atualizarTipoFiltro('')}}>Limpar filtros</button></div>}
         {listError&&<p className="users-list-error" role="alert">{listError} <button type="button" onClick={carregarUsuarios}>Tentar novamente</button></p>}
         {loaded&&loading&&<p className="users-updating" role="status">Atualizando pessoas…</p>}
         <section className="users-table-shell bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] overflow-hidden">
@@ -344,7 +347,7 @@ export default function UsuariosAdmin() {
                       </td>
 
                       <td className="p-5" data-label="Ações">
-                        <details className="users-actions"><summary>Gerenciar <span aria-hidden="true">⌄</span></summary><div>{isDono&&podeAlterar&&<label className="users-role-field">Perfil da conta
+                        <details className="users-actions" open={managingId===id}><summary aria-label={'Gerenciar conta de '+(usuario.nome||usuario.email)} onClick={event=>{event.preventDefault();setManagingId(atual=>atual===id?null:id)}}>Gerenciar <span aria-hidden="true">⌄</span></summary><div><p className="users-action-person"><strong>{usuario.nome || usuario.email}</strong><small>As ações abaixo se aplicam a esta conta.</small></p>{isDono&&podeAlterar&&<label className="users-role-field">Perfil da conta
                           <select
                             aria-label={`Tipo de conta de ${usuario.nome || usuario.email}`}
                             value={usuario.tipo}

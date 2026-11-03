@@ -77,6 +77,7 @@ let returnsFailure=false;
 let personalFailure=false;
 let intentMode='',deferredIntent;
 let directoryOtherAccount=false;
+let directorySecondAccount=false;
 let planningWriteFailure=false;
 let deskItems=[{id:31,tipo:'anotacao',id_origem:9,titulo:'Leis de Newton',trecho:'Um exemplo meu',disponivel:true},{id:32,tipo:'duvida',id_origem:71,titulo:'Força e velocidade',disponivel:true}];
 let journalSteps = [{id:11,tipo:'explicacao',texto:'Primeira versão preservada',criado_em:'2026-10-20T12:00:00'}, {id:12,tipo:'explicacao',texto:'Segunda versão com exemplo',criado_em:'2026-10-25T12:00:00'}];
@@ -293,7 +294,7 @@ async function fixture(config) {
     return supportMode === 'saved' ? [{ id: 81, categoria: 'PROBLEMA', mensagem: 'Minha mensagem de ajuda.', status: 'ABERTO', criado_em: '2026-10-24T12:00:00Z' }] : [];
   }
   if (url.endsWith('/usuarios/me')) return person('aluno');
-  if (url.endsWith('/usuarios')) return { usuarios: [directoryOtherAccount?{...person('aluno'),id:900002,id_usuario:900002}:person('aluno')], pagina: 1, total_registros: 17, total_paginas: 2, stats: { total: 17, ativos: 15, inativos: 2, donos: 1, admins: 2, docentes: 3, alunos: 11 } };
+  if (url.endsWith('/usuarios')) return { usuarios: [directoryOtherAccount?{...person('aluno'),id:900002,id_usuario:900002}:person('aluno'),...(directorySecondAccount?[{...person('aluno'),id:900003,id_usuario:900003,nome:'Outra pessoa'}]:[])], pagina: 1, total_registros: 17, total_paginas: 2, stats: { total: 17, ativos: 15, inativos: 2, donos: 1, admins: 2, docentes: 3, alunos: 11 } };
   if (url.endsWith('/dashboard/estatisticas')) return { totalUsuarios: 17, totalAtividadesPublicadas: 0, totalEntregas: 0, totalCronogramasAtivos: 0 };
   if (url.endsWith('/colaborativo/gestao/alertas')) return [{ id_usuario: 31, nome: 'Aluno de teste', motivos: ['Revisões atrasadas'] }];
   if (url.endsWith('/colaborativo/gestao/grupos/sugestoes')) return [{ disciplina: 'Matemática', competencia: 'Razão e proporção', aprendizes: [31], mentores: [] }];
@@ -3069,4 +3070,31 @@ test('visualizador de material contém o foco e devolve ao controle de abertura 
   const close=panel.querySelector('button');close.focus();await act(async()=>close.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})));assert.equal(document.activeElement,close);
   await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})));assert.equal(document.querySelector('.material-viewer'),null);assert.equal(document.activeElement,trigger);
  }finally{await act(async()=>root.unmount())}
+});
+
+
+test('gestão identifica a conta das ações e recolhe o menu anterior sem alterar acessos',async()=>{
+ directoryOtherAccount=true;directorySecondAccount=true;const screen=await renderRoute('/usuarios','dono');try{
+  assert.equal(document.querySelector('.users-overview').open,false);
+  const menus=[...document.querySelectorAll('.users-actions')];assert.equal(menus.length,2);
+  await act(async()=>menus[0].querySelector('summary').click());assert.equal(menus[0].open,true);
+  await act(async()=>menus[1].querySelector('summary').click());assert.equal(menus[0].open,false);assert.equal(menus[1].open,true);
+  assert.match(menus[1].querySelector('summary').getAttribute('aria-label'),/Outra pessoa/);assert.match(menus[1].querySelector('.users-action-person').textContent,/Outra pessoa/);
+  await inputValue(document.querySelector('.users-toolbar input'),'Outra');assert.equal(menus[1].open,false);
+  await act(async()=>button('Limpar filtros').click());assert.equal(document.querySelector('.users-toolbar input').value,'');
+  assert.equal(requests.filter(x=>['post','put','patch','delete'].includes(x.method)).length,0);
+ }finally{directoryOtherAccount=false;directorySecondAccount=false;await screen.close()}
+});
+
+test('perfil recolhe tratamento opcional e permite recuperar alterações ao trocar de seção',async()=>{
+ const screen=await renderRoute('/perfil');try{
+  const treatment=document.querySelector('.profile-treatment');assert.equal(treatment.open,false);
+  await act(async()=>treatment.querySelector('summary').click());await act(async()=>document.querySelector('.profile-pronoun-options input[value="elu_delu"]').click());
+  await inputValue(document.querySelector('input[autocomplete="name"]'),'Nome de Teste');
+  await act(async()=>button('Segurança').click());assert.ok(button('Revisar informações'));
+  await act(async()=>button('Revisar informações').click());assert.equal(document.querySelector('input[autocomplete="name"]').value,'Nome de Teste');
+  assert.equal(document.querySelector('.profile-pronoun-options input[value="elu_delu"]').checked,true);
+  assert.ok(document.querySelector('.profile-treatment>summary').textContent.includes('Elu / delu'));
+  assert.equal(requests.filter(x=>x.method==='put').length,0);
+ }finally{await screen.close()}
 });

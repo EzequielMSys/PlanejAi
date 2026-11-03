@@ -28,3 +28,33 @@
 .profile-pronoun-preview{max-width:38rem;border:1px solid rgb(var(--pn-primaria-borda-rgb)/.28);border-radius:1rem;background:rgb(var(--pn-primaria-rgb)/.07);padding:1rem 1.1rem}.profile-pronoun-preview>span{color:rgb(var(--pn-primaria-forte-rgb)/1);font-size:.65rem;font-weight:850;letter-spacing:.12em}.profile-pronoun-preview>p{margin:.45rem 0 .2rem;font:500 1.25rem/1.35 Georgia,serif;color:rgb(var(--pn-texto-rgb)/1)}.profile-pronoun-preview>small{color:rgb(var(--pn-texto-rgb)/.65);font-size:.75rem;line-height:1.45}
 
 .profile-pronoun-choice{border:0;padding:0;margin:0;min-width:0}.profile-pronoun-choice legend{font-size:.85rem;font-weight:700;margin-bottom:.4rem}.profile-pronoun-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;margin-top:.7rem}.profile-pronoun-options label{display:flex;align-items:center;gap:.6rem;min-height:48px;border:1px solid var(--pn-borda);border-radius:.8rem;padding:.7rem .85rem;cursor:pointer;background:var(--pn-superficie);font-size:.85rem;line-height:1.4}.profile-pronoun-options label.is-selected{background:var(--pn-primaria-suave);border-color:var(--pn-primaria);color:var(--pn-texto)}.profile-pronoun-options input[type=radio]{appearance:auto;width:1rem;height:1rem;flex:none;margin:0;accent-color:var(--pn-primaria)}.profile-pronoun-options label:has(:focus-visible){outline:3px solid var(--pn-primaria);outline-offset:3px}@media(max-width:600px){.profile-pronoun-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.sd-workspace .profile-hero{padding:1.25rem;border-radius:.75rem;background:var(--pn-superficie);box-shadow:none}
+.sd-workspace .profile-hero-note{display:none}
+.sd-workspace .profile-avatar{width:76px;height:76px;border-radius:1rem}
+.sd-workspace .profile-identity-copy h1{font-family:Georgia,serif;font-weight:400;font-size:clamp(1.7rem,3vw,2.3rem)}
+.sd-workspace .profile-card{border-radius:.75rem;box-shadow:none;padding:clamp(1rem,3vw,1.75rem)}
+.sd-workspace .profile-section-head h2{font-family:Georgia,serif;font-weight:400}
+.profile-treatment{border-block:1px solid var(--pn-borda);padding:.35rem 0}
+.profile-treatment>summary{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:.5rem 1rem;min-height:48px;padding:.75rem .25rem;cursor:pointer;list-style:none;font-size:.85rem;font-weight:700}
+.profile-treatment>summary::-webkit-details-marker{display:none}
+.profile-treatment>summary::before{content:'+';font-size:1.2rem;color:var(--pn-primaria);font-weight:400}
+.profile-treatment[open]>summary::before{content:'−'}
+.profile-treatment>summary>span{margin-left:auto;max-width:100%;overflow-wrap:anywhere;color:var(--pn-texto-suave);font-size:.78rem;font-weight:400}
+.profile-treatment[open]{padding-bottom:1rem}
+.profile-treatment .profile-pronoun-preview{margin-top:1rem;border-radius:.5rem}
+.profile-treatment .profile-field{margin-top:1rem}
+.profile-pending-summary{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem 1rem;border-left:2px solid var(--pn-primaria);padding:.6rem 1rem;margin-bottom:1rem;font-size:.8rem;line-height:1.6;background:var(--pn-superficie)}
+.profile-pending-summary>button{min-height:44px;color:var(--pn-primaria);font-weight:700}
+.profile-treatment>summary:focus-visible{outline:2px solid var(--pn-primaria);outline-offset:3px}
+.sd-workspace .profile-primary-button,.sd-workspace .profile-tabs button[aria-current=page],.sd-workspace .profile-camera{background:var(--pn-primaria);color:var(--pn-on-primaria)}
+@media(max-width:600px){.sd-workspace .profile-tabs button{min-width:0;padding:.7rem .5rem;font-size:.8rem}.sd-workspace .profile-tabs button>svg{display:none}.profile-treatment>summary>span{width:100%;margin-left:1.7rem}.sd-workspace .profile-identity{gap:1rem}}
+@media(max-width:600px){
+ .sd-workspace .profile-page .profile-identity{flex-direction:row;align-items:flex-start;width:100%;gap:1rem}
+ .sd-workspace .profile-page .profile-avatar{width:56px;height:56px;border-radius:.8rem}
+ .sd-workspace .profile-page .profile-avatar-initial{font-size:1.8rem}
+ .sd-workspace .profile-page .profile-identity-copy h1{font-size:1.35rem;line-height:1.25}
+ .sd-workspace .profile-page .profile-identity-email{font-size:.8rem;line-height:1.6}
+ .sd-workspace .profile-page .profile-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.25rem}
+ .sd-workspace .profile-page .profile-tabs button{min-width:0;min-height:44px;padding:.6rem .25rem;font-size:.75rem}
+ .sd-workspace .profile-page .profile-section-head{padding-bottom:1rem;margin-bottom:1.25rem}
+}
