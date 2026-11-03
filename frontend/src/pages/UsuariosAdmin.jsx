@@ -363,7 +363,7 @@ export default function UsuariosAdmin() {
                             type="button"
                             disabled={!isDono || !podeAlterar || acaoLoading === `status-${id}`}
                             onClick={() => alterarStatus(usuario)}
-                            className="px-4 py-2 rounded-full bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] text-sm font-bold disabled:opacity-40 hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)] transition"
+                            className="pn-tool px-4 py-2 rounded-full bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] text-sm font-bold disabled:opacity-40 hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)] transition"
                           >
                             {Number(usuario.ativo) ? 'Desativar' : 'Ativar'}
                           </button>
@@ -372,7 +372,7 @@ export default function UsuariosAdmin() {
                             type="button"
                             disabled={!podeAlterar || acaoLoading === `senha-${id}`}
                             onClick={() => resetarSenha(usuario)}
-                            className="px-4 py-2 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white text-sm font-bold disabled:opacity-40 hover:bg-black transition"
+                            className="pn-command px-4 py-2 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white text-sm font-bold disabled:opacity-40 hover:bg-black transition"
                           >
                             Resetar senha
                           </button>
@@ -431,7 +431,7 @@ export default function UsuariosAdmin() {
                   type="button"
                   disabled={paginaAtual === 1}
                   onClick={() => setPaginaAtual((pagina) => pagina - 1)}
-                  className="px-4 py-2 rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] font-bold text-sm hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.15)] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  className="pn-tool px-4 py-2 rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] font-bold text-sm hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.15)] disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
                   Anterior
                 </button>
@@ -457,7 +457,7 @@ export default function UsuariosAdmin() {
                   type="button"
                   disabled={paginaAtual === totalPaginas}
                   onClick={() => setPaginaAtual((pagina) => pagina + 1)}
-                  className="px-4 py-2 rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] font-bold text-sm hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.15)] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  className="pn-tool px-4 py-2 rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] font-bold text-sm hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.15)] disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
                   Próxima
                 </button>
@@ -534,7 +534,7 @@ export default function UsuariosAdmin() {
                 type="button"
                 disabled={salvandoSenha}
                 onClick={definirSenha}
-                className="flex-1 py-3 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white font-black hover:bg-black transition disabled:opacity-60"
+                className="pn-command flex-1 py-3 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white font-black hover:bg-black transition disabled:opacity-60"
               >
                 {salvandoSenha ? 'Salvando...' : 'Salvar senha'}
               </button>

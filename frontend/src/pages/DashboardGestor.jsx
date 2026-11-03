@@ -200,7 +200,7 @@ export default function DashboardGestor() {
             <button
               type="button"
               onClick={() => setMostrarFormAviso(!mostrarFormAviso)}
-              className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white px-5 py-2 text-sm font-bold hover:bg-black transition"
+              className="pn-command rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white px-5 py-2 text-sm font-bold hover:bg-black transition"
             >
               {mostrarFormAviso ? 'Cancelar' : 'Novo aviso'}
             </button>
@@ -234,7 +234,7 @@ export default function DashboardGestor() {
               <button
                 type="submit"
                 disabled={enviandoAviso}
-                className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white px-6 py-2 text-sm font-bold hover:bg-black transition disabled:opacity-50"
+                className="pn-command rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white px-6 py-2 text-sm font-bold hover:bg-black transition disabled:opacity-50"
               >
                 {enviandoAviso ? 'Publicando...' : 'Publicar aviso'}
               </button>

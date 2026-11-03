@@ -478,7 +478,7 @@ export default function Redacoes() {
                                   selecionadaE ? null : redacao
                                 )
                               }
-                              className="bg-study-canvas border border-study-line/40 text-black px-4 py-2 rounded-full text-sm font-bold hover:bg-study-accent/20 transition"
+                              className="pn-tool bg-study-canvas border border-study-line/40 text-black px-4 py-2 rounded-full text-sm font-bold hover:bg-study-accent/20 transition"
                             >
                               {selecionadaE ? 'Fechar' : 'Ver detalhes'}
                             </button>
@@ -689,7 +689,7 @@ export default function Redacoes() {
                                     <button
                                       type="submit"
                                       disabled={salvandoAvaliacao}
-                                      className="bg-study-accent text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-black transition disabled:opacity-60"
+                                      className="pn-command bg-study-accent text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-black transition disabled:opacity-60"
                                     >
                                       {salvandoAvaliacao ? 'Salvando...' : 'Salvar avaliação'}
                                     </button>
@@ -700,7 +700,7 @@ export default function Redacoes() {
                                         setAvaliando(null)
                                         setAvaliacaoForm({ nota: '', feedback: '' })
                                       }}
-                                      className="bg-study-paper border border-study-line/40 text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-study-accent/20 transition"
+                                      className="pn-tool bg-study-paper border border-study-line/40 text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-study-accent/20 transition"
                                     >
                                       Cancelar
                                     </button>
@@ -717,7 +717,7 @@ export default function Redacoes() {
                                         feedback: ''
                                       })
                                     }}
-                                    className="bg-study-accent text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-black transition"
+                                    className="pn-command bg-study-accent text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-black transition"
                                   >
                                     Avaliar redação
                                   </button>

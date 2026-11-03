@@ -163,7 +163,7 @@ export default function PlanejamentoInteligente() {
                 </p>
                 <button
                   onClick={iniciarDiagnostico}
-                  className="mt-5 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-5 py-3 font-black text-white"
+                  className="pn-command mt-5 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-5 py-3 font-black text-white"
                 >
                   Iniciar diagnóstico
                 </button>
@@ -192,7 +192,7 @@ export default function PlanejamentoInteligente() {
                 ))}
                 <button
                   onClick={concluirDiagnostico}
-                  className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-5 py-3 font-black text-white"
+                  className="pn-command rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-5 py-3 font-black text-white"
                 >
                   Salvar diagnóstico
                 </button>
@@ -235,7 +235,7 @@ export default function PlanejamentoInteligente() {
                 value={form.alvo}
                 onChange={(e) => setForm({ ...form, alvo: e.target.value })}
               />
-              <button className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-5 py-3 font-black text-white">
+              <button className="pn-command rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-5 py-3 font-black text-white">
                 Salvar meta
               </button>
             </form>
@@ -256,7 +256,7 @@ export default function PlanejamentoInteligente() {
             <input value={prova.titulo} onChange={(e) => setProva({ ...prova, titulo: e.target.value })} placeholder="Nome da prova" />
             <input type="date" aria-label="Data da prova" value={prova.dataProva} onChange={(e) => setProva({ ...prova, dataProva: e.target.value })} />
             <select multiple aria-label="Matérias da prova" value={prova.materias.map((m) => m.disciplina)} onChange={(e) => setProva({ ...prova, materias: [...e.target.selectedOptions].map((o) => ({ disciplina: o.value, peso: prova.materias.find((m) => m.disciplina === o.value)?.peso || 1 })) })}>{materias.map((m) => <option key={m}>{m}</option>)}</select>
-            <button className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-4 py-2 font-bold text-white">Adicionar prova</button>
+            <button className="pn-command rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-4 py-2 font-bold text-white">Adicionar prova</button>
           </form>
           {provas.map((item) => <p key={item.id_prova} className="mt-3 text-sm"><b>{item.titulo}</b> · {String(item.data_prova).slice(0, 10)} · {(item.materias || []).map((m) => m.disciplina || m).join(', ')}</p>)}
           {prova.materias.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{prova.materias.map((materia, indice) => <label key={materia.disciplina} className="text-sm">{materia.disciplina} peso <input type="number" min="1" max="10" value={materia.peso} onChange={(e) => setProva({ ...prova, materias: prova.materias.map((m, i) => i === indice ? { ...m, peso: Number(e.target.value) || 1 } : m) })} className="ml-1 w-14" /></label>)}</div>}

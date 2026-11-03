@@ -1,0 +1,216 @@
+/* PlanejAI · páginas conectadas.
+   The same binding, folded corners and ink line connect actions across routes.
+   Scope with #root so lazy page styles cannot bring back old pill geometry. */
+:root {
+  --action-corners: .35rem 1.05rem .35rem 1.05rem;
+  --action-ink: var(--pn-primaria-forte);
+  --action-paper: var(--pn-superficie);
+  --action-speed: 150ms;
+  --action-danger: #a5263d;
+}
+.dark { --action-danger: #ffabb9; }
+
+#root :where(button, a[class*="button"], a[class*="btn"], .study-primary, .study-secondary) {
+  touch-action: manipulation;
+  text-underline-offset: .3em;
+  transition: background-color var(--action-speed), border-color var(--action-speed),
+    color var(--action-speed), box-shadow var(--action-speed), transform var(--action-speed);
+}
+
+/* Keep cards, swatches and screen-sized dismiss targets in their own geometry. */
+#root :where(button:not([class*="card"]):not([class*="shade"]):not([class*="overlay"]):not([class*="swatch"]):not([class*="palette"]):not(.pn-folha-plana)) {
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: var(--action-corners);
+}
+
+/* Ordinary actions: a quiet sheet, with a stronger binding on interaction.
+   No label, handler or button type is replaced by the visual system. */
+#root :where(.pn-tool, .sd-button, .pj-button, .ui-button, .pn-btn,
+  .profile-secondary-button, .schedule-manage-button, .content-state > button,
+  .save-feedback button, .study-secondary,
+  form button:not([type="button"]):not([role]):not([aria-pressed])) {
+  min-height: 44px;
+  max-width: 100%;
+  border: 1px solid var(--pn-borda-forte, var(--pn-borda));
+  border-radius: var(--action-corners);
+  padding: .75rem 1.15rem;
+  font-size: .875rem;
+  font-weight: 650;
+  letter-spacing: -.015em;
+  line-height: 1.4;
+  text-decoration: none;
+  box-shadow: inset 2px 0 0 var(--pn-borda);
+}
+
+/* Older screens use contextual CSS instead of button classes. Give their
+   ordinary text actions the same sheet treatment, keeping semantic selectors,
+   icon-only controls, full cards and list rows out of this rule. */
+#root :where(button:not([class]):not([role]):not([aria-pressed]):not([aria-expanded]):not([aria-label]))
+  :where(svg) { flex-shrink: 0; }
+#root :where(button:not([class]):not([role]):not([aria-pressed]):not([aria-expanded]):not([aria-label]):not(:has(strong, h2, h3, article))) {
+  border: 1px solid var(--pn-borda-forte, var(--pn-borda));
+  padding: .65rem 1rem;
+  line-height: 1.45;
+  box-shadow: inset 2px 0 0 var(--pn-borda);
+}
+
+#root :where(.pn-tool, .sd-button, .pj-button, .ui-button, .pn-btn,
+  .profile-secondary-button, .schedule-manage-button, .content-state > button,
+  .save-feedback button, .study-secondary):not(:disabled):not([aria-disabled="true"]):hover {
+  border-color: var(--pn-primaria);
+  box-shadow: inset 3px 0 0 var(--pn-primaria);
+}
+
+/* Commit / move forward: a solid cover with a visible page edge.
+   Use the strong palette token, which keeps white text readable in both themes. */
+#root :where(.pn-command, .ui-button--primary, .pj-button--primary, .sd-button--primary,
+  .pn-btn-primario, .ds-btn:not(.ds-btn-fantasma):not(.ds-btn-secundario),
+  .profile-primary-button, .practice-primary, .study-submit, .study-primary,
+  .study-guide-check, .focus-action, .study-button, .schedule-session-cta, .activities-first-step-cta,
+  .dash-v2-focus footer button, .dash-v2-score-form button,
+  :where(form button[type="submit"]:not(.pn-tool):not(.ui-button--secondary):not(.ui-button--danger))) {
+  min-height: 46px;
+  max-width: 100%;
+  border: 1px solid var(--action-ink);
+  border-right-width: 4px;
+  border-radius: var(--action-corners);
+  padding: .8rem 1.3rem;
+  background: var(--action-ink);
+  color: #fff;
+  font-size: .875rem;
+  font-weight: 700;
+  letter-spacing: -.015em;
+  line-height: 1.4;
+  text-decoration: none;
+  text-shadow: none;
+  box-shadow: inset 3px 0 0 rgb(255 255 255 / .26), 0 2px 0 var(--pn-borda);
+}
+
+#root :where(.pn-command, .ui-button--primary, .pj-button--primary, .sd-button--primary,
+  .pn-btn-primario, .ds-btn:not(.ds-btn-fantasma):not(.ds-btn-secundario),
+  .profile-primary-button, .practice-primary, .study-submit, .study-primary,
+  .study-guide-check, .focus-action, .study-button, .schedule-session-cta, .activities-first-step-cta,
+  .dash-v2-focus footer button, .dash-v2-score-form button,
+  :where(form button[type="submit"]:not(.pn-tool):not(.ui-button--secondary):not(.ui-button--danger)))
+  :where(svg) { flex-shrink: 0; }
+
+#root :where(.pn-command, .ui-button--primary, .pj-button--primary, .sd-button--primary,
+  .pn-btn-primario, .profile-primary-button, .practice-primary, .study-submit,
+  .study-primary, .study-button, .schedule-session-cta, .study-guide-check):not(:disabled):not([aria-disabled="true"]):hover {
+  border-right-color: var(--pn-primaria-borda);
+  box-shadow: inset 3px 0 0 rgb(255 255 255 / .5), 0 3px 0 var(--pn-borda);
+  transform: translateY(-1px);
+}
+
+/* A small connected-pages mark belongs to forward actions. It is decorative,
+   never replaces the label, and is omitted where an icon is already present. */
+#root :where(.pn-command, .ui-button--primary, .study-submit, .profile-primary-button,
+  .study-button):not(:has(svg, [aria-hidden])):not(.lumi-composer button) {
+  position: relative;
+  padding-right: 3.65rem;
+}
+#root :where(.pn-command, .ui-button--primary, .study-submit, .profile-primary-button,
+  .study-button):not(:has(svg, [aria-hidden])):not(.lumi-composer button)::after {
+  content: '';
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  width: 1.4rem;
+  height: 1.4rem;
+  transform: translateY(-50%);
+  background: currentColor;
+  opacity: .8;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cpath d='M3 5h8l3 3 3-3h8v17h-8l-3-3-3 3H3V5Zm11 3v11M7 13h4m6 0h4' fill='none' stroke='black' stroke-width='1.5' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+}
+
+/* Lightweight actions stay lightweight: the ink line is their affordance. */
+#root :where(.sd-text-button, .practice-text-button, .ui-link, .study-anchor-button,
+  .password-help button, .writing-help-link, .lumi-back, .session-back) {
+  min-height: 44px;
+  border: 0;
+  border-radius: .25rem;
+  background: transparent;
+  box-shadow: none;
+  text-decoration-color: var(--pn-primaria-borda);
+}
+#root :where(.sd-text-button, .practice-text-button, .ui-link, .study-anchor-button,
+  .password-help button, .writing-help-link, .lumi-back, .session-back):hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+/* Tabs / choices: joined page markers, not miniature primary actions. */
+#root :where([role="tab"], button[aria-pressed], .pj-tabs button, .profile-tabs button,
+  .learning-tabs button, .writing-workshop nav button, .auth-journey-tabs button) {
+  min-height: 44px;
+  border-radius: .3rem .75rem .2rem .2rem;
+  box-shadow: none;
+  transform: none;
+}
+#root :where([role="tab"][aria-selected="true"], button[aria-pressed="true"],
+  .pj-tabs button.is-active, .learning-tabs button.is-active,
+  .writing-workshop nav button.is-active, .auth-journey-tabs button[aria-selected="true"]) {
+  box-shadow: inset 0 -3px 0 currentColor;
+}
+
+/* Utility keys: square footprints and a folded corner, without a heavy halo. */
+#root :where(.sd-icon-button, .theme-toggle, .study-eye, .profile-camera,
+  .sd-sidebar-close, .a11y-trigger, .focus-trigger) {
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: .4rem .85rem .4rem .85rem;
+  box-shadow: none;
+}
+#root :where(.sd-icon-button, .theme-toggle, .study-eye, .sd-sidebar-close) { padding: .55rem; }
+
+/* Destructive intent is identified by words as well as colour. */
+#root :where(.ui-button--danger, button.is-danger, .pn-btn-perigo) {
+  border: 1px solid var(--action-danger);
+  border-left-width: 3px;
+  background: var(--pn-superficie);
+  color: var(--action-danger);
+  box-shadow: none;
+}
+
+#root :where(button, a[class*="button"], a[class*="btn"], .study-primary, .study-secondary):focus-visible {
+  outline: 2px solid var(--pn-primaria);
+  outline-offset: 4px;
+}
+#root :where(button, a[class*="button"], a[class*="btn"]):not(:disabled):not([aria-disabled="true"]):active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+#root :is(button:disabled, button[aria-disabled="true"], a[aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: .5;
+  transform: none !important;
+  box-shadow: none !important;
+}
+#root button[aria-busy="true"] { cursor: progress; }
+#root .feedback-entry > div { gap: .65rem; }
+.a11y-reduced-motion #root :where(button, a[class*="button"], a[class*="btn"]) {
+  transform: none !important;
+}
+
+@media (hover: none) {
+  #root :where(button, a[class*="button"], a[class*="btn"]):hover { transform: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #root :where(button, a[class*="button"], a[class*="btn"], .study-primary, .study-secondary) {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+  #root :where(button, a[class*="button"], a[class*="btn"]):is(:hover, :active) { transform: none !important; }
+}
+@media (forced-colors: active) {
+  #root :where(.pn-command, .pn-tool, .ui-button, .pj-button, .sd-button, .pn-btn,
+    .study-submit, .practice-primary, button[aria-pressed="true"]) {
+    border: 2px solid ButtonText;
+  }
+  #root :where([role="tab"][aria-selected="true"], button[aria-pressed="true"]) {
+    border-bottom: 4px solid Highlight;
+  }
+}

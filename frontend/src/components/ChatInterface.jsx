@@ -301,7 +301,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         <button
           type="submit"
           disabled={loading || !input.trim()}
-          className="rounded-xl bg-study-accent px-4 py-2 text-sm font-black text-white transition hover:bg-study-accent disabled:opacity-50"
+          className="pn-command rounded-xl bg-study-accent px-4 py-2 text-sm font-black text-white transition hover:bg-study-accent disabled:opacity-50"
         >
           Enviar
         </button>

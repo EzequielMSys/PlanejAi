@@ -305,7 +305,7 @@ export default function Atividades() {
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     disabled={enviandoImagem}
-                    className="w-full rounded-2xl border border-dashed border-[rgb(var(--pn-primaria-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-alt-rgb)/1)] px-5 py-3 font-bold text-[rgb(var(--pn-primaria-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] transition disabled:opacity-50"
+                    className="pn-tool w-full rounded-2xl border border-dashed border-[rgb(var(--pn-primaria-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-alt-rgb)/1)] px-5 py-3 font-bold text-[rgb(var(--pn-primaria-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] transition disabled:opacity-50"
                   >
                     {enviandoImagem ? 'Enviando...' : 'Anexar arquivo'}
                   </button>
@@ -400,7 +400,7 @@ export default function Atividades() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <button type="button" onClick={adicionarQuestao} className="rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/1)] px-5 py-2 text-sm font-black text-[rgb(var(--pn-primaria-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] transition">
+                <button type="button" onClick={adicionarQuestao} className="pn-tool rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/1)] px-5 py-2 text-sm font-black text-[rgb(var(--pn-primaria-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] transition">
                   + Adicionar questão
                 </button>
               </div>
@@ -409,14 +409,14 @@ export default function Atividades() {
                 <button
                   onClick={() => salvar('RASCUNHO')}
                   disabled={salvando}
-                  className="rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/1)] px-6 py-3 font-bold text-[rgb(var(--pn-primaria-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] transition disabled:opacity-50"
+                  className="pn-tool rounded-full border border-[rgb(var(--pn-primaria-borda-rgb)/1)] px-6 py-3 font-bold text-[rgb(var(--pn-primaria-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.1)] transition disabled:opacity-50"
                 >
                   {salvando ? 'Salvando...' : 'Salvar rascunho'}
                 </button>
                 <button
                   onClick={() => salvar('PUBLICADA')}
                   disabled={salvando}
-                  className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-6 py-3 font-bold text-white shadow-xl hover:bg-black transition disabled:opacity-50"
+                  className="pn-command rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-6 py-3 font-bold text-white shadow-xl hover:bg-black transition disabled:opacity-50"
                 >
                   {salvando ? 'Publicando...' : 'Publicar atividade'}
                 </button>
@@ -444,13 +444,13 @@ export default function Atividades() {
 
               {item.anexos?.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {item.anexos.map((anexo, idx) => <button type="button" key={`${anexo.url}-${idx}`} onClick={() => setMaterial({ ...anexo, titulo: anexo.nome || 'Anexo' })} className="rounded-full border px-3 py-2 text-xs font-bold text-[rgb(var(--pn-primaria-rgb)/1)]">Abrir {anexo.nome || `anexo ${idx + 1}`}</button>)}
+                  {item.anexos.map((anexo, idx) => <button type="button" key={`${anexo.url}-${idx}`} onClick={() => setMaterial({ ...anexo, titulo: anexo.nome || 'Anexo' })} className="pn-tool rounded-full border px-3 py-2 text-xs font-bold text-[rgb(var(--pn-primaria-rgb)/1)]">Abrir {anexo.nome || `anexo ${idx + 1}`}</button>)}
                 </div>
               )}
 
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                 <span className="text-sm font-bold text-[rgb(var(--pn-primaria-rgb)/1)]">{isGestor ? `${item.entregas || 0} entregas` : 'Ver atividade'}</span>
-                <div className="flex gap-2"><button type="button" onClick={() => abrirVersoes(item)} className="rounded-full border px-3 py-1 text-xs font-bold">Versões</button><button type="button" onClick={() => editar(item)} className="rounded-full border px-3 py-1 text-xs font-bold">Editar</button><button type="button" onClick={() => abrirEntregas(item)} className="rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-3 py-1 text-xs font-bold text-white">Corrigir</button></div>
+                <div className="flex gap-2"><button type="button" onClick={() => abrirVersoes(item)} className="pn-tool rounded-full border px-3 py-1 text-xs font-bold">Versões</button><button type="button" onClick={() => editar(item)} className="pn-tool rounded-full border px-3 py-1 text-xs font-bold">Editar</button><button type="button" onClick={() => abrirEntregas(item)} className="pn-command rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-3 py-1 text-xs font-bold text-white">Corrigir</button></div>
               </div>
             </motion.article>
           ))}

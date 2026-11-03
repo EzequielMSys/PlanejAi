@@ -393,7 +393,7 @@ async function concluirDia(idDia) {
             </div>
           </section>
 
-          {cronogramaAtual && <div className="schedule-tools mb-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={abrirRecuperacao} className="rounded-full border border-study-line/25 bg-study-paper px-5 py-3 text-sm font-black text-study-accent dark:bg-study-paper dark:text-study-accent">Plano de recuperação</button><button type="button" onClick={() => exportarCronograma(cronogramaAtual)} className="rounded-full bg-study-accent px-5 py-3 text-sm font-black text-white">Exportar calendário</button></div>}
+          {cronogramaAtual && <div className="schedule-tools mb-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={abrirRecuperacao} className="pn-tool rounded-full border border-study-line/25 bg-study-paper px-5 py-3 text-sm font-black text-study-accent dark:bg-study-paper dark:text-study-accent">Plano de recuperação</button><button type="button" onClick={() => exportarCronograma(cronogramaAtual)} className="pn-command rounded-full bg-study-accent px-5 py-3 text-sm font-black text-white">Exportar calendário</button></div>}
 
           <DailyPlanActions schedules={cronogramas} onSaved={carregarCronogramas} />
           {!cronogramaAtual ? (
@@ -412,7 +412,7 @@ async function concluirDia(idDia) {
                   type="button"
                   onClick={gerarNovoCronograma}
                   disabled={gerando}
-                  className="mt-7 rounded-xl bg-study-accent px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-study-accent disabled:opacity-60"
+                  className="pn-command mt-7 rounded-xl bg-study-accent px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-study-accent disabled:opacity-60"
                 >
                   {gerando ? 'Montando sua semana...' : perfilCompleto ? 'Montar meu cronograma' : 'Escolher matérias e horários'}
                 </button>
@@ -525,14 +525,14 @@ async function concluirDia(idDia) {
                             {concluido ? 'Concluído' : bloqueado ? 'Bloqueado' : 'Pendente'}
                           </span>
 
-                          {dia.requer_desafio && <button type="button" onClick={() => cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao) : iniciarDesafio(idDia)} className="rounded-full border border-study-line px-4 py-2.5 text-sm font-bold text-study-accent">{cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? 'Retomar desafio' : 'Desafio para liberar'}</button>}
+                          {dia.requer_desafio && <button type="button" onClick={() => cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao) : iniciarDesafio(idDia)} className="pn-tool rounded-full border border-study-line px-4 py-2.5 text-sm font-bold text-study-accent">{cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? 'Retomar desafio' : 'Desafio para liberar'}</button>}
 
                           {!concluido && !bloqueado && (
                             <button
                               type="button"
                               onClick={() => concluirDia(idDia)}
                               disabled={concluindo === idDia}
-                              className="bg-study-accent text-white px-5 py-2.5 rounded-full font-bold hover:bg-black transition disabled:opacity-60"
+                              className="pn-command bg-study-accent text-white px-5 py-2.5 rounded-full font-bold hover:bg-black transition disabled:opacity-60"
                             >
                               {concluindo === idDia ? 'Salvando...' : 'Concluir'}
                             </button>
@@ -542,7 +542,7 @@ async function concluirDia(idDia) {
                             <button
                               type="button"
                               onClick={() => alternarExpansaoDia(idDia)}
-                              className="bg-study-canvas border border-study-line/40 text-black px-4 py-2.5 rounded-full font-bold hover:bg-study-accent/20 transition"
+                              className="pn-tool bg-study-canvas border border-study-line/40 text-black px-4 py-2.5 rounded-full font-bold hover:bg-study-accent/20 transition"
                             >
                               {expandido ? 'Ocultar' : 'Ver conteúdos'}
                             </button>
@@ -615,14 +615,14 @@ async function concluirDia(idDia) {
                                     <button
                                       type="button"
                                       onClick={() => salvarEdicao(idConteudo)}
-                                      className="rounded-full bg-study-accent text-white px-3 py-1 text-xs font-bold"
+                                      className="pn-command rounded-full bg-study-accent text-white px-3 py-1 text-xs font-bold"
                                     >
                                       Salvar
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => setEditando(null)}
-                                      className="rounded-full border border-study-line px-3 py-1 text-xs font-bold text-study-accent"
+                                      className="pn-tool rounded-full border border-study-line px-3 py-1 text-xs font-bold text-study-accent"
                                     >
                                       Cancelar
                                     </button>
@@ -708,7 +708,7 @@ function MateriaisComplementares({ materiais, onOpen }) {
   return (
     <div className="flex flex-wrap gap-2">
       {lista.map((material, index) => (
-        <button type="button" key={`${material.url}-${index}`} onClick={() => onOpen({ titulo: material.titulo || 'Material complementar', tipo: material.tipo, url: material.url })} className="rounded-full border border-study-line/40 px-3 py-1 text-xs font-bold text-study-accent hover:bg-study-accent/15">
+        <button type="button" key={`${material.url}-${index}`} onClick={() => onOpen({ titulo: material.titulo || 'Material complementar', tipo: material.tipo, url: material.url })} className="pn-tool rounded-full border border-study-line/40 px-3 py-1 text-xs font-bold text-study-accent hover:bg-study-accent/15">
           {material.tipo === 'VIDEO' ? '▶ ' : material.tipo === 'PDF' ? 'PDF ' : ''}{material.titulo || 'Material'}
         </button>
       ))}

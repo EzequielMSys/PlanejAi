@@ -305,7 +305,7 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-8 w-full rounded-2xl bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-5 py-4 font-extrabold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-[rgb(var(--pn-primaria-forte-rgb)/1)] hover:shadow-xl active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="pn-command mt-8 w-full rounded-2xl bg-[rgb(var(--pn-primaria-forte-rgb)/1)] px-5 py-4 font-extrabold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-[rgb(var(--pn-primaria-forte-rgb)/1)] hover:shadow-xl active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? 'Salvando...' : 'Próximo: Disponibilidade'}
                 </button>
@@ -383,7 +383,7 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 rounded-2xl bg-[rgb(var(--pn-primaria-forte-rgb)/1)] py-3.5 font-extrabold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-[rgb(var(--pn-primaria-forte-rgb)/1)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="pn-command flex-1 rounded-2xl bg-[rgb(var(--pn-primaria-forte-rgb)/1)] py-3.5 font-extrabold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-[rgb(var(--pn-primaria-forte-rgb)/1)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? 'Salvando na conta…' : 'Salvar e preparar cronograma'}
                   </button>
