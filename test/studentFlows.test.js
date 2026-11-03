@@ -300,6 +300,7 @@ async function fixture(config) {
   if (url.endsWith('/turmas/minhas/1')) return { id_turma: 1, nome: 'Turma de teste', ano_letivo: 2026, pendentes: [], concluidas: [], avisos: [] };
   if (url.endsWith('/turmas')) return [{ id_turma: 2, nome: 'Terceiro A', codigo: '3A', ano_letivo: 2026, total_alunos: 3, disciplinas: [{ disciplina: 'Matemática' }] }];
   if (url.endsWith('/turmas/2')) return { id_turma: 2, nome: 'Terceiro A', codigo: '3A', docentes: [], alunos: [] };
+  if(materialCatalogFixture==='failed'&&url.endsWith('/conteudos'))throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
   if (materialCatalogFixture && url.endsWith('/conteudos')) return [{ id_conteudo: 7, titulo: 'Leis de Newton', disciplina: 'Física', nivel: 'BASICO', materiais: '[]', link: '' }];
   if (url.endsWith('/adaptativo/proxima-acao')) return { motivo: 'Uma sessão breve', titulo: 'Revisar' };
   if (url.endsWith('/adaptativo/sequencia')) return { semanas: 0 };
@@ -310,7 +311,7 @@ async function getBundle() {
   if (bundle) return bundle;
   const esbuild = requireFrontend('esbuild');
   const result = await esbuild.build({
-    stdin: { contents: `export { default as Login } from './src/pages/Login'; export { AuthContext } from './src/context/AuthContext'; export { default as App } from './src/App'; export { default as RouteLoading } from './src/components/RouteLoading'; export { default as PageExperience } from './src/components/PageExperience'; export { ThemeProvider } from './src/context/ThemeContext'; export { AccessibilityProvider } from './src/context/AccessibilityContext'; export { default as ErrorBoundary } from './src/components/ErrorBoundary';`, resolveDir: frontendDir, loader: 'jsx' },
+    stdin: { contents: `export { default as MaterialViewer } from './src/components/MaterialViewer'; export { default as Login } from './src/pages/Login'; export { AuthContext } from './src/context/AuthContext'; export { default as App } from './src/App'; export { default as RouteLoading } from './src/components/RouteLoading'; export { default as PageExperience } from './src/components/PageExperience'; export { ThemeProvider } from './src/context/ThemeContext'; export { AccessibilityProvider } from './src/context/AccessibilityContext'; export { default as ErrorBoundary } from './src/components/ErrorBoundary';`, resolveDir: frontendDir, loader: 'jsx' },
     bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic', loader: { '.css': 'empty', '.ttf':'empty' },
     define: { 'import.meta.env': JSON.stringify({ VITE_API_URL: 'http://fixture.invalid', BASE_URL: '/', DEV: true }) },
     plugins: [{ name: 'defer-nonessential-widgets', setup(build) { build.onResolve({filter:/prepareActivityPhoto$/},()=>({path:'photo-prepare',namespace:'test'}));build.onLoad({filter:/photo-prepare/,namespace:'test'},()=>({contents:'export default async function(){return new Blob(["fixture"],{type:"image/jpeg"})}',loader:'js',resolveDir:frontendDir}));build.onResolve({ filter: /LumiMessage$/ }, () => ({ path: 'lumi-message-test', namespace: 'test' })); build.onResolve({ filter: /Deferred$/ }, () => ({ path: 'deferred-test', namespace: 'test' })); build.onLoad({ filter: /lumi-message-test/, namespace: 'test' }, () => ({ contents: "import React from 'react'; export default function LumiMessage({ content }) { return React.createElement('div', { className: 'lumi-message' }, content) }", loader: 'js', resolveDir: frontendDir })); build.onLoad({ filter: /deferred-test/, namespace: 'test' }, () => ({ contents: 'export default function Deferred(){ return null }', loader: 'js' })); } }],
@@ -3028,4 +3029,44 @@ test('Hoje mantém ação principal antes das alternativas e preserva revisão a
   assert.ok(document.querySelector('.quick-review-prompt .card-answer'));
   assert.equal(requests.filter(x=>x.method==='post').length,0);
  }finally{continuityFixture=null;cardLibraryFixture=[];await screen.close()}
+});
+
+
+test('biblioteca diferencia falha de catálogo vazio e recupera os conteúdos sem alterar filtros',async()=>{
+ materialCatalogFixture='failed';const screen=await renderRoute('/materiais','dono');try{
+  assert.match(document.querySelector('.materials-message[role="alert"]').textContent,/consultar a biblioteca/);
+  assert.ok(!document.querySelector('.materials-facts'));
+  assert.ok(!screen.container.textContent.includes('O catálogo ainda está vazio'));
+  await inputValue(document.querySelector('.materials-catalog input'),'Newton');materialCatalogFixture=true;
+  await act(async()=>button('Consultar biblioteca novamente').click());await flush();
+  assert.equal(document.querySelector('.materials-catalog input').value,'Newton');assert.equal(document.querySelectorAll('.materials-card').length,1);
+ }finally{materialCatalogFixture=false;await screen.close()}
+});
+
+test('índice de leitura leva à seção e modo leitura recolhe reflexões preservando o lembrete',async()=>{
+ window.sessionStorage.setItem('900001:active-study-content',JSON.stringify({conteudo:{id:51,id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física'}}));
+ const screen=await renderRoute('/estudar');try{
+  const outline=document.querySelector('.reading-outline');assert.equal(outline.open,false);
+  await act(async()=>outline.querySelector('summary').click());
+  const jump=[...outline.querySelectorAll('button')].find(x=>x.textContent.includes('Armadilha comum'));
+  await act(async()=>jump.click());assert.equal(document.activeElement.querySelector('h3').textContent,'Armadilha comum');
+  assert.equal(JSON.parse(localStorage.getItem('900001:reading-position:v1:9')).title,'Armadilha comum');
+  await inputValue(document.getElementById('closure-reminder'),'Conferir as unidades na próxima tentativa.');
+  await act(async()=>button('Modo leitura').click());assert.equal(document.querySelector('.session-reflection').hidden,true);
+  await act(async()=>button('Sair do modo leitura').click());assert.equal(document.querySelector('.session-reflection').hidden,false);
+  assert.equal(document.getElementById('closure-reminder').value,'Conferir as unidades na próxima tentativa.');
+  assert.equal(requests.filter(x=>x.method==='post').length,0);
+ }finally{window.sessionStorage.clear();await screen.close()}
+});
+
+
+test('visualizador de material contém o foco e devolve ao controle de abertura ao sair',async()=>{
+ const {MaterialViewer}=await getBundle();const root=createRoot(document.getElementById('root'));
+ function Harness(){const[open,setOpen]=React.useState(false);return React.createElement(React.Fragment,null,React.createElement('button',{onClick:()=>setOpen(true)},'Abrir material de teste'),open&&React.createElement(MaterialViewer,{material:{titulo:'Material de teste',url:''},onClose:()=>setOpen(false)}))}
+ try{
+  await act(async()=>root.render(React.createElement(Harness)));const trigger=button('Abrir material de teste');trigger.focus();await act(async()=>trigger.click());await flush();
+  const panel=document.querySelector('.material-viewer');assert.equal(document.activeElement,panel);
+  const close=panel.querySelector('button');close.focus();await act(async()=>close.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})));assert.equal(document.activeElement,close);
+  await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})));assert.equal(document.querySelector('.material-viewer'),null);assert.equal(document.activeElement,trigger);
+ }finally{await act(async()=>root.unmount())}
 });

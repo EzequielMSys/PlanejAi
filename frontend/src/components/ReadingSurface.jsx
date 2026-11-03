@@ -14,8 +14,10 @@ export default function ReadingSurface({material,children}) {
   const [settings,setSettings]=useState(()=>readingSettings(read(ownerKey)))
   const [offer,setOffer]=useState(()=>{const value=read(bookmarkKey);return value && Number.isInteger(value.index) && value.index>=0 && value.index<64 && typeof value.title==='string' && value.title.trim()?value:null})
   const [notice,setNotice]=useState(''),[failed,setFailed]=useState(false)
+  const [outline,setOutline]=useState([])
   const pending=useRef(Boolean(offer))
   const sections=()=>[...(content.current?.querySelectorAll('.study-guide>section')||[])]
+  useEffect(()=>{setOutline([...(content.current?.querySelectorAll('.study-guide>section')||[])].map((section,index)=>({index,title:section.querySelector('h3')?.textContent})).filter(item=>item.title))},[identity])
   function update(name,value){const next={...settings,[name]:Number(value)};setSettings(next);try{localStorage.setItem(ownerKey,JSON.stringify(next));setFailed(false)}catch{setFailed(true)}}
   function remember(index){
     if(ownerKey!==scopedCacheKey('reading-settings:v1'))return
@@ -40,6 +42,7 @@ export default function ReadingSurface({material,children}) {
   },[bookmarkKey,ownerKey])
   const validOffer=offer && Number.isInteger(offer.index) && offer.index>=0 && typeof offer.title==='string'
   return <section className="reading-surface" aria-label="Leitura do material">
+    {outline.length>0&&<details className="reading-outline"><summary>Nesta leitura <span>{outline.length} partes</span></summary><nav aria-label="Partes do material">{outline.map(item=><button type="button" key={item.index} onClick={event=>{event.currentTarget.closest('details').open=false;go(item.index)}}>{item.title}<span aria-hidden="true">↗</span></button>)}</nav></details>}
     <details className="reading-settings"><summary>Ajustar leitura</summary><div>
       <label htmlFor={`${id}-size`}>Tamanho do texto<select id={`${id}-size`} value={settings.size} onChange={e=>update('size',e.target.value)}>{[16,18,20,22,24,28].map(size=><option key={size} value={size}>{size} px</option>)}</select></label>
       <label htmlFor={`${id}-width`}>Largura do texto<select id={`${id}-width`} value={settings.width} onChange={e=>update('width',e.target.value)}>{[[48,'Estreita'],[60,'Confortável'],[68,'Padrão'],[80,'Ampla']].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>

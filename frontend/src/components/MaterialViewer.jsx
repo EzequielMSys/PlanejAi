@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import useDialogFocus from '../hooks/useDialogFocus'
 import { resolveProtectedAsset } from '../services/fileService'
 import StudyGuide, { isExternalStudySource } from './StudyGuide'
 
 export default function MaterialViewer({ material, onClose }) {
+  const dialogRef=useRef(null)
+  useDialogFocus(dialogRef,Boolean(material),onClose)
   const source = material?.url || material?.link || ''
   const [url, setUrl] = useState('')
   const [loadError, setLoadError] = useState('')
@@ -12,19 +15,8 @@ export default function MaterialViewer({ material, onClose }) {
   const isVideoFile = type.includes('VIDEO') && /\.(mp4|webm|ogg)(?:$|[?#])/i.test(url)
 
   useEffect(() => {
-    if (!material) return undefined
-    const closeOnEscape = (event) => event.key === 'Escape' && onClose()
-    document.addEventListener('keydown', closeOnEscape)
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', closeOnEscape)
-      document.body.style.overflow = previousOverflow
-    }
-  }, [material, onClose])
-
-  useEffect(() => {
     let active = true
+    setUrl('')
     setLoadError('')
     resolveProtectedAsset(source).then((value) => active && setUrl(value)).catch(() => active && setLoadError('Não foi possível autorizar este arquivo.'))
     return () => { active = false }
@@ -34,7 +26,7 @@ export default function MaterialViewer({ material, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgb(var(--pn-primaria-forte-rgb)/0.8)] p-3 backdrop-blur-md sm:p-6" onMouseDown={onClose}>
-      <section className="material-viewer" onMouseDown={(event) => event.stopPropagation()} aria-modal="true" role="dialog" aria-label={material.titulo}>
+      <section ref={dialogRef} tabIndex={-1} className="material-viewer" onMouseDown={(event) => event.stopPropagation()} aria-modal="true" role="dialog" aria-label={material.titulo || 'Material de estudo'}>
         <header className="material-viewer-header">
           <div>
             <p>PLANEJAI / SALA DE ESTUDO</p>

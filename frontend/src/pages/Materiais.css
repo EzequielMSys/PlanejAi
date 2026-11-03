@@ -4,3 +4,10 @@
 @media(max-width:900px){.materials-hero{grid-template-columns:1fr}.materials-hero aside{border-left:0;border-top:1px solid var(--pn-borda)}}@media(max-width:620px){.materials-catalog-heading{align-items:stretch;flex-direction:column}.materials-catalog-heading label{flex:auto}.materials-extra>div{grid-template-columns:1fr}.materials-dialog{margin:1rem auto}}@media(prefers-reduced-motion:reduce){.materials-card{transition:none}.materials-card:hover{transform:none}}
 .materials-dialog-backdrop{height:var(--visible-viewport-height,100dvh);bottom:auto}.materials-dialog{margin:0 auto;min-width:0;max-height:calc(var(--visible-viewport-height,100dvh) - 2rem);overflow-y:auto;overscroll-behavior:contain}.materials-dialog-body{min-width:0;border:0}.materials-dialog header>button{min-width:44px;min-height:44px;flex:none}.materials-dialog :is(input,select,button){scroll-margin-block:1rem}.materials-dialog footer{flex-wrap:wrap}.materials-dialog footer button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
 @media(max-width:680px){.materials-dialog>form>header,.materials-dialog-body,.materials-dialog footer{padding:1rem}.materials-extra>div{grid-template-columns:minmax(0,1fr)}}
+.materials-page .materials-hero{display:block;padding:clamp(1rem,3vw,1.75rem);background:var(--pn-superficie);border:0;border-bottom:1px solid var(--pn-borda);border-radius:0;box-shadow:none}
+.materials-page .materials-hero h1{max-width:none;font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.15}
+.materials-page .materials-hero>aside{display:none}
+.materials-page .materials-hero>div{padding:0}
+.materials-page .materials-facts{margin-top:1rem}
+.materials-page .materials-catalog{margin-top:1.5rem}
+.materials-page .materials-message>button{min-height:44px;margin-top:.75rem;color:var(--pn-primaria);font-weight:700}

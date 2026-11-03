@@ -51,3 +51,7 @@
 .study-desk.is-reading-mode .study-desk-wrap-up { max-width:70rem; margin-inline:auto; }
 @media(max-width:1000px) { .study-desk .session-layout { grid-template-columns:1fr; } .study-desk .session-tools { grid-template-columns:repeat(2,minmax(0,1fr)); } .study-desk-tools-heading { grid-column:1/-1; } }
 @media(max-width:680px) { .study-desk .session-topbar { grid-template-columns:1fr; gap:1rem; } .study-desk .session-back { width:fit-content; min-height:44px; } .study-desk-actions { width:100%; } .study-desk-actions>button { flex:1 1 10rem; } .study-desk .session-tools { grid-template-columns:1fr; } .study-desk .session-tabs button { flex:1 1 auto; } .study-desk .study-desk-wrap-up { grid-template-columns:1fr; } .study-desk-wrap-up>.pj-button { grid-column:1; grid-row:auto; } .study-desk .study-desk-assessment { grid-row:auto; } .study-desk .session-notes-tools { grid-template-columns:1fr; } .study-desk .session-canvas { min-height:24rem; } }
+.study-desk.is-reading-mode .study-desk-actions>button:not(:first-child){display:none}
+.study-desk.is-reading-mode .session-topbar{margin-bottom:1.25rem}
+.study-desk .study-desk-context[hidden],.study-desk .session-reflection[hidden]{display:none!important}
+.study-desk.is-reading-mode .study-desk-context>p{display:none}

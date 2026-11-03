@@ -66,6 +66,8 @@ function StudyMaterial({ content, onTutorRequest }) {
   const [loadError, setLoadError] = useState('')
   useEffect(() => {
     let active = true
+    setUrl('')
+    setLoadError('')
     resolveProtectedAsset(source).then((value) => active && setUrl(value)).catch(() => active && setLoadError('Não foi possível autorizar este arquivo.'))
     return () => { active = false }
   }, [source])
@@ -181,14 +183,14 @@ export default function StudySession() {
 
   return <main className={`session-page pj-page study-desk${readingMode ? ' is-reading-mode' : ''}`}>
     <div className="pj-wrap">
-      <AreaSignature area="study"/>
+      {!readingMode && <AreaSignature area="study"/>}
       {noteStatus === 'unavailable' && tab !== 'notes' && <SaveFeedback status={noteStatus} savedAt={notesSavedAt} onRetry={retryNotes} />}
       <header className="session-topbar student-page-heading">
         <button type="button" className="session-back" onClick={() => navigate(-1)}>← Voltar</button>
         <div><span className="pj-eyebrow">PlanejAI / Sala de estudo</span><h1>{content.titulo || 'Sessão de estudo'}</h1><p>{content.disciplina || content.area || 'Geral'} {day?.data_estudo ? `· ${new Date(`${String(day.data_estudo).slice(0,10)}T12:00:00`).toLocaleDateString('pt-BR')}` : ''}</p></div>
         <div className="study-desk-actions"><button type="button" aria-pressed={readingMode} onClick={() => setReadingMode(value => !value)}>{readingMode ? 'Sair do modo leitura' : 'Modo leitura'}</button><button type="button" aria-controls="study-desk-lumi-body" onClick={openLumi}>Abrir Lumi</button><button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : closingDraft.attempt ? 'Conferir fechamento' : 'Concluir sessão'}</button></div>
       </header>
-      <div className="study-desk-context"><p><span className="study-desk-dot" aria-hidden="true" />Um conteúdo de cada vez. Leia, experimente e registre o que fez sentido.</p>{content.id && <SaveFeedback status={continuityStatus} message={continuityStatus === 'saved' ? 'Retomada desta sessão salva na sua conta. Você pode continuar em outro aparelho.' : continuityStatus === 'local' ? 'A retomada em outro aparelho ainda não foi confirmada. Suas anotações têm um aviso próprio de salvamento.' : 'Confirmando a retomada na sua conta…'} onRetry={() => { setContinuityStatus('saving'); continuity.save(content.id).then(() => setContinuityStatus('saved')).catch(() => setContinuityStatus('local')) }} />}</div>
+      <div className="study-desk-context" hidden={readingMode && continuityStatus==='saved'}><p><span className="study-desk-dot" aria-hidden="true" />Um conteúdo de cada vez. Leia, experimente e registre o que fez sentido.</p>{content.id && <SaveFeedback status={continuityStatus} message={continuityStatus === 'saved' ? 'Retomada desta sessão salva na sua conta. Você pode continuar em outro aparelho.' : continuityStatus === 'local' ? 'A retomada em outro aparelho ainda não foi confirmada. Suas anotações têm um aviso próprio de salvamento.' : 'Confirmando a retomada na sua conta…'} onRetry={() => { setContinuityStatus('saving'); continuity.save(content.id).then(() => setContinuityStatus('saved')).catch(() => setContinuityStatus('local')) }} />}</div>
 
       {shortReturn && <section className="study-short-return" aria-labelledby="short-return-title"><h2 id="short-return-title">Cinco minutos já são um começo.</h2><p>Uma sugestão de ritmo, sem cronômetro obrigatório. A sessão só será concluída quando você escolher concluir.</p><ol><li><strong>1 minuto:</strong> releia suas anotações ou a ideia principal.</li><li><strong>3 minutos:</strong> tente explicar um conceito com suas palavras.</li><li><strong>1 minuto:</strong> anote uma dúvida ou o próximo passo para depois.</li></ol><button type="button" onClick={() => { setTab('notes'); setShortReturn(false) }}>Abrir minhas anotações</button></section>}
       <section className="session-layout">
@@ -211,10 +213,12 @@ export default function StudySession() {
           <article className="study-desk-note-link pj-panel"><span aria-hidden="true">✎</span><h2>Uma ideia merece ficar.</h2><p>Anote com suas palavras. Os avisos distinguem a cópia neste aparelho do que já chegou à conta.</p><button type="button" onClick={() => { setTab('notes'); requestAnimationFrame(() => document.querySelector('.session-notes textarea')?.focus()) }}>Abrir anotações <span aria-hidden="true">↗</span></button></article>
         </aside>
       </section>
+      <div className="session-reflection" hidden={readingMode}>
       <Suspense fallback={null}><StudyConnections key={content.id_conteudo || content.titulo} content={content} onAddNote={recordConnection} noteDisabled={loadingNotes}/></Suspense>
       <Suspense fallback={<p role="status">Preparando seus registros…</p>}><LearningJournal content={content} notes={notes} embedded/></Suspense>
       <section className="session-closure-reminder" aria-labelledby="closure-reminder-title"><span className="pj-eyebrow">DEIXE UM FIO PARA A PRÓXIMA VEZ</span><h2 id="closure-reminder-title">Por onde você quer continuar?</h2><p>Opcional. Seu lembrete será salvo junto com o fechamento e aparecerá na tela Hoje.</p><label htmlFor="closure-reminder">Meu próximo passo</label><textarea id="closure-reminder" rows={3} maxLength={600} value={closingDraft.reminder} disabled={finishing || Boolean(closingDraft.attempt)} onChange={event=>closingDraft.change(event.target.value)} placeholder="Na próxima sessão, tentar resolver sem consultar o exemplo."/><small>{closingDraft.reminder.length}/600 · {closingDraft.attempt?'Um fechamento foi enviado. Tente concluir novamente para conferir o mesmo envio antes de mudar o lembrete.':closingDraft.localSaved?'Rascunho neste aparelho; será confirmado na conta ao concluir.':'Sem cópia local: mantenha a página aberta até confirmar ou baixe o lembrete.'}</small>{!closingDraft.localSaved && <button type="button" onClick={()=>downloadTextCopy(closingDraft.reminder,'planejai-proximo-passo.txt')}>Baixar meu próximo passo</button>}</section>
       <section className="session-check study-desk-wrap-up pj-panel" aria-labelledby="session-wrap-up-title"><div><span className="pj-eyebrow">PARA FECHAR ESTE PASSO</span><h2 id="session-wrap-up-title">Como esse conteúdo ficou?</h2><p>Sua resposta define quando ele volta para revisão. Você também pode sair e retomar depois. As explicações e dúvidas são opcionais; use “Salvar na minha conta” antes de sair para acessá-las em outro aparelho.</p></div><div className="study-desk-assessment" role="group" aria-label="Como ficou o conteúdo">{[['DIFICIL','Ainda difícil'],['LEMBREI','Entendi'],['DOMINEI','Consigo explicar']].map(([value,label]) => <button type="button" key={value} disabled={finishing || Boolean(closingDraft.attempt)} aria-pressed={difficulty === value} className={difficulty === value ? 'is-active' : ''} onClick={() => setDifficulty(value)}>{label}</button>)}</div><button type="button" className="pj-button pj-button--primary" disabled={finishing || loadingNotes} onClick={finish}>{finishing ? 'Salvando…' : closingDraft.attempt ? 'Conferir fechamento' : 'Concluir sessão'}</button></section>
+      </div>
     </div>
   </main>
 }
