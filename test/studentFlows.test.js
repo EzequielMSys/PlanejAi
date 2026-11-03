@@ -3133,3 +3133,29 @@ test('busca de fontes sem correspondência oferece limpar filtros sem navegar ou
   await inputValue(document.querySelector('.sources-controls input[type="search"]'),'assuntoinexistente123');assert.ok(button('Limpar filtros'));await act(async()=>button('Limpar filtros').click());assert.equal(document.querySelector('.sources-controls input[type="search"]').value,'');assert.ok(document.querySelectorAll('.sources-grid article').length>0);
  }finally{await screen.close()}
 });
+
+
+test('setup explains invalid choices inline and focuses the next step without losing the saved profile', async () => {
+  const screen = await renderRoute('/onboarding');
+  try {
+    await act(async () => button('Próximo: Disponibilidade').click());
+    await flush();
+    assert.ok(document.querySelector('.setup-validation')?.textContent.includes('pelo menos uma matéria'));
+    assert.ok(document.activeElement === document.querySelector('.setup-validation'));
+    assert.equal(requests.filter(item => item.method === 'post' && item.url.endsWith('/perfil')).length, 0);
+  } finally { await screen.close(); }
+  onboardingProfileFixture = { areas_foco: 'Física', objetivo: 'ENEM', tempo_diario_min: 45 };
+  const restored = await renderRoute('/onboarding');
+  try {
+    assert.equal(document.activeElement?.textContent, 'Como é a sua semana?');
+    await act(async () => button('Salvar e preparar cronograma').click());
+    await flush();
+    assert.ok(document.querySelector('.setup-validation')?.textContent.includes('dia disponível'));
+    assert.ok(document.activeElement === document.querySelector('.setup-validation'));
+    await act(async () => button('Voltar').click());
+    await flush();
+    assert.equal(document.activeElement?.textContent, 'Qual é a sua meta?');
+    assert.equal(document.getElementById('setup-minutes').value, '45');
+    assert.ok(!document.querySelector('.setup-validation'));
+  } finally { onboardingProfileFixture = null; await restored.close(); }
+});

@@ -32,6 +32,24 @@ export default function Onboarding() {
   const [restoring, setRestoring] = useState(true)
   const [restoreError, setRestoreError] = useState(false)
   const [step, setStep] = useState(1)
+  const [validation, setValidation] = useState('')
+  const validationRef = useRef(null)
+  const stepRef = useRef(null)
+  const previousStep = useRef(1)
+  const showValidation = (message) => {
+    setValidation(message)
+    validationRef.current?.focus()
+  }
+  useEffect(() => {
+    if (validation) validationRef.current?.focus()
+  }, [validation])
+  useEffect(() => {
+    if (previousStep.current !== step) {
+      setValidation('')
+      stepRef.current?.focus()
+      previousStep.current = step
+    }
+  }, [step])
 
   const [formData, setFormData] = useState({
     ano_escolar: '',
@@ -67,7 +85,7 @@ export default function Onboarding() {
     if(saving.current)return
 
 if (!formData.objetivo || !formData.areas_foco.trim()) {
-      toast.error('Preencha todos os campos obrigatórios.')
+      showValidation('Escolha um objetivo e pelo menos uma matéria para continuar.')
       return
     }
 
@@ -81,10 +99,11 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
     )
 
     if (!somenteLetras) {
-      toast.error('As áreas de foco devem conter apenas letras.')
+      showValidation('Use apenas letras e espaços nos nomes das matérias.')
       return
     }
 
+    setValidation('')
     saving.current=true
     setLoading(true)
     setAccountSave({status:'saving',part:'profile',message:'Salvando suas matérias na conta…'})
@@ -107,9 +126,10 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
     if(saving.current)return
     const available = disponibilidade.filter(day => !Number(day.ocupado))
     if (!available.length || available.some(day => !day.hora_inicio || !day.hora_fim || day.hora_inicio >= day.hora_fim)) {
-      toast.error('Escolha pelo menos um dia com horário final depois do inicial.')
+      showValidation('Escolha pelo menos um dia disponível e informe um horário final depois do inicial.')
       return
     }
+    setValidation('')
     saving.current=true
     setLoading(true)
     setAccountSave({status:'saving',part:'availability',message:'Salvando seus horários na conta…'})
@@ -199,16 +219,17 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
                   </div>
                 )
               })}
-              <div className="mt-5 rounded-2xl bg-[rgb(var(--pn-superficie-alt-rgb)/1)] p-4 text-sm leading-relaxed text-[rgb(var(--pn-texto-rgb)/1)]">Leva menos de <strong className="text-[rgb(var(--pn-texto-rgb)/1)]">2 minutos</strong>. Você poderá mudar tudo depois no perfil.</div>
+              <div className="mt-5 rounded-2xl bg-[rgb(var(--pn-superficie-alt-rgb)/1)] p-4 text-sm leading-relaxed text-[rgb(var(--pn-texto-rgb)/1)]">Você pode ajustar suas escolhas depois no perfil.</div>
             </aside>
 
             <div>
-              <p className="mb-3 text-sm" role="status">Etapa {step} de 2 · {step === 1 ? 'Escolha seu ponto de partida' : 'Matérias salvas; escolha seus horários'}</p><ol className="setup-step-progress" aria-label="Preparação do seu plano"><li aria-current={step === 1 ? 'step' : undefined}>1. Matérias e ritmo</li><li aria-current={step === 2 ? 'step' : undefined}>2. Dias e horários</li></ol>
+              <p className="mb-3 text-sm" role="status">Etapa {step} de 2 · {step === 1 ? 'Escolha seu ponto de partida' : 'Confira suas matérias e escolha seus horários'}</p><ol className="setup-step-progress" aria-label="Preparação do seu plano"><li aria-current={step === 1 ? 'step' : undefined}>1. Matérias e ritmo</li><li aria-current={step === 2 ? 'step' : undefined}>2. Dias e horários</li></ol>
 
+          {validation && <p ref={validationRef} tabIndex={-1} role="alert" className="setup-validation">{validation}</p>}
           {step === 1 && (
             <form onSubmit={handlePerfilSubmit}><fieldset disabled={loading}>
               <div className="rounded-[2rem] border border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 shadow-[0_24px_70px_-42px_rgba(35,31,77,.55)] sm:p-8 lg:p-10">
-                <h2 className="text-2xl font-black tracking-tight text-[rgb(var(--pn-texto-rgb)/1)]">Qual é a sua meta?</h2>
+                <h2 ref={stepRef} tabIndex={-1} className="text-2xl font-black tracking-tight text-[rgb(var(--pn-texto-rgb)/1)]">Qual é a sua meta?</h2>
                 <p className="mb-7 mt-1 text-sm text-[rgb(var(--pn-texto-rgb)/1)]">Escolha o objetivo, as matérias e um tempo possível. Na próxima etapa, ajuste os dias e horários.</p>
 
                 <div className="space-y-4">
@@ -295,10 +316,10 @@ if (!formData.objetivo || !formData.areas_foco.trim()) {
           {step === 2 && (
             <form onSubmit={handleDisponibilidadeSubmit}><fieldset disabled={loading}>
               <div className="rounded-[2rem] border border-[rgb(var(--pn-borda-rgb)/1)] bg-[rgb(var(--pn-superficie-rgb)/1)] p-6 shadow-[0_24px_70px_-42px_rgba(35,31,77,.55)] sm:p-8 lg:p-10">
-                <h2 className="text-2xl font-black tracking-tight text-[rgb(var(--pn-texto-rgb)/1)]">Como é a sua semana?</h2>
+                <h2 ref={stepRef} tabIndex={-1} className="text-2xl font-black tracking-tight text-[rgb(var(--pn-texto-rgb)/1)]">Como é a sua semana?</h2>
 
                 <p className="text-[rgb(var(--pn-texto-rgb)/0.6)] mb-6">
-                  Selecione ao menos um dia e ajuste a faixa de horários em que pode estudar. Seu tempo diário será distribuído dentro dessa faixa.
+                  Selecione ao menos um dia e ajuste a faixa de horários em que pode estudar. Seu tempo diário será distribuído dentro dessa faixa. Depois de salvar, você poderá conferir e gerar o cronograma.
                 </p>
 
                 <div className="space-y-3">

@@ -140,3 +140,6 @@ button, input, textarea, select { font: inherit; } button, a, input, select, tex
 @media(max-width: 1023px) { .app-shell.sd-workspace .app-sidebar.sd-sidebar { max-width: calc(100vw - 1rem); } }
 @media(max-width: 380px) { .sd-workspace .chatbot-widget > button { width: 44px !important; height: 44px !important; min-width: 0 !important; } }
 .sd-route :is(h1, h2, h3), .sd-reading-preview { overflow-wrap: anywhere; }
+
+.setup-validation { padding: 1rem 1.25rem; border: 1px solid rgb(var(--pn-primaria-borda-rgb) / .6); border-left-width: 3px; border-radius: .75rem; margin-bottom: 1.5rem; line-height: 1.7; background: rgb(var(--pn-superficie-alt-rgb) / 1); }
+.setup-validation:focus { outline: 2px solid rgb(var(--pn-primaria-forte-rgb) / 1); outline-offset: 4px; }
