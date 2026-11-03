@@ -878,7 +878,7 @@ test('Lumi keeps the original portrait without reactions or a floating button', 
   const screen = await renderRoute('/lumi');
   try {
     assert.equal(button('Pergunte à Lumi'), undefined);
-    assert.ok(document.querySelector('.lumi-portrait img[src$="images/lumi-transparent.png"]'));
+    assert.ok(document.querySelector('.lumi-welcome-top img[src$="images/lumi-transparent.png"]'));
     assert.equal(document.querySelector('.lumi-mood'), null);
     assert.equal(document.querySelector('[class*="lumi-cat--feliz"], [class*="lumi-cat--raiva"]'), null);
   } finally { await screen.close(); }
@@ -2965,4 +2965,27 @@ test('resposta inválida na criação mantém a configuração e oferece erro na
   assert.match(document.querySelector('.exam-action-error').textContent,/escolhas foram mantidas/);
   assert.ok(!button('Gerar minha prova →').disabled);
  }finally{examFlow='';await screen.close()}
+});
+
+
+test('ferramentas da Lumi preservam rascunho e histórico volta à conversa com foco',async()=>{
+ const screen=await renderRoute('/lumi');try{
+  const tools=document.querySelector('.lumi-toolbox'),field=document.getElementById('lumi-message');assert.equal(tools.open,false);
+  await inputValue(field,'Minha pergunta ainda não enviada.');
+  await act(async()=>tools.querySelector('summary').click());
+  await act(async()=>button('Ver histórico salvo').click());await flush();
+  assert.equal(tools.open,false);assert.equal(document.activeElement,document.querySelector('.lumi-history-readonly h3'));
+  assert.equal(document.querySelector('.lumi-welcome-content'),null);
+  await act(async()=>button('Voltar à conversa').click());
+  assert.equal(field.value,'Minha pergunta ainda não enviada.');assert.equal(document.activeElement,field);
+  assert.equal(requests.filter(x=>x.method==='post').length,0);
+ }finally{await screen.close()}
+});
+
+test('Enter durante composição de texto na Lumi não envia uma mensagem incompleta',async()=>{
+ const screen=await renderRoute('/lumi');try{
+  const field=document.getElementById('lumi-message');await inputValue(field,'Estou escrevendo.');
+  await act(async()=>field.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Enter',isComposing:true,bubbles:true,cancelable:true})));
+  assert.equal(field.value,'Estou escrevendo.');assert.equal(requests.filter(x=>x.method==='post').length,0);
+ }finally{await screen.close()}
 });

@@ -30,6 +30,10 @@ html[data-mobile-keyboard] .lumi-page .lumi-chat-card{min-height:280px}
 }
 
 .lumi-page{padding-bottom:6rem}
+.lumi-conversation-bar{display:flex;flex:none;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem 1.5rem;padding:.65rem 1rem;border-bottom:1px solid var(--pn-borda)}
+.lumi-conversation-bar>span{font-size:.78rem;color:var(--pn-texto-suave)}
+.lumi-conversation-bar>button{min-height:44px;font-size:.75rem;color:var(--pn-primaria);font-weight:700}
+.lumi-history-readonly>button{min-height:44px;justify-self:start;color:var(--pn-primaria);font-weight:700}
 .sd-workspace .lumi-page .lumi-page-heading-row h1{font-size:2rem!important}
 .lumi-page .lumi-back{margin-bottom:0;min-height:2rem}
 .lumi-page .lumi-page-heading{margin-bottom:1rem!important}
@@ -63,4 +67,23 @@ html[data-mobile-keyboard] .sd-workspace .lumi-page .lumi-chat-card{min-height:2
 @media(min-width:641px){
 .sd-workspace:has(.lumi-page) .focus-tool{position:relative;inset:auto;display:flex;justify-content:flex-end;margin:0 2rem 1.5rem}
 .sd-workspace:has(.lumi-page) .lumi-page{padding-bottom:1.5rem}
+}
+
+/* Uma coluna de conversa; a marca acompanha o cabeçalho em vez de disputar largura. */
+.lumi-page .lumi-page-grid{grid-template-columns:minmax(0,1fr);max-width:68rem;margin-inline:auto}
+.sd-workspace .lumi-page .lumi-chat-card{min-height:32rem}
+.sd-workspace .lumi-page .lumi-chat-heading{min-height:3.5rem;padding:.65rem 1.5rem}
+.sd-workspace .lumi-page .lumi-toolbox>summary{padding:.75rem 1.5rem}
+.sd-workspace .lumi-page .lumi-feed{padding:2rem clamp(1.25rem,4vw,3rem)}
+.sd-workspace .lumi-page .lumi-feed>div:not(.lumi-welcome-content){max-width:54rem;margin-inline:auto}
+.sd-workspace .lumi-page .lumi-welcome-content{margin:auto;max-width:48rem;gap:1.5rem}
+.sd-workspace .lumi-page .lumi-starters button{min-height:5.5rem}
+.sd-workspace .lumi-page .lumi-composer{padding:1.25rem 1.5rem}
+@media(max-width:600px){
+ .sd-workspace .lumi-page .lumi-chat-card{min-height:360px}
+ .sd-workspace .lumi-page .lumi-chat-heading{padding:.65rem 1rem}
+ .sd-workspace .lumi-page .lumi-feed{padding:1.5rem 1rem}
+ .sd-workspace .lumi-page .lumi-composer{padding:1rem .75rem}
+ .sd-workspace .lumi-page .lumi-toolbox>summary{padding:.65rem 1rem}
+ html[data-mobile-keyboard] .sd-workspace .lumi-page .lumi-chat-card{min-height:240px}
 }

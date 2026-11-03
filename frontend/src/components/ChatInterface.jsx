@@ -63,6 +63,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
   const fimRef = useRef(null)
   const inputRef = useRef(null)
   const toolsRef = useRef(null)
+  const historyRef = useRef(null)
   const sendingRef = useRef(false)
   const [practiceEpoch,setPracticeEpoch]=useState(0)
   const [conversationEpoch,setConversationEpoch]=useState(0)
@@ -85,13 +86,15 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
 
   useEffect(()=>{if((conversaSolicitada||praticaAtual)&&toolsRef.current)toolsRef.current.open=true},[conversaSolicitada,praticaAtual])
 
+  useEffect(()=>{if(history){historyRef.current?.scrollIntoView({block:'start'});historyRef.current?.focus({preventScroll:true})}},[history])
+
   function append(mensagem) {
     setMensagens((prev) => [...prev, { ...mensagem, id: Date.now() + Math.random() }])
   }
   async function viewHistory(){
     if(history){setHistory(null);return}
     setHistoryBusy(true)
-    try{const rows=await inteligencia.chatHistory();setHistory(Array.isArray(rows)?rows:[])}
+    try{const rows=await inteligencia.chatHistory();setHistory(Array.isArray(rows)?rows:[]);if(toolsRef.current)toolsRef.current.open=false}
     catch{toast.error('Não foi possível consultar o histórico. A conversa atual continua disponível.')}
     finally{setHistoryBusy(false)}
   }
@@ -174,6 +177,8 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
 
   return (
     <div className={`lumi-chat-interface flex min-h-0 flex-col h-full ${className}`}>
+      <div className="lumi-conversation-bar"><span>{materia || 'Conversa livre'}{items.length ? ' · '+items.length+' registros escolhidos' : ''}</span><button type="button" disabled={loading} onClick={fresh}>Começar sem contexto anterior</button></div>
+      <details ref={toolsRef} className="lumi-toolbox"><summary>Contexto e ferramentas <span>{items.length+(materia?1:0)?`${items.length+(materia?1:0)} itens escolhidos`:'Opcional'}</span></summary>
       <div className="lumi-controls flex items-center justify-between gap-2 border-b border-study-line/10 px-3 py-2">
         <label className="flex items-center gap-2 text-xs font-bold text-black/60 dark:text-white/60">
           Matéria
@@ -190,12 +195,10 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
             ))}
           </select>
         </label>
-        <button type="button" disabled={loading} onClick={fresh}>Começar sem contexto anterior</button>
         {!compacto && <button type="button" disabled={historyBusy || loading} onClick={viewHistory}>{historyBusy?'Consultando…':history?'Fechar histórico':'Ver histórico salvo'}</button>}
 
       </div>
 
-      <details ref={toolsRef} className="lumi-toolbox"><summary>Contexto e ferramentas <span>{items.length+(materia?1:0)?`${items.length+(materia?1:0)} itens escolhidos`:'Opcional'}</span></summary>
       <LumiConversations requestedId={conversationEpoch===0?conversaSolicitada:undefined} key={conversationEpoch} snapshot={{itens:items,materia,mensagens}} draftMessage={input} busy={loading} onRestore={record=>{setItems(record.itens.map((item,index)=>({...item,id:`conversation-${index}`})));setMateria(record.materia);setMensagens(record.mensagens);setInput('');setHistory(null);setSendError('');setPracticeEpoch(value=>value+1)}} />
       <LumiContextPicker items={items} candidates={candidates} onChange={resetItems} busy={loading} materia={materia} onRemoveSubject={()=>{resetItems(items);setMateria('')}} />
       <LumiPractice key={`${praticaAtual?.id || 'livre'}:${practiceEpoch}`} context={practiceEpoch ? undefined : praticaAtual} loading={loading} onSend={pratica => enviar(`${pratica.modo === 'pista' ? 'Quero uma pista' : pratica.modo === 'feedback' ? 'Confira minha tentativa' : 'Quero ver a resolução comentada'}: ${pratica.pergunta}${pratica.tentativa ? `\nMinha tentativa: ${pratica.tentativa}` : ''}`, materia || undefined, pratica)} />
@@ -211,8 +214,8 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
       {freshNotice&&<p role="status" className="lumi-fresh-notice">{freshNotice}</p>}
 
       <div className="lumi-feed flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-live="polite">
-        {history && <section className="lumi-history-readonly" aria-label="Histórico salvo, apenas para consulta"><h3>Histórico salvo · apenas consulta</h3><p>Estas mensagens não são incluídas no contexto desta conversa.</p>{!history.length && <p>Nenhuma mensagem foi encontrada.</p>}{history.map((message,index)=><Mensagem key={index} mensagem={{role:message.role,content:message.conteudo,criado_em:message.criado_em}}/>)}</section>}
-        {!mensagens.length && !loading && (
+        {history && <section className="lumi-history-readonly" aria-label="Histórico salvo, apenas para consulta"><h3 ref={historyRef} tabIndex={-1}>Histórico salvo · apenas consulta</h3><button type="button" onClick={()=>{setHistory(null);inputRef.current?.focus()}}>Voltar à conversa</button><p>Estas mensagens não são incluídas no contexto desta conversa.</p>{!history.length && <p>Nenhuma mensagem foi encontrada.</p>}{history.map((message,index)=><Mensagem key={index} mensagem={{role:message.role,content:message.conteudo,criado_em:message.criado_em}}/>)}</section>}
+        {!history && !mensagens.length && !loading && (
           <div className="lumi-welcome-content">
             <div className="lumi-welcome-top"><TutorLumi tamanho={compacto ? 38 : 64} /><div><strong>{compacto && items.some(item=>item.id==='session') && estudoAtual?.titulo ? `Vamos estudar ${estudoAtual.titulo}` : 'Por onde começamos?'}</strong><span>{compacto ? 'Pergunte qualquer coisa ou comece pelo tema de hoje.' : 'Escreva uma mensagem ou escolha uma ideia.'}</span></div></div>
             {compacto && items.some(item=>item.id==='session') && estudoAtual?.titulo && <div className="lumi-starter-section"><div className="lumi-starters"><button type="button" onClick={() => { setInput(`Me ensine ${estudoAtual.titulo}${estudoAtual.disciplina ? ` em ${estudoAtual.disciplina}` : ''} passo a passo, com um exemplo e uma pergunta curta para eu praticar.`); inputRef.current?.focus() }}>Começar por este conteúdo →</button></div></div>}
@@ -284,7 +287,7 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
           onDragOver={event => { if (Array.from(event.dataTransfer.types).includes('Files')) event.preventDefault() }}
           onDrop={event => { if (event.dataTransfer.files.length) { event.preventDefault(); choosePhoto(event.dataTransfer.files[0]) } }}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
+            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && !event.isComposing) {
               event.preventDefault()
               enviar()
             }
