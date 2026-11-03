@@ -1,0 +1,190 @@
+/* PlanejAI · folhas para escrever e marcadores para escolher.
+   A identidade usa a borda como lombada e mantém os controles HTML nativos. */
+:root {
+  --field-corners: .3rem .9rem .3rem .9rem;
+  --field-error: #a5263d;
+}
+.dark { --field-error: #ffabb9; }
+
+#root :where(
+  input:not([type]),
+  input:is([type="text"], [type="email"], [type="password"], [type="search"],
+    [type="url"], [type="tel"], [type="number"], [type="date"], [type="time"],
+    [type="datetime-local"], [type="month"], [type="week"]),
+  textarea, select
+):where(:not(.sd-search input):not(.lumi-composer textarea):not(.essay-sheet textarea):not(.essay-topic-row input)) {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--pn-borda-forte, var(--pn-borda));
+  border-radius: var(--field-corners);
+  background-color: var(--pn-superficie);
+  color: var(--pn-texto);
+  padding: .8rem 1rem;
+  line-height: 1.5;
+  box-shadow: inset 2px 0 0 var(--pn-borda);
+  transition: border-color 150ms, background-color 150ms, box-shadow 150ms;
+}
+
+/* Não impor altura aos editores: redações e anotações mantêm seu espaço. */
+#root :where(input:not([type]), input:is([type="text"], [type="email"],
+  [type="password"], [type="search"], [type="url"], [type="tel"], [type="number"],
+  [type="date"], [type="time"], [type="datetime-local"], [type="month"], [type="week"]),
+  select):where(:not(.sd-search input)) { min-height: 46px; }
+
+/* Reservar o espaço dos controles internos de senha e ditado. */
+#root .study-input-wrap .study-input { padding-right: 3.5rem; }
+
+#root :where(input, textarea)::placeholder {
+  color: var(--pn-texto-suave);
+  opacity: .85;
+  font-weight: 400;
+}
+
+#root :where(input:not([type]), input:is([type="text"], [type="email"],
+  [type="password"], [type="search"], [type="url"], [type="tel"], [type="number"],
+  [type="date"], [type="time"], [type="datetime-local"], [type="month"], [type="week"]),
+  textarea, select):where(:not(:disabled):not([readonly]):not(.sd-search input)):hover {
+  border-color: var(--pn-primaria-borda);
+}
+
+#root :where(input:not([type]), input:is([type="text"], [type="email"],
+  [type="password"], [type="search"], [type="url"], [type="tel"], [type="number"],
+  [type="date"], [type="time"], [type="datetime-local"], [type="month"], [type="week"]),
+  textarea, select):where(:not(.sd-search input)):focus-visible {
+  border-color: var(--pn-primaria-forte);
+  outline: 2px solid var(--pn-primaria);
+  outline-offset: 3px;
+  box-shadow: inset 3px 0 0 var(--pn-primaria) !important;
+}
+
+/* O erro só aparece quando a tela o declarou ou o usuário já interagiu.
+   A borda mais espessa complementa o texto de erro existente. */
+#root :where(input, textarea, select):is([aria-invalid="true"], :user-invalid) {
+  border-color: var(--field-error);
+  border-left-width: 3px;
+  box-shadow: none !important;
+}
+#root :where(.study-error, .pn-erro, .ui-field-error) { color: var(--field-error); }
+
+
+#root :where(input, textarea, select):disabled {
+  background-color: var(--pn-superficie-alt);
+  color: var(--pn-texto-suave);
+  cursor: not-allowed;
+  opacity: .7;
+  box-shadow: none;
+}
+#root :where(input, textarea)[readonly] {
+  background-color: var(--pn-fundo);
+  border-style: dashed;
+  box-shadow: none;
+}
+#root :where(.ui-field, .profile-field, .sd-setting-fields label):focus-within > span:first-child {
+  color: var(--pn-link, var(--pn-primaria-forte));
+}
+
+/* A lista nativa continua disponível como fallback. Sem portais, listeners
+   globais ou cópias das opções no React. Múltiplas seleções continuam listboxes. */
+#root select { cursor: pointer; }
+#root select:disabled { cursor: not-allowed; }
+#root select[multiple] { min-height: 8rem; }
+#root :where(input[type="checkbox"], input[type="radio"]) { accent-color: var(--pn-primaria-forte); }
+#root :where(.profile-treatment > summary, .profile-pronoun-options label) {
+  border-radius: var(--field-corners);
+}
+#root input[type="file"]::file-selector-button {
+  min-height: 44px;
+  margin-inline-end: .8rem;
+  padding: .65rem 1rem;
+  border: 1px solid var(--pn-borda-forte, var(--pn-borda));
+  border-radius: var(--field-corners);
+  background: var(--pn-superficie);
+  color: var(--pn-texto);
+  font: inherit;
+  cursor: pointer;
+}
+
+@supports (appearance: base-select) {
+  #root select:where(:not([multiple]):is(:not([size]), [size="1"])),
+  #root select:where(:not([multiple]):is(:not([size]), [size="1"]))::picker(select) {
+    appearance: base-select;
+  }
+  #root select:where(:not([multiple]):is(:not([size]), [size="1"])) {
+    align-items: center;
+    gap: 1rem;
+    min-inline-size: min(100%, 7rem);
+    text-align: start;
+  }
+  #root select::picker-icon {
+    flex-shrink: 0;
+    color: var(--pn-link, var(--pn-primaria-forte));
+    transition: rotate 150ms;
+  }
+  #root select:open::picker-icon { rotate: 180deg; }
+  #root select::picker(select) {
+    margin-block: .5rem;
+    padding: .4rem;
+    min-inline-size: anchor-size(width);
+    max-inline-size: calc(100vw - 2rem);
+    max-block-size: min(23rem, 65dvh);
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--pn-borda-forte, var(--pn-borda));
+    border-top: 3px solid var(--pn-primaria);
+    border-radius: .3rem 1rem .3rem 1rem;
+    background: var(--pn-superficie);
+    color: var(--pn-texto);
+    box-shadow: 0 12px 30px -16px rgb(0 0 0 / .4);
+    font: inherit;
+  }
+  #root select option {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 44px;
+    padding: .7rem .9rem;
+    border-left: 3px solid transparent;
+    border-radius: .2rem .55rem .2rem .55rem;
+    background: var(--pn-superficie);
+    color: var(--pn-texto);
+    font: inherit;
+    font-size: .9rem;
+    line-height: 1.5;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+  }
+  #root select option:checked {
+    border-left-color: var(--pn-primaria);
+    background: var(--pn-primaria-suave);
+    font-weight: 700;
+  }
+  #root select option:is(:hover, :focus-visible):not(:disabled) {
+    background: var(--pn-primaria-suave);
+    outline: 1px solid var(--pn-primaria-borda);
+    outline-offset: -2px;
+  }
+  #root select option::checkmark {
+    order: 1;
+    margin-inline-start: auto;
+    color: var(--pn-link, var(--pn-primaria-forte));
+  }
+  #root select option:disabled { opacity: .5; cursor: not-allowed; }
+  #root select optgroup { padding: .4rem; font-size: .85rem; }
+}
+
+@media (max-width: 640px) {
+  /* Evitar zoom automático no iOS e manter datas/horários legíveis. */
+  #root :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    textarea, select) { font-size: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #root :where(input, textarea, select), #root select::picker-icon { transition: none; }
+}
+.a11y-reduced-motion #root select::picker-icon { transition: none; }
+@media (forced-colors: active) {
+  #root :where(input, textarea, select) { border-color: CanvasText; }
+  #root :where(input, textarea, select):is([aria-invalid="true"], :user-invalid) { border-left-width: 4px; }
+  #root select::picker(select) { border: 2px solid CanvasText; }
+  #root select option:checked { border-left: 4px solid Highlight; }
+}
