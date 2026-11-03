@@ -1,5 +1,4 @@
 import TodayPreparation from '../components/TodayPreparation'
-import AreaSignature from '../components/AreaSignature'
 import TodayQuickReview from '../components/TodayQuickReview'
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
@@ -122,7 +121,7 @@ export default function TodayDashboard() {
     : nextContent && canStart
     ? { kind: 'lesson', title: nextContent.titulo, subject: nextContent.disciplina || nextContent.area || 'Plano de estudos', reason: localStudyDate(nextDay.data_estudo) < localStudyDate() ? 'Retome o primeiro conteúdo pendente. Seu progresso continua salvo.' : 'Esta é a próxima atividade do seu plano de hoje.', duration: `${sessionMinutes} min previstos para esta sessão`, label: 'Continuar meus estudos' }
     : firstReview || reviews > 0
-    ? { kind: 'review', title: firstReview?.titulo || 'Revisar o que já estudou', subject: firstReview?.disciplina || 'Revisão', reason: `${reviews} revisão${reviews === 1 ? '' : 'ões'} pronta${reviews === 1 ? '' : 's'} para hoje, conforme seu histórico de estudo.`, duration: 'Sessão curta', label: 'Começar revisão', route: '/aprendizagem' }
+    ? { kind: 'review', title: firstReview?.titulo || 'Revisar o que já estudou', subject: firstReview?.disciplina || 'Revisão', reason: `${reviews} ${reviews === 1 ? 'revisão' : 'revisões'} pronta${reviews === 1 ? '' : 's'} para hoje, conforme seu histórico de estudo.`, duration: 'Sessão curta', label: 'Começar revisão', route: '/aprendizagem' }
     : weakSubject
       ? { kind: 'practice', title: `Praticar ${weakSubject.disciplina}`, subject: weakSubject.disciplina, reason: `${weakSubject.acerto}% de acerto em ${weakSubject.tentativas} tentativas registradas nessa matéria.`, duration: 'No seu ritmo', label: 'Praticar agora', route: '/aprendizagem' }
       : nextContent
@@ -196,29 +195,37 @@ export default function TodayDashboard() {
   if (planError && !returnSuggestion && !resume) return <main className="dash-v2"><section className="daily-adjust" role="alert"><h1>Seu plano continua salvo.</h1><p>Não conseguimos consultá-lo agora. Tente carregar novamente para continuar.</p><button type="button" className="study-button" onClick={() => { setLoading(true); reloadPlan().catch(() => setPlanError(true)).finally(() => setLoading(false)) }}>Tentar novamente</button></section></main>
   const firstStudy = resumeStatus === 'ready' && returnsStatus==='ready' && !returnSuggestion && user?.tipo === 'aluno' && !resume && !data.schedules.length && data.learning && !weeklyMinutes && !reviews && !data.learning.errosPendentes && !data.learning.porDisciplina?.length && !data.evolution.length
   const welcome=todayWelcome({firstStudy,resume,lastVisit})
+  const otherWays = <details className="today-alternatives"><summary>Outras maneiras de continuar<span>Registros, cartões e projetos</span></summary><div className="today-shortcut-links">{user?.tipo === 'aluno' && <button type="button" onClick={() => navigate('/sessao-guiada')}>Montar sessão guiada</button>}<button type="button" onClick={() => navigate('/cronograma')}>Ver cronograma <b>→</b></button></div><TodayPreparation/>{!firstStudy && <>
+      <StudyReturns data={returns} status={returnsStatus} onRetry={()=>setReturnsAttempt(n=>n+1)} onOpen={openReturn} onDone={finishReturn} busy={openingReturn}/>
+      </>}<TodayQuickReview/></details>
 
   return <main className="dash-v2">
     <div className="dash-v2-wrap">
-      <AreaSignature area="today"/>
       <header className="dash-v2-heading">
         <div><span>HOJE · UM PASSO DE CADA VEZ</span><h1>{greeting()}, {name}.</h1><p>{date}</p></div>
-        <details className="today-shortcuts"><summary>Outras opções</summary><div>{user?.tipo === 'aluno' && <button type="button" onClick={() => navigate('/sessao-guiada')}>Montar sessão guiada</button>}<button type="button" onClick={() => navigate('/cronograma')}>Ver cronograma <b>→</b></button></div></details>
       </header>
       <section className="today-welcome" data-moment={welcome.kind} aria-labelledby="today-welcome-title"><span aria-hidden="true">↳</span><div><h2 id="today-welcome-title">{welcome.title}</h2><p>{welcome.text}</p></div></section>
       {planError && <div role="alert" className="study-return-note"><p>O cronograma não pôde ser consultado. Você ainda pode retomar os registros confirmados abaixo.</p><button type="button" onClick={()=>reloadPlan().catch(()=>setPlanError(true))}>Consultar cronograma novamente</button></div>}
 
       {resumeStatus !== 'ready' && <div className="study-return-note" role="status"><p>{resumeStatus === 'loading' ? 'Conferindo onde você parou…' : 'Não conseguimos consultar sua última sessão. Seu histórico não foi apagado.'}</p>{resumeStatus === 'error' && <button type="button" onClick={reloadResume}>Consultar minha retomada</button>}</div>}
-      <TodayPreparation/>
-      {firstStudy ? <><FirstStudySteps prepared={perfilCompleto} /><TodayQuickReview/></> : <><section className="dash-v2-spotlight">
+      {firstStudy ? <><FirstStudySteps prepared={perfilCompleto} />{otherWays}</> : <><section className="dash-v2-spotlight">
         <motion.article className="dash-v2-focus" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <div className="dash-v2-focus-top"><span>SEU PRÓXIMO PASSO</span><small>{nextAction.subject}</small></div>
-          <div className="dash-v2-focus-copy"><p>{nextAction.kind === 'lesson' ? 'Abra o material e siga do ponto em que parou' : 'Uma ação possível para agora'}</p><h2>{nextAction.title}</h2><p className="dash-v2-reason"><strong>Por quê?</strong> {nextAction.reason}</p><div><span>{nextAction.duration}</span><span>{data.learning ? `${reviews} ${reviews === 1 ? 'revisão pendente' : 'revisões pendentes'}` : 'Revisões a consultar'}</span></div></div>
+          <div className="dash-v2-focus-copy"><h2>{nextAction.title}</h2><p className="dash-v2-reason"><strong>Por quê?</strong> {nextAction.reason}</p><div><span>{nextAction.duration}</span><span>{data.learning ? `${reviews} ${reviews === 1 ? 'revisão pendente' : 'revisões pendentes'}` : 'Revisões a consultar'}</span></div></div>
           {nextAction.entry?.texto && <p className="study-return-reminder">{nextAction.entry.texto}</p>}
           <footer><button type="button" disabled={(nextAction.kind === 'lesson' && resumeStatus !== 'ready') || (nextAction.kind==='return' && openingReturn)} onClick={openNextAction}>{nextAction.label} <b>→</b></button>{['resume', 'lesson'].includes(nextAction.kind) && resumeStatus === 'ready' ? <button type="button" className="dash-v2-lumi-action" onClick={openShortReturn}>Retomar por 5 minutos</button> : <button type="button" className="dash-v2-lumi-action" onClick={askLumiAboutNextAction}>Planejar com a Lumi</button>}</footer>
-          {['resume', 'lesson'].includes(nextAction.kind) && <div className="study-return-note"><p><strong>Sem precisar recuperar tudo de uma vez.</strong> {pendingContents} {pendingContents === 1 ? 'conteúdo ainda aberto' : 'conteúdos ainda abertos'} no plano. Escolha só um próximo passo.</p></div>}
+          {['resume', 'lesson'].includes(nextAction.kind) && <div className="study-return-note"><p>Um conteúdo de cada vez. {pendingContents} {pendingContents === 1 ? 'pendente no plano' : 'pendentes no plano'}.</p></div>}
 
         </motion.article>
 
+
+      </section>
+
+      <div className="today-review-strip"><span><strong>{!data.learning ? 'Revisões a consultar' : reviews ? `${reviews} ${reviews === 1 ? 'revisão pronta' : 'revisões prontas'}` : 'Revisões em dia'}</strong><small>{!data.learning ? 'Consulte a aprendizagem para conferir sua fila.' : reviews ? 'Retome o que aprendeu antes que fique distante.' : 'Novas revisões aparecem conforme você estuda.'}</small></span><button type="button" onClick={() => navigate('/aprendizagem')}>{reviews ? 'Abrir revisões →' : 'Ver aprendizagem →'}</button></div>
+      <DailyPlanActions schedules={data.schedules} onSaved={reloadPlan} />
+      {otherWays}
+
+      <details className="today-details"><summary>Ver detalhes do meu dia <span>{learningFailed ? 'Progresso indisponível · abrir para tentar novamente' : 'Meta da semana, roteiro e progresso'}</span></summary>
         <aside className="dash-v2-score">
           {learningFailed ? <RecoveryState title="Seu progresso não pôde ser consultado." onRetry={reloadLearning} busy={retryingLearning}>O estudo pode continuar. Tente consultar novamente para recuperar sua meta e os minutos registrados.</RecoveryState> : !data.learning ? <RouteLoading embedded label="Consultando seu progresso…" /> : <>
           <div className="dash-v2-score-head"><span>META DA SEMANA</span><button type="button" onClick={() => { setGoalDraft(String(weeklyGoal)); setEditingGoal(!editingGoal) }} aria-expanded={editingGoal}>{editingGoal ? 'Fechar' : 'Editar meta'} <span aria-hidden="true">↗</span></button></div>
@@ -230,14 +237,6 @@ export default function TodayDashboard() {
           <p className="dash-v2-score-message">{remainingMinutes === 0 ? 'Meta cumprida! Seu esforço desta semana já passou do planejado.' : weeklyMinutes === 0 ? `Faltam ${remainingMinutes} min. Que tal começar com uma sessão hoje?` : `Faltam ${remainingMinutes} min para fechar sua meta da semana.`}</p>
           {editingGoal && <form className="dash-v2-score-form" onSubmit={updateWeeklyGoal}><label htmlFor="weekly-goal">Nova meta semanal <span>(30 a 1680 min)</span></label><div><input id="weekly-goal" type="number" min="30" max="1680" step="1" value={goalDraft} onChange={(event) => setGoalDraft(event.target.value)} required /><button type="submit" disabled={savingGoal}>{savingGoal ? 'Salvando…' : 'Salvar'}</button></div></form>}</>}
         </aside>
-      </section>
-
-      <StudyReturns data={returns} status={returnsStatus} onRetry={()=>setReturnsAttempt(n=>n+1)} onOpen={openReturn} onDone={finishReturn} busy={openingReturn}/>
-      <TodayQuickReview/>
-      <div className="today-review-strip"><span><strong>{!data.learning ? 'Revisões a consultar' : reviews ? `${reviews} ${reviews === 1 ? 'revisão pronta' : 'revisões prontas'}` : 'Revisões em dia'}</strong><small>{!data.learning ? 'Consulte a aprendizagem para conferir sua fila.' : reviews ? 'Retome o que aprendeu antes que fique distante.' : 'Novas revisões aparecem conforme você estuda.'}</small></span><button type="button" onClick={() => navigate('/aprendizagem')}>{reviews ? 'Abrir revisões →' : 'Ver aprendizagem →'}</button></div>
-      <DailyPlanActions schedules={data.schedules} onSaved={reloadPlan} />
-
-      <details className="today-details"><summary>Ver detalhes do meu dia <span>Roteiro, progresso e sugestões</span></summary>
       {data.learning && !learningFailed && <LearningSignals summary={data.learning} reviews={data.reviews} evolution={data.evolution} />}
 
       <section className="dash-v2-content">

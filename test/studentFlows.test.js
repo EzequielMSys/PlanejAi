@@ -3013,3 +3013,19 @@ test('grupo de gestão abre automaticamente na sua página e fica recolhido na r
   assert.equal(document.querySelector('#app-sidebar a[href="/usuarios"]').closest('details').open,false);
  }finally{await screen.close()}
 });
+
+
+test('Hoje mantém ação principal antes das alternativas e preserva revisão ao recolher',async()=>{
+ continuityFixture={conteudo:{id:51,id_conteudo:9,titulo:'Retomar Newton',disciplina:'Física'}};cardLibraryFixture=[seedCard()];
+ const screen=await renderRoute('/inicio');try{
+  const main=document.querySelector('.dash-v2-focus'),more=document.querySelector('.today-alternatives'),details=document.querySelector('.today-details');
+  assert.equal(more.open,false);assert.equal(details.open,false);
+  assert.ok(main.compareDocumentPosition(more)&window.Node.DOCUMENT_POSITION_FOLLOWING);
+  assert.equal(document.querySelector('.dash-v2-score').closest('details'),details);
+  await act(async()=>more.querySelector('summary').click());await act(async()=>button('Começar revisão curta →').click());await act(async()=>button('Revelar resposta').click());
+  assert.ok(document.querySelector('.quick-review-prompt .card-answer'));
+  await act(async()=>more.querySelector('summary').click());await act(async()=>more.querySelector('summary').click());
+  assert.ok(document.querySelector('.quick-review-prompt .card-answer'));
+  assert.equal(requests.filter(x=>x.method==='post').length,0);
+ }finally{continuityFixture=null;cardLibraryFixture=[];await screen.close()}
+});
