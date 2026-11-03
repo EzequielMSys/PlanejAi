@@ -1,5 +1,6 @@
 import './PlanejUI.css'
 import { Link } from 'react-router-dom'
+import ContentState from '../ContentState'
 
 export function PageHeader({ eyebrow, title, description, actions, icon, className = '' }) {
   return (
@@ -23,14 +24,8 @@ export function Button({ variant = 'primary', className = '', children, type = '
   return <button type={type} className={`ui-button ui-button--${variant} ${className}`.trim()} {...props}>{children}</button>
 }
 
-export function EmptyState({ eyebrow = 'Tudo pronto', title, description, action, actionLabel, icon = '✦' }) {
-  return (
-    <Surface className="ui-empty-state">
-      <span className="ui-empty-state-icon" aria-hidden="true">{icon}</span>
-      <div><span className="ui-eyebrow">{eyebrow}</span><h2>{title}</h2><p>{description}</p></div>
-      {action && <Button onClick={action}>{actionLabel}</Button>}
-    </Surface>
-  )
+export function EmptyState({ eyebrow, title, description, action, actionLabel, icon }) {
+  return <ContentState className="ui-empty-state" eyebrow={eyebrow} title={title} description={description} onAction={action} actionLabel={actionLabel} icon={icon}/>
 }
 
 export function StatCard({ label, value, detail, tone = 'default' }) {

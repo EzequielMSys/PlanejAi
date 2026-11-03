@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { toast } from 'react-hot-toast'
+import RecoveryState from '../components/RecoveryState'
 import turmaService from '../services/turmaService'
 import { PageHeader, Surface, Button, EmptyState, StatCard, StatGrid, Loading, TextLink } from '../components/ui/PlanejUI'
 import { EntrarComCodigo } from '../components/EntrarComCodigo'
@@ -10,13 +10,16 @@ export default function MinhasTurmas() {
   const [turmas, setTurmas] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [formAberto, setFormAberto] = useState(false)
+  const [loadError,setLoadError]=useState(false)
 
   async function carregar() {
+    setCarregando(true);setLoadError(false)
     try {
       const dados = await turmaService.minhas()
-      setTurmas(Array.isArray(dados) ? dados : [])
+      if(!Array.isArray(dados))throw Error('invalid')
+      setTurmas(dados)
     } catch {
-      toast.error('Não foi possível carregar suas turmas.')
+      setLoadError(true)
     } finally {
       setCarregando(false)
     }
@@ -53,7 +56,7 @@ export default function MinhasTurmas() {
 
       {carregando ? (
         <Loading>Carregando suas turmas…</Loading>
-      ) : turmas.length === 0 ? (
+      ) : loadError ? <RecoveryState title="Não conseguimos consultar suas turmas." onRetry={carregar}><p>Não foi possível confirmar seus vínculos agora. Tente novamente antes de entrar na mesma turma outra vez.</p></RecoveryState> : turmas.length === 0 ? (
         <EmptyState
           eyebrow="Nenhuma turma ainda"
           title="Você ainda não entrou em nenhuma turma"

@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom'
+import ContentState from '../components/ContentState'
+import RecoveryState from '../components/RecoveryState'
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
@@ -20,6 +23,7 @@ export default function MinhasAtividades() {
   const [itens, setItens] = useState([])
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState('TODOS')
+  const [loadError,setLoadError]=useState(false)
   const [selecionada, setSelecionada] = useState(null)
   const [respostas, setRespostas] = useState({})
   const [enviando, setEnviando] = useState(false)
@@ -27,11 +31,13 @@ export default function MinhasAtividades() {
   const [saveStatus, setSaveStatus] = useState('salvo')
 
   async function carregar() {
+    setLoading(true);setLoadError(false)
     try {
       const data = await atividadeService.listar()
-      setItens(Array.isArray(data) ? data : [])
+      if(!Array.isArray(data))throw Error('invalid')
+      setItens(data)
     } catch {
-      toast.error('Não foi possível carregar suas atividades.')
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -121,15 +127,15 @@ export default function MinhasAtividades() {
       <div className="learning-shell">
         <header className="learning-hero student-page-heading">
           <div><p>PLANEJAI · SALA DE APRENDIZAGEM</p><h1>Suas missões de estudo</h1><span>Resolva atividades, acompanhe correções e transforme cada entrega em progresso real.</span></div>
-          <div className="learning-hero-score"><strong>{itens.filter((item) => item.minha_resposta_status === 'CORRIGIDA').length}</strong><small>concluídas</small></div>
+          {!loadError && <div className="learning-hero-score"><strong>{itens.filter((item) => item.minha_resposta_status === 'CORRIGIDA').length}</strong><small>concluídas</small></div>}
         </header>
 
         <nav className="learning-filters" aria-label="Filtrar atividades">
           {FILTROS.map((item) => <button key={item.key} type="button" aria-pressed={filtro === item.key} onClick={() => setFiltro(item.key)}>{item.label}</button>)}
         </nav>
 
-        {!filtradas.length ? (
-          <section className="learning-empty"><span>✓</span><h2>Tudo em dia por aqui</h2><p>Novas atividades ou resultados aparecerão neste espaço.</p></section>
+        {loadError ? <RecoveryState title="Não conseguimos consultar suas atividades." onRetry={carregar}><p>Não foi possível confirmar tarefas e entregas agora. Tente novamente para conferir sua lista.</p></RecoveryState> : !filtradas.length ? (
+          itens.length ? <ContentState title="Nenhuma atividade neste filtro." description="As atividades disponíveis continuam em outras situações." onAction={()=>setFiltro('TODOS')} actionLabel="Ver todas as atividades"/> : <ContentState title="Nenhuma atividade disponível por enquanto." description="As atividades publicadas pelas suas turmas aparecerão aqui."><Link to="/minhas-turmas">Conferir minhas turmas</Link></ContentState>
         ) : (
           <section className="learning-grid">
             {filtradas.map((item, index) => (

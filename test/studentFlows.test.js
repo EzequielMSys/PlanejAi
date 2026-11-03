@@ -46,6 +46,8 @@ let cardHistoryFixture=[],cardHistoryFailure=false;
 let cardCollectionsFixture=[],cardMembershipsFixture=[];
 let failScheduleLoad = false;
 let failExamLoad = false;
+let studentListFailure=null;
+let studentActivityFixture=null;
 let examFlow = '';
 const examSession = {idSimulado:71,catalogo:{instituicao:'Treino',titulo:'Coleção de teste'},questoes:[1,2].map(id=>({id_questao:id,disciplina:'Física',dificuldade:'FACIL',enunciado:'Questão de teste '+id,alternativas:['Primeira','Segunda']})),respostas:{1:0},revisao:[]};
 let supportMode = '';
@@ -293,6 +295,8 @@ async function fixture(config) {
     }
     return supportMode === 'saved' ? [{ id: 81, categoria: 'PROBLEMA', mensagem: 'Minha mensagem de ajuda.', status: 'ABERTO', criado_em: '2026-10-24T12:00:00Z' }] : [];
   }
+  if(studentListFailure && url.endsWith(studentListFailure.path)){if(studentListFailure.invalid)return {};throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:studentListFailure.status||503,data:{}})}
+  if(studentActivityFixture&&url.endsWith('/atividade'))return studentActivityFixture;
   if (url.endsWith('/usuarios/me')) return person('aluno');
   if (url.endsWith('/usuarios')) return { usuarios: [directoryOtherAccount?{...person('aluno'),id:900002,id_usuario:900002}:person('aluno'),...(directorySecondAccount?[{...person('aluno'),id:900003,id_usuario:900003,nome:'Outra pessoa'}]:[])], pagina: 1, total_registros: 17, total_paginas: 2, stats: { total: 17, ativos: 15, inativos: 2, donos: 1, admins: 2, docentes: 3, alunos: 11 } };
   if (url.endsWith('/dashboard/estatisticas')) return { totalUsuarios: 17, totalAtividadesPublicadas: 0, totalEntregas: 0, totalCronogramasAtivos: 0 };
@@ -1335,7 +1339,7 @@ test('curated sources filter free access and keep the original providers visible
     assert.equal(document.querySelector('a[href="https://aprovatotal.com.br/"]'), null);
     assert.ok(document.querySelector('a[href="https://cursoenemgratuito.com.br/"]'));
     await inputValue(document.querySelector('.sources-controls input[type="search"]'), 'zzzz');
-    assert.ok(screen.container.textContent.includes('Nenhuma fonte neste filtro'));
+    assert.ok(screen.container.textContent.includes('Nenhuma fonte corresponde aos filtros.'));
     assert.equal(document.querySelectorAll('.sources-grid article').length, 0);
   } finally { await screen.close(); }
 });
@@ -3096,5 +3100,36 @@ test('perfil recolhe tratamento opcional e permite recuperar alterações ao tro
   assert.equal(document.querySelector('.profile-pronoun-options input[value="elu_delu"]').checked,true);
   assert.ok(document.querySelector('.profile-treatment>summary').textContent.includes('Elu / delu'));
   assert.equal(requests.filter(x=>x.method==='put').length,0);
+ }finally{await screen.close()}
+});
+
+
+test('falhas de listas do estudante oferecem nova tentativa sem fingir ausência de dados',async()=>{
+ for(const [route,path,emptyText]of[['/avisos','/avisos','Nenhum aviso por enquanto'],['/minhas-turmas','/turmas/minhas','Você ainda não entrou'],['/minhas-atividades','/atividade','Nenhuma atividade disponível'],['/minhas-turmas/1','/turmas/minhas/1','Você pode ter saído']]){
+  studentListFailure={path};const screen=await renderRoute(route);try{
+   assert.ok(document.querySelector('.recovery-state'),route);assert.ok(!screen.container.textContent.includes(emptyText),route);
+   if(route==='/minhas-atividades')assert.ok(!document.querySelector('.learning-hero-score'));
+   await act(async()=>document.querySelector('.recovery-state>button').click());await flush();assert.ok(document.querySelector('.recovery-state'));
+   studentListFailure=null;await act(async()=>document.querySelector('.recovery-state>button').click());await flush();assert.ok(!document.querySelector('.recovery-state'));
+   assert.equal(requests.filter(x=>['post','put','patch','delete'].includes(x.method)).length,0);
+  }finally{studentListFailure=null;await screen.close()}
+ }
+});
+
+test('resposta inválida de avisos não vira lista vazia e turma sem acesso oferece retorno',async()=>{
+ studentListFailure={path:'/avisos',invalid:true};const screen=await renderRoute('/avisos');try{assert.ok(document.querySelector('.recovery-state'));assert.ok(!screen.container.textContent.includes('Nenhum aviso por enquanto'))}finally{studentListFailure=null;await screen.close()}
+ studentListFailure={path:'/turmas/minhas/1',status:403};const denied=await renderRoute('/minhas-turmas/1');try{assert.ok(!document.querySelector('.recovery-state'));assert.ok(button('Voltar para minhas turmas'))}finally{studentListFailure=null;await denied.close()}
+});
+
+test('filtro de atividades sem resultados não declara tarefas em dia e volta à lista completa',async()=>{
+ studentActivityFixture=[{id_atividade:77,titulo:'Atividade de exemplo',minha_resposta_status:'CORRIGIDA',questoes:[]}];const screen=await renderRoute('/minhas-atividades');try{
+  await act(async()=>button('Pendentes').click());assert.match(document.querySelector('.content-state').textContent,/Nenhuma atividade neste filtro/);assert.ok(!screen.container.textContent.includes('Tudo em dia'));
+  await act(async()=>button('Ver todas as atividades').click());assert.equal(document.querySelectorAll('.learning-card').length,1);assert.ok(!document.querySelector('.content-state'));
+ }finally{studentActivityFixture=null;await screen.close()}
+});
+
+test('busca de fontes sem correspondência oferece limpar filtros sem navegar ou consultar serviço',async()=>{
+ const screen=await renderRoute('/fontes-estudo');try{
+  await inputValue(document.querySelector('.sources-controls input[type="search"]'),'assuntoinexistente123');assert.ok(button('Limpar filtros'));await act(async()=>button('Limpar filtros').click());assert.equal(document.querySelector('.sources-controls input[type="search"]').value,'');assert.ok(document.querySelectorAll('.sources-grid article').length>0);
  }finally{await screen.close()}
 });

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import turmaService from '../services/turmaService'
+import RecoveryState from '../components/RecoveryState'
 import { PageHeader, Surface, Button, EmptyState, StatCard, StatGrid, Loading, TextLink } from '../components/ui/PlanejUI'
 
 const ABAS = [
@@ -16,14 +17,18 @@ export default function MinhasTurmasDetalhe() {
   const [turma, setTurma] = useState(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
+  const [indisponivel,setIndisponivel]=useState(false)
   const [aba, setAba] = useState('pendentes')
 
   const carregar = useCallback(async () => {
+    setCarregando(true);setErro('');setIndisponivel(false)
     try {
       const dados = await turmaService.minhaTurma(id)
+      if(!dados || !['pendentes','concluidas','avisos'].every(key=>Array.isArray(dados[key])))throw Error('invalid')
       setTurma(dados)
       setErro('')
     } catch (falha) {
+      setIndisponivel([403,404].includes(falha.response?.status))
       setErro(falha.response?.data?.message || 'Não foi possível carregar esta turma.')
     } finally {
       setCarregando(false)
@@ -46,15 +51,18 @@ export default function MinhasTurmasDetalhe() {
   if (carregando) return <Loading>Carregando a turma…</Loading>
 
   if (erro || !turma) {
+    if(!indisponivel)return <main><PageHeader title="Sua turma"/><RecoveryState title="Não conseguimos consultar esta turma." onRetry={carregar}><p>Não foi possível confirmar as atividades e os avisos agora.</p><TextLink to="/minhas-turmas">Voltar para minhas turmas</TextLink></RecoveryState></main>
     return (
+      <main><PageHeader title="Sua turma"/>
       <EmptyState
         eyebrow="Turma indisponível"
         title={erro || 'Turma não encontrada'}
-        description="Você pode ter saído dela, ou o vínculo ainda não foi liberado."
+        description="Esta turma não está disponível para sua conta. Confira seus vínculos na lista de turmas."
         action={() => navegar('/minhas-turmas')}
         actionLabel="Voltar para minhas turmas"
         icon="◈"
       />
+      </main>
     )
   }
 

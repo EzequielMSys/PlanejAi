@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { toast } from 'react-hot-toast'
+import { Link } from 'react-router-dom'
+import RecoveryState from '../components/RecoveryState'
+import ContentState from '../components/ContentState'
 import avisoService from '../services/avisoService'
 
 const fadeUp = {
@@ -22,13 +24,16 @@ function formatarData(data) {
 export default function AvisosAluno() {
   const [avisos, setAvisos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError,setLoadError]=useState(false)
 
   async function carregar() {
+    setLoading(true);setLoadError(false)
     try {
       const data = await avisoService.listar()
-      setAvisos(Array.isArray(data) ? data : [])
+      if(!Array.isArray(data))throw Error('invalid')
+      setAvisos(data)
     } catch {
-      toast.error('Não foi possível carregar os avisos.')
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -70,20 +75,8 @@ export default function AvisosAluno() {
           </section>
         </motion.div>
 
-        {avisos.length === 0 ? (
-          <section className="quiet-empty bg-[rgb(var(--pn-superficie-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[3rem] p-10 sm:p-12 text-center shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)]">
-            <div className="w-24 h-24 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] mx-auto flex items-center justify-center text-white shadow-xl mb-6">
-              <svg className="w-11 h-11" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </div>
-            <h2 className="text-3xl font-black text-[rgb(var(--pn-texto-rgb)/1)] dark:text-white mb-3">
-              Nenhum aviso por enquanto
-            </h2>
-            <p className="text-[rgb(var(--pn-texto-rgb)/0.6)] dark:text-white/60 max-w-md mx-auto leading-relaxed">
-              Quando a equipe publicar um aviso, ele aparecerá aqui.
-            </p>
-          </section>
+        {loadError ? <RecoveryState title="Não conseguimos consultar seus avisos." onRetry={carregar}><p>A lista não foi confirmada. Tente novamente para conferir os comunicados da equipe.</p></RecoveryState> : avisos.length === 0 ? (
+          <ContentState title="Nenhum aviso por enquanto" description="Quando a equipe publicar um comunicado para você, ele aparecerá aqui."><Link to="/inicio">Voltar a Hoje</Link></ContentState>
         ) : (
           <section className="grid gap-5 md:grid-cols-2">
             {avisos.map((aviso, idx) => (
