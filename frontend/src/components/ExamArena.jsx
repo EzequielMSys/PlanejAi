@@ -38,6 +38,15 @@ export default function ExamArena({ onSessionChange }) {
   const [saveStatus, setSaveStatus] = useState('salvo')
   const [agora, setAgora] = useState(Date.now())
   const primeiraSincronizacao = useRef(true)
+  const sessionHeading = useRef(null)
+  const requestLock = useRef(false)
+  const [actionError, setActionError] = useState('')
+
+  useEffect(() => {
+    if (!simulado || loading) return
+    sessionHeading.current?.scrollIntoView({ block: 'start' })
+    sessionHeading.current?.focus({ preventScroll: true })
+  }, [simulado, loading])
 
   const carregar = async () => {
     setLoading(true)
@@ -82,17 +91,22 @@ export default function ExamArena({ onSessionChange }) {
   }, [respostas, resultado, revisao, simulado])
 
   const iniciarSessao = (data) => {
+    if (!data?.idSimulado || !data.catalogo || !Array.isArray(data.questoes) || !data.questoes.length) throw new Error('Tentativa inválida')
     primeiraSincronizacao.current = true
     setSimulado(data)
     setRespostas(data.respostas || {})
     setRevisao(data.revisao || [])
     setResultado(null)
-    setIndiceAtual(0)
+    const pendente = data.questoes.findIndex(item => (data.respostas || {})[item.id_questao] === undefined)
+    setIndiceAtual(Math.max(0, pendente))
     setSaveStatus('salvo')
     setAgora(Date.now())
   }
 
   const gerar = async () => {
+    if (requestLock.current) return
+    requestLock.current = true
+    setActionError('')
     try {
       setBusyId('novo')
       const disponivel = questoesNoNivel(catalogo.find((item) => String(item.id_catalogo) === String(config.idCatalogo)), config.dificuldade)
@@ -101,18 +115,23 @@ export default function ExamArena({ onSessionChange }) {
       setConfig((atual) => ({ ...atual, quantidade }))
       iniciarSessao(await inteligencia.gerarSimulado({ ...config, quantidade }))
     } catch (error) {
+      setActionError(error.response?.data?.message || 'Não foi possível montar sua prova. Suas escolhas foram mantidas; tente novamente.')
       toast.error(error.response?.data?.message || 'Não foi possível gerar o simulado.')
-    } finally { setBusyId(null) }
+    } finally { setBusyId(null); requestLock.current = false }
   }
 
   const retomar = async (idSimulado) => {
+    if (requestLock.current) return
+    requestLock.current = true
+    setActionError('')
     try {
       setBusyId(idSimulado)
       iniciarSessao(await inteligencia.obterSimulado(idSimulado))
       toast.success('Tentativa restaurada.')
     } catch (error) {
+      setActionError(error.response?.data?.message || 'Não foi possível retomar sua prova. Tente novamente.')
       toast.error(error.response?.data?.message || 'Não foi possível retomar a tentativa.')
-    } finally { setBusyId(null) }
+    } finally { setBusyId(null); requestLock.current = false }
   }
 
   const concluir = async () => {
@@ -148,11 +167,15 @@ export default function ExamArena({ onSessionChange }) {
 
   return (
     <section className="exam-arena">
-      <header><div><span>LABORATÓRIO DE PROVAS</span><h2>Treine para a prova que você quer vencer.</h2><p>Escolha uma coleção, ajuste o nível e receba uma prova montada e corrigida dentro do PlanejAI.</p></div><strong>β</strong></header>
+      <ol className="exam-route" aria-label="Percurso da prova">{['Preparar', 'Responder', 'Conferir e revisar'].map((label, index) => <li key={label} aria-current={(resultado ? 2 : simulado ? 1 : 0) === index ? 'step' : undefined}><span>0{index + 1}</span>{label}</li>)}</ol>
 
       {!simulado ? <>
+        {historico.length > 0 && <div className="exam-history"><h3>Continue uma tentativa</h3>{historico.slice(0, 5).map((item) => <div key={item.id_simulado}><span>{item.instituicao}</span><b>{item.titulo}</b><strong>{item.status === 'CONCLUIDO' ? `${Number(item.nota).toFixed(0)}%` : 'Em andamento'}</strong>{item.status === 'EM_ANDAMENTO' && <button type="button" disabled={busyId === item.id_simulado} onClick={() => retomar(item.id_simulado)}>{busyId === item.id_simulado ? 'Abrindo…' : 'Retomar'}</button>}</div>)}</div>}
+        <h2>Escolha sua coleção.</h2>
+        <p className="exam-instruction">Ajuste o treino abaixo. Ao gerar, a primeira questão abre nesta mesma tela.</p>
+        {actionError && <p className="exam-action-error" role="alert">{actionError}</p>}
         <div className="exam-catalog">
-          {catalogo.map((item) => <button type="button" key={item.id_catalogo} data-selected={String(item.id_catalogo) === String(config.idCatalogo)} onClick={() => setConfig((atual) => ({ ...atual, idCatalogo: String(item.id_catalogo), quantidade: Math.min(Number(atual.quantidade) || 1, Math.max(1, questoesNoNivel(item, atual.dificuldade))) }))}><small>{item.instituicao} · {item.referencia_ano || 'Coleção'}</small><b>{item.titulo}</b><p>{item.descricao}</p><span>{item.questoes_disponiveis} questões disponíveis</span></button>)}
+          {catalogo.map((item) => <button type="button" key={item.id_catalogo} aria-pressed={String(item.id_catalogo) === String(config.idCatalogo)} data-selected={String(item.id_catalogo) === String(config.idCatalogo)} onClick={() => setConfig((atual) => ({ ...atual, idCatalogo: String(item.id_catalogo), quantidade: Math.min(Number(atual.quantidade) || 1, Math.max(1, questoesNoNivel(item, atual.dificuldade))) }))}><small>{item.instituicao} · {item.referencia_ano || 'Coleção'}</small><b>{item.titulo}</b><p>{item.descricao}</p><span>{item.questoes_disponiveis} questões disponíveis</span></button>)}
         </div>
         <div className="exam-builder">
           <div className="exam-levels" role="group" aria-label="Nível do simulado"><span>Escolha seu nível</span><div>{niveis.map((nivel) => { const disponiveis = questoesNoNivel(catalogoSelecionado, nivel.id); return <button type="button" key={nivel.id} aria-pressed={config.dificuldade === nivel.id} disabled={!disponiveis} onClick={() => setConfig((atual) => ({ ...atual, dificuldade: nivel.id, quantidade: Math.min(Number(atual.quantidade) || 1, disponiveis) }))}><strong>{nivel.nome}</strong><small>{nivel.descricao}</small><em>{disponiveis} questões</em></button> })}</div></div>
@@ -160,8 +183,10 @@ export default function ExamArena({ onSessionChange }) {
           <div className="exam-quantity-presets" aria-label="Quantidade de questões"><span>Formato</span>{[20, 45, 60, 90, 180].filter((quantidade) => quantidade <= maximoSelecionado).map((quantidade) => <button type="button" key={quantidade} data-selected={Number(config.quantidade) === quantidade} onClick={() => setConfig({ ...config, quantidade })}>{quantidade} questões</button>)}</div>
           <button type="button" disabled={!config.idCatalogo || maximoSelecionado === 0 || busyId === 'novo'} onClick={gerar}>{busyId === 'novo' ? 'Montando…' : maximoSelecionado === 0 ? 'Sem questões neste nível' : 'Gerar minha prova'} <span>→</span></button>
         </div>
-        {historico.length > 0 && <div className="exam-history"><h3>Últimas tentativas</h3>{historico.slice(0, 5).map((item) => <div key={item.id_simulado}><span>{item.instituicao}</span><b>{item.titulo}</b><strong>{item.status === 'CONCLUIDO' ? `${Number(item.nota).toFixed(0)}%` : 'Em andamento'}</strong>{item.status === 'EM_ANDAMENTO' && <button type="button" disabled={busyId === item.id_simulado} onClick={() => retomar(item.id_simulado)}>{busyId === item.id_simulado ? 'Abrindo…' : 'Retomar'}</button>}</div>)}</div>}
+
       </> : <div className="exam-session">
+        <h2 ref={sessionHeading} tabIndex={-1} className="exam-session-heading">{resultado ? 'Confira suas respostas.' : respondidas ? 'Continue de onde parou.' : 'Sua prova está pronta. Vamos começar?'}</h2>
+        <p className="exam-instruction">{resultado ? 'Percorra as questões para ler cada explicação.' : `Questão ${indiceAtual + 1} de ${simulado.questoes.length}. Escolha uma alternativa e avance no seu ritmo.`}</p>
         <div className="exam-session-title"><div><small>{simulado.catalogo.instituicao}</small><h3>{simulado.catalogo.titulo}</h3></div><div className="exam-session-metrics"><span>{respondidas}/{simulado.questoes.length} respondidas · {revisao.length} para revisar</span><b>{formatarTempo(tempoDecorrido)}</b><small className="exam-save-status" aria-live="polite">{saveStatus === 'salvando' ? 'Salvando…' : saveStatus === 'erro' ? 'Falha ao salvar' : 'Progresso salvo'}</small></div></div>
         <div className="exam-progress" aria-label={`${Math.round(progresso)}% respondido`}><i style={{ width: `${progresso}%` }} /></div>
         <nav className="exam-question-nav" aria-label="Navegação entre questões">{indicesNavegacao.map((index, posicao) => { const questao = simulado.questoes[index]; return <span key={questao.id_questao} className="exam-nav-item">{posicao > 0 && index - indicesNavegacao[posicao - 1] > 1 && <span aria-hidden="true">…</span>}<button type="button" aria-label={`Questão ${index + 1}${respostas[questao.id_questao] !== undefined ? ', respondida' : ''}${revisao.includes(questao.id_questao) ? ', marcada para revisão' : ''}`} aria-current={indiceAtual === index ? 'step' : undefined} data-current={indiceAtual === index} data-answered={respostas[questao.id_questao] !== undefined} data-review={revisao.includes(questao.id_questao)} onClick={() => setIndiceAtual(index)}>{index + 1}</button></span> })}</nav>

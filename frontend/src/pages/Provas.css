@@ -1,11 +1,22 @@
-.exam-studio-page { min-height:100%; padding:clamp(1rem,3vw,2rem) 1rem 4rem; background:var(--ui-bg); color:var(--ui-ink); }
+.exam-studio-page { min-height:100%; padding:clamp(1rem,3vw,2rem) 1rem 6rem; background:var(--ui-bg); color:var(--ui-ink); }
+.exam-route{display:flex;flex-wrap:wrap;gap:1rem 2rem;padding:0 0 1.25rem;margin:0 0 1.5rem;border-bottom:1px solid var(--ui-line);list-style:none}
+.exam-route li{display:flex;gap:.6rem;align-items:center;color:var(--ui-muted);font-size:.8rem}
+.exam-route li[aria-current]{color:var(--ui-purple-strong);font-weight:800}
+.exam-route li>span{font:italic 1.25rem Georgia,serif}
+.exam-instruction{color:var(--ui-muted);font-size:.85rem;line-height:1.6;margin:.5rem 0 1.5rem}
+.exam-session-heading{scroll-margin-top:6rem;font:400 clamp(1.6rem,3vw,2.3rem)/1.2 Georgia,serif}
+.exam-action-error{border-left:3px solid var(--ui-warning);padding:1rem;line-height:1.6}
+.exam-other-paths{width:min(1120px,100%);margin:2rem auto 0;border-top:1px solid var(--ui-line);padding-top:1rem}
+.exam-other-paths>summary,.exam-source>summary{cursor:pointer;min-height:44px;padding:.7rem 0;font-weight:700}
+.exam-other-paths>a{display:block;padding:.75rem;color:var(--ui-purple-strong)}
+.exam-source>section{padding-top:1rem}
 .exam-studio-hero,.exam-studio-arena,.exam-source { width:min(1120px,100%); margin-inline:auto; }
 .exam-studio-hero { overflow:hidden; border:1px solid var(--ui-line); border-radius:1.15rem; background:var(--ui-surface); padding:clamp(1.2rem,3vw,2rem); }
 .exam-studio-nav { display:flex; justify-content:space-between; align-items:center; gap:1rem; padding-bottom:1rem; border-bottom:1px solid var(--ui-line); }
 .exam-studio-nav > span,.exam-studio-heading > div > span,.exam-studio-heading aside > span,.exam-studio-intro > span,.exam-source-heading > span { color:var(--ui-purple-strong); font-size:.62rem; font-weight:800; letter-spacing:.15em; }
 .exam-studio-nav button { min-height:42px; color:var(--ui-purple-strong); font-size:.72rem; font-weight:800; }
-.exam-studio-heading { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(230px,.65fr); align-items:center; gap:clamp(1.5rem,5vw,5rem); padding-top:2.4rem; }
-.exam-studio-heading h1 { max-width:15ch; margin:.7rem 0 1rem; font:400 clamp(2.4rem,5vw,4.2rem)/1.04 Georgia,serif; letter-spacing:-.055em; }
+.exam-studio-heading { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(230px,.65fr); align-items:center; gap:clamp(1.5rem,5vw,5rem); padding-top:1.5rem; }
+.exam-studio-heading h1 { max-width:22ch; margin:.7rem 0 1rem; font:400 clamp(2rem,4vw,3rem)/1.1 Georgia,serif; letter-spacing:-.04em; }
 .exam-studio-heading h1 em { color:var(--ui-purple-strong); font-weight:400; }
 .exam-studio-heading p { max-width:40rem; color:var(--ui-muted); font-size:.85rem; line-height:1.65; }
 .exam-studio-heading a { display:inline-flex; align-items:center; gap:1.5rem; min-height:44px; margin-top:1.5rem; border-radius:.65rem; background:var(--ui-purple); padding:.65rem 1rem; color:var(--pn-on-primaria); font-size:.78rem; font-weight:800; }

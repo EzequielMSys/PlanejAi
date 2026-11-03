@@ -46,6 +46,8 @@ let cardHistoryFixture=[],cardHistoryFailure=false;
 let cardCollectionsFixture=[],cardMembershipsFixture=[];
 let failScheduleLoad = false;
 let failExamLoad = false;
+let examFlow = '';
+const examSession = {idSimulado:71,catalogo:{instituicao:'Treino',titulo:'Coleção de teste'},questoes:[1,2].map(id=>({id_questao:id,disciplina:'Física',dificuldade:'FACIL',enunciado:'Questão de teste '+id,alternativas:['Primeira','Segunda']})),respostas:{1:0},revisao:[]};
 let supportMode = '';
 let materialCatalogFixture = false;
 let dashboardLearningFixture = null;
@@ -229,6 +231,9 @@ async function fixture(config) {
   }
   if(url.endsWith('/busca/conteudos/9')) return {id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física',materiais:'[]',link:''};
   if(searchMode && url.endsWith('/redacao') && config.method==='get') return [{id_redacao:81,tema:'Educação no Brasil',texto:'Um texto de teste.',enviada_em:'2026-10-24',id_usuario:900001}];
+  if(examFlow && url.endsWith('/inteligencia/catalogo-provas'))return [{id_catalogo:1,instituicao:'Treino',titulo:'Coleção de teste',questoes_disponiveis:2,questoes_faceis:2}];
+  if(examFlow && url.endsWith('/inteligencia/simulados'))return config.method==='post'?(examFlow==='invalid'?{}:{...examSession,respostas:{}}):[{id_simulado:71,instituicao:'Treino',titulo:'Coleção de teste',status:'EM_ANDAMENTO'}];
+  if(examFlow && url.endsWith('/inteligencia/simulados/71'))return examSession;
     if ((failScheduleLoad && url.endsWith('/cronograma')) || (failExamLoad && url.endsWith('/inteligencia/catalogo-provas'))) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
   if (essayMode === 'workshopFailure' && config.method === 'post' && url.endsWith('/redacao/projetos')) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
   if (failLearningLoad && url.endsWith('/aprendizagem/resumo')) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
@@ -2931,4 +2936,33 @@ test('reabrir uma redação recupera o percurso e a referência do tema aplicado
  try{
   await act(async()=>document.querySelector('.redacoes-intro-actions button').click());await flush();assert.equal(button('Prática').getAttribute('aria-pressed'),'true');assert.equal(document.querySelector('.proposal-options [aria-pressed="true"] strong').textContent,topic);assert.match(document.querySelector('.proposal-preview-status').textContent,/Em uso/);assert.match(document.querySelector('.proposal-source a').href,/unesco.org/);assert.equal(document.querySelector('[aria-label="Texto da redação"]').value,'MEU RASCUNHO CONTINUA.');
  }finally{await screen.close()}
+});
+
+
+test('prova criada abre a primeira questão com foco e retomada encontra a pendente',async()=>{
+ examFlow='ready';const screen=await renderRoute('/provas');
+ try{
+  await act(async()=>button('Retomar').click());await flush();
+  assert.equal(document.activeElement,document.querySelector('.exam-session-heading'));
+  assert.match(document.querySelector('.exam-session fieldset').textContent,/Questão de teste 2/);
+  assert.equal(document.querySelector('.exam-route [aria-current]').textContent,'02Responder');
+ }finally{examFlow='';await screen.close()}
+ examFlow='ready';const fresh=await renderRoute('/provas');
+ try{
+  await act(async()=>button('Gerar minha prova →').click());await flush();
+  assert.match(document.querySelector('.exam-session-heading').textContent,/pronta/);
+  assert.match(document.querySelector('.exam-session fieldset').textContent,/Questão de teste 1/);
+  assert.equal(document.activeElement,document.querySelector('.exam-session-heading'));
+ }finally{examFlow='';await fresh.close()}
+});
+
+test('resposta inválida na criação mantém a configuração e oferece erro na própria tela',async()=>{
+ examFlow='invalid';const screen=await renderRoute('/provas');
+ try{
+  await act(async()=>button('Gerar minha prova →').click());await flush();
+  assert.ok(document.querySelector('.exam-builder'));
+  assert.equal(document.querySelector('.exam-session'),null);
+  assert.match(document.querySelector('.exam-action-error').textContent,/escolhas foram mantidas/);
+  assert.ok(!button('Gerar minha prova →').disabled);
+ }finally{examFlow='';await screen.close()}
 });
