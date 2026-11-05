@@ -2962,6 +2962,19 @@ test('prova criada abre a primeira questão com foco e retomada encontra a pende
  }finally{examFlow='';await fresh.close()}
 });
 
+test('acervo de provas oferece fontes oficiais da UNESP e de outras universidades',async()=>{
+ const screen=await renderRoute('/provas');
+ try{
+  const links=[...document.querySelectorAll('.exam-source-grid a')];
+  const hrefs=links.map(link=>link.href);
+  for(const dominio of ['vunesp.com.br','comvest.unicamp.br','revista.vestibular.uerj.br','nc.ufpr.br','ufrgs.br/coperse','gov.br/inep','fuvest.br'])assert.ok(hrefs.some(href=>href.includes(dominio)),`fonte oficial ausente: ${dominio}`);
+  assert.ok(links.some(link=>link.textContent.includes('Curso Objetivo')));
+  await inputValue(document.querySelector('.exam-source-search input'),'UNESP');
+  assert.equal(document.querySelectorAll('.exam-source-grid a').length,1);
+  assert.match(document.querySelector('.exam-source-grid a').textContent,/UNESP/);
+ }finally{await screen.close()}
+});
+
 test('resposta inválida na criação mantém a configuração e oferece erro na própria tela',async()=>{
  examFlow='invalid';const screen=await renderRoute('/provas');
  try{
