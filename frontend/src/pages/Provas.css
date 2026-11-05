@@ -43,7 +43,7 @@
 .exam-studio-arena .exam-levels { grid-area:levels; min-width:0; }
 .exam-levels > span { display:block; margin-bottom:.55rem; color:#fff; font-size:.72rem; font-weight:800; }
 .exam-levels > div { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.55rem; }
-.exam-levels button { display:grid; align-content:start; gap:.35rem; min-height:7rem; border:1px solid rgba(255,255,255,.35); border-radius:.7rem; background:rgba(255,255,255,.1); padding:.75rem; color:#fff; text-align:left; }
+.exam-studio-arena .exam-levels button { display:grid; height:auto; align-content:start; gap:.45rem; min-height:7.5rem; border:1px solid rgba(255,255,255,.35); border-radius:.7rem; background:rgba(255,255,255,.1); padding:.75rem; color:#fff; text-align:left; }
 .exam-levels button[aria-pressed=true] { border-color:#fff; background:#fff; color:var(--ui-purple-strong); box-shadow:0 0 0 2px rgba(255,255,255,.25); }
 .exam-levels button:disabled { opacity:.45; cursor:not-allowed; }
 .exam-levels button strong { font-size:.8rem; }
