@@ -4,37 +4,13 @@ import { useAuth } from '../context/AuthContext'
 import usuarioService from '../services/usuarioService'
 import perfilService from '../services/perfilService'
 import cronogramaService from '../services/cronogramaService'
-import ChecklistMaterias from '../components/ChecklistMaterias'
+import ChecklistMaterias, { areasFocoParaLista } from '../components/ChecklistMaterias'
 import SaveFeedback from '../components/SaveFeedback'
 import { toast } from 'react-hot-toast'
-import { motion } from 'framer-motion'
 import { resolveBackendAsset } from '../config/api'
 import { validarSenha } from '../config/senha'
 import { fraseConviteLumi } from '../utils/pronounCopy'
 import './Perfil.css'
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-}
-
-const IconUser = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-  </svg>
-)
-
-const IconLock = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-  </svg>
-)
-
-const IconBook = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253" />
-  </svg>
-)
 
 const IconCamera = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -80,7 +56,6 @@ export default function Perfil() {
   const { user, changePassword, updateUser } = useAuth()
   const fileRef = useRef(null)
 
-  const [tab, setTab] = useState('info')
   const [saving, setSaving] = useState(false)
   const [infoSave, setInfoSave] = useState({ status: 'ready' })
   const [studySave, setStudySave] = useState({ status: 'ready' })
@@ -365,12 +340,7 @@ const handleSaveEstudos = async (e) => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[rgb(var(--pn-superficie-alt-rgb)/1)]">
-        <div className="bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[3rem] shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] p-10 text-center">
-          <div className="animate-spin rounded-full h-14 w-14 border-b-4 border-[rgb(var(--pn-primaria-borda-rgb)/1)] mx-auto mb-4"></div>
-          <p className="text-[rgb(var(--pn-texto-rgb)/0.65)] font-bold">Carregando perfil...</p>
-        </div>
-      </div>
+      <main className="profile-page"><p role="status">Abrindo seu perfil…</p></main>
     )
   }
 
@@ -384,14 +354,11 @@ const handleSaveEstudos = async (e) => {
         ? 'Docência'
         : 'Estudante'
 
-  const dataCadastro = user?.data_cadastro
-    ? new Date(user.data_cadastro).toLocaleDateString('pt-BR')
-    : null
 
   return (
     <main className="profile-page">
       <div className="profile-shell">
-        <motion.div variants={fadeUp} initial="hidden" animate="visible">
+        <div>
           <header className="profile-hero">
             <div className="profile-identity">
               <div className="profile-avatar-wrap">
@@ -443,64 +410,26 @@ const handleSaveEstudos = async (e) => {
               </div>
 
               <div className="profile-identity-copy">
-                <p className="profile-eyebrow">MINHA CONTA</p>
-                <h1>{displayName}</h1>
+                <p className="profile-eyebrow">Ficha do estudante</p>
+                <h1><span>{displayName}</span></h1>
                 <p className="profile-identity-email">{form.email || user.email}</p>
                 <div className="profile-meta">
                   <span>{tipoLabel}</span>
-                  {dataCadastro && <span>Membro desde {dataCadastro}</span>}
                 </div>
               </div>
             </div>
-            <p className="profile-hero-note">Seu espaço para cuidar da conta e ajustar seu jeito de estudar.</p>
           </header>
 
-          <nav className="profile-tabs" aria-label="Seções do perfil">
-            <button
-              type="button"
-              onClick={() => setTab('info')}
-              aria-current={tab === 'info' ? 'page' : undefined}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
-                tab === 'info'
-                  ? 'bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white shadow-lg'
-                  : 'text-[rgb(var(--pn-texto-rgb)/0.6)] hover:text-[rgb(var(--pn-texto-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.15)]'
-              }`}
-            >
-              <IconUser /> Informações
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setTab('seguranca')}
-              aria-current={tab === 'seguranca' ? 'page' : undefined}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
-                tab === 'seguranca'
-                  ? 'bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white shadow-lg'
-                  : 'text-[rgb(var(--pn-texto-rgb)/0.6)] hover:text-[rgb(var(--pn-texto-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.15)]'
-              }`}
-            >
-              <IconLock /> Segurança
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setTab('estudos')}
-              aria-current={tab === 'estudos' ? 'page' : undefined}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
-                tab === 'estudos'
-                  ? 'bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white shadow-lg'
-                  : 'text-[rgb(var(--pn-texto-rgb)/0.6)] hover:text-[rgb(var(--pn-texto-rgb)/1)] hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.15)]'
-              }`}
-            >
-              <IconBook /> Estudos
-            </button>
-          </nav>
-          {tab!=='info' && ['pending','error'].includes(infoSave.status) && <p className="profile-pending-summary" role="status">Suas informações pessoais têm alterações não confirmadas.<button type="button" onClick={()=>setTab('info')}>Revisar informações</button></p>}
-          {tab!=='estudos' && ['pending','error'].includes(studySave.status) && <p className="profile-pending-summary" role="status">Seu perfil de estudo tem alterações não confirmadas.<button type="button" onClick={()=>setTab('estudos')}>Revisar perfil de estudo</button></p>}
-
-          {tab === 'info' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card">
-              <div className="profile-section-head"><p className="profile-eyebrow">IDENTIDADE</p><h2>Informações pessoais</h2><p>Escolha como seu nome aparece e mantenha seu contato atualizado.</p></div>
+          <div className="profile-content-layout">
+            <nav className="profile-index" aria-label="Índice do perfil">
+              <span>Meu caderno</span>
+              <a href="#quem-sou">Quem sou</a>
+              <a href="#meu-ritmo">Meu ritmo</a>
+              <a href="#seguranca">Segurança</a>
+            </nav>
+            <div className="profile-sections">
+            <section id="quem-sou" className="profile-section profile-section-info" aria-labelledby="profile-info-heading">
+              <div className="profile-section-head"><span>01 / Quem sou</span><h2 id="profile-info-heading">Quem sou</h2></div>
               <form onSubmit={handleSaveInfo} className="space-y-6" onChange={() => setInfoSave({ status: 'pending', message: 'Alterações ainda não salvas. Use o botão Salvar para confirmar.' })}><fieldset disabled={saving} className="min-w-0 space-y-6 border-0 p-0">
                 <div className="profile-field-grid">
                   <label className="profile-field">Nome completo<input autoComplete="name" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} required /></label>
@@ -511,7 +440,7 @@ const handleSaveEstudos = async (e) => {
 
                 {form.pronome === 'personalizado' && <label className="profile-field">Quais pronomes você usa?<input value={form.pronomePersonalizado} onChange={(e) => setForm((f) => ({ ...f, pronomePersonalizado: e.target.value }))} maxLength={80} placeholder="Ex.: they/them, xe/xem ou ela/elu" /><small className="profile-field-hint">Escreva do jeito que prefere.</small></label>}
 
-                <div className="profile-pronoun-preview" aria-live="polite"><span>PRÉVIA DE TRATAMENTO</span><p>“{fraseConviteLumi(form.pronome === 'personalizado' ? form.pronomePersonalizado : form.pronome)}”</p><small>{form.pronome === 'personalizado' && form.pronomePersonalizado.trim() ? `Preferência informada: ${form.pronomePersonalizado.trim()}. ` : ''}Sua preferência só muda ao salvar.</small></div></details>
+                <div className="profile-pronoun-preview" aria-live="polite"><span>Como a Lumi vai falar com você</span><p>“{fraseConviteLumi(form.pronome === 'personalizado' ? form.pronomePersonalizado : form.pronome)}”</p><small>{form.pronome === 'personalizado' && form.pronomePersonalizado.trim() ? `Preferência informada: ${form.pronomePersonalizado.trim()}. ` : ''}Sua preferência só muda ao salvar.</small></div></details>
 
                 <label className="profile-field">Email da conta<input autoComplete="email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required /></label>
 
@@ -519,39 +448,15 @@ const handleSaveEstudos = async (e) => {
                   {saving ? 'Salvando...' : 'Salvar alterações'}
                 </button>
               </fieldset>{infoSave.status !== 'ready' && <SaveFeedback status={infoSave.status} message={infoSave.message} onRetry={() => handleSaveInfo({ preventDefault() {} })} />}</form>
-            </motion.div>
-          )}
+            </section>
 
-          {tab === 'seguranca' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card">
-              <div className="profile-section-head"><p className="profile-eyebrow">PROTEÇÃO</p><h2>Segurança da conta</h2><p>Atualize sua senha para manter seu acesso protegido.</p></div>
-
-              <form onSubmit={handleSaveSenha} className="profile-security-form">
-                <label className="profile-field">Senha atual<input type="password" autoComplete="current-password" value={senhaForm.senhaAtual} onChange={(e) => setSenhaForm((f) => ({ ...f, senhaAtual: e.target.value }))} required /></label>
-                <label className="profile-field">Nova senha<input type="password" autoComplete="new-password" value={senhaForm.novaSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, novaSenha: e.target.value }))} required /></label>
-                <label className="profile-field">Confirme a nova senha<input type="password" autoComplete="new-password" aria-invalid={Boolean(senhaForm.confirmarSenha && senhaForm.confirmarSenha !== senhaForm.novaSenha)} aria-describedby={senhaForm.confirmarSenha && senhaForm.confirmarSenha !== senhaForm.novaSenha ? 'profile-password-confirmation-error' : undefined} value={senhaForm.confirmarSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, confirmarSenha: e.target.value }))} required /></label>
-                {senhaForm.confirmarSenha && senhaForm.confirmarSenha !== senhaForm.novaSenha && <p id="profile-password-confirmation-error" className="pn-erro" role="alert">As senhas precisam ser iguais.</p>}
-
-                {senhaErro && (
-                  <div role="alert" className="p-4 rounded-[1.5rem] bg-red-100 border border-red-300 text-red-700 text-sm font-semibold">
-                    {senhaErro}
-                  </div>
-                )}
-
-                <button disabled={saving} className="profile-primary-button">
-                  {saving ? 'Salvando...' : 'Alterar senha'}
-                </button>
-              </form>
-            </motion.div>
-          )}
-
-          {tab === 'estudos' && (
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" className="profile-card">
-              <div className="profile-section-head"><p className="profile-eyebrow">SEU RITMO</p><h2>Perfil de estudo</h2><p>Essas escolhas ajudam a organizar seu cronograma.</p></div>
+            <section id="meu-ritmo" className="profile-section profile-section-studies" aria-labelledby="profile-studies-heading">
+              <div className="profile-section-head"><span>02 / Meu ritmo</span><h2 id="profile-studies-heading">Meu ritmo</h2></div>
 
               <form onSubmit={handleSaveEstudos} className="space-y-6" onChange={() => setStudySave({ status: 'pending', message: 'Alterações ainda não salvas. Use o botão Salvar para confirmar.' })}><fieldset disabled={loadingEstudos} className="min-w-0 space-y-6 border-0 p-0">
-                <div className="profile-field-grid">
-                  <label className="profile-field">Ano escolar (opcional)<select value={estudoForm.ano_escolar} onChange={(e) => setEstudoForm((f) => ({ ...f, ano_escolar: e.target.value }))}>
+                <div className="profile-study-sentence">
+                  <span>Estou no</span>
+                  <label className="profile-field"><span className="sr-only">Ano escolar (opcional)</span><select aria-label="Ano escolar (opcional)" value={estudoForm.ano_escolar} onChange={(e) => setEstudoForm((f) => ({ ...f, ano_escolar: e.target.value }))}>
                     <option value="">Prefiro informar depois</option>
                     <option value="9º">9º ano</option>
                     <option value="1º EM">1º ano EM</option>
@@ -559,24 +464,28 @@ const handleSaveEstudos = async (e) => {
                     <option value="3º EM">3º ano EM</option>
                   </select></label>
 
-                  <label className="profile-field">Objetivo<select value={estudoForm.objetivo} onChange={(e) => setEstudoForm((f) => ({ ...f, objetivo: e.target.value }))} required>
+                  <span>, estudo para</span>
+                  <label className="profile-field"><span className="sr-only">Objetivo</span><select aria-label="Objetivo" value={estudoForm.objetivo} onChange={(e) => setEstudoForm((f) => ({ ...f, objetivo: e.target.value }))} required>
                     <option value="">Objetivo</option>
                     <option value="ENEM">ENEM</option>
                     <option value="VESTIBULAR">Vestibular</option>
                     <option value="OBMEP">OBMEP</option>
                     <option value="CURSO">Curso</option>
                   </select></label>
+                  <span>e quero focar em:</span>
                 </div>
 
-<ChecklistMaterias
+                <div className="profile-focus-matters"><ChecklistMaterias
                   value={estudoForm.areas_foco}
                   onChange={(novaAreas) =>
                     setEstudoForm((f) => ({ ...f, areas_foco: novaAreas }))
                   }
                 />
+                <div className="profile-selected-matters" aria-live="polite">{areasFocoParaLista(estudoForm.areas_foco).map((materia) => <span key={materia}>{materia}</span>)}</div></div>
 
+                <p className="profile-study-lead">Para caber na minha semana, posso estudar:</p>
                 <div className="profile-field-grid">
-                  <label className="profile-field">Tempo diário (minutos)<input type="number" min="30" max="480" value={estudoForm.tempo_diario_min} onChange={(e) => setEstudoForm((f) => ({ ...f, tempo_diario_min: Number(e.target.value) }))} /></label>
+                  <label className="profile-field">Minutos por dia<input type="number" min="30" max="480" value={estudoForm.tempo_diario_min} onChange={(e) => setEstudoForm((f) => ({ ...f, tempo_diario_min: Number(e.target.value) }))} /></label>
 
                   <label className="profile-field">Horizonte do planejamento<select value={estudoForm.prazo_estimado} onChange={(e) => setEstudoForm((f) => ({ ...f, prazo_estimado: Number(e.target.value) }))}>
                     <option value={30}>Mensal</option>
@@ -586,11 +495,11 @@ const handleSaveEstudos = async (e) => {
                   </select></label>
                 </div>
 
-                <div className="profile-availability"><h3>Disponibilidade semanal</h3><p>Selecione os dias em que você pode estudar.</p>
+                <div className="profile-availability"><h3>Meus dias de estudo</h3><p>Marque os dias e ajuste os horários.</p>
                   {disponibilidade.map((dia, index) => (
                     <div key={dia.dia_semana} className="profile-day">
                       <label className="profile-day-toggle">
-                        <input type="checkbox" checked={!dia.ocupado} onChange={() => toggleDiaEstudo(index)} className="w-5 h-5 accent-[#4B4C9D]" />
+                        <input type="checkbox" checked={!dia.ocupado} onChange={() => toggleDiaEstudo(index)} />
                         {dia.label}
                       </label>
 
@@ -624,9 +533,33 @@ const handleSaveEstudos = async (e) => {
                   </button>
                 </div>
               </fieldset>{studySave.status !== 'ready' && <SaveFeedback status={studySave.status} message={studySave.message} onRetry={() => handleSaveEstudos({ preventDefault() {} })} />}</form>
-            </motion.div>
-          )}
-        </motion.div>
+            </section>
+
+            <section id="seguranca" className="profile-section profile-section-security" aria-labelledby="profile-security-heading">
+              <div className="profile-section-head"><span>03 / Segurança</span><h2 id="profile-security-heading">Segurança</h2></div>
+
+              <form onSubmit={handleSaveSenha} className="profile-security-form">
+                <label className="profile-field">Senha atual<input type="password" autoComplete="current-password" value={senhaForm.senhaAtual} onChange={(e) => setSenhaForm((f) => ({ ...f, senhaAtual: e.target.value }))} required /></label>
+                <label className="profile-field">Nova senha<input type="password" autoComplete="new-password" aria-describedby="profile-password-rules" value={senhaForm.novaSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, novaSenha: e.target.value }))} required /></label>
+                <p id="profile-password-rules" className="profile-password-rules" role="status" aria-live="polite">{senhaForm.novaSenha ? (validarSenha(senhaForm.novaSenha) || 'Senha pronta para usar.') : 'Use pelo menos 8 caracteres, com maiúscula, minúscula e número.'}</p>
+                <label className="profile-field">Confirme a nova senha<input type="password" autoComplete="new-password" aria-invalid={Boolean(senhaForm.confirmarSenha && senhaForm.confirmarSenha !== senhaForm.novaSenha)} aria-describedby={senhaForm.confirmarSenha && senhaForm.confirmarSenha !== senhaForm.novaSenha ? 'profile-password-confirmation-error' : undefined} value={senhaForm.confirmarSenha} onChange={(e) => setSenhaForm((f) => ({ ...f, confirmarSenha: e.target.value }))} required /></label>
+                {senhaForm.confirmarSenha && senhaForm.confirmarSenha !== senhaForm.novaSenha && <p id="profile-password-confirmation-error" className="pn-erro" role="alert">As senhas precisam ser iguais.</p>}
+
+                {senhaErro && (
+                  <div role="alert" className="profile-security-error">
+                    {senhaErro}
+                  </div>
+                )}
+
+                <button disabled={saving} className="profile-primary-button">
+                  {saving ? 'Salvando...' : 'Alterar senha'}
+                </button>
+              </form>
+            </section>
+
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   )
