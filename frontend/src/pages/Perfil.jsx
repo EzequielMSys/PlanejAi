@@ -354,6 +354,12 @@ const handleSaveEstudos = async (e) => {
         ? 'Docência'
         : 'Estudante'
 
+  const irParaSecao = (id) => {
+    const secao = document.getElementById(id)
+    secao?.scrollIntoView({ block: 'start' })
+    secao?.querySelector('h2')?.focus({ preventScroll: true })
+  }
+
 
   return (
     <main className="profile-page">
@@ -423,13 +429,13 @@ const handleSaveEstudos = async (e) => {
           <div className="profile-content-layout">
             <nav className="profile-index" aria-label="Índice do perfil">
               <span>Meu caderno</span>
-              <a href="#quem-sou">Quem sou</a>
-              <a href="#meu-ritmo">Meu ritmo</a>
-              <a href="#seguranca">Segurança</a>
+              <button type="button" onClick={() => irParaSecao('quem-sou')}>Quem sou</button>
+              <button type="button" onClick={() => irParaSecao('meu-ritmo')}>Meu ritmo</button>
+              <button type="button" onClick={() => irParaSecao('seguranca')}>Segurança</button>
             </nav>
             <div className="profile-sections">
             <section id="quem-sou" className="profile-section profile-section-info" aria-labelledby="profile-info-heading">
-              <div className="profile-section-head"><span>01 / Quem sou</span><h2 id="profile-info-heading">Quem sou</h2></div>
+              <div className="profile-section-head"><span>01 / Quem sou</span><h2 id="profile-info-heading" tabIndex={-1}>Quem sou</h2></div>
               <form onSubmit={handleSaveInfo} className="space-y-6" onChange={() => setInfoSave({ status: 'pending', message: 'Alterações ainda não salvas. Use o botão Salvar para confirmar.' })}><fieldset disabled={saving} className="min-w-0 space-y-6 border-0 p-0">
                 <div className="profile-field-grid">
                   <label className="profile-field">Nome completo<input autoComplete="name" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} required /></label>
@@ -451,7 +457,7 @@ const handleSaveEstudos = async (e) => {
             </section>
 
             <section id="meu-ritmo" className="profile-section profile-section-studies" aria-labelledby="profile-studies-heading">
-              <div className="profile-section-head"><span>02 / Meu ritmo</span><h2 id="profile-studies-heading">Meu ritmo</h2></div>
+              <div className="profile-section-head"><span>02 / Meu ritmo</span><h2 id="profile-studies-heading" tabIndex={-1}>Meu ritmo</h2></div>
 
               <form onSubmit={handleSaveEstudos} className="space-y-6" onChange={() => setStudySave({ status: 'pending', message: 'Alterações ainda não salvas. Use o botão Salvar para confirmar.' })}><fieldset disabled={loadingEstudos} className="min-w-0 space-y-6 border-0 p-0">
                 <div className="profile-study-sentence">
@@ -536,7 +542,7 @@ const handleSaveEstudos = async (e) => {
             </section>
 
             <section id="seguranca" className="profile-section profile-section-security" aria-labelledby="profile-security-heading">
-              <div className="profile-section-head"><span>03 / Segurança</span><h2 id="profile-security-heading">Segurança</h2></div>
+              <div className="profile-section-head"><span>03 / Segurança</span><h2 id="profile-security-heading" tabIndex={-1}>Segurança</h2></div>
 
               <form onSubmit={handleSaveSenha} className="profile-security-form">
                 <label className="profile-field">Senha atual<input type="password" autoComplete="current-password" value={senhaForm.senhaAtual} onChange={(e) => setSenhaForm((f) => ({ ...f, senhaAtual: e.target.value }))} required /></label>
