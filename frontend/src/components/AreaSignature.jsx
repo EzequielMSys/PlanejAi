@@ -1,5 +1,6 @@
 import './AreaSignature.css'
 import InstitutionalCat from './InstitutionalCat'
+import CatReadingIcon from './CatReadingIcon'
 const AREAS = {
   today:['Seu ponto de partida','Um próximo passo possível.'],
   study:['Sua mesa de estudo','Tempo para dar sentido.'],
@@ -15,5 +16,6 @@ const AREAS = {
 }
 export default function AreaSignature({area}) {
   const [title,description]=AREAS[area]||AREAS.study
-  return <div className={`area-signature area-signature--${area}`}><InstitutionalCat/><span>{title}</span><small>{description}</small></div>
+  const Icon = area === 'understanding' ? CatReadingIcon : InstitutionalCat
+  return <div className={`area-signature area-signature--${area}`}><Icon/><span>{title}</span><small>{description}</small></div>
 }
