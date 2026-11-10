@@ -1,5 +1,25 @@
 // Convert the delimiters used by older replies before Markdown consumes their
 // backslashes. Code examples stay literal, and ordinary brackets stay text.
+function normalizeFormula(formula) {
+  // Some responses cross the JSON/Markdown boundary twice, leaving commands
+  // such as `\\\\text` and `\\\\xrightarrow` in the formula. KaTeX reads the
+  // first slash as a line break command, rather than as the command itself.
+  // Keep intentional LaTeX line breaks intact (they are followed by a newline)
+  // and only collapse repeated slashes immediately before a command or symbol.
+  const normalized = formula.replace(/\\{2,}(?=[A-Za-z;,:!{}_^])/g, '\\')
+  const group = (token) => token.startsWith('{') ? token : `{${token}}`
+  const content = (token) => token.startsWith('{') ? token.slice(1, -1) : token
+
+  // Chemical answers commonly add the aqueous state after the charge, e.g.
+  // `\\text{NO}_{3}^{-}_{(aq)}`. TeX allows only one subscript per atom;
+  // merge the state with the existing subscript and put it before the charge.
+  return normalized
+    .replace(/(\\text\{[^{}]*\})_(\{[^{}]*\}|[A-Za-z0-9])\^(\{[^{}]*\}|[A-Za-z0-9])_(\{[^{}]*\}|[A-Za-z0-9])/g,
+      (_, atom, subscript, superscript, state) => `${atom}_{${content(subscript)}${content(state)}}^${group(superscript)}`)
+    .replace(/(\\text\{[^{}]*\})\^(\{[^{}]*\}|[A-Za-z0-9])_(\{[^{}]*\}|[A-Za-z0-9])/g,
+      (_, atom, superscript, subscript) => `${atom}_${group(subscript)}^${group(superscript)}`)
+}
+
 function normalizeCurrency(text) {
   // remark-math treats even LaTeX's escaped dollar as a math delimiter.
   // Protect literal dollars first; use a dollar-free KaTeX character command
@@ -9,17 +29,17 @@ function normalizeCurrency(text) {
   return text.replace(/\\\$/g, marker)
     .replace(/(?<!\$)R\$(?=\s*\d|})/g, () => `R${marker}`)
     .replace(/(?<![\\$])(\${1,2})(?!\$)([\s\S]*?)(?<![\\$])\1(?!\$)/g,
-      (_, delimiter, formula) => `${delimiter}${formula.replaceAll(marker, '\\char"0024 ')}${delimiter}`)
+      (_, delimiter, formula) => `${delimiter}${normalizeFormula(formula).replaceAll(marker, '\\char"0024 ')}${delimiter}`)
     .replaceAll(marker, '\\$')
 }
 
 function normalizeText(text) {
   return normalizeCurrency(text
-    .replace(/\\\[([\s\S]*?)\\\]/g, (_, formula) => `\n$$\n${formula.trim()}\n$$\n`)
-    .replace(/\\\(([\s\S]*?)\\\)/g, (_, formula) => `$${formula.trim()}$`)
+    .replace(/\\+\[([\s\S]*?)\\+\]/g, (_, formula) => `\n$$\n${normalizeFormula(formula.trim())}\n$$\n`)
+    .replace(/\\+\(([\s\S]*?)\\+\)/g, (_, formula) => `$${normalizeFormula(formula.trim())}$`)
     .replace(/(^|\n)([ \t]*)\[[ \t]*([^\n]+?)\][ \t]*(?=\n|$)/g, (original, newline, indent, formula) => {
       if (!/\\(?:frac|sqrt|text|sum|int|begin|mathrm|cdot|times)\b|[_^]\s*\{/.test(formula)) return original
-      return `${newline}${indent}$$\n${indent}${formula.trim()}\n${indent}$$`
+      return `${newline}${indent}$$\n${indent}${normalizeFormula(formula.trim())}\n${indent}$$`
     })
   )
 }

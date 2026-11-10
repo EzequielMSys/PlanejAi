@@ -24,6 +24,20 @@ $$
 [ E_{\text{mec}} = \frac{1}{2} m v^{2} + mgh ]`);
   assert.equal(doc.querySelectorAll('.katex').length,5);assert.equal(doc.querySelectorAll('.katex-display').length,2);assert.ok(doc.querySelector('li .katex'));assert.equal(doc.querySelectorAll('.katex-error').length,0);
 });
+test('comandos LaTeX escapados duas vezes pela resposta da Lumi são normalizados',async()=>{
+  const doc=await render(String.raw`Ao misturá-los, o que ocorre é apenas a dissolução do sal:
+
+$$
+\\text{KNO}_{3(s)}\\;\\xrightarrow{H_2O}\\;\\text{K}^{+}_{(aq)} + \\text{NO}_{3}^{-}_{(aq)}
+$$
+
+Resolução:
+
+$$
+\\text{Ba}^{2+}_{(aq)} + \\text{SO}_4^{2-}_{(aq)} + \\text{K}^{+}_{(aq)} + \\text{Cl}^{-}_{(aq)} \\;\\longrightarrow\\; \\text{BaCl}_2 + 2\\text{SO}_4
+$$`);
+  assert.equal(doc.querySelectorAll('.katex').length,2);assert.equal(doc.querySelectorAll('.lumi-math-error,.katex-error').length,0);assert.match(doc.body.textContent,/KNO/);assert.match(doc.body.textContent,/BaCl/);
+});
 test('código literal, colchetes de texto e preços não viram fórmulas',async()=>{
   const {default:normalize}=await import('../frontend/src/utils/normalizeLumiMath.js');
   const text=String.raw`[um exemplo]
