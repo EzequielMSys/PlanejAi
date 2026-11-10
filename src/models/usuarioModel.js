@@ -40,6 +40,7 @@ async function buscarPorEmail(email) {
       atualizado_em,
       apelido,
       foto_url,
+      banner_url,
       pronome
     FROM usuarios
     WHERE email = ?`,
@@ -60,7 +61,8 @@ async function buscarPorEmailSimples(email) {
       data_cadastro,
       ativo,
       apelido,
-      foto_url
+      foto_url,
+      banner_url
     FROM usuarios
     WHERE email = ?`,
     [email]
@@ -86,6 +88,7 @@ async function buscarPorIdCompleto(id) {
       atualizado_em,
       apelido,
       foto_url,
+      banner_url,
       pronome
     FROM usuarios
     WHERE id_usuario = ?`,
@@ -111,6 +114,7 @@ async function buscarPorId(id) {
       atualizado_em,
       apelido,
       foto_url,
+      banner_url,
       pronome
     FROM usuarios
     WHERE id_usuario = ?`,
@@ -165,7 +169,8 @@ async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '' } =
       ultimo_login,
       atualizado_em,
       apelido,
-      foto_url
+      foto_url,
+      banner_url
     FROM usuarios
     ${whereSql}
     ORDER BY nome, id_usuario
@@ -187,7 +192,7 @@ async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '' } =
 }
 
 async function atualizarUsuario(id, dados) {
-  const camposPermitidos = ['nome', 'email', 'tipo', 'apelido', 'foto_url', 'pronome']
+  const camposPermitidos = ['nome', 'email', 'tipo', 'apelido', 'foto_url', 'banner_url', 'pronome']
   const campos = []
   const valores = []
 

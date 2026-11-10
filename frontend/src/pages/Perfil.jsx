@@ -6,6 +6,7 @@ import perfilService from '../services/perfilService'
 import cronogramaService from '../services/cronogramaService'
 import ChecklistMaterias, { areasFocoParaLista } from '../components/ChecklistMaterias'
 import SaveFeedback from '../components/SaveFeedback'
+import ProfileImageEditor from '../components/ProfileImageEditor'
 import { toast } from 'react-hot-toast'
 import { resolveBackendAsset } from '../config/api'
 import { validarSenha } from '../config/senha'
@@ -54,11 +55,13 @@ const pronomesPadrao = ['', 'ela_dela', 'ele_dele', 'elu_delu', 'nome_proprio']
 export default function Perfil() {
   const { user, changePassword, updateUser } = useAuth()
   const fileRef = useRef(null)
+  const bannerFileRef = useRef(null)
   const avatarActionsRef = useRef(null)
   const infoFormRef = useRef(null)
   const studyFormRef = useRef(null)
   const passwordFormRef = useRef(null)
   const savedInfoRef = useRef(null)
+  const loadedUserIdRef = useRef(null)
   const savedStudyRef = useRef({ ano_escolar: '', objetivo: '', areas_foco: '', tempo_diario_min: 60, prazo_estimado: 30 })
   const savedDaysRef = useRef(diasPadrao)
 
@@ -68,8 +71,12 @@ export default function Perfil() {
   const [passwordSave, setPasswordSave] = useState({ status: 'ready' })
   const [activeSection, setActiveSection] = useState('quem-sou')
   const [uploadingFoto, setUploadingFoto] = useState(false)
+  const [uploadingBanner, setUploadingBanner] = useState(false)
   const [removingFoto, setRemovingFoto] = useState(false)
+  const [removingBanner, setRemovingBanner] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState(user?.foto_url || null)
+  const [bannerPreview, setBannerPreview] = useState(user?.banner_url || null)
+  const [imageEditor, setImageEditor] = useState(null)
 
   const [form, setForm] = useState({
     nome: '',
@@ -109,10 +116,15 @@ export default function Perfil() {
         pronome: pronomesPadrao.includes(user.pronome || '') ? (user.pronome || '') : user.pronome ? 'personalizado' : '',
         pronomePersonalizado: pronomesPadrao.includes(user.pronome || '') ? '' : (user.pronome || '')
       }
-      setForm(loadedInfo)
-      savedInfoRef.current = loadedInfo
+      const userId = user.id_usuario || user.id
+      if (loadedUserIdRef.current !== userId || !savedInfoRef.current || JSON.stringify(form) === JSON.stringify(savedInfoRef.current)) {
+        setForm(loadedInfo)
+        savedInfoRef.current = loadedInfo
+      }
+      loadedUserIdRef.current = userId
 
       setAvatarPreview(user.foto_url || null)
+      setBannerPreview(user.banner_url || null)
     }
   }, [user])
 
@@ -161,37 +173,48 @@ export default function Perfil() {
     carregarPerfilEstudo()
   }, [])
 
-  const handleUploadFoto = async (e) => {
+  const handleChooseImage = (e, mode) => {
     if (avatarActionsRef.current) avatarActionsRef.current.open = false
     const file = e.target.files?.[0]
     if (!file) return
+    e.target.value = ''
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('Selecione uma imagem válida.')
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Escolha uma imagem JPG, PNG ou WEBP.')
       return
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('A imagem deve ter no máximo 2MB.')
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('Escolha uma imagem de até 15 MB para ajustar.')
       return
     }
+    setImageEditor({ file, mode })
+  }
 
-    const fotoAnterior = avatarPreview
-    setUploadingFoto(true)
+  const handleSaveImage = async (file) => {
+    const mode = imageEditor.mode
+    const previous = mode === 'avatar' ? avatarPreview : bannerPreview
+    if (mode === 'avatar') setUploadingFoto(true)
+    else setUploadingBanner(true)
 
     try {
-      setAvatarPreview(await arquivoComoDataUrl(file))
-      const response = await usuarioService.uploadFotoPerfil(file)
-      const usuarioAtualizado = response.usuario
-
-      updateUser(usuarioAtualizado)
-      setAvatarPreview(usuarioAtualizado.foto_url || null)
+      const preview = await arquivoComoDataUrl(file)
+      if (mode === 'avatar') setAvatarPreview(preview)
+      else setBannerPreview(preview)
+      const response = mode === 'avatar'
+        ? await usuarioService.uploadFotoPerfil(file)
+        : await usuarioService.uploadBannerPerfil(file)
+      updateUser(response.usuario)
+      if (mode === 'avatar') setAvatarPreview(response.usuario.foto_url || null)
+      else setBannerPreview(response.usuario.banner_url || null)
+      setImageEditor(null)
     } catch (error) {
-      setAvatarPreview(fotoAnterior)
-      toast.error(error.response?.data?.error || error.response?.data?.message || 'Erro ao enviar foto.')
+      if (mode === 'avatar') setAvatarPreview(previous)
+      else setBannerPreview(previous)
+      toast.error(error.response?.data?.error || error.response?.data?.message || 'Erro ao enviar imagem.')
     } finally {
-      setUploadingFoto(false)
-      e.target.value = ''
+      if (mode === 'avatar') setUploadingFoto(false)
+      else setUploadingBanner(false)
     }
   }
 
@@ -208,6 +231,20 @@ export default function Perfil() {
       toast.error(error.response?.data?.error || 'Erro ao remover foto.')
     } finally {
       setRemovingFoto(false)
+    }
+  }
+
+  const handleRemoverBanner = async () => {
+    if (!window.confirm('Remover o banner do perfil?')) return
+    setRemovingBanner(true)
+    try {
+      const response = await usuarioService.removerBannerPerfil()
+      updateUser(response.usuario)
+      setBannerPreview(null)
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erro ao remover banner.')
+    } finally {
+      setRemovingBanner(false)
     }
   }
 
@@ -451,7 +488,12 @@ const handleSaveEstudos = async (e) => {
     <main className="profile-page">
       <div className="profile-shell">
         <div>
-          <header className="profile-hero">
+          <header className={`profile-hero${bannerPreview ? ' has-banner' : ''}`} style={bannerPreview ? { backgroundImage: `linear-gradient(90deg, rgb(10 8 20 / .88), rgb(10 8 20 / .68)), url("${getFotoUrl(bannerPreview)}")` } : undefined}>
+            <div className="profile-banner-actions">
+              <button type="button" onClick={() => bannerFileRef.current?.click()} disabled={uploadingBanner || removingBanner}>{bannerPreview ? 'Alterar banner' : 'Adicionar banner'}</button>
+              {bannerPreview && <button type="button" onClick={handleRemoverBanner} disabled={uploadingBanner || removingBanner}>Remover banner</button>}
+              <input ref={bannerFileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(event) => handleChooseImage(event, 'banner')} />
+            </div>
             <div className="profile-identity">
               <div className="profile-avatar-block">
                 <div className="profile-avatar-wrap"><div className="profile-avatar">
@@ -483,10 +525,10 @@ const handleSaveEstudos = async (e) => {
                 <input
                   ref={fileRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   hidden
                   className="profile-file-input"
-                  onChange={handleUploadFoto}
+                  onChange={(event) => handleChooseImage(event, 'avatar')}
                 />
               </div>
 
@@ -622,6 +664,7 @@ const handleSaveEstudos = async (e) => {
         </div>
       </div>
       {algumaAlteracao && <div className="profile-savebar" role="region" aria-label="Alterações pendentes"><span role="status" aria-live="polite">Alterações não salvas</span><div><button type="button" onClick={descartarAlteracoes} disabled={salvando} className="profile-secondary-button">Descartar</button><button type="button" onClick={salvarAlteracoes} disabled={salvando} className="profile-primary-button">{salvando ? 'Salvando…' : 'Salvar alterações'}</button></div></div>}
+      {imageEditor && <ProfileImageEditor file={imageEditor.file} mode={imageEditor.mode} onCancel={() => setImageEditor(null)} onSave={handleSaveImage} saving={uploadingFoto || uploadingBanner} />}
     </main>
   )
 }

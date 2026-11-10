@@ -83,6 +83,32 @@ const usuarioService = {
     }
   },
 
+  async uploadBannerPerfil(file) {
+    try {
+      const formData = new FormData()
+      formData.append('banner', file)
+      const response = await api.patch('/me/banner', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      toast.success(response.data.message || 'Banner atualizado com sucesso!')
+      return response.data
+    } catch (error) {
+      toast.error(extrairMensagem(error, 'Erro ao enviar banner.'))
+      throw error
+    }
+  },
+
+  async removerBannerPerfil() {
+    try {
+      const response = await api.delete('/me/banner')
+      toast.success(response.data.message || 'Banner removido com sucesso!')
+      return response.data
+    } catch (error) {
+      toast.error(extrairMensagem(error, 'Erro ao remover banner.'))
+      throw error
+    }
+  },
+
   async alterarTipo(id, tipo) {
     try {
       const response = await api.patch(

@@ -56,7 +56,8 @@ const migrationOrder = [
   'personal_strategies_projects_v75.sql',
   'research_portfolio_v79.sql',
   'critical_reading_v89.sql',
-  'critical_reading_integrity_v89.sql'
+  'critical_reading_integrity_v89.sql',
+  'profile_banner_v90.sql'
 ];
 
 function sortMigrations(files) {

@@ -146,6 +146,36 @@ async function removerFotoPerfil(req, res) {
   }
 }
 
+async function uploadBannerPerfil(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Nenhuma imagem enviada.' })
+    await validarArquivoEnviado(req.file)
+
+    const usuarioId = req.usuario.id_usuario || req.usuario.id
+    const arquivo = await armazenarArquivo(req.file, 'perfis', usuarioId)
+    const usuarioAtualizado = await usuarioService.atualizar(
+      usuarioId,
+      { banner_url: arquivo.url },
+      req.usuario
+    )
+
+    return res.status(200).json({ message: 'Banner atualizado com sucesso.', usuario: usuarioAtualizado })
+  } catch (error) {
+    console.error('[UPLOAD BANNER ERROR]', error)
+    return res.status(error.status || 500).json({ error: error.status ? error.message : 'Erro ao atualizar banner.' })
+  }
+}
+
+async function removerBannerPerfil(req, res) {
+  try {
+    const usuarioId = req.usuario.id_usuario || req.usuario.id
+    const usuarioAtualizado = await usuarioService.atualizar(usuarioId, { banner_url: null }, req.usuario)
+    return res.status(200).json({ message: 'Banner removido.', usuario: usuarioAtualizado })
+  } catch (error) {
+    return tratarErroUsuario(error, res)
+  }
+}
+
 async function exportarMeusDados(req, res) {
   try {
     const usuarioId = req.usuario.id_usuario || req.usuario.id
@@ -272,6 +302,8 @@ module.exports = {
   atualizar,
   uploadFotoPerfil,
   removerFotoPerfil,
+  uploadBannerPerfil,
+  removerBannerPerfil,
   alterarTipo,
   alterarStatus,
   resetarSenha,

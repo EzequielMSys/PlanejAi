@@ -23,6 +23,12 @@ router.delete(
   usuarioController.removerFotoPerfil
 )
 
+router.delete(
+  '/me/banner',
+  authMiddleware,
+  usuarioController.removerBannerPerfil
+)
+
 router.get(
   '/me',
   authMiddleware,
@@ -43,6 +49,13 @@ router.patch(
   authMiddleware,
   uploadPerfil.single('foto'),
   usuarioController.uploadFotoPerfil
+)
+
+router.patch(
+  '/me/banner',
+  authMiddleware,
+  uploadPerfil.single('banner'),
+  usuarioController.uploadBannerPerfil
 )
 
 /**

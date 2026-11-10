@@ -61,6 +61,7 @@ if (dados.nome !== undefined && dados.nome !== null && dados.nome !== '') {
       email: dados.email,
       apelido: dados.apelido,
       foto_url: dados.foto_url,
+      banner_url: dados.banner_url,
       pronome: dados.pronome
     }
 
