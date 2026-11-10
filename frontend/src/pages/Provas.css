@@ -100,3 +100,16 @@
 @media(max-width:850px) { .exam-studio-heading { grid-template-columns:1fr; } .exam-studio-heading aside { display:none; } .exam-studio-arena .exam-catalog,.exam-source-grid,.exam-levels > div { grid-template-columns:repeat(2,minmax(0,1fr)); } .exam-studio-arena .exam-builder { grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-areas:"levels levels" "count formats" "action action"; } .exam-studio-arena .exam-quantity-presets { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 @media(max-width:560px) { .exam-studio-heading h1 { font-size:2.5rem; } .exam-studio-arena .exam-catalog,.exam-source-grid { grid-template-columns:1fr; } .exam-studio-arena .exam-builder { grid-template-columns:minmax(0,1fr); grid-template-areas:"levels" "count" "formats" "action"; } .exam-studio-arena .exam-quantity-presets { grid-template-columns:repeat(2,minmax(0,1fr)); } .exam-studio-arena .exam-history > div { grid-template-columns:1fr auto; } .exam-studio-arena .exam-history button { grid-column:1/-1; justify-self:start; } .exam-studio-arena .exam-session-title { flex-direction:column; } .exam-studio-arena .exam-session-metrics { justify-items:start; } }
 @media(prefers-reduced-motion:reduce) { .exam-studio-page * { scroll-behavior:auto !important; transition:none !important; } }
+.exam-segments { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .75rem; }
+.exam-segments button { min-height: 44px; padding: .5rem .85rem; border: 1px solid var(--pn-borda); border-radius: .55rem; color: var(--pn-texto); }
+.exam-segments button[aria-pressed="true"] { border-color: var(--pn-link); background: var(--pn-primaria-suave); font-weight: 700; }
+.exam-segments button:focus-visible, .exam-compact-fields select:focus-visible { outline: 2px solid var(--pn-link); outline-offset: 2px; }
+.exam-studio-hero .exam-studio-heading { display: block; }
+.exam-studio-arena .exam-builder.exam-compact-fields { display: grid; grid-template: none; gap: .65rem; padding: 1rem; background: var(--pn-superficie); color: var(--pn-texto); }
+.exam-studio-arena .exam-builder.exam-compact-fields > :is(label, button) { grid-area: auto; color: var(--pn-texto); }
+.exam-studio-arena .exam-builder.exam-compact-fields :is(input, select) { width: 100%; min-height: 44px; padding: .45rem .65rem; border: 1px solid var(--pn-borda); border-radius: .5rem; background: var(--pn-fundo); color: var(--pn-texto); }
+.exam-studio-arena .exam-builder.exam-compact-fields small { color: var(--pn-texto-suave); }
+.exam-studio-arena .exam-builder.exam-compact-fields > button { justify-self: start; width: auto; background: var(--pn-primaria); color: var(--pn-on-primaria); }
+.exam-studio-arena .exam-builder.exam-compact-fields > a { color: var(--pn-link); }
+.exam-source .exam-source-grid a { min-height: 0; }
+.exam-studio-arena[hidden] { display: none; }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import inteligencia from '../services/inteligenciaService'
 import RecoveryState from './RecoveryState'
@@ -23,7 +24,11 @@ const niveis = [
   { id: 'DIFICIL', nome: 'Avançado', descricao: 'Mais etapas e raciocínio aprofundado' }
 ]
 
-export default function ExamArena({ onSessionChange }) {
+export default function ExamArena({ area, onSessionChange }) {
+  const [modalidade, setModalidade] = useState('colecao')
+  const [busca, setBusca] = useState('')
+  const [custom, setCustom] = useState(false)
+  const [lumi, setLumi] = useState({ ano: '', disciplina: '', assunto: '', dificuldade: 'Equilibrado', quantidade: '10', formato: 'múltipla escolha' })
   const [catalogo, setCatalogo] = useState([])
   const [historico, setHistorico] = useState([])
   const [config, setConfig] = useState({ idCatalogo: '', dificuldade: 'TODAS', quantidade: 45 })
@@ -56,7 +61,10 @@ export default function ExamArena({ onSessionChange }) {
       setCatalogo(provas)
       setHistorico(tentativas)
       setLoadError(false)
-      setConfig((atual) => ({ ...atual, idCatalogo: atual.idCatalogo || String(provas[0]?.id_catalogo || '') }))
+      setConfig(atual => {
+        if (atual.idCatalogo || !provas.length) return atual
+        return { ...atual, idCatalogo: String(provas[0].id_catalogo), quantidade: Math.min(atual.quantidade, questoesNoNivel(provas[0], atual.dificuldade)) }
+      })
     } catch {
       setLoadError(true)
       toast.error('Não foi possível carregar o catálogo de simulados.')
@@ -170,20 +178,61 @@ export default function ExamArena({ onSessionChange }) {
       <ol className="exam-route" aria-label="Percurso da prova">{['Preparar', 'Responder', 'Conferir e revisar'].map((label, index) => <li key={label} aria-current={(resultado ? 2 : simulado ? 1 : 0) === index ? 'step' : undefined}><span>0{index + 1}</span>{label}</li>)}</ol>
 
       {!simulado ? <>
-        {historico.length > 0 && <div className="exam-history"><h3>Continue uma tentativa</h3>{historico.slice(0, 5).map((item) => <div key={item.id_simulado}><span>{item.instituicao}</span><b>{item.titulo}</b><strong>{item.status === 'CONCLUIDO' ? `${Number(item.nota).toFixed(0)}%` : 'Em andamento'}</strong>{item.status === 'EM_ANDAMENTO' && <button type="button" disabled={busyId === item.id_simulado} onClick={() => retomar(item.id_simulado)}>{busyId === item.id_simulado ? 'Abrindo…' : 'Retomar'}</button>}</div>)}</div>}
-        <h2>Escolha sua coleção.</h2>
-        <p className="exam-instruction">Ajuste o treino abaixo. Ao gerar, a primeira questão abre nesta mesma tela.</p>
         {actionError && <p className="exam-action-error" role="alert">{actionError}</p>}
-        <div className="exam-catalog">
-          {catalogo.map((item) => <button type="button" key={item.id_catalogo} aria-pressed={String(item.id_catalogo) === String(config.idCatalogo)} data-selected={String(item.id_catalogo) === String(config.idCatalogo)} onClick={() => setConfig((atual) => ({ ...atual, idCatalogo: String(item.id_catalogo), quantidade: Math.min(Number(atual.quantidade) || 1, Math.max(1, questoesNoNivel(item, atual.dificuldade))) }))}><small>{item.instituicao} · {item.referencia_ano || 'Coleção'}</small><b>{item.titulo}</b><p>{item.descricao}</p><span>{item.questoes_disponiveis} questões disponíveis</span></button>)}
-        </div>
-        <div className="exam-builder">
-          <div className="exam-levels" role="group" aria-label="Nível do simulado"><span>Escolha seu nível</span><div>{niveis.map((nivel) => { const disponiveis = questoesNoNivel(catalogoSelecionado, nivel.id); return <button type="button" key={nivel.id} aria-pressed={config.dificuldade === nivel.id} disabled={!disponiveis} onClick={() => setConfig((atual) => ({ ...atual, dificuldade: nivel.id, quantidade: Math.min(Number(atual.quantidade) || 1, disponiveis) }))}><strong>{nivel.nome}</strong><small>{nivel.descricao}</small><em>{disponiveis} questões</em></button> })}</div></div>
-          <label>Questões<input type="number" min="1" max={maximoSelecionado} value={config.quantidade} onChange={(event) => setConfig({ ...config, quantidade: event.target.value })} /><small>até {maximoSelecionado} nesta coleção</small></label>
-          <div className="exam-quantity-presets" role="group" aria-label="Formato da prova"><span>Escolha a quantidade</span>{[20, 45, 60, 90, 180].filter((quantidade) => quantidade <= maximoSelecionado).map((quantidade) => <button type="button" key={quantidade} aria-pressed={Number(config.quantidade) === quantidade} data-selected={Number(config.quantidade) === quantidade} onClick={() => setConfig({ ...config, quantidade })}>{quantidade} questões</button>)}</div>
-          <button type="button" disabled={!config.idCatalogo || maximoSelecionado === 0 || busyId === 'novo'} onClick={gerar}>{busyId === 'novo' ? 'Montando…' : maximoSelecionado === 0 ? 'Sem questões neste nível' : 'Gerar minha prova'} <span>→</span></button>
-        </div>
-
+        {area === 'tentativas' ? <section className="exam-attempts">
+          <h2>Minhas tentativas</h2>
+          {historico.some(item => item.status === 'EM_ANDAMENTO') && <p>Continue de onde parou. Suas respostas salvas serão recuperadas.</p>}
+          {['EM_ANDAMENTO','CONCLUIDO'].map(status => <div className="exam-history" key={status}>
+            <h3>{status === 'EM_ANDAMENTO' ? 'Em andamento' : 'Concluídos'}</h3>
+            {!historico.some(item => item.status === status) && <p>Nenhuma tentativa nesta situação.</p>}
+            {historico.filter(item => item.status === status).map(item => <div key={item.id_simulado}>
+              <span>{item.instituicao}</span><b>{item.titulo}</b>
+              <span>{item.total_questoes != null && `${item.total_questoes} questões`}{item.iniciado_em && ` · ${new Date(item.iniciado_em).toLocaleDateString('pt-BR')}`}</span>
+              {status === 'CONCLUIDO' ? <strong>{Number(item.nota).toFixed(0)}%{item.acertos != null && ` · ${item.acertos} acertos`}</strong> : <button type="button" disabled={busyId !== null} onClick={() => retomar(item.id_simulado)}>{busyId === item.id_simulado ? 'Abrindo…' : 'Retomar'}</button>}
+            </div>)}
+          </div>)}
+        </section> : <>
+          <div className="exam-segments" role="group" aria-label="Modalidade de prática">
+            <button type="button" aria-pressed={modalidade === 'colecao'} onClick={() => setModalidade('colecao')}>Por instituição ou vestibular</button>
+            <button type="button" aria-pressed={modalidade === 'lumi'} onClick={() => setModalidade('lumi')}>Por disciplina e assunto · Lumi</button>
+          </div>
+          {modalidade === 'lumi' ? <div className="exam-builder exam-compact-fields">
+            <h2>Prepare uma prática com a Lumi</h2>
+            <p>O pedido abre no chat para revisão e envio. Esta prática é feita na conversa.</p>
+            {[['ano','Ano escolar'],['disciplina','Disciplina'],['assunto','Assunto']].map(([id,label]) => <label key={id}>{label}<input maxLength={100} value={lumi[id]} onChange={event => setLumi({ ...lumi, [id]: event.target.value })}/></label>)}
+            <label>Dificuldade<select value={lumi.dificuldade} onChange={event => setLumi({ ...lumi, dificuldade: event.target.value })}>{niveis.map(nivel => <option key={nivel.id}>{nivel.nome}</option>)}</select></label>
+            <label>Quantidade<input type="number" min="1" max="20" value={lumi.quantidade} onChange={event => setLumi({ ...lumi, quantidade: event.target.value })}/></label>
+            <label>Tipo de questão<select value={lumi.formato} onChange={event => setLumi({ ...lumi, formato: event.target.value })}>{['múltipla escolha','resposta aberta','verdadeiro ou falso'].map(formato => <option key={formato}>{formato}</option>)}</select></label>
+            {lumi.ano.trim() && lumi.disciplina.trim() && lumi.assunto.trim() && Number.isInteger(Number(lumi.quantidade)) && Number(lumi.quantidade) >= 1 && Number(lumi.quantidade) <= 20 && <Link to="/lumi" state={{ perguntaInicial: `Prepare ${lumi.quantidade} questões originais de ${lumi.formato} para ${lumi.ano}, de ${lumi.disciplina} sobre ${lumi.assunto}, em nível ${lumi.dificuldade}. Confira se os dados são suficientes e guarde o gabarito até eu tentar. Depois, comente minhas respostas e sugira revisões.` }}>Preparar pedido na Lumi →</Link>}
+          </div> : <div className="exam-builder exam-compact-fields">
+            <h2>Escolha sua coleção.</h2>
+            <p>Os simulados do PlanejAI são atividades autorais, inspiradas em diferentes perfis de avaliação.</p>
+            <label>Buscar coleção<input type="search" value={busca} onChange={event => setBusca(event.target.value)} placeholder="Ex.: ENEM ou FUVEST"/></label>
+            <label>Coleção<select value={config.idCatalogo} onChange={event => {
+              const idCatalogo = event.target.value
+              const item = catalogo.find(entry => String(entry.id_catalogo) === idCatalogo)
+              setConfig(atual => ({ ...atual, idCatalogo, quantidade: Math.min(Number(atual.quantidade) || 1, Math.max(1, questoesNoNivel(item, atual.dificuldade))) }))
+            }}>
+              <option value="">Selecione uma coleção</option>
+              {catalogo.filter(item => String(item.id_catalogo) === config.idCatalogo || `${item.instituicao} ${item.titulo}`.toLowerCase().includes(busca.trim().toLowerCase())).map(item => <option key={item.id_catalogo} value={item.id_catalogo}>{item.instituicao} · {item.titulo}</option>)}
+            </select></label>
+            {catalogoSelecionado && <>
+              <p>{catalogoSelecionado.descricao}</p>
+              <label>Dificuldade<select value={config.dificuldade} onChange={event => {
+                const dificuldade = event.target.value
+                setConfig(atual => ({ ...atual, dificuldade, quantidade: Math.min(Number(atual.quantidade) || 1, questoesNoNivel(catalogoSelecionado, dificuldade)) }))
+              }}>{niveis.map(nivel => <option key={nivel.id} value={nivel.id} disabled={!questoesNoNivel(catalogoSelecionado, nivel.id)}>{nivel.nome}</option>)}</select><small>{niveis.find(nivel => nivel.id === config.dificuldade)?.descricao}</small></label>
+              <label>Quantidade<select value={custom || ![20,45,60,90,180].includes(Number(config.quantidade)) ? 'custom' : config.quantidade} onChange={event => {
+                const value = event.target.value
+                setCustom(value === 'custom')
+                if (value !== 'custom') setConfig({ ...config, quantidade: Number(value) })
+              }}>{[20,45,60,90,180].map(value => <option key={value} value={value} disabled={value > maximoSelecionado}>{value} questões</option>)}<option value="custom">Personalizada</option></select></label>
+              {(custom || ![20,45,60,90,180].includes(Number(config.quantidade))) && <label>Questões<input type="number" min="1" max={maximoSelecionado} value={config.quantidade} onChange={event => setConfig({ ...config, quantidade: event.target.value })}/></label>}
+              <p role="status">{maximoSelecionado} questões disponíveis neste nível{Number(config.quantidade) > maximoSelecionado ? '. Escolha uma quantidade dentro do limite.' : '.'}</p>
+              <button type="button" disabled={!Number.isInteger(Number(config.quantidade)) || Number(config.quantidade) < 1 || Number(config.quantidade) > maximoSelecionado || busyId === 'novo'} onClick={gerar}>{busyId === 'novo' ? 'Montando…' : 'Começar simulado'} <span aria-hidden="true">→</span></button>
+            </>}
+          </div>}
+        </>}
       </> : <div className="exam-session">
         <h2 ref={sessionHeading} tabIndex={-1} className="exam-session-heading">{resultado ? 'Confira suas respostas.' : respondidas ? 'Continue de onde parou.' : 'Sua prova está pronta. Vamos começar?'}</h2>
         <p className="exam-instruction">{resultado ? 'Percorra as questões para ler cada explicação.' : `Questão ${indiceAtual + 1} de ${simulado.questoes.length}. Escolha uma alternativa e avance no seu ritmo.`}</p>

@@ -2987,6 +2987,7 @@ test('reabrir uma redação recupera o percurso e a referência do tema aplicado
 test('prova criada abre a primeira questão com foco e retomada encontra a pendente',async()=>{
  examFlow='ready';const screen=await renderRoute('/provas');
  try{
+  await act(async()=>button('Minhas tentativas').click());
   await act(async()=>button('Retomar').click());await flush();
   assert.equal(document.activeElement,document.querySelector('.exam-session-heading'));
   assert.match(document.querySelector('.exam-session fieldset').textContent,/Questão de teste 2/);
@@ -2994,7 +2995,11 @@ test('prova criada abre a primeira questão com foco e retomada encontra a pende
  }finally{examFlow='';await screen.close()}
  examFlow='ready';const fresh=await renderRoute('/provas');
  try{
-  await act(async()=>button('Gerar minha prova →').click());await flush();
+  await inputValue(personalControl('Buscar coleção'),'ENEM');
+  await act(async()=>button('Provas oficiais').click());
+  await act(async()=>button('Criar simulado').click());
+  assert.equal(personalControl('Buscar coleção').value,'ENEM');
+  await act(async()=>button('Começar simulado →').click());await flush();
   assert.match(document.querySelector('.exam-session-heading').textContent,/pronta/);
   assert.match(document.querySelector('.exam-session fieldset').textContent,/Questão de teste 1/);
   assert.equal(document.activeElement,document.querySelector('.exam-session-heading'));
@@ -3004,6 +3009,8 @@ test('prova criada abre a primeira questão com foco e retomada encontra a pende
 test('acervo de provas oferece fontes oficiais da UNESP e de outras universidades',async()=>{
  const screen=await renderRoute('/provas');
  try{
+  assert.equal(document.querySelector('.exam-source'),null);
+  await act(async()=>button('Provas oficiais').click());
   const links=[...document.querySelectorAll('.exam-source-grid a')];
   const hrefs=links.map(link=>link.href);
   for(const dominio of ['vunesp.com.br','comvest.unicamp.br','revista.vestibular.uerj.br','nc.ufpr.br','ufrgs.br/coperse','gov.br/inep','fuvest.br'])assert.ok(hrefs.some(href=>href.includes(dominio)),`fonte oficial ausente: ${dominio}`);
@@ -3017,11 +3024,11 @@ test('acervo de provas oferece fontes oficiais da UNESP e de outras universidade
 test('resposta inválida na criação mantém a configuração e oferece erro na própria tela',async()=>{
  examFlow='invalid';const screen=await renderRoute('/provas');
  try{
-  await act(async()=>button('Gerar minha prova →').click());await flush();
+  await act(async()=>button('Começar simulado →').click());await flush();
   assert.ok(document.querySelector('.exam-builder'));
   assert.equal(document.querySelector('.exam-session'),null);
   assert.match(document.querySelector('.exam-action-error').textContent,/escolhas foram mantidas/);
-  assert.ok(!button('Gerar minha prova →').disabled);
+  assert.ok(!button('Começar simulado →').disabled);
  }finally{examFlow='';await screen.close()}
 });
 
