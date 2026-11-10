@@ -1,5 +1,42 @@
 const pool = require('../config/db')
 
+let bannerColumnAvailable = true
+
+function semColunaBanner(sql) {
+  return sql
+    .replace(/,\s*banner_url\s*,/g, ',')
+    .replace(/,\s*banner_url\b/g, '')
+}
+
+async function selectUsuario(sql, params) {
+  try {
+    return await pool.execute(bannerColumnAvailable ? sql : semColunaBanner(sql), params)
+  } catch (error) {
+    if (error.code !== 'ER_BAD_FIELD_ERROR' || !/banner_url/i.test(error.message)) throw error
+    // A publicação da API pode preceder a migração do banco. Nesse intervalo,
+    // login e leitura do perfil continuam funcionando sem o banner.
+    bannerColumnAvailable = false
+    return pool.execute(semColunaBanner(sql), params)
+  }
+}
+
+async function garantirColunaBanner() {
+  if (bannerColumnAvailable) {
+    try {
+      await pool.query('SELECT banner_url FROM usuarios LIMIT 0')
+      return
+    } catch (error) {
+      if (error.code !== 'ER_BAD_FIELD_ERROR' || !/banner_url/i.test(error.message)) throw error
+    }
+  }
+  try {
+    await pool.query('ALTER TABLE usuarios ADD COLUMN banner_url TEXT NULL')
+  } catch (error) {
+    if (error.code !== 'ER_DUP_FIELDNAME') throw error
+  }
+  bannerColumnAvailable = true
+}
+
 async function criarUsuario({
   nome,
   email,
@@ -25,7 +62,7 @@ async function criarUsuario({
 }
 
 async function buscarPorEmail(email) {
-  const [rows] = await pool.execute(
+  const [rows] = await selectUsuario(
     `SELECT 
       id_usuario AS id,
       id_usuario,
@@ -61,8 +98,7 @@ async function buscarPorEmailSimples(email) {
       data_cadastro,
       ativo,
       apelido,
-      foto_url,
-      banner_url
+      foto_url
     FROM usuarios
     WHERE email = ?`,
     [email]
@@ -72,7 +108,7 @@ async function buscarPorEmailSimples(email) {
 }
 
 async function buscarPorIdCompleto(id) {
-  const [rows] = await pool.execute(
+  const [rows] = await selectUsuario(
     `SELECT 
       id_usuario AS id,
       id_usuario,
@@ -99,7 +135,7 @@ async function buscarPorIdCompleto(id) {
 }
 
 async function buscarPorId(id) {
-  const [rows] = await pool.execute(
+  const [rows] = await selectUsuario(
     `SELECT 
       id_usuario AS id,
       id_usuario,
@@ -169,8 +205,7 @@ async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '' } =
       ultimo_login,
       atualizado_em,
       apelido,
-      foto_url,
-      banner_url
+      foto_url
     FROM usuarios
     ${whereSql}
     ORDER BY nome, id_usuario
@@ -192,6 +227,7 @@ async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '' } =
 }
 
 async function atualizarUsuario(id, dados) {
+  if (dados.banner_url !== undefined) await garantirColunaBanner()
   const camposPermitidos = ['nome', 'email', 'tipo', 'apelido', 'foto_url', 'banner_url', 'pronome']
   const campos = []
   const valores = []
