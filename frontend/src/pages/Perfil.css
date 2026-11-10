@@ -22,9 +22,7 @@
 .profile-hero.has-banner { border-color: transparent; background-position: center; background-size: cover; color: #fff; }
 .profile-hero.has-banner .profile-identity-copy h1 {
   color: #fff;
-  -webkit-text-stroke: .085em #171421;
-  paint-order: stroke fill;
-  text-shadow: 0 2px 5px rgb(0 0 0 / .7);
+  text-shadow: 0 1px 3px rgb(10 8 20 / .9), 0 2px 8px rgb(10 8 20 / .65);
 }
 .profile-banner-actions { position: absolute; z-index: 2; top: .75rem; right: .75rem; padding: .45rem; }
 #root .profile-page .profile-banner-actions > summary { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgb(255 255 255 / .68); border-radius: 50%; background: rgb(10 8 20 / .52); color: #fff; box-shadow: 0 1px 4px rgb(0 0 0 / .18); cursor: pointer; list-style: none; opacity: 0; transform: translateY(-3px); transition: opacity .16s ease, transform .16s ease; }
