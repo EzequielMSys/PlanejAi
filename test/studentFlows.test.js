@@ -317,7 +317,7 @@ async function getBundle() {
   const esbuild = requireFrontend('esbuild');
   const result = await esbuild.build({
     stdin: { contents: `export { default as MaterialViewer } from './src/components/MaterialViewer'; export { default as Login } from './src/pages/Login'; export { AuthContext } from './src/context/AuthContext'; export { default as App } from './src/App'; export { default as RouteLoading } from './src/components/RouteLoading'; export { default as PageExperience } from './src/components/PageExperience'; export { ThemeProvider } from './src/context/ThemeContext'; export { AccessibilityProvider } from './src/context/AccessibilityContext'; export { default as ErrorBoundary } from './src/components/ErrorBoundary';`, resolveDir: frontendDir, loader: 'jsx' },
-    bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic', loader: { '.css': 'empty', '.ttf':'empty' },
+    bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic', loader: { '.css': 'empty', '.ttf':'empty', '.png':'dataurl' },
     define: { 'import.meta.env': JSON.stringify({ VITE_API_URL: 'http://fixture.invalid', BASE_URL: '/', DEV: true }) },
     plugins: [{ name: 'defer-nonessential-widgets', setup(build) { build.onResolve({filter:/prepareActivityPhoto$/},()=>({path:'photo-prepare',namespace:'test'}));build.onLoad({filter:/photo-prepare/,namespace:'test'},()=>({contents:'export default async function(){return new Blob(["fixture"],{type:"image/jpeg"})}',loader:'js',resolveDir:frontendDir}));build.onResolve({ filter: /LumiMessage$/ }, () => ({ path: 'lumi-message-test', namespace: 'test' })); build.onResolve({ filter: /Deferred$/ }, () => ({ path: 'deferred-test', namespace: 'test' })); build.onLoad({ filter: /lumi-message-test/, namespace: 'test' }, () => ({ contents: "import React from 'react'; export default function LumiMessage({ content }) { return React.createElement('div', { className: 'lumi-message' }, content) }", loader: 'js', resolveDir: frontendDir })); build.onLoad({ filter: /deferred-test/, namespace: 'test' }, () => ({ contents: 'export default function Deferred(){ return null }', loader: 'js' })); } }],
     logLevel: 'silent',
@@ -3103,13 +3103,15 @@ test('gestão identifica a conta das ações e recolhe o menu anterior sem alter
  }finally{directoryOtherAccount=false;directorySecondAccount=false;await screen.close()}
 });
 
-test('perfil recolhe tratamento opcional e permite recuperar alterações ao trocar de seção',async()=>{
+test('perfil mantém alterações ao navegar pelo índice sem sair da rota',async()=>{
  const screen=await renderRoute('/perfil');try{
+  const routeBefore=window.location.hash;
   const treatment=document.querySelector('.profile-treatment');assert.equal(treatment.open,false);
   await act(async()=>treatment.querySelector('summary').click());await act(async()=>document.querySelector('.profile-pronoun-options input[value="elu_delu"]').click());
   await inputValue(document.querySelector('input[autocomplete="name"]'),'Nome de Teste');
-  await act(async()=>button('Segurança').click());assert.ok(button('Revisar informações'));
-  await act(async()=>button('Revisar informações').click());assert.equal(document.querySelector('input[autocomplete="name"]').value,'Nome de Teste');
+  await act(async()=>button('Segurança').click());assert.equal(window.location.hash,routeBefore);
+  assert.equal(document.activeElement,document.querySelector('#profile-security-heading'));
+  await act(async()=>button('Quem sou').click());assert.equal(document.querySelector('input[autocomplete="name"]').value,'Nome de Teste');
   assert.equal(document.querySelector('.profile-pronoun-options input[value="elu_delu"]').checked,true);
   assert.ok(document.querySelector('.profile-treatment>summary').textContent.includes('Elu / delu'));
   assert.equal(requests.filter(x=>x.method==='put').length,0);
