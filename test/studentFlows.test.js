@@ -1068,8 +1068,13 @@ test('schedule keeps the planned calendar date instead of moving it to the previ
   dailySchedulesFixture = [{ id_cronograma: 11, status: 'ATIVO', dias: [{ id_dia: 51, data_estudo: '2026-10-24', tempo_previsto: 25, concluido: 0, conteudos: [{ id: 71, titulo: 'Leitura de gráficos', disciplina: 'Matemática', concluido: 0 }] }] }];
   const screen = await renderRoute('/cronograma');
   try {
-    assert.ok(document.querySelector('.schedule-journey-card').textContent.includes('24/10'));
+    assert.ok(document.querySelector('.schedule-next').textContent.includes('24/10'));
+    assert.ok(document.querySelector('.schedule-week'));
+    await act(async () => button('Lista detalhada').click());
     assert.ok(document.querySelector('.schedule-day').textContent.includes('24/10'));
+    assert.equal(document.querySelectorAll('.schedule-week-divider').length, 1);
+    await act(async () => button('Concluídos').click());
+    assert.match(document.querySelector('.schedule-plan-empty').textContent, /Ainda não há etapas concluídas/);
   } finally { dailySchedulesFixture = []; await screen.close(); }
 });
 

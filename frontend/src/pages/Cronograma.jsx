@@ -1,9 +1,6 @@
-import AreaSignature from '../components/AreaSignature'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
-import confetti from 'canvas-confetti'
 import cronogramaService from '../services/cronogramaService'
 import { useAuth } from '../context/AuthContext'
 import MaterialViewer from '../components/MaterialViewer'
@@ -11,16 +8,12 @@ import CronogramaAssessment from '../components/CronogramaAssessment'
 import { exportarCronograma } from '../utils/calendarExport'
 import './Cronograma.css'
 import DailyPlanActions from '../components/DailyPlanActions'
-import { localStudyDate } from '../utils/dailyStudy'
+import { dailyStudy, localStudyDate } from '../utils/dailyStudy'
+import { mondayOf, shiftDate } from '../utils/scheduleWeek'
 import RecoveryState from '../components/RecoveryState'
 import '../components/StudyRecommendations.css'
 import ScheduleWeek from '../components/ScheduleWeek'
 import { scopedCacheKey } from '../utils/offlineStore'
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
-}
 
 function formatarData(data) {
   if (!data) return '-'
@@ -43,7 +36,7 @@ export default function Cronograma() {
   const [concluindoConteudo, setConcluindoConteudo] = useState(null)
   const [diasExpandidos, setDiasExpandidos] = useState({})
   const [filtroDias, setFiltroDias] = useState('proximos')
-  const [scheduleView, setScheduleView] = useState(() => { try { return localStorage.getItem(scopedCacheKey('schedule-view')) === 'week' ? 'week' : 'list' } catch { return 'list' } })
+  const [scheduleView, setScheduleView] = useState(() => { try { return localStorage.getItem(scopedCacheKey('schedule-view')) === 'list' ? 'list' : 'week' } catch { return 'week' } })
   const [weekAnchor, setWeekAnchor] = useState(null)
   const changeScheduleView = view => { setScheduleView(view); try { localStorage.setItem(scopedCacheKey('schedule-view'),view) } catch { /* A escolha continua disponível nesta tela. */ } }
   const [editando, setEditando] = useState(null)
@@ -54,7 +47,6 @@ export default function Cronograma() {
   const [diaAlvo, setDiaAlvo] = useState(null)
   const [avaliacao, setAvaliacao] = useState(null)
   const [recuperacao, setRecuperacao] = useState(null)
-  const celebradoRef = useRef(false)
 
   async function carregarCronogramas() {
     setLoading(true)
@@ -124,10 +116,10 @@ export default function Cronograma() {
     carregarCronogramas()
   }, [])
 
-  const cronogramaAtual = cronogramas[0]
+  const cronogramaAtual = cronogramas.find(plano => plano.status === 'ATIVO') || cronogramas[0]
 
   const dias = useMemo(() => {
-    return cronogramaAtual?.dias || []
+    return [...(cronogramaAtual?.dias || [])].sort((a, b) => localStudyDate(a.data_estudo).localeCompare(localStudyDate(b.data_estudo)))
   }, [cronogramaAtual])
 
   const totalDias = dias.length
@@ -144,14 +136,10 @@ export default function Cronograma() {
     return acc + Number(dia.tempo_previsto || 0)
   }, 0)
 
-const proximoDia = dias.find((dia) => {
-    return Number(dia.concluido) !== 1 && dia.status !== 'concluído'
-  })
-  const primeiroPendente = dias.findIndex((dia) => Number(dia.concluido) !== 1 && dia.status !== 'concluído')
-  const focoIndex = primeiroPendente === -1 ? Math.max(0, dias.length - 1) : primeiroPendente
-  const inicioTrilha = Math.min(Math.max(0, focoIndex - 1), Math.max(0, dias.length - 3))
-  const diasTrilha = dias.slice(inicioTrilha, inicioTrilha + 3)
-  const filtroEfetivo = totalDias > 0 && diasConcluidos === totalDias && filtroDias === 'proximos' ? 'todos' : filtroDias
+  const { day: proximoDia } = dailyStudy(cronogramas)
+  const atividadesProximas = proximoDia?.conteudos || []
+  const feitasProximas = atividadesProximas.filter(item => Number(item.concluido) === 1).length
+  const filtroEfetivo = filtroDias
   const diasVisiveis = dias.map((dia, index) => ({ dia, index })).filter(({ dia }) => {
     const concluido = Number(dia.concluido) === 1 || dia.status === 'concluído'
     return filtroEfetivo === 'todos' || (filtroEfetivo === 'concluidos' ? concluido : !concluido)
@@ -168,67 +156,6 @@ const proximoDia = dias.find((dia) => {
       const heading = target?.querySelector('h3'); heading?.setAttribute('tabindex','-1'); heading?.focus({ preventScroll:true })
     })
   }
-
-  // Dispara confetes quando o cronograma atinge 100% de conclusão
-  useEffect(() => {
-    if (
-      progresso === 100 &&
-      totalDias > 0 &&
-      !celebradoRef.current
-    ) {
-      celebradoRef.current = true
-
-      const cores = ['#6B43BB', '#A98AE6', '#F2C66D', '#D9697B', '#65B79D', '#E7A55B']
-
-      // Explosão inicial no centro
-      confetti({
-        particleCount: 150,
-        spread: 100,
-        origin: { y: 0.6 },
-        colors: cores,
-        zIndex: 9999
-      })
-
-      // Confetes laterais
-      setTimeout(() => {
-        confetti({
-          particleCount: 80,
-          angle: 60,
-          spread: 70,
-          origin: { x: 0 },
-          colors: cores,
-          zIndex: 9999
-        })
-      }, 250)
-
-      setTimeout(() => {
-        confetti({
-          particleCount: 80,
-          angle: 120,
-          spread: 70,
-          origin: { x: 1 },
-          colors: cores,
-          zIndex: 9999
-        })
-      }, 400)
-
-      // Terceira onda
-      setTimeout(() => {
-        confetti({
-          particleCount: 120,
-          spread: 120,
-          origin: { y: 0.4 },
-          colors: cores,
-          zIndex: 9999
-        })
-      }, 800)
-
-      toast.success(
-        '🎉 Parabéns! Você concluiu 100% do cronograma!',
-        { duration: 5000 }
-      )
-    }
-  }, [progresso, totalDias])
 
   async function gerarNovoCronograma() {
     if (!perfilCompleto) { navigate('/onboarding'); return }
@@ -352,128 +279,58 @@ async function concluirDia(idDia) {
 
   if (loadError) return <main className="schedule-page"><h1 className="sr-only">Cronograma de estudos</h1><RecoveryState title="Seu cronograma não pôde ser consultado." onRetry={() => { carregarCronogramas() }}>Isso não significa que seu plano foi apagado. Tente carregar novamente antes de criar ou substituir um cronograma.</RecoveryState></main>
   return (
-    <main className="schedule-page min-h-screen bg-study-canvas text-black px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-72 h-72 bg-study-accent/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-study-accent/10 rounded-full blur-3xl" />
-
-      <div className="max-w-7xl mx-auto relative z-10"><AreaSignature area="schedule"/>
-        <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <section className="workspace-hero bg-gradient-to-br from-study-accent via-study-accent to-study-accent rounded-[3rem] p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
-            <div className="absolute inset-0 bg-black/20" />
-            <div className="absolute top-8 left-8 w-24 h-24 bg-study-paper rounded-full blur-xl" />
-            <div className="absolute bottom-8 right-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
-
-            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div>
-                <p className="uppercase tracking-[0.35em] text-xs font-black text-white/80 mb-3">
-                  SEU TEMPO, COM INTENÇÃO
-                </p>
-
-                <h1 className="text-4xl md:text-5xl font-black text-white mb-3 tracking-tight">
-                  Cronograma de Estudos
-                </h1>
-
-                <p className="text-lg text-white/85 max-w-2xl">
-                  Seu próximo passo, as atividades de hoje e o caminho que vem depois.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={gerarNovoCronograma}
-                disabled={gerando}
-                className="bg-study-paper text-study-accent px-7 py-3 rounded-full font-black shadow-xl hover:bg-black hover:text-white transition disabled:opacity-60"
-              >
-                {gerando
-                  ? 'Gerando...'
-                  : cronogramaAtual
-                    ? 'Regenerar cronograma'
-                    : 'Gerar cronograma'}
-              </button>
+    <main className="schedule-page schedule-compact">
+      <div className="schedule-shell">
+        <header className="schedule-heading">
+          <div>
+            <p className="pj-eyebrow">Seu planejamento</p>
+            <h1>Cronograma de estudos.</h1>
+            <p>Acompanhe seu ritmo e organize seus próximos passos.</p>
+          </div>
+          {cronogramaAtual && <details className="schedule-manage">
+            <summary>Gerenciar cronograma</summary>
+            <div>
+              <button type="button" onClick={gerarNovoCronograma} disabled={gerando}>{gerando ? 'Gerando…' : 'Regenerar cronograma'}</button>
+              <button type="button" onClick={abrirRecuperacao}>Plano de recuperação</button>
+              <button type="button" onClick={() => exportarCronograma(cronogramaAtual)}>Exportar calendário</button>
             </div>
-          </section>
-
-          {cronogramaAtual && <div className="schedule-tools mb-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={abrirRecuperacao} className="pn-tool rounded-full border border-study-line/25 bg-study-paper px-5 py-3 text-sm font-black text-study-accent dark:bg-study-paper dark:text-study-accent">Plano de recuperação</button><button type="button" onClick={() => exportarCronograma(cronogramaAtual)} className="pn-command rounded-full bg-study-accent px-5 py-3 text-sm font-black text-white">Exportar calendário</button></div>}
-
-          <DailyPlanActions schedules={cronogramas} onSaved={carregarCronogramas} />
+          </details>}
+        </header>
           {!cronogramaAtual ? (
-            <section className="empty-workspace grid gap-10 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_.9fr] lg:items-center">
-              <div>
-                <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-study-line bg-study-paper px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-study-accent dark:border-white/10 dark:bg-study-paper dark:text-[#C4B5FD]">
-                  Comece por aqui
-                </span>
-                <h2 className="max-w-xl text-3xl font-black tracking-[-.04em] text-study-ink dark:text-white sm:text-4xl">
-                  Sua semana ainda está em branco.
-                </h2>
-                <p className="mt-4 max-w-lg leading-relaxed text-[#74627F] dark:text-[#B7A9C1]">
-                  Monte uma rotina possível de cumprir. O PlanejAI distribui matérias, pausas e revisões usando seu perfil e sua disponibilidade.
-                </p>
-                <button
-                  type="button"
-                  onClick={gerarNovoCronograma}
-                  disabled={gerando}
-                  className="pn-command mt-7 rounded-xl bg-study-accent px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-study-accent disabled:opacity-60"
-                >
-                  {gerando ? 'Montando sua semana...' : perfilCompleto ? 'Montar meu cronograma' : 'Escolher matérias e horários'}
-                </button>
-              </div>
-              <div className="planner-preview" aria-hidden="true">
-                <div className="mb-5 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[.18em] text-study-accent">Exemplo de rotina</p>
-                    <p className="mt-1 font-black text-study-ink dark:text-white">Sua próxima semana</p>
-                  </div>
-                  <svg className="h-6 w-6 text-study-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                {[['SEG', 'Matemática', '45 min'], ['QUA', 'Redação', '1 tema'], ['SEX', 'Revisão', '30 min']].map(([dia, materia, tempo]) => (
-                  <div key={dia} className="planner-preview-row">
-                    <span>{dia}</span><strong>{materia}</strong><small>{tempo}</small>
-                  </div>
-                ))}
-              </div>
+            <section className="schedule-next">
+              <h2>Sua semana ainda está em branco.</h2>
+              <p>Monte um cronograma com as matérias e os horários do seu perfil.</p>
+              <button type="button" className="pn-command" onClick={gerarNovoCronograma} disabled={gerando}>
+                {gerando ? 'Montando sua semana...' : perfilCompleto ? 'Montar meu cronograma' : 'Escolher matérias e horários'}
+              </button>
             </section>
           ) : (
             <>
-              <section className="schedule-journey" aria-labelledby="schedule-journey-title">
-                <div className="schedule-journey-heading"><div><span>SEU CAMINHO DE ESTUDOS</span><h2 id="schedule-journey-title">Uma etapa de cada vez.</h2><p>Escolha uma atividade disponível ou veja como liberar a próxima.</p></div><strong>{diasConcluidos} / {totalDias} dias concluídos</strong></div>
-                <div className="schedule-journey-cards">
-                  {diasTrilha.map((dia, offset) => {
-                    const idDia = dia.id_dia || dia.id
-                    const indice = inicioTrilha + offset
-                    const concluido = Number(dia.concluido) === 1 || dia.status === 'concluído'
-                    const bloqueado = Boolean(dia.bloqueado)
-                    const conteudos = dia.conteudos || []
-                    const feitos = conteudos.filter((item) => Number(item.concluido) === 1).length
-                    const avaliacaoDia = cronogramaAtual.avaliacao_em_andamento?.id_dia === idDia ? cronogramaAtual.avaliacao_em_andamento : null
-                    return <article key={idDia || indice} className={`schedule-journey-card ${concluido ? 'is-done' : bloqueado ? 'is-locked' : 'is-ready'}`}>
-                      <div className="schedule-journey-card-top"><span>ETAPA {String(indice + 1).padStart(2, '0')}</span><b>{concluido ? '✓ Concluída' : bloqueado ? '♢ Bloqueada' : '● Disponível'}</b></div>
-                      <h3>{formatarData(dia.data_estudo)}</h3>
-                      <p>{conteudos.length ? `${feitos} de ${conteudos.length} atividades feitas` : `${dia.tempo_previsto || 0} min planejados`}</p>
-                      <div className="schedule-journey-activities">{conteudos.slice(0, 2).map((item, itemIndex) => <div key={item.id || itemIndex}><span aria-hidden="true">{Number(item.concluido) === 1 ? '✓' : bloqueado ? '◇' : '→'}</span><span>{item.titulo || item.disciplina || 'Atividade de estudo'}</span></div>)}{conteudos.length > 2 && <small>+ {conteudos.length - 2} outras atividades</small>}{!conteudos.length && <small>Detalhes desta etapa no plano abaixo.</small>}</div>
-                      {bloqueado ? dia.requer_desafio ? <button type="button" onClick={() => avaliacaoDia ? retomarAvaliacao(avaliacaoDia.id_avaliacao) : iniciarDesafio(idDia)}>{avaliacaoDia ? 'Retomar mini prova' : 'Fazer mini prova para adiantar'} <span aria-hidden="true">→</span></button> : <p className="schedule-journey-wait">Conclua a etapa anterior para liberar.</p> : <button type="button" onClick={() => abrirDia(idDia)}>{concluido ? 'Rever atividades' : 'Ver atividades do dia'} <span aria-hidden="true">→</span></button>}
-                    </article>
-                  })}
-                </div>
+              <section className="schedule-next" aria-labelledby="schedule-next-title">
+                <h2 id="schedule-next-title">Seu próximo estudo</h2>
+                {proximoDia ? <>
+                  <h3>{formatarData(proximoDia.data_estudo)}</h3>
+                  <p>{atividadesProximas.filter(item => Number(item.concluido) !== 1).slice(0, 2).map(item => item.titulo || item.disciplina).filter(Boolean).join(' · ')}</p>
+                  <p>{proximoDia.bloqueado ? 'Bloqueado' : feitasProximas ? 'Em andamento' : 'Disponível'} · {feitasProximas} de {atividadesProximas.length} atividades concluídas{Number(proximoDia.tempo_previsto) > 0 && ` · ${proximoDia.tempo_previsto} min previstos`}</p>
+                  <button type="button" className="pn-command" onClick={() => abrirDia(proximoDia.id_dia || proximoDia.id)}>{proximoDia.bloqueado ? 'Consultar etapa' : 'Ver atividades'}</button>
+                </> : <p>{totalDias && diasConcluidos === totalDias ? 'Todas as etapas foram concluídas.' : 'O plano não tem atividades pendentes disponíveis.'}</p>}
               </section>
-              <section className="schedule-overview" aria-label="Resumo do cronograma">
-                <div className="schedule-overview-main"><span>VISÃO GERAL</span><div><strong>{progresso}%</strong><p>do caminho percorrido</p></div><div className="schedule-overview-bar" role="progressbar" aria-label="Progresso do cronograma" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progresso}><i style={{ width: `${progresso}%` }} /></div><small>{diasConcluidos} de {totalDias} dias concluídos</small></div>
-                <div className="schedule-overview-next"><span>{proximoDia ? 'PRÓXIMO ESTUDO' : 'PLANO CONCLUÍDO'}</span><h2>{proximoDia ? formatarData(proximoDia.data_estudo) : 'Todas as etapas feitas'}</h2><p>{proximoDia ? `${proximoDia.tempo_previsto || 0} min previstos · ${(proximoDia.conteudos || []).length} atividades` : 'Sua trilha de estudos está pronta para a etapa final.'}</p>{proximoDia ? <button type="button" onClick={() => abrirDia(proximoDia.id_dia || proximoDia.id)}>Abrir etapa <span aria-hidden="true">→</span></button> : cronogramaAtual.prova_final?.disponivel ? <button type="button" onClick={iniciarProvaFinal}>Ir para a prova final <span aria-hidden="true">→</span></button> : null}</div>
-                <div className="schedule-overview-facts"><div><span>DIAS NO PLANO</span><strong>{totalDias}</strong></div><div><span>TEMPO PLANEJADO</span><strong>{tempoTotal}<small> min</small></strong></div></div>
+              <section className="schedule-progress" aria-label="Resumo do cronograma">
+                <div><strong>Progresso geral · {progresso}%</strong><div className="schedule-overview-bar" role="progressbar" aria-label="Progresso do cronograma" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progresso}><i style={{ width: `${progresso}%` }} /></div></div>
+                <p>{diasConcluidos} de {totalDias} dias concluídos</p>
+                <p>{tempoTotal} min planejados</p>
               </section>
 
               {cronogramaAtual.avaliacao_em_andamento && <section className="schedule-milestone"><span>AVALIAÇÃO EM ANDAMENTO</span><h2>{cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'Sua prova final está pronta para continuar.' : 'Seu desafio de avanço está pronto para continuar.'}</h2><p>Você pode voltar quando quiser. As questões permanecem as mesmas; neste aparelho, suas escolhas também são preservadas.</p><div><button type="button" onClick={() => retomarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)}>Retomar {cronogramaAtual.avaliacao_em_andamento.tipo === 'FINAL' ? 'prova final' : 'desafio'} <b aria-hidden="true">→</b></button><button type="button" onClick={() => abandonarAvaliacao(cronogramaAtual.avaliacao_em_andamento.id_avaliacao)}>Descartar avaliação</button></div></section>}
               {cronogramaAtual.prova_final?.disponivel && !cronogramaAtual.avaliacao_em_andamento && <section className="schedule-milestone"><span>ETAPA FINAL</span><h2>Você percorreu o plano. Agora mostre o que aprendeu.</h2><p>A prova final reúne 20 questões das matérias estudadas. São necessários 14 acertos para concluir a trilha.</p><div><button type="button" onClick={iniciarProvaFinal}>Iniciar prova final <b aria-hidden="true">→</b></button></div></section>}
               {cronogramaAtual.prova_final?.concluida && <section className="schedule-milestone is-complete"><span>TRILHA CERTIFICADA</span><h2>Seu esforço virou conquista.</h2><p>Você concluiu o cronograma e foi aprovado na prova final.</p></section>}
 
-              <details className="study-recommendation"><summary>Como este plano escolhe as atividades?</summary><p>Na geração, as matérias vêm das áreas de foco do perfil. Os conteúdos são distribuídos nos dias livres, em blocos de aproximadamente 30 minutos; a ordem pode priorizar os pesos da próxima prova cadastrada. O tempo de cada dia é uma previsão, não uma obrigação.</p><p>As revisões ficam em Aprendizagem: a próxima data muda conforme sua avaliação do conteúdo. Este cronograma não pressupõe dificuldade só porque uma atividade ficou pendente.</p><div className="study-recommendation-actions"><a href="#/perfil">Ajustar matérias e disponibilidade</a><a href="#/aprendizagem">Conferir e ajustar revisões</a></div><p>Alterar o perfil não reescreve o plano atual. Para mudar só o dia, use “Seu dia mudou?”. Para gerar outra distribuição, confira a opção de novo cronograma.</p></details>
               <section className="schedule-plan" aria-labelledby="schedule-plan-title">
                 <div className="schedule-legend" aria-label="Estados das etapas"><span><b aria-hidden="true">○</b>Disponível para estudar</span><span><b aria-hidden="true">◇</b>Aguardando liberação</span><span><b aria-hidden="true">✓</b>Concluído</span></div>
                 <div className="schedule-view-toggle" role="group" aria-label="Visualização do cronograma">{[['list','Lista detalhada'],['week','Semana']].map(([view,label]) => <button key={view} type="button" aria-pressed={scheduleView === view} aria-controls="schedule-view-content" onClick={() => changeScheduleView(view)}>{label}</button>)}</div>
-                <div className="schedule-plan-head"><div><span>{scheduleView === 'week' ? 'SEMANA A SEMANA' : 'PLANO COMPLETO'}</span><h2 id="schedule-plan-title">{scheduleView === 'week' ? 'Encontre espaço para o próximo passo.' : 'Suas etapas, em detalhe.'}</h2><p>Abra um dia para estudar, revisar materiais ou acompanhar o que já fez.</p></div>{scheduleView === 'list' && <div className="schedule-plan-filters" role="group" aria-label="Filtrar dias do cronograma">{[['proximos', 'Próximos'], ['concluidos', 'Concluídos'], ['todos', 'Todos']].filter(([valor]) => valor !== 'proximos' || diasConcluidos < totalDias).map(([valor, rotulo]) => <button key={valor} type="button" aria-pressed={filtroEfetivo === valor} onClick={() => setFiltroDias(valor)}>{rotulo}</button>)}</div>}</div>
+                <div className="schedule-plan-head"><div><span>{scheduleView === 'week' ? 'SEMANA A SEMANA' : 'PLANO COMPLETO'}</span><h2 id="schedule-plan-title">{scheduleView === 'week' ? 'Encontre espaço para o próximo passo.' : 'Suas etapas, em detalhe.'}</h2><p>Abra um dia para estudar, revisar materiais ou acompanhar o que já fez.</p></div>{scheduleView === 'list' && <div className="schedule-plan-filters" role="group" aria-label="Filtrar dias do cronograma">{[['proximos', 'Próximos'], ['concluidos', 'Concluídos'], ['todos', 'Todos']].map(([valor, rotulo]) => <button key={valor} type="button" aria-pressed={filtroEfetivo === valor} onClick={() => setFiltroDias(valor)}>{rotulo}</button>)}</div>}</div>
                 <div id="schedule-view-content">{scheduleView === 'week' ? <ScheduleWeek days={dias} onOpenDay={abrirDia} initialWeek={weekAnchor} onWeekChange={setWeekAnchor} /> : <div className="schedule-plan-list">
-                {diasVisiveis.map(({ dia, index }) => {
+                {diasVisiveis.map(({ dia, index }, position) => {
                   const idDia = dia.id_dia || dia.id
                   const concluido =
                     Number(dia.concluido) === 1 ||
@@ -487,17 +344,20 @@ async function concluirDia(idDia) {
                     (c) => Number(c.concluido) === 1
                   ).length
 
+                  const week = mondayOf(localStudyDate(dia.data_estudo))
+                  const previous = diasVisiveis[position - 1]
+                  const startsWeek = !previous || mondayOf(localStudyDate(previous.dia.data_estudo)) !== week
                   return (
+                    <Fragment key={idDia || index}>
+                    {startsWeek && <h3 className="schedule-week-divider">{formatarData(week)} a {formatarData(shiftDate(week, 6))}</h3>}
                     <div
-                      key={idDia || index}
                       id={`schedule-day-${idDia}`}
                       onDragOver={(event) => { event.preventDefault(); if (conteudoArrastado) setDiaAlvo(idDia) }}
                       onDragLeave={() => setDiaAlvo((current) => current === idDia ? null : current)}
                       onDrop={(event) => soltarConteudo(event, idDia)}
-                      className={`schedule-day group relative overflow-hidden rounded-[2rem] p-5 shadow-xl border before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 transition ${bloqueado ? 'is-locked border-study-line/15 bg-black/[.03] before:bg-[#8A769F]' : concluido ? 'is-done border-study-line/20 bg-study-paper before:bg-[#C4B5FD]' : diaAlvo === idDia ? 'is-target border-study-line bg-study-tint ring-4 ring-[#7C3AED]/10 before:bg-study-accent' : 'is-ready border-study-line/20 bg-study-paper before:bg-[#C4B5FD] hover:before:bg-study-accent'}`}
+                      className={`schedule-day ${bloqueado ? 'is-locked' : concluido ? 'is-done' : 'is-ready'}${diaAlvo === idDia ? ' is-target' : ''}`}
                     >
                       <div className="schedule-day-row">
-                        <span className="schedule-day-number" aria-hidden="true"><small>DIA</small>{String(index + 1).padStart(2, '0')}</span>
                         <div className="schedule-day-details flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4"><div className="flex-1">
                           <p className="text-xs uppercase tracking-[0.25em] font-black text-study-accent mb-1">
                             Dia {index + 1}
@@ -508,9 +368,10 @@ async function concluirDia(idDia) {
                           </h3>
 
                           <p className="text-black/60 text-sm">
-                            Tempo previsto: {dia.tempo_previsto || 0} minutos
+                            {Number(dia.tempo_previsto) > 0 && `${dia.tempo_previsto} min previstos`}
                             {conteudos.length > 0 &&
-                              ` • ${conteudosConcluidos}/${conteudos.length} conteúdos`}
+                              ` · ${conteudosConcluidos}/${conteudos.length} atividades concluídas`}
+                            {!bloqueado && conteudos[0]?.titulo && ` · ${conteudos[0].titulo}`}
                           </p>
                         </div>
 
@@ -541,6 +402,7 @@ async function concluirDia(idDia) {
                           {conteudos.length > 0 && !bloqueado && (
                             <button
                               type="button"
+                              aria-expanded={expandido}
                               onClick={() => alternarExpansaoDia(idDia)}
                               className="pn-tool bg-study-canvas border border-study-line/40 text-black px-4 py-2.5 rounded-full font-bold hover:bg-study-accent/20 transition"
                             >
@@ -550,7 +412,7 @@ async function concluirDia(idDia) {
                         </div></div>
                       </div>
 
-                      {expandido && conteudos.length > 0 && (
+                      {expandido && !bloqueado && conteudos.length > 0 && (
                         <div className="schedule-day-content mt-4 pt-4 border-t border-study-line/20 space-y-2">
                           <p className="text-xs uppercase tracking-[0.25em] font-black text-black/40 mb-2">
                             Materiais / Conteúdos do dia
@@ -680,16 +542,18 @@ async function concluirDia(idDia) {
                           })}
                         </div>
                       )}
-                      {bloqueado && <p className="mt-4 border-t border-study-line/20 pt-4 text-sm font-semibold text-black/55 dark:text-white/55">{dia.requer_desafio ? 'Conclua o desafio de 5 questões (4 acertos) para estudar este dia antes da data prevista.' : 'Conclua os dias anteriores para liberar esta etapa.'}</p>}
+                      {bloqueado && dia.requer_desafio && <p className="mt-4 border-t border-study-line/20 pt-4 text-sm font-semibold text-black/55 dark:text-white/55">{dia.requer_desafio ? 'Conclua o desafio de 5 questões (4 acertos) para estudar este dia antes da data prevista.' : 'Conclua os dias anteriores para liberar esta etapa.'}</p>}
                     </div>
+                    </Fragment>
                   )
                 })}
-                {!diasVisiveis.length && <div className="schedule-plan-empty">{filtroDias === 'proximos' ? 'Nenhuma etapa pendente. Sua trilha está completa!' : 'Ainda não há etapas concluídas.'}</div>}
+                {!diasVisiveis.length && <div className="schedule-plan-empty">{filtroDias === 'proximos' ? 'Nenhuma etapa pendente.' : filtroDias === 'concluidos' ? 'Ainda não há etapas concluídas.' : 'Este plano ainda não tem etapas.'}</div>}
                 </div>}</div>
               </section>
+              <DailyPlanActions schedules={cronogramas} onSaved={carregarCronogramas} />
+              <details className="study-recommendation"><summary>Como este plano escolhe as atividades?</summary><p>Na geração, as matérias vêm das áreas de foco do perfil. Os conteúdos são distribuídos nos dias livres, em blocos de aproximadamente 30 minutos; a ordem pode priorizar os pesos da próxima prova cadastrada. O tempo de cada dia é uma previsão, não uma obrigação.</p><p>As revisões ficam em Aprendizagem: a próxima data muda conforme sua avaliação do conteúdo. Este cronograma não pressupõe dificuldade só porque uma atividade ficou pendente.</p><div className="study-recommendation-actions"><a href="#/perfil">Ajustar matérias e disponibilidade</a><a href="#/aprendizagem">Conferir e ajustar revisões</a></div><p>Alterar o perfil não reescreve o plano atual. Para mudar só o dia, use “Seu dia mudou?”. Para gerar outra distribuição, confira a opção de novo cronograma.</p></details>
             </>
           )}
-        </motion.div>
       </div>
       {materialAberto && (
         <MaterialViewer material={materialAberto} onClose={() => setMaterialAberto(null)} />
