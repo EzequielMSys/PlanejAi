@@ -57,6 +57,7 @@ export default function Perfil() {
   const fileRef = useRef(null)
   const bannerFileRef = useRef(null)
   const avatarActionsRef = useRef(null)
+  const bannerActionsRef = useRef(null)
   const infoFormRef = useRef(null)
   const studyFormRef = useRef(null)
   const passwordFormRef = useRef(null)
@@ -249,15 +250,17 @@ export default function Perfil() {
   }
 
   useEffect(() => {
-    const fecharAcoesFoto = (event) => {
+    const fecharAcoesImagem = (event) => {
       if (event.type === 'keydown' && event.key === 'Escape' && avatarActionsRef.current) avatarActionsRef.current.open = false
       if (event.type === 'pointerdown' && avatarActionsRef.current && !avatarActionsRef.current.contains(event.target)) avatarActionsRef.current.open = false
+      if (event.type === 'keydown' && event.key === 'Escape' && bannerActionsRef.current) bannerActionsRef.current.open = false
+      if (event.type === 'pointerdown' && bannerActionsRef.current && !bannerActionsRef.current.contains(event.target)) bannerActionsRef.current.open = false
     }
-    document.addEventListener('pointerdown', fecharAcoesFoto)
-    document.addEventListener('keydown', fecharAcoesFoto)
+    document.addEventListener('pointerdown', fecharAcoesImagem)
+    document.addEventListener('keydown', fecharAcoesImagem)
     return () => {
-      document.removeEventListener('pointerdown', fecharAcoesFoto)
-      document.removeEventListener('keydown', fecharAcoesFoto)
+      document.removeEventListener('pointerdown', fecharAcoesImagem)
+      document.removeEventListener('keydown', fecharAcoesImagem)
     }
   }, [])
 
@@ -488,12 +491,17 @@ const handleSaveEstudos = async (e) => {
     <main className="profile-page">
       <div className="profile-shell">
         <div>
-          <header className={`profile-hero${bannerPreview ? ' has-banner' : ''}`} style={bannerPreview ? { backgroundImage: `linear-gradient(90deg, rgb(10 8 20 / .88), rgb(10 8 20 / .68)), url("${getFotoUrl(bannerPreview)}")` } : undefined}>
-            <div className="profile-banner-actions">
-              <button type="button" onClick={() => bannerFileRef.current?.click()} disabled={uploadingBanner || removingBanner}>{bannerPreview ? 'Alterar banner' : 'Adicionar banner'}</button>
-              {bannerPreview && <button type="button" onClick={handleRemoverBanner} disabled={uploadingBanner || removingBanner}>Remover banner</button>}
+          <header className={`profile-hero${bannerPreview ? ' has-banner' : ''}`} style={bannerPreview ? { backgroundImage: `linear-gradient(90deg, rgb(10 8 20 / .62), rgb(10 8 20 / .30)), url("${getFotoUrl(bannerPreview)}")` } : undefined}>
+            <details ref={bannerActionsRef} className="profile-banner-actions">
+              <summary aria-label={bannerPreview ? 'Editar banner' : 'Adicionar banner'} title={bannerPreview ? 'Editar banner' : 'Adicionar banner'}>
+                {uploadingBanner ? <IconSpinner /> : <IconPencil />}
+              </summary>
+              <div className="profile-banner-menu">
+                <button type="button" onClick={() => { bannerActionsRef.current.open = false; bannerFileRef.current?.click() }} disabled={uploadingBanner || removingBanner}>{bannerPreview ? 'Alterar banner' : 'Adicionar banner'}</button>
+                {bannerPreview && <button type="button" onClick={handleRemoverBanner} disabled={uploadingBanner || removingBanner}>{removingBanner ? 'Removendo…' : 'Remover banner'}</button>}
+              </div>
               <input ref={bannerFileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(event) => handleChooseImage(event, 'banner')} />
-            </div>
+            </details>
             <div className="profile-identity">
               <div className="profile-avatar-block">
                 <div className="profile-avatar-wrap"><div className="profile-avatar">
