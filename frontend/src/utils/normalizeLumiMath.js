@@ -1,12 +1,41 @@
 // Convert the delimiters used by older replies before Markdown consumes their
 // backslashes. Code examples stay literal, and ordinary brackets stay text.
+const unitSymbols = {
+  ampere: 'A', celsius: '{}^\\circ\\mathrm{C}', gram: 'g', joule: 'J', kelvin: 'K', kilogram: 'kg',
+  meter: 'm', metre: 'm', newton: 'N', ohm: '\\Omega', pascal: 'Pa', second: 's', volt: 'V', watt: 'W'
+}
+
+function normalizeUnit(unit) {
+  const notation = unit
+    .replace(/\\(ampere|celsius|gram|joule|kelvin|kilogram|meter|metre|newton|ohm|pascal|second|volt|watt)\b/g, (_, name) => unitSymbols[name])
+    .replace(/\\per\b/g, '/')
+    .replace(/\\squared\b/g, '^{2}')
+    .replace(/\\cubed\b/g, '^{3}')
+    .replace(/\\degree\b/g, '{}^\\circ')
+  return `\\mathrm{${notation}}`
+}
+
+function normalizeCommonNotation(formula) {
+  return formula
+    // siunitx is frequent in physics answers but is not part of KaTeX. These
+    // simple forms carry the same readable value and unit without a plugin.
+    .replace(/\\(?:SI|qty)\{([^{}]*)\}\{([^{}]*)\}/g, (_, value, unit) => `${value}\\,${normalizeUnit(unit)}`)
+    .replace(/\\unit\{([^{}]*)\}/g, (_, unit) => normalizeUnit(unit))
+    .replace(/\\ang\{([^{}]*)\}/g, (_, value) => `${value}{}^\\circ`)
+    // AI answers occasionally put display-only environments inside `$...$`.
+    // `aligned` works in both inline and display math without changing rows.
+    .replace(/\\begin\{(?:align\*?|alignedat\*?)\}/g, '\\begin{aligned}')
+    .replace(/\\end\{(?:align\*?|alignedat\*?)\}/g, '\\end{aligned}')
+    .replace(/\\begin\{(?:equation\*?|displaymath)\}|\\end\{(?:equation\*?|displaymath)\}/g, '')
+}
+
 function normalizeFormula(formula) {
   // Some responses cross the JSON/Markdown boundary twice, leaving commands
   // such as `\\\\text` and `\\\\xrightarrow` in the formula. KaTeX reads the
   // first slash as a line break command, rather than as the command itself.
   // Keep intentional LaTeX line breaks intact (they are followed by a newline)
   // and only collapse repeated slashes immediately before a command or symbol.
-  const normalized = formula.replace(/\\{2,}(?=[A-Za-z;,:!{}_^])/g, '\\')
+  const normalized = normalizeCommonNotation(formula.replace(/\\{2,}(?=[A-Za-z;,:!{}_^])/g, '\\'))
   const group = (token) => token.startsWith('{') ? token : `{${token}}`
   const content = (token) => token.startsWith('{') ? token.slice(1, -1) : token
 

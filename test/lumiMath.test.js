@@ -38,6 +38,16 @@ $$
 $$`);
   assert.equal(doc.querySelectorAll('.katex').length,2);assert.equal(doc.querySelectorAll('.lumi-math-error,.katex-error').length,0);assert.match(doc.body.textContent,/KNO/);assert.match(doc.body.textContent,/BaCl/);
 });
+test('notação química mhchem também é exibida pela Lumi',async()=>{
+  const doc=await render(String.raw`$$\ce{2H2 + O2 -> 2H2O}$$`);
+  assert.equal(doc.querySelectorAll('.katex').length,1);assert.equal(doc.querySelectorAll('.lumi-math-error,.katex-error').length,0);assert.match(doc.body.textContent,/H/);assert.match(doc.body.textContent,/O/);
+});
+test('notações usuais de matemática e física permanecem renderizáveis',async()=>{
+  const doc=await render(String.raw`$$\begin{align} \vec{F} &= m\vec{a} \\ v &= \frac{\Delta s}{\Delta t} = \SI{9.8}{\meter\per\second\squared} \end{align}$$
+
+$$\begin{bmatrix} 1 & 2 \\ 3 & 4 \end{bmatrix}\quad\int_0^\infty e^{-x}\,dx\quad\ang{30}$$`);
+  assert.equal(doc.querySelectorAll('.katex').length,2);assert.equal(doc.querySelectorAll('.lumi-math-error,.katex-error').length,0);assert.ok(doc.querySelector('mtable'));assert.match(doc.body.textContent,/9.8/);assert.match(doc.body.textContent,/30/);
+});
 test('código literal, colchetes de texto e preços não viram fórmulas',async()=>{
   const {default:normalize}=await import('../frontend/src/utils/normalizeLumiMath.js');
   const text=String.raw`[um exemplo]
