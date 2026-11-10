@@ -13,9 +13,9 @@
 .study-input:focus-visible { outline:3px solid var(--pn-primaria-borda,var(--pn-primaria-suave)); outline-offset:1px; border-color:var(--pn-primaria); }
 .study-input[aria-invalid=true],.study-input-erro { border-color:var(--pn-erro,var(--ui-danger)); }
 .study-input-wrap { position:relative; display:flex; }
-.study-input-wrap .study-input { padding-right:3.2rem; }
-.study-eye { position:absolute; top:50%; right:.4rem; display:grid; width:42px; height:42px; place-items:center; transform:translateY(-50%); border-radius:.55rem; color:var(--pn-texto-suave); }
-.study-eye:hover { color:var(--pn-primaria-forte); }
+.study-show-password { display:inline-flex; align-items:center; gap:.6rem; min-height:36px; margin-top:.4rem; color:var(--pn-texto-suave); font-size:.82rem; cursor:pointer; }
+.study-show-password input { width:18px; height:18px; margin:0; accent-color:var(--pn-primaria-forte); cursor:pointer; }
+.study-show-password:focus-within { color:var(--pn-texto); }
 .study-error { margin-top:.35rem; color:var(--pn-erro,var(--ui-danger)); font-size:.75rem; }
 .study-hint { margin-top:.35rem; color:var(--pn-texto-suave); font-size:.72rem; }
 .study-submit { display:inline-flex; align-items:center; justify-content:center; width:100%; min-height:52px; border-radius:.7rem; background:var(--pn-primaria); color:var(--pn-on-primaria); font-size:.9rem; font-weight:800; transition:background .15s ease,transform .15s ease; }

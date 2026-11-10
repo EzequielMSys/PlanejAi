@@ -31,9 +31,6 @@
   [type="date"], [type="time"], [type="datetime-local"], [type="month"], [type="week"]),
   select):where(:not(.sd-search input)) { min-height: 46px; }
 
-/* Reservar o espaço dos controles internos de senha e ditado. */
-#root .study-input-wrap .study-input { padding-right: 3.5rem; }
-
 #root :where(input, textarea)::placeholder {
   color: var(--pn-texto-suave);
   opacity: .85;
