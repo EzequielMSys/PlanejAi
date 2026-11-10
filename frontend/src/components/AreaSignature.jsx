@@ -16,6 +16,6 @@ const AREAS = {
 }
 export default function AreaSignature({area}) {
   const [title,description]=AREAS[area]||AREAS.study
-  const Icon = ['understanding', 'learning', 'exams'].includes(area) ? CatReadingIcon : InstitutionalCat
+  const Icon = ['understanding', 'learning', 'exams', 'sources'].includes(area) ? CatReadingIcon : InstitutionalCat
   return <div className={`area-signature area-signature--${area}`}><Icon/><span>{title}</span><small>{description}</small></div>
 }
