@@ -434,13 +434,6 @@ const handleSaveEstudos = async (e) => {
   const displayName = form.apelido || form.nome || 'Usuário'
   const initials = (displayName.charAt(0) || 'U').toUpperCase()
 
-  const tipoLabel =
-    user?.tipo === 'dono' || user?.tipo === 'admin'
-      ? 'Gestão'
-      : user?.tipo === 'docente'
-        ? 'Docência'
-        : 'Estudante'
-
   const horarios = disponibilidade.filter((dia) => !dia.ocupado)
   const frequencias = new Map()
   horarios.forEach((dia) => {
@@ -491,8 +484,7 @@ const handleSaveEstudos = async (e) => {
     <main className="profile-page">
       <div className="profile-shell">
         <div>
-          <header className="profile-heading">
-            <div className={`profile-hero${bannerPreview ? ' has-banner' : ''}`} style={bannerPreview ? { backgroundImage: `url("${getFotoUrl(bannerPreview)}")` } : undefined}>
+          <header className={`profile-hero${bannerPreview ? ' has-banner' : ''}`} style={bannerPreview ? { backgroundImage: `url("${getFotoUrl(bannerPreview)}")` } : undefined}>
             <details ref={bannerActionsRef} className="profile-banner-actions">
               <summary aria-label={bannerPreview ? 'Editar banner' : 'Adicionar banner'} title={bannerPreview ? 'Editar banner' : 'Adicionar banner'}>
                 {uploadingBanner ? <IconSpinner /> : <IconPencil />}
@@ -503,7 +495,6 @@ const handleSaveEstudos = async (e) => {
               </div>
               <input ref={bannerFileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(event) => handleChooseImage(event, 'banner')} />
             </details>
-            </div>
             <div className="profile-identity">
               <div className="profile-avatar-block">
                 <div className="profile-avatar-wrap"><div className="profile-avatar">
@@ -544,9 +535,6 @@ const handleSaveEstudos = async (e) => {
 
               <div className="profile-identity-copy">
                 <h1>{displayName}</h1>
-                <div className="profile-meta">
-                  <span>{tipoLabel}</span>
-                </div>
               </div>
             </div>
           </header>
