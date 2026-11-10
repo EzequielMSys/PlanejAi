@@ -1,14 +1,13 @@
 import { useId } from 'react'
+import maskImage from '../assets/planejai-logo-mask.png'
 import './Logo.css'
 
-/** Símbolo fornecido: P com silhueta de gato, órbita e estrela. */
+/** Recorte fiel da marca fornecida, colorido pelo tema atual. */
 export default function Logo({ className = 'w-9 h-9', title = 'PlanejAI', animado = true, monochrome = false, decorative = false }) {
   const maskId = useId()
-  return <svg viewBox="0 0 512 512" fill="none" className={['pn-logo',className,animado?'pn-logo-interactive':'',monochrome?'is-monochrome':''].join(' ')} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : title} aria-hidden={decorative ? 'true' : undefined} xmlns="http://www.w3.org/2000/svg">
-    <defs><mask id={maskId}><rect width="512" height="512" fill="white"/><path d="M181 291 C183 248 203 205 237 182 C258 168 276 161 294 160 L312 140 L318 166 C341 170 349 182 355 196 C361 209 378 207 380 222 C382 247 355 263 332 268 C303 274 274 269 253 286 C235 299 225 319 221 342 C246 328 265 327 283 331 C307 340 327 348 348 337 C313 367 271 374 230 364 C209 359 188 354 181 345 Z" fill="black"/></mask></defs>
-    <path d="M136 427 V155 C136 84 187 49 260 49 C339 49 389 98 389 174 C389 250 345 307 270 307 H205 V427 Q205 442 190 442 H151 Q136 442 136 427 Z M205 243 H268 C306 243 321 213 321 176 C321 137 299 115 260 115 C222 115 205 136 205 175 Z" fill="currentColor" mask={`url(#${maskId})`}/>
-    <path d="M75 333 C43 363 53 385 97 393 C184 409 335 356 417 274 C451 240 463 207 450 185 C446 178 440 174 429 170 C466 181 476 211 456 250 C412 337 254 419 131 420 C57 421 26 393 75 333 Z" fill="currentColor"/>
-    <path d="M408 42 L419 71 L449 83 L419 94 L408 123 L397 94 L367 83 L397 71 Z" fill="currentColor"/>
+  return <svg viewBox="0 0 413 372" className={['pn-logo',className,animado?'pn-logo-interactive':'',monochrome?'is-monochrome':''].join(' ')} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : title} aria-hidden={decorative ? 'true' : undefined} xmlns="http://www.w3.org/2000/svg">
+    <defs><mask id={maskId} maskContentUnits="userSpaceOnUse"><image href={maskImage} width="413" height="372" /></mask></defs>
+    <rect width="413" height="372" fill="currentColor" mask={`url(#${maskId})`} />
   </svg>
 }
 export function BrandName() {
