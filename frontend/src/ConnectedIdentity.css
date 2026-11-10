@@ -10,3 +10,20 @@
 .a11y-reduced-motion .sd-workspace .area-signature{animation:none}.a11y-reduced-motion .sd-workspace :is(.desk-card,.understanding-card,.essay-intent button){transition:none}
 @media(max-width:650px){.sd-workspace .area-signature>.connected-pages{width:72px;height:28px}.sd-workspace .understanding-card:not(:last-child)::after{left:40px}.sd-topbar-context>.connected-pages{display:none}.sd-workspace .area-signature small{display:none}}
 @media(forced-colors:active){.connected-pages{color:CanvasText}.connected-pages .connected-pages-leaf{fill:Canvas}.sd-workspace .desk-card::after{display:none}}
+.sd-workspace .area-signature > .institutional-cat,
+.sd-topbar-context > .institutional-cat {
+  width: 32px;
+  height: 32px;
+  color: var(--pn-link);
+}
+.sd-workspace .area-signature .institutional-cat path {
+  fill: currentColor;
+  stroke: none;
+}
+@media (max-width: 650px) {
+  .sd-workspace .area-signature > .institutional-cat { width: 28px; height: 28px; }
+}
+@media (forced-colors: active) {
+  .sd-workspace .area-signature > .institutional-cat,
+  .sd-topbar-context > .institutional-cat { color: CanvasText; }
+}

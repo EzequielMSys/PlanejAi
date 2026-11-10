@@ -1,5 +1,5 @@
 import './AreaSignature.css'
-import ConnectedPages from './ConnectedPages'
+import InstitutionalCat from './InstitutionalCat'
 const AREAS = {
   today:['Seu ponto de partida','Um próximo passo possível.'],
   study:['Sua mesa de estudo','Tempo para dar sentido.'],
@@ -15,5 +15,5 @@ const AREAS = {
 }
 export default function AreaSignature({area}) {
   const [title,description]=AREAS[area]||AREAS.study
-  return <div className={`area-signature area-signature--${area}`}><ConnectedPages/><span>{title}</span><small>{description}</small></div>
+  return <div className={`area-signature area-signature--${area}`}><InstitutionalCat/><span>{title}</span><small>{description}</small></div>
 }
