@@ -202,3 +202,13 @@ test('a mensagem de crédito esgotado existe e é amigável', () => {
   assert.ok(iaConfig.mensagensUsuario.semCredito.length > 0);
   assert.match(iaConfig.mensagensUsuario.semCredito, /IA/i);
 });
+
+test('orientação escolar prioriza o pedido atual e adapta exercícios e correções', () => {
+  const prompt = iaConfig.systemPrompt(undefined, 'Física', { anoEscolar: '9º ano' });
+  assert.match(prompt, /mudança de nível solicitada agora tem prioridade/);
+  assert.match(prompt, /"anoEscolar":"9º ano"/);
+  assert.match(prompt, /BNCC como referência geral/);
+  assert.match(prompt, /apenas uma alternativa está correta/);
+  assert.match(prompt, /respostas equivalentes e métodos alternativos válidos/);
+  assert.match(prompt, /dificuldade fácil para fundamentos, média para interpretação e aplicação, e difícil/);
+});
