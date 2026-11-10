@@ -633,7 +633,8 @@ test('today highlights the pending lesson and saves a routine adjustment only af
   const screen = await renderRoute('/inicio');
   try {
     assert.ok(screen.container.textContent.includes('Funções na prática'));
-    assert.ok(screen.container.textContent.includes('30 min previstos para esta sessão'));
+    assert.ok(screen.container.textContent.includes('60 min previstos para o dia'));
+    assert.match(document.querySelector('.today-week-days [aria-current="date"]').textContent, /Com plano/);
     assert.ok([...document.querySelectorAll('button')].some(node => node.textContent.includes('Continuar meus estudos')));
     const adjust = [...document.querySelectorAll('button')].find(node => node.textContent.includes('Hoje só tenho 20 minutos'));
     await act(async () => adjust.click());
@@ -828,7 +829,7 @@ test('secondary study tools are reachable from their parent and loaded on demand
     assert.equal(document.querySelector('.sd-navigation a[aria-current="page"]')?.textContent, 'Hoje');
     await act(async () => button('← Voltar para Hoje').click());
     await flush();
-    assert.ok(screen.container.textContent.includes('HOJE · UM PASSO DE CADA VEZ'));
+    assert.ok(document.querySelector('.dash-v2-heading .today-date')?.textContent);
     await act(async () => document.querySelector('.sd-navigation a[href="/aprendizagem"]').click());
     await flush();
     await act(async () => document.querySelector('a[href="/ferramentas-estudo"]').click());
@@ -1438,6 +1439,9 @@ test('a new student sees useful first steps without an empty progress dashboard'
   const screen = await renderRoute('/inicio');
   try {
     assert.ok(document.querySelector('.first-study'));
+    assert.equal(document.querySelectorAll('.today-week-days li').length, 7);
+    assert.equal(document.querySelectorAll('.today-week-days [aria-current="date"]').length, 1);
+    assert.match(document.querySelector('.today-overview').textContent, /Seu planejamento ainda não foi configurado/);
     assert.equal(document.querySelector('.dash-v2-score'), null);
     assert.ok(document.querySelector('.first-study a[href="/onboarding"]'));
     await act(async () => document.querySelector('.first-study a[href="/lumi"]').click());
@@ -2247,7 +2251,7 @@ test('today gives a returning student one main action and keeps details expandab
  continuityFixture={conteudo:{id:51,id_conteudo:9,titulo:'Retomar Newton',disciplina:'Física'}};
  const screen=await renderRoute('/inicio','aluno',{}, {'900001:today-last-visit:v1':new Date(Date.now()-6*86400000).toISOString()});
  try{
-  assert.equal(document.querySelector('.today-welcome').dataset.moment,'ongoing');
+  assert.equal(document.querySelector('.dash-v2-heading').dataset.moment,'ongoing');
   assert.ok(document.querySelector('.dash-v2-focus footer button').textContent.includes('Retomar minha sessão'));
   const details=document.querySelector('.today-details');assert.equal(details.open,false);
   await act(async()=>details.querySelector('summary').click());assert.equal(details.open,true);
@@ -2258,7 +2262,7 @@ test('today gives a returning student one main action and keeps details expandab
 test('today recognizes a device return without inventing missed study days',async()=>{
  dashboardLearningFixture={minutosSemana:15,metaSemanal:180,revisoesHoje:0};
  const screen=await renderRoute('/inicio','aluno',{}, {'900001:today-last-visit:v1':new Date(Date.now()-5*86400000).toISOString()});
- try{assert.equal(document.querySelector('.today-welcome').dataset.moment,'return');assert.match(document.querySelector('.today-welcome').textContent,/neste aparelho/);assert.equal(requests.filter(x=>x.method==='post').length,0)}finally{dashboardLearningFixture=null;await screen.close()}
+ try{assert.equal(document.querySelector('.dash-v2-heading').dataset.moment,'return');assert.match(document.querySelector('.dash-v2-heading').textContent,/neste aparelho/);assert.equal(requests.filter(x=>x.method==='post').length,0)}finally{dashboardLearningFixture=null;await screen.close()}
 });
 
 test('planning failure retains account scoped choices and retries only on demand',async()=>{
@@ -2311,7 +2315,7 @@ test('workshop recovers an unsent device draft explicitly and clears it after co
 
 test('welcome ignores another accounts visit and gives first study priority',async()=>{
  const screen=await renderRoute('/inicio','aluno',{}, {'900002:today-last-visit:v1':new Date(Date.now()-6*86400000).toISOString()});
- try{assert.equal(document.querySelector('.today-welcome').dataset.moment,'first');assert.ok(document.querySelector('.first-study-primary'));assert.ok(!document.querySelector('.today-details'))}finally{await screen.close()}
+ try{assert.equal(document.querySelector('.dash-v2-heading').dataset.moment,'first');assert.ok(document.querySelector('.first-study-primary'));assert.ok(!document.querySelector('.today-details'))}finally{await screen.close()}
 });
 
 test('Lumi sends only selected snippets and removes the old conversation when context changes',async()=>{
