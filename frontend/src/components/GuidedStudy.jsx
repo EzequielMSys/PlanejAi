@@ -67,10 +67,57 @@ function Preparation({ data, mutate, busy }) {
     <div className="guided-actions"><Link to={location.pathname}>Voltar à lista</Link><button onClick={() => setConfirm(v => !v)}>Excluir preparação</button>{confirm && <button disabled={busy} onClick={() => mutate({ action: 'delete' })}>Confirmar exclusão do plano (não exclui outros registros)</button>}</div>
   </section>
 }
-function EvidenceForm({ onSave, busy }) {
+function EvidenceForm({ onSave, busy, mode }) {
   const location = useLocation()
-  const [draft, update, clear, safe] = useDraft('new-evidence', { key: window.crypto.randomUUID(), title: location.state?.tema || '', preparation: location.state?.preparation || null, mode: 'explicar', prompt: location.state?.prompt || prompts.explicar, initialText: location.state?.initialText || '' })
-  return <form className="guided-form" onSubmit={async e => { e.preventDefault(); if (await onSave(draft)) clear() }}><h3>O que consigo fazer com esta ideia?</h3><label>Assunto<input required maxLength={100} value={draft.title} onChange={e => update({ ...draft, title: e.target.value })}/></label><label>Forma da tentativa<select value={draft.mode} onChange={e => update({ ...draft, mode: e.target.value, prompt: prompts[e.target.value] })}>{Object.entries(modes).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label><label>Enunciado ou exemplo para trabalhar<textarea required maxLength={2000} value={draft.prompt} onChange={e => update({ ...draft, prompt: e.target.value })}/></label>{draft.initialText !== undefined && <label>Resposta inicial que escolho guardar (opcional)<textarea maxLength={4000} value={draft.initialText} onChange={e=>update({...draft,initialText:e.target.value})}/></label>}<p>Para situações e análise de erros, escreva um exemplo concreto antes de começar. Você pode editar o enunciado agora.</p><button disabled={busy}>Começar meu ciclo</button><small role="status">{safe ? 'Rascunho preservado neste aparelho.' : 'Mantenha a página aberta: o rascunho está apenas na memória.'}</small></form>
+  const [draft, update, clear, safe] = useDraft(mode ? `new-evidence-${mode}` : 'new-evidence', { key: window.crypto.randomUUID(), title: location.state?.tema || '', preparation: location.state?.preparation || null, mode: 'explicar', prompt: location.state?.prompt || (mode && mode !== 'explicar' ? '' : prompts.explicar), initialText: location.state?.initialText || '' })
+  const activeMode = mode || draft.mode
+  const explain = activeMode === 'explicar'
+  const challenge = activeMode === 'aplicar'
+  const error = activeMode === 'erro'
+  const request = [
+    challenge ? `Crie um exercício original de ${draft.format || 'resposta aberta'} sobre ${draft.title.trim()}. Quero tentar antes de ver o gabarito.` : `Explique ${draft.title.trim()} com um exemplo e proponha uma prática curta.`,
+    draft.subject && `Disciplina: ${draft.subject}.`,
+    draft.year && `Ano escolar: ${draft.year}.`,
+    draft.level && `Dificuldade: ${draft.level}.`,
+  ].filter(Boolean).join(' ')
+  function change(field, value) { update({ ...draft, [field]: value }) }
+  return <form className="guided-form" onSubmit={async e => {
+    e.preventDefault()
+    const basePrompt = draft.prompt || prompts[activeMode]
+    const prompt = explain && draft.example?.trim() ? `${basePrompt}\nMeu exemplo: ${draft.example.trim()}` : basePrompt
+    const initialText = error && draft.reflection?.trim()
+      ? `${draft.initialText || ''}\nMinha hipótese sobre o erro: ${draft.reflection.trim()}`.trim()
+      : draft.initialText
+    if (await onSave({ key: draft.key, title: draft.title, preparation: draft.preparation, mode: activeMode, prompt, initialText })) clear()
+  }}>
+    <h3>{modes[activeMode]}</h3>
+    <label>Assunto<input required maxLength={100} value={draft.title} onChange={e => change('title', e.target.value)}/></label>
+    {!mode && <label>Forma da tentativa<select value={draft.mode} onChange={e => update({ ...draft, mode: e.target.value, prompt: prompts[e.target.value] })}>{Object.entries(modes).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label>}
+    {challenge && <fieldset>
+      <legend>Como quero praticar</legend>
+      <label>Origem<select value={draft.source || 'proprio'} onChange={e => change('source', e.target.value)}><option value="proprio">Meu exercício</option><option value="lumi">Gerar com a Lumi</option></select></label>
+      <Link to="/aprendizagem" state={{aba:'simulado'}}>Praticar com questões cadastradas</Link>
+      {draft.source === 'lumi' && <>
+        <label>Disciplina<input maxLength={80} value={draft.subject || ''} onChange={e => change('subject', e.target.value)}/></label>
+        <label>Ano escolar<input maxLength={80} value={draft.year || ''} onChange={e => change('year', e.target.value)}/></label>
+        <label>Dificuldade<select value={draft.level || ''} onChange={e => change('level', e.target.value)}><option value="">Deixar a Lumi sugerir</option>{['Fácil','Média','Difícil'].map(level => <option key={level}>{level}</option>)}</select></label>
+        <label>Formato<select value={draft.format || 'resposta aberta'} onChange={e => change('format', e.target.value)}>{['resposta aberta','múltipla escolha','verdadeiro ou falso','problema contextualizado','cálculo','interpretação','revisão progressiva'].map(format => <option key={format}>{format}</option>)}</select></label>
+        {draft.title.trim() && <Link to="/lumi" state={{ perguntaInicial: request }}>Preparar pedido na Lumi →</Link>}
+        <p>Revise e envie o pedido na conversa. Depois, volte e cole o enunciado para registrar sua tentativa.</p>
+      </>}
+    </fieldset>}
+    {!explain && <label>Enunciado ou situação<textarea required maxLength={2000} value={draft.prompt === prompts[activeMode] ? '' : draft.prompt} onChange={e => change('prompt', e.target.value)}/></label>}
+    <label>{explain ? 'Minha explicação' : error ? 'Resposta apresentada' : 'Minha resposta (opcional)'}<textarea required={explain || error} maxLength={error ? 2500 : 4000} value={draft.initialText || ''} onChange={e => change('initialText', e.target.value)}/></label>
+    {explain && <label>Exemplo prático (opcional)<textarea maxLength={1200} value={draft.example || ''} onChange={e => change('example', e.target.value)}/></label>}
+    {explain && <details><summary>Ajustar a orientação da Lumi</summary>
+      <label>Disciplina (opcional)<input maxLength={80} value={draft.subject || ''} onChange={e => change('subject', e.target.value)}/></label>
+      <label>Ano escolar (opcional)<input maxLength={80} value={draft.year || ''} onChange={e => change('year', e.target.value)}/></label>
+    </details>}
+    {error && <label>O que acho que aconteceu<textarea maxLength={1200} value={draft.reflection || ''} onChange={e => change('reflection', e.target.value)}/></label>}
+    {explain && draft.title.trim() && <Link to="/lumi" state={{ perguntaInicial: request }}>Preparar pedido de orientação na Lumi →</Link>}
+    <button disabled={busy}>Começar meu ciclo</button>
+    <small role="status">{busy ? 'Salvando…' : !safe ? 'Não foi possível guardar o rascunho neste aparelho.' : 'O rascunho é guardado neste aparelho conforme você escreve.'}</small>
+  </form>
 }
 const feedbackLabels = { claro: 'O que ficou claro', lacuna: 'Uma lacuna a investigar', pergunta: 'Pergunta para conferir', proximoPasso: 'Próxima tentativa', incerteza: 'Limites desta análise' }
 function Feedback({ value }) { return <dl className="guided-feedback">{Object.entries(feedbackLabels).map(([key,label]) => <div key={key}><dt>{label}</dt><dd>{value[key]}</dd></div>)}</dl> }
@@ -80,6 +127,9 @@ function EvidenceCycle({ data, mutate, busy, onError }) {
   const owner = currentUser()
   const analyze = async () => { setAsking(true); onError(''); try { const result = await service.assist(data.id, selected); if (owner === currentUser()) setAnalysis(result) } catch(e) { if (owner === currentUser()) onError(message(e)) } finally { if (owner === currentUser()) setAsking(false) } }
   return <section className="guided-cycle"><span className="pj-eyebrow">{modes[data.mode]}</span><h3>{data.title}</h3><blockquote>{data.prompt}</blockquote>{data.due && <p>Retomada sugerida: {date(data.due)}. Tente responder antes de reler as versões anteriores.</p>}
+    <details><summary>Orientação na Lumi</summary><p>Confira o enunciado no chat antes de enviar.</p><div className="guided-actions">
+      {['Dê uma dica, sem revelar a solução.', 'Explique de outra maneira.', 'Mostre um exemplo parecido para eu tentar.'].map(help => <Link key={help} to="/lumi" state={{ perguntaInicial: `${help}\nAssunto: ${data.title}\nEnunciado: ${data.prompt.slice(0, 1500)}` }}>{help}</Link>)}
+    </div></details>
     <form className="guided-form" onSubmit={async e => { e.preventDefault(); if (await mutate({ action: 'attempt', ...draft })) { clear(); setAnalysis(null) } }}><label>Minha resposta<textarea required maxLength={4000} value={draft.text} onChange={e => update({ ...draft, text: e.target.value })}/></label><label className="guided-check"><input type="checkbox" checked={draft.correction} onChange={e => update({ ...draft, correction: e.target.checked })}/>Estou corrigindo um registro, sem contar como retomada</label><button disabled={busy}>Guardar esta versão</button><small role="status">{safe ? 'Rascunho local preservado até confirmar o salvamento.' : 'Não foi possível guardar no aparelho. Mantenha a página aberta.'}</small></form>
     <details><summary>Comparar minhas {data.attempts.length} versões</summary><div className="guided-comparison">{data.attempts.map((a,i) => <article key={a.id}><h4>Versão {i+1}{a.correction ? ' · correção' : ''}</h4><time>{new Date(a.created).toLocaleString('pt-BR')}</time><p className="guided-response">{a.text}</p>{a.feedback && <><h4>Sugestão da Lumi</h4><Feedback value={a.feedback}/>{a.contest && <p><strong>Minha contestação:</strong> {a.contest}</p>}<label>O que discordo ou quero corrigir<textarea maxLength={1000} value={contest[a.id] || ''} onChange={e => setContest({ ...contest, [a.id]: e.target.value })}/></label><button disabled={busy || !contest[a.id]?.trim()} onClick={() => mutate({ action: 'contest', attempt: a.id, text: contest[a.id] })}>Registrar minha contestação</button></>}</article>)}</div></details>
     {data.attempts.length > 0 && <fieldset><legend>Escolho o que a Lumi vai analisar</legend><p>Serão enviados o assunto, o enunciado acima e somente as respostas marcadas (até duas). Nenhum outro registro da conta é consultado.</p>{data.attempts.map((a,i) => <label key={a.id} className="guided-check"><input type="checkbox" checked={selected.includes(a.id)} disabled={!selected.includes(a.id) && selected.length === 2} onChange={() => { setAnalysis(null); setSelected(value => value.includes(a.id) ? value.filter(id => id !== a.id) : [...value,a.id]) }}/><span>Versão {i+1}: {a.text.slice(0,140)}{a.text.length > 140 ? '… (texto completo no histórico acima)' : ''}</span></label>)}<button disabled={asking || busy || !selected.length} onClick={analyze}>{asking ? 'Lumi está analisando…' : 'Pedir devolutiva sobre estas respostas'}</button><p>Uma sugestão justificada, sujeita a erros. Não é uma nota nem comprovação automática de domínio.</p></fieldset>}
@@ -87,7 +137,7 @@ function EvidenceCycle({ data, mutate, busy, onError }) {
     {data.sourceLab&&<Link to={`/laboratorio?investigacao=${data.sourceLab}`}>Abrir a investigação que deu origem a este registro →</Link>}{data.sourceStrategy&&<Link to={`/como-aprendo?estrategia=${data.sourceStrategy}`}>Abrir a comparação de estratégias de origem →</Link>}{data.sourceProject&&<Link to={`/projetos-investigacao?projeto=${data.sourceProject}`}>Abrir o projeto de origem →</Link>}{data.attempts.length>0&&<Link to="/como-aprendo" state={{subject:data.title,source:{type:'caminho',record:data.id,step:data.attempts.at(-1).id}}}>Registrar o que me ajudou nesta tentativa →</Link>}<Suspense fallback={null}><StrategySuggestions theme={data.title}/></Suspense><ResourceLinks topic={data.title}/><div className="guided-actions"><Link to="/meu-entendimento">Voltar aos ciclos</Link><button onClick={() => setConfirm(v => !v)}>Excluir este ciclo</button>{confirm && <button disabled={busy} onClick={() => mutate({ action: 'delete' })}>Confirmar exclusão das tentativas deste ciclo</button>}</div>
   </section>
 }
-function Workspace({ kind }) {
+function Workspace({ kind, mode }) {
   const [params, setParams] = useSearchParams(), id = params.get(kind === 'prova' ? 'plano' : 'ciclo')
   const [items, setItems] = useState(null), [data,setData] = useState(null), [error,setError] = useState(''), [busy,setBusy] = useState(false), [status,setStatus] = useState(''), [retry,setRetry] = useState(0)
   const owner = currentUser()
@@ -106,8 +156,8 @@ function Workspace({ kind }) {
   }
   const mutate = body => run(() => service.change(data.id, { ...body, version: data.version }))
   return <section className="guided-workspace" aria-label={kind === 'prova' ? 'Preparação para provas' : 'Ciclos de entendimento'}><p role="status">{status}</p>{error && <div role="alert" className="guided-warning">{error} <button onClick={() => setRetry(v=>v+1)}>Reabrir registros</button></div>}{!items && !error && <p role="status">Consultando seus registros…</p>}
-    {items && !id && <><div className="guided-saved">{items.length > 0 && <><h3>{kind === 'prova' ? 'Minhas preparações' : 'Meus ciclos de tentativas'}</h3><ul>{items.map(item => <li key={item.id}><Link to={`?${kind === 'prova' ? 'plano' : 'ciclo'}=${item.id}`}><strong>{item.title}</strong><span>{kind === 'prova' ? `${date(item.date)} · ${item.completed}/${item.total} passos · ${item.unallocated} sem data` : `${modes[item.mode]} · ${item.attempts} versões${item.due ? ` · retomar ${date(item.due)}` : ''}`}</span></Link></li>)}</ul></>}</div>{kind === 'prova' ? <PreparationForm busy={busy} onSave={body => run(() => service.create(kind,body))}/> : <EvidenceForm busy={busy} onSave={body => run(() => service.create(kind,body))}/>}</>}
+    {items && !id && <><div className="guided-saved">{items.length > 0 && <><h3>{kind === 'prova' ? 'Minhas preparações' : 'Meus ciclos de tentativas'}</h3><ul>{items.map(item => <li key={item.id}><Link to={`?${kind === 'prova' ? 'plano' : 'ciclo'}=${item.id}`}><strong>{item.title}</strong><span>{kind === 'prova' ? `${date(item.date)} · ${item.completed}/${item.total} passos · ${item.unallocated} sem data` : `${modes[item.mode]} · ${item.attempts} versões${item.due ? ` · retomar ${date(item.due)}` : ''}`}</span></Link></li>)}</ul></>}</div>{kind === 'prova' ? <PreparationForm busy={busy} onSave={body => run(() => service.create(kind,body))}/> : mode !== 'revisitar' && <EvidenceForm key={mode || 'classic'} mode={mode === 'classic' ? undefined : mode} busy={busy} onSave={body => run(() => service.create(kind,body))}/>}</>}
     {data && (kind === 'prova' ? <Preparation key={data.id} data={data} mutate={mutate} busy={busy}/> : <EvidenceCycle key={data.id} data={data} mutate={mutate} busy={busy} onError={setError}/>)}
   </section>
 }
-export default function GuidedStudy({ kind }) { return <Workspace key={`${currentUser()}:${kind}`} kind={kind}/> }
+export default function GuidedStudy({ kind, mode }) { return <Workspace key={`${currentUser()}:${kind}`} kind={kind} mode={mode}/> }

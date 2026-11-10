@@ -122,7 +122,7 @@ async function fixture(config) {
     if(end==='/portfolio/origem')return require('../src/services/researchPortfolioService').resolve(900001,body,sourceDb);
     if(end==='/portfolio'&&config.method==='post'){const r={id:body.key,version:1,kind:'portfolio',...await require('../src/services/researchPortfolioService').create(900001,body,sourceDb)};guidedRecords.push(r);return r;}
     if(config.method==='post'&&(end==='/prova'||end==='/evidencia'||end==='/laboratorio'||end==='/estrategia'||end==='/projeto')){
-      const kind=end.slice(1),record={...body,id:body.key,version:1,kind,...(kind==='prova'?require('../src/services/guidedStudyService')._test.createPreparation(body):kind==='laboratorio'?require('../src/services/studyLabService').create(body):['estrategia','projeto'].includes(kind)?await require('../src/services/personalLearningPaths').create(900001,kind,body,sourceDb,undefined,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date())):{attempts:[],due:null})};if(kind==='projeto')record.stages=require('../src/services/personalLearningPaths').stages;if(kind==='laboratorio')record.case=require('../src/services/studyLabCatalog').present(record);guidedRecords.push(record);return record;
+      const kind=end.slice(1),record={...body,id:body.key,version:1,kind,...(kind==='prova'?require('../src/services/guidedStudyService')._test.createPreparation(body):kind==='laboratorio'?require('../src/services/studyLabService').create(body):['estrategia','projeto'].includes(kind)?await require('../src/services/personalLearningPaths').create(900001,kind,body,sourceDb,undefined,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date())):{attempts:[],due:null})};if(kind==='projeto')record.stages=require('../src/services/personalLearningPaths').stages;if(kind==='laboratorio')record.case=require('../src/services/studyLabCatalog').present(record);if(kind==='evidencia' && body.initialText)record.attempts=[{id:'initial',text:body.initialText,created:new Date().toISOString()}];guidedRecords.push(record);return record;
     }
     if(end.endsWith('/recuperacao/previa')){const source=guidedRecords.find(r=>r.id===end.split('/')[1]);return require('../src/services/postExamService').preview(source,body,new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()));}
     const record=guidedRecords.find(r=>r.id===end.slice(1));
@@ -615,17 +615,23 @@ test('preparação de prova preserva diagnóstico após falha, confirma envio e 
 test('entendimento permite quatro formas e guarda versões sem apagar a anterior',async()=>{
   guidedRecords=[];const screen=await renderRoute('/meu-entendimento');
   try{
-    assert.equal(document.querySelectorAll('.guided-form select option').length,4);
+    assert.equal(document.querySelectorAll('.understanding-intents button').length,4);
+    assert.equal(document.querySelector('.guided-form'),null);
+    await act(async()=>document.querySelector('.understanding-intents button').click());
     await inputValue(document.querySelector('.guided-form input'),'Energia e trabalho');
+    await inputValue(personalControl('Minha explicação'),'Minha primeira explicação com exemplo.');
+    guidedWriteFailure=true;
+    await act(async()=>document.querySelector('.guided-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();
+    assert.equal(personalControl('Minha explicação').value,'Minha primeira explicação com exemplo.');
+    assert.equal(guidedRecords.length,0);
+    guidedWriteFailure=false;
     await act(async()=>document.querySelector('.guided-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();
-    await inputValue(document.querySelector('.guided-cycle .guided-form textarea'),'Minha primeira explicação com exemplo.');
-    await act(async()=>document.querySelector('.guided-cycle .guided-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();
     await inputValue(document.querySelector('.guided-cycle .guided-form textarea'),'Minha segunda explicação mais precisa.');
     await act(async()=>document.querySelector('.guided-cycle .guided-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));await flush();await flush();
     assert.equal(guidedRecords[0].attempts.length,2);assert.equal(guidedRecords[0].attempts[0].text,'Minha primeira explicação com exemplo.');assert.notEqual(guidedRecords[0].attempts[0].id,guidedRecords[0].attempts[1].id);
     assert.equal(requests.filter(r=>r.url.endsWith('/lumi')&&r.method==='post').length,0);
     assert.ok(screen.container.textContent.includes('Nenhum outro registro da conta é consultado.'));
-  }finally{await screen.close();guidedRecords=[];}
+  }finally{guidedWriteFailure=false;await screen.close();guidedRecords=[];}
 });
 
 test('today highlights the pending lesson and saves a routine adjustment only after confirmation', async () => {
