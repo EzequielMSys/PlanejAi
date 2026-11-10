@@ -2044,14 +2044,38 @@ test('personal desk reorders and removes shortcuts without deleting originals',a
  try{
   assert.equal(document.querySelectorAll('.desk-card').length,2);
   assert.match(document.querySelector('.desk-board').textContent,/2 de 6/);
+  await act(async()=>document.querySelectorAll('.desk-item-options summary')[1].click());
   await act(async()=>document.querySelector('[aria-label="Mover Força e velocidade para cima"]').click());await flush();
   assert.equal(document.querySelector('.desk-card h3').textContent,'Força e velocidade');
+  await act(async()=>document.querySelectorAll('.desk-item-options summary')[1].click());
   await act(async()=>document.querySelector('[aria-label="Retirar Leis de Newton da mesa"]').click());await flush();
   assert.equal(document.querySelectorAll('.desk-card').length,1);
   assert.match(document.querySelector('.desk-board [role="status"]').textContent,/original foi preservado/);
   assert.ok(!requests.some(req=>req.method==='delete'&&!req.url.includes('/mesa/')));
   assert.equal(requests.find(req=>req.url.endsWith('/mesa')&&req.method==='get').cache,false);
  }finally{deskItems=original;await screen.close()}
+});
+test('Minha mesa orienta quando vazia e bloqueia adição ao atingir seis atalhos',async()=>{
+ const original=deskItems;
+ try {
+  deskItems=[];
+  const empty=await renderRoute('/mesa');
+  try {
+   assert.match(document.querySelector('.personal-empty').textContent,/primeiro item/);
+   assert.equal(document.querySelector('.desk-add').getAttribute('href'),'/busca');
+  } finally { await empty.close(); }
+  deskItems=Array.from({length:6},(_,index)=>({...original[0],id:index+1}));
+  deskItems[5]={...deskItems[5],disponivel:false,titulo:'Título privado',trecho:'Trecho privado'};
+  const full=await renderRoute('/mesa');
+  try {
+   assert.match(document.querySelector('.desk-capacity').textContent,/6 de 6/);
+   assert.equal(button('Adicionar à mesa').disabled,true);
+   const unavailable=document.querySelector('.desk-card:last-child');
+   assert.match(unavailable.textContent,/Item indisponível/);
+   assert.doesNotMatch(unavailable.textContent,/privado/);
+   assert.equal(unavailable.querySelector('button').disabled,true);
+  } finally { await full.close(); }
+ } finally { deskItems=original; }
 });
 test('understanding opens exact evidence lazily, with both original versions and an accessible disclosure',async()=>{
  const screen=await renderRoute('/meu-entendimento');
