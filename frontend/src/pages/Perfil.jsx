@@ -12,10 +12,9 @@ import { validarSenha } from '../config/senha'
 import { fraseConviteLumi } from '../utils/pronounCopy'
 import './Perfil.css'
 
-const IconCamera = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+const IconPencil = () => (
+  <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m16.86 3.49 3.65 3.65M4 20l4.6-.92L20.1 7.58a2.58 2.58 0 0 0-3.65-3.65L4.92 15.4 4 20Z" />
   </svg>
 )
 
@@ -55,6 +54,7 @@ const pronomesPadrao = ['', 'ela_dela', 'ele_dele', 'elu_delu', 'nome_proprio']
 export default function Perfil() {
   const { user, changePassword, updateUser } = useAuth()
   const fileRef = useRef(null)
+  const avatarActionsRef = useRef(null)
   const infoFormRef = useRef(null)
   const studyFormRef = useRef(null)
   const passwordFormRef = useRef(null)
@@ -162,6 +162,7 @@ export default function Perfil() {
   }, [])
 
   const handleUploadFoto = async (e) => {
+    if (avatarActionsRef.current) avatarActionsRef.current.open = false
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -195,6 +196,7 @@ export default function Perfil() {
   }
 
   const handleRemoverFoto = async () => {
+    if (avatarActionsRef.current) avatarActionsRef.current.open = false
     if (!window.confirm('Remover sua foto de perfil?')) return
 
     setRemovingFoto(true)
@@ -208,6 +210,19 @@ export default function Perfil() {
       setRemovingFoto(false)
     }
   }
+
+  useEffect(() => {
+    const fecharAcoesFoto = (event) => {
+      if (event.type === 'keydown' && event.key === 'Escape' && avatarActionsRef.current) avatarActionsRef.current.open = false
+      if (event.type === 'pointerdown' && avatarActionsRef.current && !avatarActionsRef.current.contains(event.target)) avatarActionsRef.current.open = false
+    }
+    document.addEventListener('pointerdown', fecharAcoesFoto)
+    document.addEventListener('keydown', fecharAcoesFoto)
+    return () => {
+      document.removeEventListener('pointerdown', fecharAcoesFoto)
+      document.removeEventListener('keydown', fecharAcoesFoto)
+    }
+  }, [])
 
 const handleSaveInfo = async (e) => {
     e.preventDefault()
@@ -454,16 +469,15 @@ const handleSaveEstudos = async (e) => {
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploadingFoto}
-                  className="profile-camera"
-                  aria-label="Trocar foto de perfil"
-                  title="Trocar foto"
-                >
-                  {uploadingFoto ? <IconSpinner /> : <IconCamera />}
-                </button>
+                <details ref={avatarActionsRef} className="profile-avatar-actions">
+                  <summary aria-label="Editar foto de perfil" title="Editar foto de perfil">
+                    {uploadingFoto ? <IconSpinner /> : <IconPencil />}
+                  </summary>
+                  <div className="profile-avatar-menu">
+                    <button type="button" onClick={() => { avatarActionsRef.current.open = false; fileRef.current?.click() }} disabled={uploadingFoto}>Alterar foto</button>
+                    {avatarPreview && <button type="button" onClick={handleRemoverFoto} disabled={uploadingFoto || removingFoto}>{removingFoto ? 'Removendo…' : 'Remover foto'}</button>}
+                  </div>
+                </details>
                 </div>
 
                 <input
@@ -474,17 +488,6 @@ const handleSaveEstudos = async (e) => {
                   className="profile-file-input"
                   onChange={handleUploadFoto}
                 />
-                {avatarPreview && (
-                  <button
-                    type="button"
-                    onClick={handleRemoverFoto}
-                    disabled={uploadingFoto || removingFoto}
-                    className="profile-remove"
-                    aria-label="Remover foto de perfil"
-                  >
-                    {removingFoto ? 'Removendo…' : 'Remover foto'}
-                  </button>
-                )}
               </div>
 
               <div className="profile-identity-copy">
