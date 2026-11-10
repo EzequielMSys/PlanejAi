@@ -491,7 +491,8 @@ const handleSaveEstudos = async (e) => {
     <main className="profile-page">
       <div className="profile-shell">
         <div>
-          <header className={`profile-hero${bannerPreview ? ' has-banner' : ''}`} style={bannerPreview ? { backgroundImage: `url("${getFotoUrl(bannerPreview)}")` } : undefined}>
+          <header className="profile-heading">
+            <div className={`profile-hero${bannerPreview ? ' has-banner' : ''}`} style={bannerPreview ? { backgroundImage: `url("${getFotoUrl(bannerPreview)}")` } : undefined}>
             <details ref={bannerActionsRef} className="profile-banner-actions">
               <summary aria-label={bannerPreview ? 'Editar banner' : 'Adicionar banner'} title={bannerPreview ? 'Editar banner' : 'Adicionar banner'}>
                 {uploadingBanner ? <IconSpinner /> : <IconPencil />}
@@ -502,6 +503,7 @@ const handleSaveEstudos = async (e) => {
               </div>
               <input ref={bannerFileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(event) => handleChooseImage(event, 'banner')} />
             </details>
+            </div>
             <div className="profile-identity">
               <div className="profile-avatar-block">
                 <div className="profile-avatar-wrap"><div className="profile-avatar">
@@ -541,9 +543,7 @@ const handleSaveEstudos = async (e) => {
               </div>
 
               <div className="profile-identity-copy">
-                <p className="profile-eyebrow">Meu perfil</p>
-                <h1><span>{displayName}</span></h1>
-                <p className="profile-identity-email">{form.email || user.email}</p>
+                <h1>{displayName}</h1>
                 <div className="profile-meta">
                   <span>{tipoLabel}</span>
                 </div>
@@ -649,6 +649,7 @@ const handleSaveEstudos = async (e) => {
 
             <section id="seguranca" className="profile-section profile-section-security" aria-labelledby="profile-security-heading">
               <div className="profile-section-head"><h2 id="profile-security-heading" tabIndex={-1}>Segurança</h2></div>
+              <p className="profile-account-email">E-mail da conta: {user.email}</p>
 
               <form ref={passwordFormRef} onSubmit={(e) => { e.preventDefault(); salvarAlteracoes() }} className="profile-security-form">
                 <label className="profile-field">Senha atual<input type="password" autoComplete="current-password" value={senhaForm.senhaAtual} onChange={(e) => setSenhaForm((f) => ({ ...f, senhaAtual: e.target.value }))} required /></label>

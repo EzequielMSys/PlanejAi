@@ -20,9 +20,9 @@
 .profile-shell { max-width: 1120px; margin: auto; }
 .profile-hero { position: relative; min-height: 13rem; display: flex; align-items: flex-end; padding: clamp(1rem, 2.5vw, 2rem); border: 1px solid var(--profile-border); border-radius: var(--profile-radius); background: var(--profile-surface); }
 .profile-hero.has-banner { border-color: transparent; background-position: center; background-size: cover; color: #fff; }
-.profile-hero.has-banner .profile-identity-copy :is(h1, .profile-eyebrow, .profile-identity-email), .profile-hero.has-banner .profile-meta span { color: #fff; }
-.profile-hero.has-banner .profile-meta span { border-color: rgb(255 255 255 / .5); background: rgb(0 0 0 / .25); }
-.profile-hero.has-banner .profile-identity-copy { background: rgb(10 8 20 / .76); border-radius: var(--profile-radius); padding: .45rem .7rem; }
+.profile-heading { background: var(--profile-surface); border: 1px solid var(--profile-border); border-radius: var(--profile-radius); }
+.profile-heading .profile-hero { border: 0; border-radius: var(--profile-radius) var(--profile-radius) 0 0; }
+.profile-heading .profile-hero:not(.has-banner) { min-height: 3.75rem; padding: 0; }
 .profile-banner-actions { position: absolute; z-index: 2; top: .75rem; right: .75rem; padding: .45rem; }
 #root .profile-page .profile-banner-actions > summary { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgb(255 255 255 / .68); border-radius: 50%; background: rgb(10 8 20 / .52); color: #fff; box-shadow: 0 1px 4px rgb(0 0 0 / .18); cursor: pointer; list-style: none; opacity: 0; transform: translateY(-3px); transition: opacity .16s ease, transform .16s ease; }
 .profile-banner-actions > summary::-webkit-details-marker { display: none; }
@@ -39,7 +39,7 @@
 #root .profile-page .profile-banner-menu button { color: #fff; }
 #root .profile-page .profile-banner-actions > summary:focus-visible,
 #root .profile-page .profile-banner-menu button:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
-.profile-identity { display: flex; align-items: center; gap: 1.3rem; min-width: 0; }
+.profile-identity { display: flex; align-items: center; gap: 1.3rem; min-width: 0; padding: 1rem clamp(1rem, 2.5vw, 2rem); }
 .profile-avatar-block { display: flex; flex: none; flex-direction: column; align-items: center; }
 .profile-avatar-wrap { position: relative; width: 88px; height: 88px; flex: none; }
 .profile-avatar { width: 100%; height: 100%; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--profile-border); border-radius: 50%; background: var(--pn-primaria-suave); }
@@ -53,11 +53,8 @@
 #root .profile-page .profile-avatar-menu button:hover { background: var(--pn-primaria-suave); }
 .profile-file-input { display: none; }
 .profile-identity-copy { min-width: 0; }
-.profile-eyebrow { margin: 0; color: var(--profile-muted); font-size: .8rem; }
 .profile-identity-copy h1 { margin: .2rem 0; color: var(--profile-text); font: 600 clamp(1.75rem, 3vw, 2.8rem)/1.25 'Profile Fraunces', Georgia, serif; letter-spacing: -.025em; overflow-wrap: anywhere; }
-.profile-identity-copy h1 span { position: relative; isolation: isolate; }
-.profile-identity-copy h1 span::after { content: ''; position: absolute; left: 0; right: 0; bottom: -.04em; height: 3px; z-index: -1; background: var(--profile-highlight); }
-.profile-identity-email { margin: 0; color: var(--profile-muted); overflow-wrap: anywhere; }
+.profile-account-email { color: var(--profile-muted); overflow-wrap: anywhere; }
 .profile-meta { margin-top: .55rem; }
 .profile-meta span { display: inline-block; padding: .2rem .55rem; border: 1px solid var(--profile-border); border-radius: var(--profile-radius); color: var(--profile-accent); font-size: .78rem; font-weight: 600; }
 .profile-content-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 1.25rem; }
