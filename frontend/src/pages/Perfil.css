@@ -22,17 +22,23 @@
 .profile-hero.has-banner { border-color: transparent; background-position: center; background-size: cover; color: #fff; }
 .profile-hero.has-banner .profile-identity-copy :is(h1, .profile-eyebrow, .profile-identity-email), .profile-hero.has-banner .profile-meta span { color: #fff; }
 .profile-hero.has-banner .profile-meta span { border-color: rgb(255 255 255 / .5); background: rgb(0 0 0 / .25); }
-.profile-banner-actions { position: absolute; z-index: 2; top: .75rem; right: .75rem; }
+.profile-hero.has-banner .profile-identity-copy { background: rgb(10 8 20 / .76); border-radius: var(--profile-radius); padding: .45rem .7rem; }
+.profile-banner-actions { position: absolute; z-index: 2; top: .75rem; right: .75rem; padding: .45rem; }
 #root .profile-page .profile-banner-actions > summary { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgb(255 255 255 / .68); border-radius: 50%; background: rgb(10 8 20 / .52); color: #fff; box-shadow: 0 1px 4px rgb(0 0 0 / .18); cursor: pointer; list-style: none; opacity: 0; transform: translateY(-3px); transition: opacity .16s ease, transform .16s ease; }
 .profile-banner-actions > summary::-webkit-details-marker { display: none; }
 .profile-hero:not(.has-banner) .profile-banner-actions > summary { border-color: var(--profile-border); background: var(--profile-surface); color: var(--profile-text); }
-.profile-hero:hover .profile-banner-actions > summary, .profile-hero:focus-within .profile-banner-actions > summary, .profile-banner-actions[open] > summary { opacity: 1; transform: translateY(0); }
+.profile-banner-actions:is(:hover, :focus-within, [open]) > summary { opacity: 1; transform: translateY(0); }
 .profile-banner-menu { position: absolute; top: calc(100% + .4rem); right: 0; width: 10.5rem; padding: .3rem; border: 1px solid rgb(255 255 255 / .45); border-radius: var(--profile-radius); background: rgb(10 8 20 / .82); box-shadow: 0 6px 20px rgb(0 0 0 / .18); }
 .profile-hero:not(.has-banner) .profile-banner-menu { border-color: var(--profile-border); background: var(--profile-surface); }
 #root .profile-page .profile-banner-menu button { display: block; width: 100%; min-height: 40px; padding: .55rem .65rem; border: 0; border-radius: var(--profile-radius); background: transparent; color: #fff; font-size: .84rem; text-align: left; }
 .profile-hero:not(.has-banner) .profile-banner-menu button { color: var(--profile-text); }
 #root .profile-page .profile-banner-menu button:hover { background: rgb(255 255 255 / .16); }
 .profile-hero:not(.has-banner) .profile-banner-menu button:hover { background: var(--pn-primaria-suave); }
+#root .profile-page .profile-banner-actions > summary { background: #171421; color: #fff; }
+#root .profile-page .profile-banner-menu { background: #171421; border-color: #aaa5b4; top: 100%; }
+#root .profile-page .profile-banner-menu button { color: #fff; }
+#root .profile-page .profile-banner-actions > summary:focus-visible,
+#root .profile-page .profile-banner-menu button:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
 .profile-identity { display: flex; align-items: center; gap: 1.3rem; min-width: 0; }
 .profile-avatar-block { display: flex; flex: none; flex-direction: column; align-items: center; }
 .profile-avatar-wrap { position: relative; width: 88px; height: 88px; flex: none; }

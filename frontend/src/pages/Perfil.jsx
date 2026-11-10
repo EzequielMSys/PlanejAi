@@ -491,7 +491,7 @@ const handleSaveEstudos = async (e) => {
     <main className="profile-page">
       <div className="profile-shell">
         <div>
-          <header className={`profile-hero${bannerPreview ? ' has-banner' : ''}`} style={bannerPreview ? { backgroundImage: `linear-gradient(90deg, rgb(10 8 20 / .62), rgb(10 8 20 / .30)), url("${getFotoUrl(bannerPreview)}")` } : undefined}>
+          <header className={`profile-hero${bannerPreview ? ' has-banner' : ''}`} style={bannerPreview ? { backgroundImage: `url("${getFotoUrl(bannerPreview)}")` } : undefined}>
             <details ref={bannerActionsRef} className="profile-banner-actions">
               <summary aria-label={bannerPreview ? 'Editar banner' : 'Adicionar banner'} title={bannerPreview ? 'Editar banner' : 'Adicionar banner'}>
                 {uploadingBanner ? <IconSpinner /> : <IconPencil />}
