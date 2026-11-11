@@ -22,7 +22,7 @@ function duration(seconds) {
   return parts.join(', ') || '0 segundos'
 }
 
-function Trend({ title, series, field }) {
+function Trend({ title, series, field, selectedPoint, onSelectPoint }) {
   const canvas = useRef(null)
   const peak = Math.max(1, ...series.map(item => item[field] ?? 0))
   const best = series.filter(item => item[field] > 0 && item[field] === peak)
@@ -65,14 +65,19 @@ function Trend({ title, series, field }) {
       if (item[field] === null) continue
       const [x, y] = point(index, item[field])
       ctx.beginPath()
-      ctx.arc(x, y, 4, 0, 2 * Math.PI)
+      ctx.arc(x, y, periodKey(item) === selectedPoint ? 8 : 4, 0, 2 * Math.PI)
       ctx.fill()
     }
-  }, [series, field, peak])
+  }, [series, field, peak, selectedPoint])
 
   return <figure className="account-usage-trend">
     <figcaption>{title}</figcaption>
-    <canvas ref={canvas} width={640} height={150} aria-hidden="true" />
+    <canvas ref={canvas} width={640} height={150} aria-hidden="true" onClick={event => {
+      const bounds = event.currentTarget.getBoundingClientRect()
+      const x = (event.clientX - bounds.left) * 640 / bounds.width
+      const index = Math.max(0, Math.min(series.length - 1, Math.round((x - 14) * (series.length - 1) / 612)))
+      onSelectPoint(periodKey(series[index]))
+    }} />
     <div className="account-usage-axis" aria-hidden="true">
       {axisIndices.map(index => <span key={periodKey(series[index])}>{formatPeriod(series[index])}</span>)}
     </div>
@@ -165,8 +170,8 @@ export default function AccountUsagePanel({ id, name, onClose }) {
         {series.length > 0 && <>
         <p>{daily ? shortDate(series[0].dia) : `01/${series[0].mes.slice(5)}/${series[0].mes.slice(0, 4)}`} a {report.hoje && !daily ? shortDate(report.hoje) : daily ? shortDate(series.at(-1).dia) : formatPeriod(series.at(-1))}</p>
         <div className="account-usage-grid">
-          <Trend title={`Tempo ativo por ${unit}`} series={series} field="segundos" />
-          <Trend title={`Atividades entregues por ${unit}`} series={series} field="entregues" />
+          <Trend title={`Tempo ativo por ${unit}`} series={series} field="segundos" selectedPoint={selectedPoint} onSelectPoint={setSelectedPoint} />
+          <Trend title={`Atividades entregues por ${unit}`} series={series} field="entregues" selectedPoint={selectedPoint} onSelectPoint={setSelectedPoint} />
         </div>
         <label>Consultar ponto <select value={point ? selectedPoint : ''} onChange={event => setSelectedPoint(event.target.value)}>
           <option value="">Selecione uma data</option>
