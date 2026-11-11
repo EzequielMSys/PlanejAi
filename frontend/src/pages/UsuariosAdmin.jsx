@@ -36,14 +36,16 @@ export default function UsuariosAdmin() {
   const listRequest=useRef(0)
   const [busca, setBusca] = useState('')
   const [tipoFiltro, setTipoFiltro] = useState('')
+  const [usageFilter, setUsageFilter] = useState('')
   const [managingId,setManagingId]=useState(null)
   const [usageAccount, setUsageAccount] = useState(null)
   const usageButton = useRef(null)
+  const directory = useRef(null)
   const [paginaAtual, setPaginaAtual] = useState(1)
   useEffect(()=>{
     setManagingId(null)
     setUsageAccount(null)
-  },[busca,tipoFiltro,paginaAtual])
+  },[busca,tipoFiltro,usageFilter,paginaAtual])
   const [totalPaginas, setTotalPaginas] = useState(1)
   const [totalRegistros, setTotalRegistros] = useState(0)
   const [stats, setStats] = useState({ total: 0, ativos: 0, alunos: 0, admins: 0 })
@@ -68,7 +70,8 @@ export default function UsuariosAdmin() {
         page: paginaAtual,
         limit: USUARIOS_POR_PAGINA,
         search: busca,
-        tipo: tipoFiltro
+        tipo: tipoFiltro,
+        acompanhamento: usageFilter
       })
       if(request!==listRequest.current)return
       setLoaded(true)
@@ -81,7 +84,7 @@ export default function UsuariosAdmin() {
     } finally {
       if(request===listRequest.current)setLoading(false)
     }
-  }, [paginaAtual, busca, tipoFiltro])
+  }, [paginaAtual, busca, tipoFiltro, usageFilter])
 
   useEffect(() => {
     const timer = setTimeout(carregarUsuarios, 250)
@@ -263,7 +266,14 @@ export default function UsuariosAdmin() {
 
   return (
     <main className="users-admin-page min-h-screen bg-[rgb(var(--pn-superficie-alt-rgb)/1)] text-[rgb(var(--pn-texto-rgb)/1)] px-4 sm:px-6 lg:px-8 py-10">
-      <div className="max-w-7xl mx-auto">
+      {usageAccount && (isDono || usuarios.some(item => getId(item) === usageAccount.id && item.tipo === 'aluno')) &&
+        <AccountUsagePanel key={usageAccount.id} {...usageAccount} onClose={() => {
+          setUsageAccount(null)
+          if (directory.current) directory.current.hidden = false
+          usageButton.current?.focus()
+        }}/>
+      }
+      <div ref={directory} hidden={Boolean(usageAccount && (isDono || usuarios.some(item => getId(item) === usageAccount.id && item.tipo === 'aluno')))} className="max-w-7xl mx-auto">
         <header className="users-hero"><div><span className="users-kicker">PLANEJAI · GESTÃO DE ACESSOS</span><h1>Pessoas e acessos</h1><p>Encontre uma pessoa e gerencie seu acesso.</p></div><details className="users-permissions"><summary>Sobre as permissões</summary><p>{isDono?'Só o dono pode alterar perfis e ativar ou desativar contas.':'As ações disponíveis respeitam as permissões da sua conta.'}</p></details></header>
 
         {loaded && <details className="users-overview"><summary>Resumo das contas<span>Total, atividade e perfis</span></summary><section className="users-stats grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" aria-label="Resumo das contas">
@@ -313,15 +323,17 @@ export default function UsuariosAdmin() {
           </div>
         </section>
 
-        {(busca || tipoFiltro) && <div className="users-filter-summary"><span>Filtros ativos{tipoFiltro ? ' · '+(tipoLabel[tipoFiltro]||tipoFiltro) : ''}</span><button type="button" onClick={()=>{atualizarBusca('');atualizarTipoFiltro('')}}>Limpar filtros</button></div>}
+        <label className="users-filter-label">Acompanhamento
+          <select value={usageFilter} onChange={event => { setUsageFilter(event.target.value); setPaginaAtual(1) }}>
+            <option value="">Todas as contas</option>
+            <option value="atrasadas">Com atividades atrasadas</option>
+            <option value="sem-uso">Sem uso registrado nos últimos 7 dias</option>
+          </select>
+        </label>
+        {usageFilter === 'sem-uso' && <p>Inclui contas ativas com cobertura de medição durante todo o período.</p>}
+        {(busca || tipoFiltro || usageFilter) && <div className="users-filter-summary"><span>Filtros ativos{tipoFiltro ? ' · '+(tipoLabel[tipoFiltro]||tipoFiltro) : ''}</span><button type="button" onClick={()=>{atualizarBusca('');atualizarTipoFiltro('');setUsageFilter('')}}>Limpar filtros</button></div>}
         {listError&&<p className="users-list-error" role="alert">{listError} <button type="button" onClick={carregarUsuarios}>Tentar novamente</button></p>}
         {loaded&&loading&&<p className="users-updating" role="status">Atualizando pessoas…</p>}
-        {usageAccount && (isDono || usuarios.some(item => getId(item) === usageAccount.id && item.tipo === 'aluno')) &&
-          <AccountUsagePanel key={usageAccount.id} {...usageAccount} onClose={() => {
-            setUsageAccount(null)
-            usageButton.current?.focus()
-          }}/>
-        }
         <section className="users-table-shell bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="users-directory" aria-busy={loading}>

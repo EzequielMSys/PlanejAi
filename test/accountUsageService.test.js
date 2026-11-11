@@ -61,7 +61,7 @@ test('report includes existing deliveries and distinguishes months before tracki
   assert.equal(data.pendentes.total, 21)
   assert.equal(data.dias.length, 11)
   assert.deepEqual(data.dias.at(-1), { dia: '2026-11-11', segundos: 0, entregues: 2 })
-  assert.deepEqual(queries.find(query => query.sql.includes('GROUP BY dia')).params, [7, '2026-11-01', '2026-11-12'])
+  assert.deepEqual(queries.find(query => query.sql.includes('GROUP BY dia')).params, [7, '2025-12-01', '2026-11-12'])
   assert.deepEqual(data.meses.slice(-3), [
     { mes: '2026-09', segundos: null, entregues: 1 },
     { mes: '2026-10', segundos: 90, entregues: 0 },

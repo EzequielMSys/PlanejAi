@@ -37,7 +37,9 @@ async function listar(req, res) {
       page: req.query.page,
       limit: req.query.limit,
       search: req.query.search,
-      tipo: req.query.tipo
+      tipo: req.query.tipo,
+      acompanhamento: req.query.acompanhamento,
+      requester: req.usuario.tipo
     })
 
     return res.status(200).json(resultado)

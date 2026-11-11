@@ -41,6 +41,25 @@ const deliveries = `
   WHERE id_usuario = ? AND status IN ('ENTREGUE', 'CORRIGIDA')
   GROUP BY id_atividade`
 
+function pendingActivityFor(userId) {
+  return `a.status = 'PUBLICADA' AND (a.publicar_em IS NULL OR a.publicar_em <= CURRENT_TIMESTAMP)
+    AND (a.atribuicao IS NULL OR a.atribuicao = 'TODOS'
+      OR JSON_CONTAINS(a.destinatarios, JSON_QUOTE(CAST(${userId} AS CHAR)))
+      OR JSON_CONTAINS(a.destinatarios, CAST(${userId} AS CHAR)))
+    AND (a.id_turma IS NULL OR EXISTS (
+      SELECT 1 FROM turma_alunos ta JOIN turmas t ON t.id_turma = ta.id_turma
+      WHERE ta.id_turma = a.id_turma AND ta.id_aluno = ${userId} AND ta.ativo = 1 AND t.ativa = 1
+    ))
+    AND NOT EXISTS (
+      SELECT 1 FROM respostas_usuario r
+      WHERE r.id_usuario = ${userId} AND r.id_atividade = a.id_atividade AND r.status IN ('ENTREGUE', 'CORRIGIDA')
+    )`
+}
+
+function recentUsageStart(now = new Date()) {
+  return new Date(Date.parse(localDay.format(now)) - 6 * 86400000).toISOString().slice(0, 10)
+}
+
 function lastMonths(now) {
   const [year, month] = localDay.format(now).split('-').map(Number)
   return Array.from({ length: 12 }, (_, index) =>
@@ -58,7 +77,7 @@ async function report(id, requester, now = new Date(), db = pool) {
   const [year, month] = months.at(-1).split('-').map(Number)
   const to = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10)
   const [totals, usage, completed, pending, dailyUsage, dailyDeliveries] = await Promise.all([
-    executeUsage(db, `SELECT SUM(segundos) AS total, DATE_FORMAT(MIN(dia), '%Y-%m-%d') AS inicio,
+    executeUsage(db, `SELECT SUM(segundos) AS total, DATE_FORMAT(MIN(dia), '%Y-%m-%d') AS inicio, MAX(ultimo_intervalo) AS ultimo_intervalo,
       (SELECT DATE_FORMAT(MIN(dia), '%Y-%m-%d') FROM uso_diario_conta) AS medicao_desde
       FROM uso_diario_conta WHERE id_usuario = ?`, [id]),
     executeUsage(db, "SELECT DATE_FORMAT(dia, '%Y-%m') AS mes, SUM(segundos) AS segundos FROM uso_diario_conta WHERE id_usuario = ? AND dia >= ? AND dia < ? GROUP BY mes", [id, from, to]),
@@ -67,47 +86,42 @@ async function report(id, requester, now = new Date(), db = pool) {
        FROM (${deliveries}) d JOIN atividades a ON a.id_atividade = d.id_atividade
        ORDER BY d.entregue_em DESC, d.id_atividade DESC LIMIT 20`, [id]),
     account.tipo === 'aluno' ? db.execute(`
-      SELECT a.id_atividade, a.titulo, DATE_FORMAT(a.prazo, '%Y-%m-%d') AS data, COUNT(*) OVER () AS total
+      SELECT a.id_atividade, a.titulo, DATE_FORMAT(a.prazo, '%Y-%m-%d') AS data, COUNT(*) OVER () AS total,
+        SUM(CASE WHEN a.prazo < CURRENT_TIMESTAMP THEN 1 ELSE 0 END) OVER () AS atrasadas,
+        IF(a.prazo < CURRENT_TIMESTAMP, 1, 0) AS atrasada
       FROM atividades a
-      WHERE a.status = 'PUBLICADA' AND (a.publicar_em IS NULL OR a.publicar_em <= CURRENT_TIMESTAMP)
-        AND (a.atribuicao IS NULL OR a.atribuicao = 'TODOS'
-          OR JSON_CONTAINS(a.destinatarios, JSON_QUOTE(?))
-          OR JSON_CONTAINS(a.destinatarios, ?))
-        AND (a.id_turma IS NULL OR EXISTS (
-          SELECT 1 FROM turma_alunos ta JOIN turmas t ON t.id_turma = ta.id_turma
-          WHERE ta.id_turma = a.id_turma AND ta.id_aluno = ? AND ta.ativo = 1 AND t.ativa = 1
-        ))
-        AND NOT EXISTS (
-          SELECT 1 FROM respostas_usuario r
-          WHERE r.id_usuario = ? AND r.id_atividade = a.id_atividade AND r.status IN ('ENTREGUE', 'CORRIGIDA')
-        )
-      ORDER BY a.prazo IS NULL, a.prazo, a.id_atividade DESC LIMIT 20`, [String(id), String(id), id, id]) : Promise.resolve([[]]),
-    executeUsage(db, "SELECT DATE_FORMAT(dia, '%Y-%m-%d') AS dia, segundos FROM uso_diario_conta WHERE id_usuario = ? AND dia >= ? AND dia < ?", [id, monthStart, tomorrow]),
+      WHERE ${pendingActivityFor('?')}
+      ORDER BY a.prazo IS NULL, a.prazo, a.id_atividade DESC LIMIT 20`, [id, id, id, id]) : Promise.resolve([[]]),
+    executeUsage(db, "SELECT DATE_FORMAT(dia, '%Y-%m-%d') AS dia, segundos FROM uso_diario_conta WHERE id_usuario = ? AND dia >= ? AND dia < ?", [id, from, tomorrow]),
     db.execute(`SELECT DATE_FORMAT(entregue_em, '%Y-%m-%d') AS dia, COUNT(*) AS entregues
-      FROM (${deliveries}) d WHERE entregue_em >= ? AND entregue_em < ? GROUP BY dia`, [id, monthStart, tomorrow])
+      FROM (${deliveries}) d WHERE entregue_em >= ? AND entregue_em < ? GROUP BY dia`, [id, from, tomorrow])
   ])
   const [monthlyDeliveries] = await db.execute(`
     SELECT DATE_FORMAT(entregue_em, '%Y-%m') AS mes, COUNT(*) AS entregues
     FROM (${deliveries}) d WHERE entregue_em >= ? AND entregue_em < ? GROUP BY mes`, [id, from, to])
-  const [{ total, inicio, medicao_desde }] = totals[0]
+  const [{ total, inicio, medicao_desde, ultimo_intervalo }] = totals[0]
   const summarize = rows => ({
     total: Number(rows[0]?.total || 0),
-    itens: rows.map(({ id_atividade, titulo, data }) => ({ id_atividade, titulo, data }))
+    atrasadas: Number(rows[0]?.atrasadas || 0),
+    itens: rows.map(({ id_atividade, titulo, data, atrasada }) => ({ id_atividade, titulo, data, atrasada: Boolean(atrasada) }))
+  })
+  const usageByDay = new Map(dailyUsage[0].map(row => [row.dia, Number(row.segundos)]))
+  const deliveriesByDay = new Map(dailyDeliveries[0].map(row => [row.dia, Number(row.entregues)]))
+  const history = Array.from({ length: (Date.parse(tomorrow) - Date.parse(from)) / 86400000 }, (_, index) => {
+    const dia = new Date(Date.parse(from) + index * 86400000).toISOString().slice(0, 10)
+    return { dia, segundos: medicao_desde && dia >= medicao_desde ? usageByDay.get(dia) || 0 : null, entregues: deliveriesByDay.get(dia) || 0 }
   })
   return {
     segundos: medicao_desde ? Number(total || 0) : null,
     inicio,
     medicao_desde,
+    hoje: today,
+    consultado_em: now.toISOString(),
+    ultimo_registro: ultimo_intervalo == null ? null : new Date(Number(ultimo_intervalo) * SAMPLE_SECONDS * 1000).toISOString(),
     entregues: summarize(completed[0]),
     pendentes: account.tipo === 'aluno' ? summarize(pending[0]) : null,
-    dias: Array.from({ length: Number(today.slice(-2)) }, (_, index) => {
-      const dia = today.slice(0, 8) + String(index + 1).padStart(2, '0')
-      return {
-        dia,
-        segundos: medicao_desde && dia >= medicao_desde ? Number(dailyUsage[0].find(row => row.dia === dia)?.segundos || 0) : null,
-        entregues: Number(dailyDeliveries[0].find(row => row.dia === dia)?.entregues || 0)
-      }
-    }),
+    dias: history.filter(item => item.dia >= monthStart),
+    historico_diario: history,
     meses: months.map(mes => ({
       mes,
       segundos: medicao_desde && mes >= medicao_desde.slice(0, 7) ? Number(usage[0].find(row => row.mes === mes)?.segundos || 0) : null,
@@ -116,4 +130,4 @@ async function report(id, requester, now = new Date(), db = pool) {
   }
 }
 
-module.exports = { record, report }
+module.exports = { record, report, pendingActivityFor, recentUsageStart, executeUsage }

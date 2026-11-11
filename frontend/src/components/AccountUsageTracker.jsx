@@ -13,7 +13,8 @@ export default function AccountUsageTracker() {
   useEffect(() => {
     if (!token || !id) return
     const abort = new AbortController()
-    const foreground = () => document.visibilityState === 'visible' && document.hasFocus()
+    const foreground = () => localStorage.getItem('token') === token
+      && document.visibilityState === 'visible' && document.hasFocus()
     let lastInteraction = -Infinity
     let activeSince = null
     let sending = false

@@ -1,4 +1,5 @@
 const pool = require('../config/db')
+const { executeUsage, pendingActivityFor, recentUsageStart } = require('../services/accountUsageService')
 
 let bannerColumnAvailable = true
 
@@ -160,7 +161,7 @@ async function buscarPorId(id) {
   return rows[0] || null
 }
 
-async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '' } = {}) {
+async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '', acompanhamento = '', requester = '' } = {}) {
   const safePage = Number.isSafeInteger(Number(page)) && Number(page) > 0 ? Math.min(Number(page), 1000000) : 1
   const safeLimit = Number.isSafeInteger(Number(limit)) && Number(limit) > 0 ? Math.min(Number(limit), 100) : 10
   const offset = (safePage - 1) * safeLimit
@@ -176,12 +177,25 @@ async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '' } =
     where.push('tipo = ?')
     values.push(tipo)
   }
+  if (acompanhamento === 'atrasadas') {
+    where.push(`tipo = 'aluno' AND EXISTS (
+      SELECT 1 FROM atividades a WHERE a.prazo < CURRENT_TIMESTAMP AND ${pendingActivityFor('usuarios.id_usuario')}
+    )`)
+  }
+  if (acompanhamento === 'sem-uso') {
+    if (requester !== 'dono') where.push("tipo = 'aluno'")
+    where.push(`ativo = 1 AND DATE(data_cadastro) <= ?
+      AND EXISTS (SELECT 1 FROM uso_diario_conta WHERE dia <= ?)
+      AND NOT EXISTS (SELECT 1 FROM uso_diario_conta uso WHERE uso.id_usuario = usuarios.id_usuario AND uso.dia >= ?)`)
+    const since = recentUsageStart()
+    values.push(since, since, since)
+  }
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : ''
 
-  const [[count]] = await pool.execute(
-    `SELECT COUNT(*) AS total FROM usuarios ${whereSql}`,
-    values
-  )
+  const countSql = `SELECT COUNT(*) AS total FROM usuarios ${whereSql}`
+  const [[count]] = acompanhamento === 'sem-uso'
+    ? await executeUsage(pool, countSql, values)
+    : await pool.execute(countSql, values)
   const [[stats]] = await pool.query(`SELECT
     COUNT(*) AS total,
     SUM(ativo = 1) AS ativos,

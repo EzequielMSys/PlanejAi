@@ -17,9 +17,9 @@ const usuarioService = {
     return response.data
   },
 
-  async listar({ page = 1, limit = 10, search = '', tipo = '' } = {}) {
+  async listar({ page = 1, limit = 10, search = '', tipo = '', acompanhamento = '' } = {}) {
     const response = await api.get('/', {
-      params: { page, limit, search: search || undefined, tipo: tipo || undefined }
+      params: { page, limit, search: search || undefined, tipo: tipo || undefined, acompanhamento: acompanhamento || undefined }
     })
 
     return response.data
