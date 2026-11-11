@@ -51,10 +51,13 @@ async function report(id, requester, now = new Date(), db = pool) {
   const [[account]] = await db.execute('SELECT tipo FROM usuarios WHERE id_usuario = ?', [id])
   if (!account || (requester !== 'dono' && account.tipo !== 'aluno')) return null
   const months = lastMonths(now)
+  const today = localDay.format(now)
+  const monthStart = today.slice(0, 7) + '-01'
+  const tomorrow = new Date(Date.parse(today) + 86400000).toISOString().slice(0, 10)
   const from = months[0] + '-01'
   const [year, month] = months.at(-1).split('-').map(Number)
   const to = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10)
-  const [totals, usage, completed, pending] = await Promise.all([
+  const [totals, usage, completed, pending, dailyUsage, dailyDeliveries] = await Promise.all([
     executeUsage(db, "SELECT SUM(segundos) AS total, DATE_FORMAT(MIN(dia), '%Y-%m-%d') AS inicio FROM uso_diario_conta WHERE id_usuario = ?", [id]),
     executeUsage(db, "SELECT DATE_FORMAT(dia, '%Y-%m') AS mes, SUM(segundos) AS segundos FROM uso_diario_conta WHERE id_usuario = ? AND dia >= ? AND dia < ? GROUP BY mes", [id, from, to]),
     db.execute(`SELECT d.id_atividade, a.titulo, DATE_FORMAT(d.entregue_em, '%Y-%m-%d') AS data,
@@ -76,7 +79,10 @@ async function report(id, requester, now = new Date(), db = pool) {
           SELECT 1 FROM respostas_usuario r
           WHERE r.id_usuario = ? AND r.id_atividade = a.id_atividade AND r.status IN ('ENTREGUE', 'CORRIGIDA')
         )
-      ORDER BY a.prazo IS NULL, a.prazo, a.id_atividade DESC LIMIT 20`, [String(id), String(id), id, id]) : Promise.resolve([[]])
+      ORDER BY a.prazo IS NULL, a.prazo, a.id_atividade DESC LIMIT 20`, [String(id), String(id), id, id]) : Promise.resolve([[]]),
+    executeUsage(db, "SELECT DATE_FORMAT(dia, '%Y-%m-%d') AS dia, segundos FROM uso_diario_conta WHERE id_usuario = ? AND dia >= ? AND dia < ?", [id, monthStart, tomorrow]),
+    db.execute(`SELECT DATE_FORMAT(entregue_em, '%Y-%m-%d') AS dia, COUNT(*) AS entregues
+      FROM (${deliveries}) d WHERE entregue_em >= ? AND entregue_em < ? GROUP BY dia`, [id, monthStart, tomorrow])
   ])
   const [monthlyDeliveries] = await db.execute(`
     SELECT DATE_FORMAT(entregue_em, '%Y-%m') AS mes, COUNT(*) AS entregues
@@ -91,6 +97,14 @@ async function report(id, requester, now = new Date(), db = pool) {
     inicio,
     entregues: summarize(completed[0]),
     pendentes: account.tipo === 'aluno' ? summarize(pending[0]) : null,
+    dias: Array.from({ length: Number(today.slice(-2)) }, (_, index) => {
+      const dia = today.slice(0, 8) + String(index + 1).padStart(2, '0')
+      return {
+        dia,
+        segundos: inicio && dia >= inicio ? Number(dailyUsage[0].find(row => row.dia === dia)?.segundos || 0) : null,
+        entregues: Number(dailyDeliveries[0].find(row => row.dia === dia)?.entregues || 0)
+      }
+    }),
     meses: months.map(mes => ({
       mes,
       segundos: inicio && mes >= inicio.slice(0, 7) ? Number(usage[0].find(row => row.mes === mes)?.segundos || 0) : null,

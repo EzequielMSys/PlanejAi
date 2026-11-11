@@ -45,6 +45,8 @@ test('report includes existing deliveries and distinguishes months before tracki
       if (sql.includes('SELECT tipo')) return [[{ tipo: 'aluno' }]]
       if (sql.includes('MIN(dia)')) return [[{ total: '90', inicio: '2026-10-01' }]]
       if (sql.includes('SUM(segundos)')) return [[{ mes: '2026-10', segundos: '90' }]]
+      if (sql.includes('GROUP BY dia')) return [[{ dia: '2026-11-11', entregues: '2' }]]
+      if (sql.includes('FROM uso_diario_conta')) return [[]]
       if (sql.includes('GROUP BY mes')) return [[{ mes: '2026-09', entregues: '1' }]]
       if (sql.includes('NOT EXISTS')) return [[{ id_atividade: 8, titulo: 'Revisão', data: null, total: '21' }]]
       return [[{ id_atividade: 3, titulo: 'Exercícios', data: '2026-09-18', total: '1' }]]
@@ -55,6 +57,9 @@ test('report includes existing deliveries and distinguishes months before tracki
   assert.equal(data.segundos, 90)
   assert.equal(data.entregues.total, 1)
   assert.equal(data.pendentes.total, 21)
+  assert.equal(data.dias.length, 11)
+  assert.deepEqual(data.dias.at(-1), { dia: '2026-11-11', segundos: 0, entregues: 2 })
+  assert.deepEqual(queries.find(query => query.sql.includes('GROUP BY dia')).params, [7, '2026-11-01', '2026-11-12'])
   assert.deepEqual(data.meses.slice(-3), [
     { mes: '2026-09', segundos: null, entregues: 1 },
     { mes: '2026-10', segundos: 90, entregues: 0 },

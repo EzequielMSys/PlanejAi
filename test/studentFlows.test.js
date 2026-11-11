@@ -304,6 +304,7 @@ async function fixture(config) {
     inicio: '2026-11-01',
     entregues: { total: 1, itens: [{ id_atividade: 1, titulo: 'Equações', data: '2026-11-03' }] },
     pendentes: { total: 1, itens: [{ id_atividade: 2, titulo: 'Geometria', data: null }] },
+    dias: [{ dia: '2026-11-01', segundos: 3690, entregues: 1 }],
     meses: Array.from({ length: 12 }, (_, index) => ({
       mes: new Date(Date.UTC(2025, index + 11, 1)).toISOString().slice(0, 7),
       segundos: index === 11 ? 3690 : null,
@@ -1103,6 +1104,13 @@ test('diretório abre acompanhamento, mostra os dados e devolve o foco à conta'
     assert.match(panel.textContent, /1 hora, 1 minuto, 30 segundos/);
     assert.match(panel.textContent, /Equações/);
     assert.match(panel.textContent, /Geometria/);
+    assert.equal(panel.querySelectorAll('tbody tr').length, 1);
+    assert.match(panel.querySelector('tbody').textContent, /01\/11\/2026/);
+    await act(async () => {
+      const period = panel.querySelector('select');
+      period.value = 'meses';
+      period.dispatchEvent(new window.Event('change', { bubbles: true }));
+    });
     assert.equal(panel.querySelectorAll('tbody tr').length, 12);
     assert.ok(requests.some(request => request.url.endsWith('/usuarios/900001/uso')));
     await act(async () => button('Fechar acompanhamento').click());

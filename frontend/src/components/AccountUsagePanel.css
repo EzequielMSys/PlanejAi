@@ -19,6 +19,14 @@
 
 .account-usage h2 { font-size: 1.35rem; font-weight: 800; }
 .account-usage h3, .account-usage figcaption { font-weight: 750; }
+.account-usage select {
+  margin: .35rem .25rem;
+  padding: .35rem .55rem;
+  border: 1px solid rgb(var(--pn-primaria-borda-rgb) / .6);
+  border-radius: .5rem;
+  background: rgb(var(--pn-superficie-rgb) / 1);
+  color: inherit;
+}
 .account-usage small, .account-usage-axis { font-size: .85rem; }
 .account-usage button, .users-usage-button {
   padding: .45rem .75rem;

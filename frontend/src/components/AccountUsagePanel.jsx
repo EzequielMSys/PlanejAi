@@ -8,6 +8,8 @@ const units = [
 ].map(([unit, seconds]) => [new Intl.NumberFormat('pt-BR', { style: 'unit', unit, unitDisplay: 'long' }), seconds])
 const months = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit', timeZone: 'UTC' })
 const shortDate = value => value.split('-').reverse().join('/')
+const periodKey = item => item.dia || item.mes
+const formatPeriod = item => item.dia ? item.dia.slice(5).split('-').reverse().join('/') : months.format(new Date(item.mes + '-01T00:00Z'))
 
 function duration(seconds) {
   const parts = []
@@ -23,7 +25,7 @@ function Trend({ title, series, field }) {
   const canvas = useRef(null)
   const peak = Math.max(1, ...series.map(item => item[field] ?? 0))
   const best = series.filter(item => item[field] > 0 && item[field] === peak)
-  const formatMonth = item => months.format(new Date(item.mes + '-01T00:00Z'))
+  const axisIndices = [...new Set(Array.from({ length: 4 }, (_, i) => Math.round(i * (series.length - 1) / 3)))]
 
   useEffect(() => {
     if (!window.CanvasRenderingContext2D) return
@@ -33,7 +35,7 @@ function Trend({ title, series, field }) {
     const { width, height } = element
     const inset = 14
     const point = (index, value) => [
-      inset + index * (width - 2 * inset) / (series.length - 1),
+      inset + index * (width - 2 * inset) / Math.max(1, series.length - 1),
       height - inset - (height - 2 * inset) * value / peak
     ]
     ctx.clearRect(0, 0, width, height)
@@ -71,9 +73,9 @@ function Trend({ title, series, field }) {
     <figcaption>{title}</figcaption>
     <canvas ref={canvas} width={640} height={150} aria-hidden="true" />
     <div className="account-usage-axis" aria-hidden="true">
-      {series.filter((_, i) => [0, 4, 8, 11].includes(i)).map(item => <span key={item.mes}>{formatMonth(item)}</span>)}
+      {axisIndices.map(index => <span key={periodKey(series[index])}>{formatPeriod(series[index])}</span>)}
     </div>
-    {best.length > 0 && <small>Pico de {field === 'segundos' ? duration(peak) : `${peak} ${peak === 1 ? 'entrega' : 'entregas'}`} em {best.map(formatMonth).join(', ')}.</small>}
+    {best.length > 0 && <small>Pico de {field === 'segundos' ? duration(peak) : `${peak} ${peak === 1 ? 'entrega' : 'entregas'}`} em {best.map(formatPeriod).join(', ')}.</small>}
     {best.length === 0 && <small>{field === 'segundos' ? 'Sem tempo registrado no período.' : 'Sem entregas no período.'}</small>}
   </figure>
 }
@@ -94,6 +96,10 @@ export default function AccountUsagePanel({ id, name, onClose }) {
   const [report, setReport] = useState(null)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  const [period, setPeriod] = useState('dias')
+  const daily = period === 'dias' && Boolean(report?.dias?.length)
+  const series = daily ? report.dias : report?.meses
+  const unit = daily ? 'dia' : 'mês'
   const heading = useRef(null)
 
   useEffect(() => {
@@ -125,17 +131,21 @@ export default function AccountUsagePanel({ id, name, onClose }) {
         <p>A medição começa após o login. Conta intervalos de 15 segundos com a aba em foco e pausa após 1 minuto sem interação.</p>
       </div>
       <section aria-labelledby="account-usage-months">
-        <h3 id="account-usage-months">Evolução nos últimos 12 meses</h3>
+        <h3 id="account-usage-months">Evolução do acompanhamento</h3>
+        <label>Período <select value={daily ? 'dias' : 'meses'} onChange={event => setPeriod(event.target.value)}>
+          <option value="dias" disabled={!report.dias?.length}>Mês atual · dia a dia</option>
+          <option value="meses">Últimos 12 meses</option>
+        </select></label>
         <div className="account-usage-grid">
-          <Trend title="Tempo ativo por mês" series={report.meses} field="segundos" />
-          <Trend title="Atividades entregues por mês" series={report.meses} field="entregues" />
+          <Trend title={`Tempo ativo por ${unit}`} series={series} field="segundos" />
+          <Trend title={`Atividades entregues por ${unit}`} series={series} field="entregues" />
         </div>
         <details>
-          <summary>Ver valores por mês</summary>
+          <summary>Ver valores por {unit}</summary>
           <table>
-            <thead><tr><th scope="col">Mês</th><th scope="col">Tempo ativo</th><th scope="col">Entregues</th></tr></thead>
-            <tbody>{report.meses.map(item => <tr key={item.mes}>
-              <th scope="row">{months.format(new Date(item.mes + '-01T00:00Z'))}</th>
+            <thead><tr><th scope="col">{daily ? 'Dia' : 'Mês'}</th><th scope="col">Tempo ativo</th><th scope="col">Entregues</th></tr></thead>
+            <tbody>{series.map(item => <tr key={periodKey(item)}>
+              <th scope="row">{daily ? shortDate(item.dia) : formatPeriod(item)}</th>
               <td>{item.segundos === null ? 'Sem medição' : duration(item.segundos)}</td>
               <td>{item.entregues}</td>
             </tr>)}</tbody>
