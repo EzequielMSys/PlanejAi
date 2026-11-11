@@ -2,6 +2,26 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const { record, report } = require('../src/services/accountUsageService')
 
+test('serverless requests apply the usage migration once and retry concurrent samples', async () => {
+  let ready = false
+  let migrations = 0
+  const records = []
+  const db = {
+    async execute(sql, params) {
+      if (!ready) throw Object.assign(new Error('missing table'), { code: 'ER_NO_SUCH_TABLE' })
+      records.push(params[0])
+    },
+    async query(sql) {
+      assert.match(sql, /CREATE TABLE IF NOT EXISTS uso_diario_conta/)
+      migrations++
+      ready = true
+    }
+  }
+  await Promise.all([record(7, new Date(), db), record(8, new Date(), db)])
+  assert.equal(migrations, 1)
+  assert.deepEqual(records.sort(), [7, 8])
+})
+
 test('activity samples use the authenticated account, server slots and the São Paulo date', async () => {
   const calls = []
   const db = { execute: async (sql, params) => calls.push({ sql, params }) }

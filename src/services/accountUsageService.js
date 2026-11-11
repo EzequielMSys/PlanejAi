@@ -1,11 +1,31 @@
 const pool = require('../config/db')
+const { readFile } = require('node:fs/promises')
+const path = require('node:path')
 
 const SAMPLE_SECONDS = 15
 const localDay = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo' })
+const schemaUpdates = new WeakMap()
+
+async function executeUsage(db, sql, params) {
+  try {
+    return await db.execute(sql, params)
+  } catch (error) {
+    if (error.code !== 'ER_NO_SUCH_TABLE') throw error
+  }
+
+  if (!schemaUpdates.has(db)) {
+    const update = readFile(path.join(__dirname, '../../migrations/account_usage_v91.sql'), 'utf8')
+      .then(migration => db.query(migration))
+      .finally(() => schemaUpdates.delete(db))
+    schemaUpdates.set(db, update)
+  }
+  await schemaUpdates.get(db)
+  return db.execute(sql, params)
+}
 
 async function record(id, now = new Date(), db = pool) {
   const slot = Math.floor(now.getTime() / (SAMPLE_SECONDS * 1000))
-  await db.execute(
+  await executeUsage(db,
     `INSERT INTO uso_diario_conta (id_usuario, dia, segundos, ultimo_intervalo)
      VALUES (?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
@@ -35,8 +55,8 @@ async function report(id, requester, now = new Date(), db = pool) {
   const [year, month] = months.at(-1).split('-').map(Number)
   const to = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10)
   const [totals, usage, completed, pending] = await Promise.all([
-    db.execute("SELECT SUM(segundos) AS total, DATE_FORMAT(MIN(dia), '%Y-%m-%d') AS inicio FROM uso_diario_conta WHERE id_usuario = ?", [id]),
-    db.execute("SELECT DATE_FORMAT(dia, '%Y-%m') AS mes, SUM(segundos) AS segundos FROM uso_diario_conta WHERE id_usuario = ? AND dia >= ? AND dia < ? GROUP BY mes", [id, from, to]),
+    executeUsage(db, "SELECT SUM(segundos) AS total, DATE_FORMAT(MIN(dia), '%Y-%m-%d') AS inicio FROM uso_diario_conta WHERE id_usuario = ?", [id]),
+    executeUsage(db, "SELECT DATE_FORMAT(dia, '%Y-%m') AS mes, SUM(segundos) AS segundos FROM uso_diario_conta WHERE id_usuario = ? AND dia >= ? AND dia < ? GROUP BY mes", [id, from, to]),
     db.execute(`SELECT d.id_atividade, a.titulo, DATE_FORMAT(d.entregue_em, '%Y-%m-%d') AS data,
        COUNT(*) OVER () AS total
        FROM (${deliveries}) d JOIN atividades a ON a.id_atividade = d.id_atividade
