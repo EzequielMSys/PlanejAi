@@ -37,8 +37,8 @@ export default function ExamArena({ area, onSessionChange }) {
   const [revisao, setRevisao] = useState([])
   const [resultado, setResultado] = useState(null)
   const [indiceAtual, setIndiceAtual] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState(false)
+  const [catalogStatus, setCatalogStatus] = useState('loading')
+  const [historyStatus, setHistoryStatus] = useState('loading')
   const [busyId, setBusyId] = useState(null)
   const [saveStatus, setSaveStatus] = useState('salvo')
   const [agora, setAgora] = useState(Date.now())
@@ -48,30 +48,43 @@ export default function ExamArena({ area, onSessionChange }) {
   const [actionError, setActionError] = useState('')
 
   useEffect(() => {
-    if (!simulado || loading) return
+    if (!simulado) return
     sessionHeading.current?.scrollIntoView({ block: 'start' })
     sessionHeading.current?.focus({ preventScroll: true })
-  }, [simulado, loading])
+  }, [simulado])
 
-  const carregar = async () => {
-    setLoading(true)
+  const carregarCatalogo = async () => {
+    setCatalogStatus('loading')
     try {
-      const [provas, tentativas] = await Promise.all([inteligencia.catalogoProvas(), inteligencia.historicoSimulados()])
-      if (!Array.isArray(provas) || !Array.isArray(tentativas)) throw new Error('Resposta inválida ao consultar as provas.')
+      const provas = await inteligencia.catalogoProvas()
+      if (!Array.isArray(provas)) throw new Error('Catálogo inválido.')
       setCatalogo(provas)
-      setHistorico(tentativas)
-      setLoadError(false)
       setConfig(atual => {
         if (atual.idCatalogo || !provas.length) return atual
         return { ...atual, idCatalogo: String(provas[0].id_catalogo), quantidade: Math.min(atual.quantidade, questoesNoNivel(provas[0], atual.dificuldade)) }
       })
+      setCatalogStatus('ready')
     } catch {
-      setLoadError(true)
-      toast.error('Não foi possível carregar o catálogo de simulados.')
-    } finally { setLoading(false) }
+      setCatalogStatus('error')
+    }
   }
 
-  useEffect(() => { carregar() }, [])
+  const carregarHistorico = async () => {
+    setHistoryStatus('loading')
+    try {
+      const tentativas = await inteligencia.historicoSimulados()
+      if (!Array.isArray(tentativas)) throw new Error('Histórico inválido.')
+      setHistorico(tentativas)
+      setHistoryStatus('ready')
+    } catch {
+      setHistoryStatus('error')
+    }
+  }
+
+  useEffect(() => {
+    carregarCatalogo()
+    carregarHistorico()
+  }, [])
   useEffect(() => { onSessionChange?.(Boolean(simulado)) }, [simulado, onSessionChange])
 
   useEffect(() => {
@@ -150,7 +163,7 @@ export default function ExamArena({ area, onSessionChange }) {
       const data = await inteligencia.concluirSimulado(simulado.idSimulado, respostas, revisao)
       setResultado(data)
       setSaveStatus('salvo')
-      await carregar()
+      await carregarHistorico()
       toast.success(`Simulado concluído: ${data.nota}%`)
     } catch (error) {
       toast.error(error.response?.data?.message || 'Não foi possível corrigir o simulado.')
@@ -170,8 +183,6 @@ export default function ExamArena({ area, onSessionChange }) {
     return Math.floor((agora - new Date(simulado.iniciadoEm).getTime()) / 1000)
   }, [agora, simulado?.iniciadoEm])
 
-  if (loading) return <section className="exam-arena exam-loading">Preparando laboratório de provas…</section>
-  if (loadError && !simulado) return <RecoveryState title="Não conseguimos consultar suas provas." onRetry={carregar}>Seu catálogo e suas tentativas não puderam ser carregados. Tente novamente para retomar de onde parou.</RecoveryState>
 
   return (
     <section className="exam-arena">
@@ -179,7 +190,10 @@ export default function ExamArena({ area, onSessionChange }) {
 
       {!simulado ? <>
         {actionError && <p className="exam-action-error" role="alert">{actionError}</p>}
-        {area === 'tentativas' ? <section className="exam-attempts">
+        {area === 'tentativas' ? (
+          historyStatus === 'loading' ? <p role="status">Carregando tentativas…</p>
+            : historyStatus === 'error' ? <RecoveryState title="Não foi possível carregar suas tentativas." onRetry={carregarHistorico}>Tente novamente para retomar de onde parou.</RecoveryState>
+              : <section className="exam-attempts">
           <h2>Minhas tentativas</h2>
           {historico.some(item => item.status === 'EM_ANDAMENTO') && <p>Continue de onde parou. Suas respostas salvas serão recuperadas.</p>}
           {['EM_ANDAMENTO','CONCLUIDO'].map(status => <div className="exam-history" key={status}>
@@ -191,7 +205,7 @@ export default function ExamArena({ area, onSessionChange }) {
               {status === 'CONCLUIDO' ? <strong>{Number(item.nota).toFixed(0)}%{item.acertos != null && ` · ${item.acertos} acertos`}</strong> : <button type="button" disabled={busyId !== null} onClick={() => retomar(item.id_simulado)}>{busyId === item.id_simulado ? 'Abrindo…' : 'Retomar'}</button>}
             </div>)}
           </div>)}
-        </section> : <>
+        </section>) : <>
           <div className="exam-segments" role="group" aria-label="Modalidade de prática">
             <button type="button" aria-pressed={modalidade === 'colecao'} onClick={() => setModalidade('colecao')}>Por instituição ou vestibular</button>
             <button type="button" aria-pressed={modalidade === 'lumi'} onClick={() => setModalidade('lumi')}>Por disciplina e assunto · Lumi</button>
@@ -204,7 +218,9 @@ export default function ExamArena({ area, onSessionChange }) {
             <label>Quantidade<input type="number" min="1" max="20" value={lumi.quantidade} onChange={event => setLumi({ ...lumi, quantidade: event.target.value })}/></label>
             <label>Tipo de questão<select value={lumi.formato} onChange={event => setLumi({ ...lumi, formato: event.target.value })}>{['múltipla escolha','resposta aberta','verdadeiro ou falso'].map(formato => <option key={formato}>{formato}</option>)}</select></label>
             {lumi.ano.trim() && lumi.disciplina.trim() && lumi.assunto.trim() && Number.isInteger(Number(lumi.quantidade)) && Number(lumi.quantidade) >= 1 && Number(lumi.quantidade) <= 20 && <Link to="/lumi" state={{ perguntaInicial: `Prepare ${lumi.quantidade} questões originais de ${lumi.formato} para ${lumi.ano}, de ${lumi.disciplina} sobre ${lumi.assunto}, em nível ${lumi.dificuldade}. Confira se os dados são suficientes e guarde o gabarito até eu tentar. Depois, comente minhas respostas e sugira revisões.` }}>Preparar pedido na Lumi →</Link>}
-          </div> : <div className="exam-builder exam-compact-fields">
+          </div> : catalogStatus === 'loading' ? <p role="status">Carregando coleções…</p>
+            : catalogStatus === 'error' ? <RecoveryState title="Não foi possível carregar as coleções." onRetry={carregarCatalogo}>Tente novamente para consultar o catálogo.</RecoveryState>
+              : <div className="exam-builder exam-compact-fields">
             <h2>Escolha sua coleção.</h2>
             <p>Os simulados do PlanejAI são atividades autorais, inspiradas em diferentes perfis de avaliação.</p>
             <label>Buscar coleção<input type="search" value={busca} onChange={event => setBusca(event.target.value)} placeholder="Ex.: ENEM ou FUVEST"/></label>

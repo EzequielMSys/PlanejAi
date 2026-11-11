@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext'
 
 import ProtectedRoute from './routes/ProtectedRoute'
 import RouteLoading from './components/RouteLoading'
+import AccountUsageTracker from './components/AccountUsageTracker'
 const Layout = lazy(() => import('./layouts/Layout'))
 
 const Landing = lazy(() => import('./pages/Landing'))
@@ -51,6 +52,7 @@ const Search = lazy(() => import('./pages/Search'))
 function App() {
   return (
     <AuthProvider>
+      <AccountUsageTracker />
       <Suspense
         fallback={<RouteLoading />}
       >

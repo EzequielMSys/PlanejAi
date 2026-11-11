@@ -3,6 +3,7 @@ const express = require('express')
 const router = express.Router()
 
 const usuarioController = require('../controllers/usuarioController')
+const accountUsage = require('../services/accountUsageService')
 
 const {
   authMiddleware,
@@ -40,6 +41,32 @@ router.get(
   authMiddleware,
   usuarioController.exportarMeusDados
 )
+
+router.post('/me/uso', authMiddleware, async (req, res) => {
+  try {
+    await accountUsage.record(req.usuario.id_usuario)
+    return res.status(204).end()
+  } catch (error) {
+    console.error('[USO DA CONTA]', error.code || 'RECORD_FAILED')
+    return res.status(503).json({ message: 'Não foi possível registrar o uso agora.' })
+  }
+})
+
+router.get('/:id/uso', authMiddleware, isAdminOrDono, async (req, res) => {
+  res.set('Cache-Control', 'private, no-store')
+  const id = Number(req.params.id)
+  if (!/^\d+$/.test(req.params.id) || id < 1 || id > 2147483647) {
+    return res.status(400).json({ message: 'Conta inválida.' })
+  }
+  try {
+    const report = await accountUsage.report(id, req.usuario.tipo)
+    if (!report) return res.status(404).json({ message: 'Acompanhamento indisponível para esta conta.' })
+    return res.json(report)
+  } catch (error) {
+    console.error('[USO DA CONTA]', error.code || 'REPORT_FAILED')
+    return res.status(503).json({ message: 'Não foi possível consultar o acompanhamento agora.' })
+  }
+})
 
 /**
  * Upload foto perfil

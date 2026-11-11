@@ -67,9 +67,22 @@ function Preparation({ data, mutate, busy }) {
     <div className="guided-actions"><Link to={location.pathname}>Voltar à lista</Link><button onClick={() => setConfirm(v => !v)}>Excluir preparação</button>{confirm && <button disabled={busy} onClick={() => mutate({ action: 'delete' })}>Confirmar exclusão do plano (não exclui outros registros)</button>}</div>
   </section>
 }
-function EvidenceForm({ onSave, busy, mode }) {
+function EvidenceForm(props) {
+  const { mode, busy } = props
+  const [resumeLegacy, setResumeLegacy] = useState(false)
+  const legacy = mode && !resumeLegacy && readJournalDraft(scopedCacheKey('guided-new-evidence'))
+  const name = mode && !resumeLegacy ? `new-evidence-${mode}` : 'new-evidence'
+
+  return <>
+    {legacy && legacy.mode === mode && <button type="button" disabled={busy} onClick={() => setResumeLegacy(true)}>Continuar rascunho anterior{legacy.title ? ` · ${legacy.title}` : ''}</button>}
+    {resumeLegacy && <button type="button" disabled={busy} onClick={() => setResumeLegacy(false)}>Voltar ao rascunho desta intenção</button>}
+    <EvidenceEditor key={name} {...props} name={name}/>
+  </>
+}
+
+function EvidenceEditor({ onSave, busy, mode, name }) {
   const location = useLocation()
-  const [draft, update, clear, safe] = useDraft(mode ? `new-evidence-${mode}` : 'new-evidence', { key: window.crypto.randomUUID(), title: location.state?.tema || '', preparation: location.state?.preparation || null, mode: 'explicar', prompt: location.state?.prompt || (mode && mode !== 'explicar' ? '' : prompts.explicar), initialText: location.state?.initialText || '' })
+  const [draft, update, clear, safe] = useDraft(name, { key: window.crypto.randomUUID(), title: location.state?.tema || '', preparation: location.state?.preparation || null, mode: 'explicar', prompt: location.state?.prompt || (mode && mode !== 'explicar' ? '' : prompts.explicar), initialText: location.state?.initialText || '' })
   const activeMode = mode || draft.mode
   const explain = activeMode === 'explicar'
   const challenge = activeMode === 'aplicar'

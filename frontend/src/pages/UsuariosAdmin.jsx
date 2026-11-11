@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import useDialogFocus from '../hooks/useDialogFocus'
 import usuarioService from '../services/usuarioService'
+import AccountUsagePanel from '../components/AccountUsagePanel'
 import { useAuth } from '../context/AuthContext'
 import { toast } from 'react-hot-toast'
 import './UsuariosAdmin.css'
@@ -36,8 +37,13 @@ export default function UsuariosAdmin() {
   const [busca, setBusca] = useState('')
   const [tipoFiltro, setTipoFiltro] = useState('')
   const [managingId,setManagingId]=useState(null)
+  const [usageAccount, setUsageAccount] = useState(null)
+  const usageButton = useRef(null)
   const [paginaAtual, setPaginaAtual] = useState(1)
-  useEffect(()=>{setManagingId(null)},[busca,tipoFiltro,paginaAtual])
+  useEffect(()=>{
+    setManagingId(null)
+    setUsageAccount(null)
+  },[busca,tipoFiltro,paginaAtual])
   const [totalPaginas, setTotalPaginas] = useState(1)
   const [totalRegistros, setTotalRegistros] = useState(0)
   const [stats, setStats] = useState({ total: 0, ativos: 0, alunos: 0, admins: 0 })
@@ -310,6 +316,12 @@ export default function UsuariosAdmin() {
         {(busca || tipoFiltro) && <div className="users-filter-summary"><span>Filtros ativos{tipoFiltro ? ' · '+(tipoLabel[tipoFiltro]||tipoFiltro) : ''}</span><button type="button" onClick={()=>{atualizarBusca('');atualizarTipoFiltro('')}}>Limpar filtros</button></div>}
         {listError&&<p className="users-list-error" role="alert">{listError} <button type="button" onClick={carregarUsuarios}>Tentar novamente</button></p>}
         {loaded&&loading&&<p className="users-updating" role="status">Atualizando pessoas…</p>}
+        {usageAccount && (isDono || usuarios.some(item => getId(item) === usageAccount.id && item.tipo === 'aluno')) &&
+          <AccountUsagePanel key={usageAccount.id} {...usageAccount} onClose={() => {
+            setUsageAccount(null)
+            usageButton.current?.focus()
+          }}/>
+        }
         <section className="users-table-shell bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="users-directory" aria-busy={loading}>
@@ -386,6 +398,16 @@ export default function UsuariosAdmin() {
                             Definir senha
                           </button>
                         </div></details>
+                        {(isDono || usuario.tipo === 'aluno') &&
+                          <button type="button" className="users-usage-button"
+                            aria-label={`Ver acompanhamento de ${usuario.nome || usuario.email}`}
+                            aria-expanded={usageAccount?.id === id}
+                            onClick={event => {
+                              usageButton.current = event.currentTarget
+                              setUsageAccount({ id, name: usuario.nome || usuario.email })
+                            }}
+                          >Ver acompanhamento</button>
+                        }
                       </td>
                     </tr>
                   )

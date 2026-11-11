@@ -1,0 +1,59 @@
+.account-usage {
+  display: grid;
+  gap: 1.25rem;
+  margin: 1rem 0;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 1px solid rgb(var(--pn-primaria-borda-rgb) / .45);
+  border-radius: 1rem;
+  background: rgb(var(--pn-superficie-alt-rgb) / 1);
+  color: rgb(var(--pn-texto-rgb) / 1);
+}
+
+.account-usage header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.account-usage h2 { font-size: 1.35rem; font-weight: 800; }
+.account-usage h3, .account-usage figcaption { font-weight: 750; }
+.account-usage small, .account-usage-axis { font-size: .85rem; }
+.account-usage button, .users-usage-button {
+  padding: .45rem .75rem;
+  border: 1px solid rgb(var(--pn-primaria-borda-rgb) / .6);
+  border-radius: .6rem;
+  font-weight: 700;
+}
+.users-usage-button { margin-top: .5rem; }
+.account-usage button:hover, .users-usage-button:hover {
+  background: rgb(var(--pn-primaria-borda-rgb) / .17);
+}
+.account-usage-total { display: grid; gap: .2rem; }
+.account-usage-total > strong { font-size: clamp(1.2rem, 3vw, 1.8rem); }
+.account-usage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: .75rem;
+  margin-top: .5rem;
+}
+.account-usage-trend, .account-usage-list {
+  min-width: 0;
+  padding: .85rem;
+  border: 1px solid rgb(var(--pn-primaria-borda-rgb) / .3);
+  border-radius: .75rem;
+}
+.account-usage-trend canvas { display: block; width: 100%; height: auto; }
+.account-usage-axis { display: flex; justify-content: space-between; gap: .2rem; }
+.account-usage details { margin-top: .75rem; }
+.account-usage summary { cursor: pointer; font-weight: 700; }
+.account-usage table { margin-top: .5rem; width: 100%; text-align: left; }
+.account-usage table :is(th, td) { padding: .35rem .3rem; }
+.account-usage-list li {
+  display: grid;
+  padding: .4rem 0;
+  border-bottom: 1px solid rgb(var(--pn-primaria-borda-rgb) / .25);
+  overflow-wrap: anywhere;
+}
+.account-usage-list h3 span { margin-left: .25rem; font-variant-numeric: tabular-nums; }

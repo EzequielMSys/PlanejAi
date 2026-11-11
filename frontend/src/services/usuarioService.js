@@ -12,6 +12,11 @@ function extrairMensagem(error, fallback = 'Erro na operação.') {
 }
 
 const usuarioService = {
+  async acompanhamento(id, signal) {
+    const response = await api.get(`/${id}/uso`, { signal, cache: false })
+    return response.data
+  },
+
   async listar({ page = 1, limit = 10, search = '', tipo = '' } = {}) {
     const response = await api.get('/', {
       params: { page, limit, search: search || undefined, tipo: tipo || undefined }

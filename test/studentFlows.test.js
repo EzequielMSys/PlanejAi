@@ -234,10 +234,11 @@ async function fixture(config) {
   }
   if(url.endsWith('/busca/conteudos/9')) return {id_conteudo:9,titulo:'Leis de Newton',disciplina:'Física',materiais:'[]',link:''};
   if(searchMode && url.endsWith('/redacao') && config.method==='get') return [{id_redacao:81,tema:'Educação no Brasil',texto:'Um texto de teste.',enviada_em:'2026-10-24',id_usuario:900001}];
+    if ((failScheduleLoad && url.endsWith('/cronograma')) || (failExamLoad && url.endsWith(failExamLoad))) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
   if(examFlow && url.endsWith('/inteligencia/catalogo-provas'))return [{id_catalogo:1,instituicao:'Treino',titulo:'Coleção de teste',questoes_disponiveis:2,questoes_faceis:2}];
   if(examFlow && url.endsWith('/inteligencia/simulados'))return config.method==='post'?(examFlow==='invalid'?{}:{...examSession,respostas:{}}):[{id_simulado:71,instituicao:'Treino',titulo:'Coleção de teste',status:'EM_ANDAMENTO'}];
   if(examFlow && url.endsWith('/inteligencia/simulados/71'))return examSession;
-    if ((failScheduleLoad && url.endsWith('/cronograma')) || (failExamLoad && url.endsWith('/inteligencia/catalogo-provas'))) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
+
   if (essayMode === 'workshopFailure' && config.method === 'post' && url.endsWith('/redacao/projetos')) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
   if (failLearningLoad && url.endsWith('/aprendizagem/resumo')) throw new axios.AxiosError('unavailable', 'ERR_BAD_RESPONSE', config, null, { status: 503, data: {} });
   if (url.endsWith('/redacao') && config.method === 'post') {
@@ -298,6 +299,17 @@ async function fixture(config) {
   if(studentListFailure && url.endsWith(studentListFailure.path)){if(studentListFailure.invalid)return {};throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:studentListFailure.status||503,data:{}})}
   if(studentActivityFixture&&url.endsWith('/atividade'))return studentActivityFixture;
   if (url.endsWith('/usuarios/me')) return person('aluno');
+  if (url.endsWith('/usuarios/900001/uso')) return {
+    segundos: 3690,
+    inicio: '2026-11-01',
+    entregues: { total: 1, itens: [{ id_atividade: 1, titulo: 'Equações', data: '2026-11-03' }] },
+    pendentes: { total: 1, itens: [{ id_atividade: 2, titulo: 'Geometria', data: null }] },
+    meses: Array.from({ length: 12 }, (_, index) => ({
+      mes: new Date(Date.UTC(2025, index + 11, 1)).toISOString().slice(0, 7),
+      segundos: index === 11 ? 3690 : null,
+      entregues: index === 11 ? 1 : 0
+    }))
+  };
   if (url.endsWith('/usuarios')) return { usuarios: [directoryOtherAccount?{...person('aluno'),id:900002,id_usuario:900002}:person('aluno'),...(directorySecondAccount?[{...person('aluno'),id:900003,id_usuario:900003,nome:'Outra pessoa'}]:[])], pagina: 1, total_registros: 17, total_paginas: 2, stats: { total: 17, ativos: 15, inativos: 2, donos: 1, admins: 2, docentes: 3, alunos: 11 } };
   if (url.endsWith('/dashboard/estatisticas')) return { totalUsuarios: 17, totalAtividadesPublicadas: 0, totalEntregas: 0, totalCronogramasAtivos: 0 };
   if (url.endsWith('/colaborativo/gestao/alertas')) return [{ id_usuario: 31, nome: 'Aluno de teste', motivos: ['Revisões atrasadas'] }];
@@ -632,6 +644,20 @@ test('entendimento permite quatro formas e guarda versões sem apagar a anterior
     assert.equal(requests.filter(r=>r.url.endsWith('/lumi')&&r.method==='post').length,0);
     assert.ok(screen.container.textContent.includes('Nenhum outro registro da conta é consultado.'));
   }finally{guidedWriteFailure=false;await screen.close();guidedRecords=[];}
+});
+
+test('retoma rascunho anterior na intenção correspondente e preserva o rascunho novo', async () => {
+  const screen = await renderRoute('/meu-entendimento');
+  try {
+    await act(async () => button('Outras formas de tentativa').click());
+    await inputValue(personalControl('Assunto'), 'Rascunho anterior');
+    await act(async () => document.querySelector('.understanding-intents button').click());
+    await inputValue(personalControl('Assunto'), 'Rascunho novo');
+    await act(async () => button('Continuar rascunho anterior · Rascunho anterior').click());
+    assert.equal(personalControl('Assunto').value, 'Rascunho anterior');
+    await act(async () => button('Voltar ao rascunho desta intenção').click());
+    assert.equal(personalControl('Assunto').value, 'Rascunho novo');
+  } finally { await screen.close(); }
 });
 
 test('today highlights the pending lesson and saves a routine adjustment only after confirmation', async () => {
@@ -1064,6 +1090,27 @@ test('a student cannot open management pages through a direct URL', async () => 
     assert.ok(screen.container.textContent.includes('Bom dia') || screen.container.textContent.includes('Boa tarde') || screen.container.textContent.includes('Boa noite'));
   } finally { await screen.close(); }
 });
+test('diretório abre acompanhamento, mostra os dados e devolve o foco à conta', async () => {
+  const screen = await renderRoute('/usuarios', 'dono');
+  try {
+    const trigger = document.querySelector('.users-usage-button');
+    assert.ok(trigger);
+    assert.ok(!requests.some(request => request.url.endsWith('/uso')));
+    await act(async () => trigger.click());
+    await flush();
+    const panel = document.querySelector('#account-usage');
+    assert.equal(document.activeElement.id, 'account-usage-heading');
+    assert.match(panel.textContent, /1 hora, 1 minuto, 30 segundos/);
+    assert.match(panel.textContent, /Equações/);
+    assert.match(panel.textContent, /Geometria/);
+    assert.equal(panel.querySelectorAll('tbody tr').length, 12);
+    assert.ok(requests.some(request => request.url.endsWith('/usuarios/900001/uso')));
+    await act(async () => button('Fechar acompanhamento').click());
+    assert.equal(document.activeElement, trigger);
+    assert.ok(!document.querySelector('#account-usage'));
+  } finally { await screen.close(); }
+});
+
 test('owner counters use totals instead of the paginated user slice', async () => {
   const screen = await renderRoute('/dono', 'dono');
   try { assert.ok(screen.container.textContent.includes('17')); assert.ok(screen.container.textContent.includes('15')); }
@@ -1096,13 +1143,29 @@ test('a schedule load failure cannot pretend the saved plan is empty and offers 
 });
 
 test('a failed exam history is an error rather than an empty history', async () => {
-  failExamLoad = true;
+  examFlow = 'ready';
+  failExamLoad = '/inteligencia/simulados';
   const screen = await renderRoute('/provas');
   try {
-    assert.ok(document.querySelector('.recovery-state'));
-    assert.ok(screen.container.textContent.includes('suas tentativas não puderam ser carregados'));
+    assert.ok(document.querySelector('.exam-builder'));
+    await act(async () => button('Minhas tentativas').click());
+    assert.match(document.querySelector('.recovery-state').textContent, /Não foi possível carregar suas tentativas/);
     assert.ok(button('Tentar novamente'));
-  } finally { failExamLoad=false;await screen.close(); }
+    failExamLoad = false;
+    await act(async () => document.querySelector('.recovery-state button').click());
+    await flush();
+    assert.ok(!document.querySelector('.recovery-state'), document.querySelector('.recovery-state')?.textContent);
+    assert.ok(button('Minhas tentativas'));
+  } finally { failExamLoad=false;examFlow='';await screen.close(); }
+
+  failExamLoad = '/inteligencia/catalogo-provas';
+  const catalogFailure = await renderRoute('/provas');
+  try {
+    assert.match(document.querySelector('.recovery-state').textContent, /Não foi possível carregar as coleções/);
+    await act(async () => button('Por disciplina e assunto · Lumi').click());
+    assert.ok(personalControl('Ano escolar'));
+    assert.ok(!document.querySelector('.recovery-state'), document.querySelector('.recovery-state')?.textContent);
+  } finally { failExamLoad=false;await catalogFailure.close(); }
 });
 
 test('today does not report zero progress or reviews up to date when the summary fails',async()=>{
