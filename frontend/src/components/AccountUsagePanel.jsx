@@ -100,6 +100,8 @@ export default function AccountUsagePanel({ id, name, onClose }) {
   const daily = period === 'dias' && Boolean(report?.dias?.length)
   const series = daily ? report.dias : report?.meses
   const unit = daily ? 'dia' : 'mês'
+  const measured = series?.some(item => item.segundos !== null)
+  const secondsInPeriod = series?.reduce((total, item) => total + (item.segundos ?? 0), 0)
   const heading = useRef(null)
 
   useEffect(() => {
@@ -126,8 +128,9 @@ export default function AccountUsagePanel({ id, name, onClose }) {
     {report && <>
       <div className="account-usage-total">
         <h3>Tempo ativo estimado</h3>
-        <strong>{report.inicio ? duration(report.segundos) : 'Sem tempo registrado'}</strong>
-        {report.inicio && <small>Primeiro registro em {shortDate(report.inicio)}. Meses e anos equivalem a 30 e 365 dias.</small>}
+        <strong>{measured ? `${duration(secondsInPeriod)} no período` : 'Sem histórico de medição no período'}</strong>
+        {report.medicao_desde && <small>Medição disponível desde {shortDate(report.medicao_desde)}.</small>}
+        {report.inicio && <small>Primeiro registro da conta em {shortDate(report.inicio)}. Total acumulado de {duration(report.segundos)}.</small>}
         <p>A medição começa após o login. Conta intervalos de 15 segundos com a aba em foco e pausa após 1 minuto sem interação.</p>
       </div>
       <section aria-labelledby="account-usage-months">

@@ -302,6 +302,7 @@ async function fixture(config) {
   if (url.endsWith('/usuarios/900001/uso')) return {
     segundos: 3690,
     inicio: '2026-11-01',
+    medicao_desde: '2026-11-01',
     entregues: { total: 1, itens: [{ id_atividade: 1, titulo: 'Equações', data: '2026-11-03' }] },
     pendentes: { total: 1, itens: [{ id_atividade: 2, titulo: 'Geometria', data: null }] },
     dias: [{ dia: '2026-11-01', segundos: 3690, entregues: 1 }],

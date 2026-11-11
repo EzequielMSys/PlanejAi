@@ -58,7 +58,9 @@ async function report(id, requester, now = new Date(), db = pool) {
   const [year, month] = months.at(-1).split('-').map(Number)
   const to = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10)
   const [totals, usage, completed, pending, dailyUsage, dailyDeliveries] = await Promise.all([
-    executeUsage(db, "SELECT SUM(segundos) AS total, DATE_FORMAT(MIN(dia), '%Y-%m-%d') AS inicio FROM uso_diario_conta WHERE id_usuario = ?", [id]),
+    executeUsage(db, `SELECT SUM(segundos) AS total, DATE_FORMAT(MIN(dia), '%Y-%m-%d') AS inicio,
+      (SELECT DATE_FORMAT(MIN(dia), '%Y-%m-%d') FROM uso_diario_conta) AS medicao_desde
+      FROM uso_diario_conta WHERE id_usuario = ?`, [id]),
     executeUsage(db, "SELECT DATE_FORMAT(dia, '%Y-%m') AS mes, SUM(segundos) AS segundos FROM uso_diario_conta WHERE id_usuario = ? AND dia >= ? AND dia < ? GROUP BY mes", [id, from, to]),
     db.execute(`SELECT d.id_atividade, a.titulo, DATE_FORMAT(d.entregue_em, '%Y-%m-%d') AS data,
        COUNT(*) OVER () AS total
@@ -87,27 +89,28 @@ async function report(id, requester, now = new Date(), db = pool) {
   const [monthlyDeliveries] = await db.execute(`
     SELECT DATE_FORMAT(entregue_em, '%Y-%m') AS mes, COUNT(*) AS entregues
     FROM (${deliveries}) d WHERE entregue_em >= ? AND entregue_em < ? GROUP BY mes`, [id, from, to])
-  const [{ total, inicio }] = totals[0]
+  const [{ total, inicio, medicao_desde }] = totals[0]
   const summarize = rows => ({
     total: Number(rows[0]?.total || 0),
     itens: rows.map(({ id_atividade, titulo, data }) => ({ id_atividade, titulo, data }))
   })
   return {
-    segundos: Number(total || 0),
+    segundos: medicao_desde ? Number(total || 0) : null,
     inicio,
+    medicao_desde,
     entregues: summarize(completed[0]),
     pendentes: account.tipo === 'aluno' ? summarize(pending[0]) : null,
     dias: Array.from({ length: Number(today.slice(-2)) }, (_, index) => {
       const dia = today.slice(0, 8) + String(index + 1).padStart(2, '0')
       return {
         dia,
-        segundos: inicio && dia >= inicio ? Number(dailyUsage[0].find(row => row.dia === dia)?.segundos || 0) : null,
+        segundos: medicao_desde && dia >= medicao_desde ? Number(dailyUsage[0].find(row => row.dia === dia)?.segundos || 0) : null,
         entregues: Number(dailyDeliveries[0].find(row => row.dia === dia)?.entregues || 0)
       }
     }),
     meses: months.map(mes => ({
       mes,
-      segundos: inicio && mes >= inicio.slice(0, 7) ? Number(usage[0].find(row => row.mes === mes)?.segundos || 0) : null,
+      segundos: medicao_desde && mes >= medicao_desde.slice(0, 7) ? Number(usage[0].find(row => row.mes === mes)?.segundos || 0) : null,
       entregues: Number(monthlyDeliveries.find(row => row.mes === mes)?.entregues || 0)
     }))
   }

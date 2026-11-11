@@ -43,7 +43,7 @@ test('report includes existing deliveries and distinguishes months before tracki
     async execute(sql, params) {
       queries.push({ sql, params })
       if (sql.includes('SELECT tipo')) return [[{ tipo: 'aluno' }]]
-      if (sql.includes('MIN(dia)')) return [[{ total: '90', inicio: '2026-10-01' }]]
+      if (sql.includes('MIN(dia)')) return [[{ total: '90', inicio: '2026-10-15', medicao_desde: '2026-10-01' }]]
       if (sql.includes('SUM(segundos)')) return [[{ mes: '2026-10', segundos: '90' }]]
       if (sql.includes('GROUP BY dia')) return [[{ dia: '2026-11-11', entregues: '2' }]]
       if (sql.includes('FROM uso_diario_conta')) return [[]]
@@ -55,6 +55,8 @@ test('report includes existing deliveries and distinguishes months before tracki
   const data = await report(7, 'admin', new Date('2026-11-11T18:00:00Z'), db)
 
   assert.equal(data.segundos, 90)
+  assert.equal(data.medicao_desde, '2026-10-01')
+  assert.equal(data.inicio, '2026-10-15')
   assert.equal(data.entregues.total, 1)
   assert.equal(data.pendentes.total, 21)
   assert.equal(data.dias.length, 11)
