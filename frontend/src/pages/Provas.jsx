@@ -27,7 +27,7 @@ export default function Provas() {
     {!emProva && <AreaSignature area="exams"/>}
     {!emProva && <header className="exam-studio-hero">
       <div className="exam-studio-nav"><span>PLANEJAI / PROVAS E SIMULADOS</span><button type="button" onClick={() => navigate('/ferramentas-estudo')}>Metas e ferramentas <span aria-hidden="true">↗</span></button></div>
-      <div className="exam-studio-heading"><div><h1>Seu próximo treino,<br /><em>uma questão por vez.</em></h1><p>Monte um simulado, retome uma tentativa ou consulte provas anteriores.</p>{area === 'criar' && <SectionLink target="laboratorio-provas">Ir à configuração <span aria-hidden="true">→</span></SectionLink>}</div></div>
+      <div className="exam-studio-heading"><div><h1>Seu próximo treino,<br /><em>uma questão por vez.</em></h1><p>Monte uma sessão de prova, retome uma tentativa ou consulte acervos oficiais.</p>{area === 'criar' && <SectionLink target="laboratorio-provas">Ir à configuração <span aria-hidden="true">→</span></SectionLink>}</div></div>
     </header>}
     {!emProva && <nav className="exam-segments" aria-label="Áreas de Provas e Simulados">
       {[['criar','Criar simulado'],['tentativas','Minhas tentativas'],['oficiais','Provas oficiais']].map(([id,label]) => <button key={id} type="button" aria-pressed={area === id} onClick={() => setArea(id)}>{label}</button>)}

@@ -33,6 +33,7 @@ export default function MyUnderstanding(){
   return <main className="personal-study understanding-page pj-page"><div className="pj-wrap">
     <AreaSignature area="understanding"/>
     <header className="personal-heading">
+      <Link to="/aprendizagem" className="understanding-back">← Praticar e revisar</Link>
       <h1>Meu entendimento.</h1>
       <p>Explore suas ideias, coloque seu conhecimento em prática e descubra como seu entendimento evolui.</p>
     </header>

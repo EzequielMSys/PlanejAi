@@ -1395,8 +1395,8 @@ test('daily panel explains a practice recommendation using recorded attempts', a
     assert.ok(button('Planejar com a Lumi'));
     await act(async () => button('Praticar agora →').click());
     await flush();
-    assert.ok(screen.container.textContent.includes('Simulado sob medida'));
-    assert.equal(document.querySelector('.learning-tabs button[aria-pressed="true"]')?.textContent.trim(), 'Simulado');
+    assert.ok(screen.container.textContent.includes('Questões no seu ritmo'));
+    assert.equal(document.querySelector('.learning-tabs button[aria-pressed="true"]')?.textContent.trim(), 'Questões rápidas');
     assert.equal([...document.querySelectorAll('select')].find(node => node.parentElement?.textContent.includes('Disciplina'))?.value, 'Matemática');
   } finally { await screen.close(); dashboardLearningFixture = null; }
 });
@@ -1409,9 +1409,24 @@ test('learning progress shows supported improvement and opens practice in the se
     assert.ok(screen.container.textContent.includes('Mais acertos em Biologia'));
     assert.ok(screen.container.textContent.includes('4 respostas nos últimos 30 dias'));
     await act(async () => button('Praticar Física →').click());
-    assert.equal(document.querySelector('.learning-tabs button[aria-pressed="true"]').textContent, 'Simulado');
+    assert.equal(document.querySelector('.learning-tabs button[aria-pressed="true"]').textContent, 'Questões rápidas');
     assert.equal([...document.querySelectorAll('select')].find(node => node.parentElement?.textContent.includes('Disciplina'))?.value, 'Física');
   } finally { await screen.close(); dashboardLearningFixture = null; evolutionFixture = []; }
+});
+
+test('entendimento fica dentro de Praticar e revisar sem perder sua rota', async () => {
+  const screen = await renderRoute('/aprendizagem');
+  try {
+    assert.equal(document.querySelector('.sd-navigation a[href="/meu-entendimento"]'), null);
+    assert.ok(document.querySelector('.sd-navigation a[href="/provas"]'));
+    await act(async () => document.querySelector('a[href="/meu-entendimento"]').click());
+    await flush();
+    assert.ok(document.querySelector('.understanding-page'));
+    assert.equal(document.querySelector('.sd-navigation a[aria-current="page"]')?.textContent, 'Praticar e revisar');
+    await act(async () => document.querySelector('.understanding-back').click());
+    await flush();
+    assert.ok(document.querySelector('.learning-page'));
+  } finally { await screen.close(); }
 });
 
 test('main routes expose labels and landmarks to assistive technology', async () => {
@@ -2839,17 +2854,17 @@ test('conversa livre da Lumi preserva o rascunho e reinicia sem enviar históric
 test('simulado tem montagem única, confirmação visível, foco e resultado com a última resposta', async () => {
   const screen=await renderRoute('/aprendizagem');
   try{
-    await act(async()=>button('Simulado').click());
+    await act(async()=>button('Questões rápidas').click());
     assert.equal(document.querySelector('.learning-hero'),null);
     assert.equal(document.activeElement,document.querySelector('.learning-workspace'));
     practiceMode='deferred';
-    const start=button('Montar meu simulado');
+    const start=button('Preparar questões');
     await act(async()=>{start.click();start.click()});await flush();
-    assert.ok(button('Montando seu simulado…').disabled);
+    assert.ok(button('Preparando questões…').disabled);
     assert.equal(requests.filter(r=>r.url.endsWith('/aprendizagem/simulado')).length,1);
     assert.equal(requests.find(r=>r.url.endsWith('/aprendizagem/simulado')).cache,false);
     await act(async()=>resolvePractice());await flush();
-    assert.ok(screen.container.textContent.includes('Seu simuladoestá pronto.'));
+    assert.ok(screen.container.textContent.includes('Sua práticaestá pronta.'));
     assert.ok(screen.container.textContent.includes('Encontramos 2 das 10'));
     assert.equal(document.querySelector('.practice-clock'),null);
     await act(async()=>button('Começar a primeira questão').click());
@@ -2877,14 +2892,14 @@ test('simulado tem montagem única, confirmação visível, foco e resultado com
 test('simulado preserva filtros na falha e ao ajustar uma montagem pronta', async () => {
   const screen=await renderRoute('/aprendizagem');
   try{
-    await act(async()=>button('Simulado').click());
+    await act(async()=>button('Questões rápidas').click());
     const discipline=personalControl('Disciplina');await selectValue(discipline,'Física');
-    practiceMode='failed';await act(async()=>button('Montar meu simulado').click());await flush();
+    practiceMode='failed';await act(async()=>button('Preparar questões').click());await flush();
     assert.ok(document.querySelector('.practice-error').textContent.includes('demorou'));
     assert.equal(personalControl('Disciplina').value,'Física');
-    practiceMode='empty';await act(async()=>button('Montar meu simulado').click());await flush();
+    practiceMode='empty';await act(async()=>button('Preparar questões').click());await flush();
     assert.ok(document.querySelector('.practice-error').textContent.includes('Não há questões'));
-    practiceMode='';await act(async()=>button('Montar meu simulado').click());await flush();
+    practiceMode='';await act(async()=>button('Preparar questões').click());await flush();
     await act(async()=>button('Ajustar seleção').click());
     assert.equal(personalControl('Disciplina').value,'Física');
     const result=await axe.run(document.querySelector('.practice-studio'),{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(v=>v.id),[]);
@@ -2894,8 +2909,8 @@ test('simulado preserva filtros na falha e ao ajustar uma montagem pronta', asyn
 test('falha no envio mantém alternativa e resultado offline não é contado como erro', async () => {
   const screen=await renderRoute('/aprendizagem');
   try{
-    await act(async()=>button('Simulado').click());
-    await act(async()=>button('Montar meu simulado').click());await flush();
+    await act(async()=>button('Questões rápidas').click());
+    await act(async()=>button('Preparar questões').click());await flush();
     await act(async()=>button('Começar a primeira questão').click());
     await act(async()=>document.querySelector('.practice-alternatives input').click());
     practiceMode='answer-failed';await act(async()=>button('Conferir minha resposta').click());await flush();
@@ -2916,8 +2931,8 @@ test('tempo encerrado mostra fechamento parcial sem penalizar questões não res
   const screen=await renderRoute('/aprendizagem');
   const realNow=Date.now;
   try{
-    await act(async()=>button('Simulado').click());
-    await act(async()=>button('Montar meu simulado').click());await flush();
+    await act(async()=>button('Questões rápidas').click());
+    await act(async()=>button('Preparar questões').click());await flush();
     await act(async()=>button('Começar a primeira questão').click());
     const now=realNow();Date.now=()=>now+16*60000;
     await act(async()=>new Promise(resolve=>setTimeout(resolve,1100)));
