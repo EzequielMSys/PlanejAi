@@ -43,7 +43,7 @@ export default function TodayDashboard() {
   useEffect(() => {
     setPriority(null)
     if (user?.tipo !== 'aluno') return
-    const request = new AbortController()
+    const request = new window.AbortController()
     atividadeService.prioritaria(request.signal).then(activity => {
       if (!request.signal.aborted) setPriority(activity)
     }).catch(() => {})

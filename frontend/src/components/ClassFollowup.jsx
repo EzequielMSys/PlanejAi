@@ -16,7 +16,7 @@ export default function ClassFollowup({ turma, fullAccess }) {
   const [selected, setSelected] = useState(null)
 
   useEffect(() => {
-    const request = new AbortController()
+    const request = new window.AbortController()
     service.acompanhamento(turma.id_turma, request.signal).then(result => {
       if (!request.signal.aborted) setData(result)
     }).catch(() => {

@@ -12,7 +12,7 @@ export default function AccountUsageTracker() {
 
   useEffect(() => {
     if (!token || !id) return
-    const abort = new AbortController()
+    const abort = new window.AbortController()
     const foreground = () => localStorage.getItem('token') === token
       && document.visibilityState === 'visible' && document.hasFocus()
     let lastInteraction = -Infinity
@@ -42,7 +42,7 @@ export default function AccountUsageTracker() {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
-          signal: AbortSignal.any([abort.signal, AbortSignal.timeout(10_000)])
+          signal: window.AbortSignal.any([abort.signal, window.AbortSignal.timeout(10_000)])
         })
       } catch {
         // A conexão pode voltar durante um próximo intervalo ativo.
