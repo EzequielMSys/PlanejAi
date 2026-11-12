@@ -161,7 +161,7 @@ async function buscarPorId(id) {
   return rows[0] || null
 }
 
-async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '', acompanhamento = '', requester = '' } = {}) {
+async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '', status = '', acompanhamento = '', requester = '' } = {}) {
   const safePage = Number.isSafeInteger(Number(page)) && Number(page) > 0 ? Math.min(Number(page), 1000000) : 1
   const safeLimit = Number.isSafeInteger(Number(limit)) && Number(limit) > 0 ? Math.min(Number(limit), 100) : 10
   const offset = (safePage - 1) * safeLimit
@@ -176,6 +176,10 @@ async function listarUsuarios({ page = 1, limit = 10, search = '', tipo = '', ac
   if (['dono', 'admin', 'docente', 'aluno'].includes(tipo)) {
     where.push('tipo = ?')
     values.push(tipo)
+  }
+  if (status === 'ativo' || status === 'inativo') {
+    where.push('ativo = ?')
+    values.push(status === 'ativo' ? 1 : 0)
   }
   if (acompanhamento === 'atrasadas') {
     where.push(`tipo = 'aluno' AND EXISTS (

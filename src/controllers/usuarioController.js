@@ -39,6 +39,7 @@ async function listar(req, res) {
       search: req.query.search,
       tipo: req.query.tipo,
       acompanhamento: req.query.acompanhamento,
+      status: req.query.status,
       requester: req.usuario.tipo
     })
 

@@ -49,7 +49,7 @@ function Trend({ title, series, field, selectedPoint, onSelectPoint }) {
       ctx.lineTo(width - inset, y)
     }
     ctx.stroke()
-    ctx.strokeStyle = ctx.fillStyle = '#8272ed'
+    ctx.strokeStyle = ctx.fillStyle = window.getComputedStyle(element).getPropertyValue('--pn-primaria').trim() || '#8272ed'
     ctx.lineWidth = 4
     ctx.beginPath()
     let previous = false
@@ -110,7 +110,8 @@ export default function AccountUsagePanel({ id, name, onClose }) {
   const start = range.start || report?.dias?.[0]?.dia
   const end = range.end || history.at(-1)?.dia
   const series = !daily ? report?.meses : period === 'semana' ? history.slice(-7)
-    : period === 'personalizado' ? history.filter(item => item.dia >= start && item.dia <= end) : report.dias
+    : period === 'trinta' ? history.slice(-30)
+      : period === 'personalizado' ? history.filter(item => item.dia >= start && item.dia <= end) : report.dias
   const unit = daily ? 'dia' : 'mês'
   const measured = series?.some(item => item.segundos !== null)
   const secondsInPeriod = series?.reduce((total, item) => total + (item.segundos ?? 0), 0)
@@ -124,7 +125,7 @@ export default function AccountUsagePanel({ id, name, onClose }) {
   }, [])
 
   useEffect(() => {
-    const abort = new AbortController()
+    const abort = new window.AbortController()
     usuarioService.acompanhamento(id, abort.signal).then(data => {
       if (!abort.signal.aborted) setReport(data)
     }).catch(() => {
@@ -148,7 +149,7 @@ export default function AccountUsagePanel({ id, name, onClose }) {
         <strong>{measured ? `${duration(secondsInPeriod)} no período` : 'Sem histórico de medição no período'}</strong>
         {report.medicao_desde && <small>Medição disponível desde {shortDate(report.medicao_desde)}.</small>}
         {report.inicio && <small>Primeiro registro da conta em {shortDate(report.inicio)}. Total acumulado de {duration(report.segundos)}.</small>}
-        <p>A medição começa após o login. Conta intervalos de 15 segundos com a aba em foco e pausa após 1 minuto sem interação.</p>
+        <details><summary>Como o tempo ativo é calculado?</summary><p>A medição começa após o login. Conta intervalos de 15 segundos com a aba em foco e pausa após 1 minuto sem interação. É uma estimativa de atividade, não o tempo total de conexão.</p></details>
       </div>
       <div className="account-usage-list"><h2>Último registro</h2><p>{report.ultimo_registro ? dateTime.format(new Date(report.ultimo_registro)) : 'Sem registro nesta conta'}</p></div>
       <div className="account-usage-list"><h2>Entregues no período</h2><p>{deliveriesInPeriod}</p></div>
@@ -156,9 +157,10 @@ export default function AccountUsagePanel({ id, name, onClose }) {
       </div>
       <section aria-labelledby="account-usage-months">
         <h3 id="account-usage-months">Evolução do acompanhamento</h3>
-        <label>Período <select value={daily ? 'dias' : 'meses'} onChange={event => setPeriod(event.target.value)}>
+        <label>Período <select value={period} onChange={event => setPeriod(event.target.value)}>
           <option value="dias" disabled={!report.dias?.length}>Mês atual · dia a dia</option>
           <option value="semana" disabled={!history.length}>Últimos 7 dias</option>
+          <option value="trinta" disabled={!history.length}>Últimos 30 dias</option>
           <option value="meses">Últimos 12 meses</option>
           <option value="personalizado" disabled={!history.length}>Personalizado</option>
         </select></label>
@@ -169,10 +171,10 @@ export default function AccountUsagePanel({ id, name, onClose }) {
         {!series.length && <p role="status">Selecione um intervalo válido dentro dos últimos 12 meses.</p>}
         {series.length > 0 && <>
         <p>{daily ? shortDate(series[0].dia) : `01/${series[0].mes.slice(5)}/${series[0].mes.slice(0, 4)}`} a {report.hoje && !daily ? shortDate(report.hoje) : daily ? shortDate(series.at(-1).dia) : formatPeriod(series.at(-1))}</p>
-        <div className="account-usage-grid">
-          <Trend title={`Tempo ativo por ${unit}`} series={series} field="segundos" selectedPoint={selectedPoint} onSelectPoint={setSelectedPoint} />
-          <Trend title={`Atividades entregues por ${unit}`} series={series} field="entregues" selectedPoint={selectedPoint} onSelectPoint={setSelectedPoint} />
-        </div>
+        {measured || deliveriesInPeriod > 0 ? <div className="account-usage-grid">
+          {measured && <Trend title={`Tempo ativo por ${unit}`} series={series} field="segundos" selectedPoint={selectedPoint} onSelectPoint={setSelectedPoint} />}
+          {deliveriesInPeriod > 0 && <Trend title={`Atividades entregues por ${unit}`} series={series} field="entregues" selectedPoint={selectedPoint} onSelectPoint={setSelectedPoint} />}
+        </div> : <p className="account-usage-empty">Ainda não há atividade suficiente. Os gráficos aparecerão quando houver registros disponíveis para o período selecionado.</p>}
         <label>Consultar ponto <select value={point ? selectedPoint : ''} onChange={event => setSelectedPoint(event.target.value)}>
           <option value="">Selecione uma data</option>
           {series.map(item => <option key={periodKey(item)} value={periodKey(item)}>{formatPeriod(item)}</option>)}

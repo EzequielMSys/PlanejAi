@@ -36,8 +36,11 @@ export default function UsuariosAdmin() {
   const listRequest=useRef(0)
   const [busca, setBusca] = useState('')
   const [tipoFiltro, setTipoFiltro] = useState('')
+  const [statusFiltro, setStatusFiltro] = useState('')
   const [usageFilter, setUsageFilter] = useState('')
   const [managingId,setManagingId]=useState(null)
+  const manageButton = useRef(null)
+  const managePanel = useRef(null)
   const [usageAccount, setUsageAccount] = useState(null)
   const usageButton = useRef(null)
   const directory = useRef(null)
@@ -45,7 +48,7 @@ export default function UsuariosAdmin() {
   useEffect(()=>{
     setManagingId(null)
     setUsageAccount(null)
-  },[busca,tipoFiltro,usageFilter,paginaAtual])
+  },[busca,tipoFiltro,statusFiltro,usageFilter,paginaAtual])
   const [totalPaginas, setTotalPaginas] = useState(1)
   const [totalRegistros, setTotalRegistros] = useState(0)
   const [stats, setStats] = useState({ total: 0, ativos: 0, alunos: 0, admins: 0 })
@@ -71,6 +74,7 @@ export default function UsuariosAdmin() {
         limit: USUARIOS_POR_PAGINA,
         search: busca,
         tipo: tipoFiltro,
+        status: statusFiltro,
         acompanhamento: usageFilter
       })
       if(request!==listRequest.current)return
@@ -84,7 +88,10 @@ export default function UsuariosAdmin() {
     } finally {
       if(request===listRequest.current)setLoading(false)
     }
-  }, [paginaAtual, busca, tipoFiltro, usageFilter])
+  }, [paginaAtual, busca, tipoFiltro, statusFiltro, usageFilter])
+
+  useDialogFocus(managePanel, Boolean(managingId), () => setManagingId(null))
+  const managedUser = usuarios.find(item => getId(item) === managingId)
 
   useEffect(() => {
     const timer = setTimeout(carregarUsuarios, 250)
@@ -151,6 +158,7 @@ export default function UsuariosAdmin() {
     }
 
     const id = getId(usuario)
+    if (!window.confirm(`${Number(usuario.ativo) ? 'Desativar' : 'Ativar'} a conta de ${usuario.nome || usuario.email}?`)) return
     setAcaoLoading(`status-${id}`)
 
     try {
@@ -274,14 +282,13 @@ export default function UsuariosAdmin() {
         }}/>
       }
       <div ref={directory} hidden={Boolean(usageAccount && (isDono || usuarios.some(item => getId(item) === usageAccount.id && item.tipo === 'aluno')))} className="max-w-7xl mx-auto">
-        <header className="users-hero"><div><span className="users-kicker">PLANEJAI · GESTÃO DE ACESSOS</span><h1>Pessoas e acessos</h1><p>Encontre uma pessoa e gerencie seu acesso.</p></div><details className="users-permissions"><summary>Sobre as permissões</summary><p>{isDono?'Só o dono pode alterar perfis e ativar ou desativar contas.':'As ações disponíveis respeitam as permissões da sua conta.'}</p></details></header>
+        <header className="users-hero"><div><span className="users-kicker">PLANEJAI / GESTÃO DE ACESSOS</span><h1>Pessoas e acessos</h1><p>Gerencie contas, permissões e atividades em um só lugar.</p></div><details className="users-permissions"><summary>Sobre as permissões</summary><p>{isDono?'Só o dono pode alterar perfis e ativar ou desativar contas.':'As ações disponíveis respeitam as permissões da sua conta.'}</p></details></header>
 
-        {loaded && <details className="users-overview"><summary>Resumo das contas<span>Total, atividade e perfis</span></summary><section className="users-stats grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" aria-label="Resumo das contas">
-          <CardStat titulo="Total" valor={stats.total} />
-          <CardStat titulo="Ativos" valor={stats.ativos} />
-          <CardStat titulo="Alunos" valor={stats.alunos} />
-          <CardStat titulo="Admins" valor={stats.admins} />
-        </section></details>}
+        {loaded && <section className="users-overview" aria-label="Resumo das contas"><h2>Resumo das contas</h2><div className="users-stats">
+          <CardStat titulo="Total de contas" valor={stats.total} />
+          <CardStat titulo="Contas ativas" valor={stats.ativos} />
+          <CardStat titulo="Contas inativas" valor={stats.inativos} />
+        </div></section>}
 
         <section className="users-toolbar bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] p-5 sm:p-6 shadow-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] mb-6">
           <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
@@ -297,7 +304,7 @@ export default function UsuariosAdmin() {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="users-filter-grid">
               <label className="users-filter-label">Nome ou email<input
                 type="search"
                 value={busca}
@@ -319,19 +326,14 @@ export default function UsuariosAdmin() {
                 <option value="docente">Docente</option>
                 <option value="aluno">Aluno</option>
               </select></label>
+              <label className="users-filter-label">Status da conta<select value={statusFiltro} onChange={event => {setStatusFiltro(event.target.value);setPaginaAtual(1)}}><option value="">Todas</option><option value="ativo">Ativas</option><option value="inativo">Inativas</option></select></label>
+              <label className="users-filter-label">Acompanhamento<select value={usageFilter} onChange={event => { setUsageFilter(event.target.value); setPaginaAtual(1) }}><option value="">Todas as contas</option><option value="atrasadas">Com atividades atrasadas</option><option value="sem-uso">Sem uso registrado nos últimos 7 dias</option></select></label>
             </div>
           </div>
         </section>
 
-        <label className="users-filter-label">Acompanhamento
-          <select value={usageFilter} onChange={event => { setUsageFilter(event.target.value); setPaginaAtual(1) }}>
-            <option value="">Todas as contas</option>
-            <option value="atrasadas">Com atividades atrasadas</option>
-            <option value="sem-uso">Sem uso registrado nos últimos 7 dias</option>
-          </select>
-        </label>
         {usageFilter === 'sem-uso' && <p>Inclui contas ativas com cobertura de medição durante todo o período.</p>}
-        {(busca || tipoFiltro || usageFilter) && <div className="users-filter-summary"><span>Filtros ativos{tipoFiltro ? ' · '+(tipoLabel[tipoFiltro]||tipoFiltro) : ''}</span><button type="button" onClick={()=>{atualizarBusca('');atualizarTipoFiltro('');setUsageFilter('')}}>Limpar filtros</button></div>}
+        {(busca || tipoFiltro || statusFiltro || usageFilter) && <div className="users-filter-summary"><span>{totalRegistros} resultado(s) encontrado(s)</span><button type="button" onClick={()=>{atualizarBusca('');atualizarTipoFiltro('');setStatusFiltro('');setUsageFilter('')}}>Limpar filtros</button></div>}
         {listError&&<p className="users-list-error" role="alert">{listError} <button type="button" onClick={carregarUsuarios}>Tentar novamente</button></p>}
         {loaded&&loading&&<p className="users-updating" role="status">Atualizando pessoas…</p>}
         <section className="users-table-shell bg-[rgb(var(--pn-superficie-rgb)/1)] rounded-[2.5rem] shadow-2xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.2)] overflow-hidden">
@@ -371,55 +373,7 @@ export default function UsuariosAdmin() {
                       </td>
 
                       <td className="p-5" data-label="Ações">
-                        <details className="users-actions" open={managingId===id}><summary aria-label={'Gerenciar conta de '+(usuario.nome||usuario.email)} onClick={event=>{event.preventDefault();setManagingId(atual=>atual===id?null:id)}}>Gerenciar <span aria-hidden="true">⌄</span></summary><div><p className="users-action-person"><strong>{usuario.nome || usuario.email}</strong><small>As ações abaixo se aplicam a esta conta.</small></p>{isDono&&podeAlterar&&<label className="users-role-field">Perfil da conta
-                          <select
-                            aria-label={`Tipo de conta de ${usuario.nome || usuario.email}`}
-                            value={usuario.tipo}
-                            disabled={acaoLoading === `tipo-${id}`}
-                            onChange={(e) => alterarTipo(usuario, e.target.value)}
-                            className="users-role-select"
-                          >
-                            <option value="admin">Admin</option>
-                            <option value="docente">Docente</option>
-                            <option value="aluno">Aluno</option>
-                          </select></label>}
-                          <button
-                            type="button"
-                            disabled={!isDono || !podeAlterar || acaoLoading === `status-${id}`}
-                            onClick={() => alterarStatus(usuario)}
-                            className="pn-tool px-4 py-2 rounded-full bg-[rgb(var(--pn-superficie-alt-rgb)/1)] border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] text-sm font-bold disabled:opacity-40 hover:bg-[rgb(var(--pn-primaria-forte-rgb)/0.2)] transition"
-                          >
-                            {Number(usuario.ativo) ? 'Desativar' : 'Ativar'}
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={!podeAlterar || acaoLoading === `senha-${id}`}
-                            onClick={() => resetarSenha(usuario)}
-                            className="pn-command px-4 py-2 rounded-full bg-[rgb(var(--pn-primaria-forte-rgb)/1)] text-white text-sm font-bold disabled:opacity-40 hover:bg-black transition"
-                          >
-                            Resetar senha
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={!isDono || !podeAlterar}
-                            onClick={() => abrirModalSenha(usuario)}
-                            className="px-4 py-2 rounded-full bg-black text-white text-sm font-bold disabled:opacity-40 hover:bg-[rgb(var(--pn-primaria-forte-rgb)/1)] transition"
-                          >
-                            Definir senha
-                          </button>
-                        </div></details>
-                        {(isDono || usuario.tipo === 'aluno') &&
-                          <button type="button" className="users-usage-button"
-                            aria-label={`Ver acompanhamento de ${usuario.nome || usuario.email}`}
-                            aria-expanded={usageAccount?.id === id}
-                            onClick={event => {
-                              usageButton.current = event.currentTarget
-                              setUsageAccount({ id, name: usuario.nome || usuario.email })
-                            }}
-                          >Ver acompanhamento</button>
-                        }
+                        <button type="button" className="users-action-trigger" aria-label={`Gerenciar conta de ${usuario.nome || usuario.email}`} aria-haspopup="dialog" onClick={event => { manageButton.current = event.currentTarget; setManagingId(id) }}>•••</button>
                       </td>
                     </tr>
                   )
@@ -500,6 +454,17 @@ export default function UsuariosAdmin() {
           )}
         </section>
       </div>
+
+      {managedUser && <div className="users-drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) {setManagingId(null);manageButton.current?.focus()} }}>
+        <aside ref={managePanel} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="users-drawer-title" className="users-drawer">
+          <header><div><span className="users-kicker">GERENCIAMENTO DE CONTA</span><h2 id="users-drawer-title">{managedUser.nome || 'Sem nome'}</h2><p>{managedUser.email}</p></div><button type="button" onClick={() => {setManagingId(null);manageButton.current?.focus()}} aria-label="Fechar gerenciamento">×</button></header>
+          <dl className="users-drawer-meta"><div><dt>Perfil</dt><dd>{tipoLabel[managedUser.tipo] || managedUser.tipo}</dd></div><div><dt>Status</dt><dd>{Number(managedUser.ativo) ? 'Ativo' : 'Inativo'}</dd></div><div><dt>Identificador</dt><dd>#{getId(managedUser)}</dd></div></dl>
+          {isDono && podeMexer(managedUser) && <section><h3>Perfil de acesso</h3><label className="users-role-field">Perfil da conta<select value={managedUser.tipo} disabled={Boolean(acaoLoading)} onChange={event => alterarTipo(managedUser, event.target.value)} className="users-role-select"><option value="admin">Admin</option><option value="docente">Docente</option><option value="aluno">Aluno</option></select></label></section>}
+          {isDono && podeMexer(managedUser) && <section><h3>Status da conta</h3><button type="button" disabled={Boolean(acaoLoading)} onClick={() => alterarStatus(managedUser)}>{Number(managedUser.ativo) ? 'Desativar conta' : 'Ativar conta'}</button></section>}
+          {podeMexer(managedUser) && <section><h3>Credenciais</h3><p>Uma senha temporária é exibida apenas após a redefinição. Compartilhe-a por um canal seguro.</p><button type="button" disabled={Boolean(acaoLoading)} onClick={() => resetarSenha(managedUser)}>Redefinir senha temporária</button>{isDono && <button type="button" onClick={() => abrirModalSenha(managedUser)}>Definir senha</button>}</section>}
+          {(isDono || managedUser.tipo === 'aluno') && <section><h3>Acompanhamento</h3><button type="button" onClick={() => {usageButton.current = manageButton.current;setManagingId(null);setUsageAccount({id:getId(managedUser),name:managedUser.nome || managedUser.email})}}>Ver acompanhamento</button></section>}
+        </aside>
+      </div>}
 
       {modalSenha && (
         <div className="users-password-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

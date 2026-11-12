@@ -65,3 +65,12 @@
   overflow-wrap: anywhere;
 }
 .account-usage-list h3 span { margin-left: .25rem; font-variant-numeric: tabular-nums; }
+.account-usage{background:var(--pn-fundo);border-color:var(--pn-borda);padding:0;gap:1.5rem}
+.account-usage h1{font:500 clamp(1.6rem,3vw,2.2rem) Georgia,serif}
+.account-usage h2,.account-usage h3{font-family:Georgia,serif;font-weight:500}
+.account-usage-list,.account-usage-trend{background:var(--pn-superficie);border-color:var(--pn-borda);padding:1rem}
+.account-usage-total>strong{font-size:1.25rem;font-weight:650}
+.account-usage-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr))}
+.account-usage-empty{border:1px dashed var(--pn-borda);border-radius:.7rem;padding:1rem;color:var(--pn-texto-suave);font-size:.85rem}
+.account-usage :is(button,select,input,summary):focus-visible{outline:3px solid var(--pn-primaria);outline-offset:2px}
+.account-usage :is(button,select,input){min-height:44px}
