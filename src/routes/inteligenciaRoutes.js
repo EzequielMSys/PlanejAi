@@ -26,6 +26,22 @@ router.get('/trilhas', controller.trilhas)
 router.get('/chat', controller.chat)
 router.get('/chat/contexto', controller.contextoChat)
 router.post('/chat/foto', require('../middlewares/activityPhotoUpload'), controller.lerFoto)
+const media = require('../services/lumiMediaService')
+const multer = require('multer')
+const uploadMedia = multer({ storage: multer.memoryStorage(), limits: { fileSize: media.MAX_BYTES, files: 1, fields: 0, parts: 1 } }).single('arquivo')
+router.post('/chat/midia', (req, res) => {
+  res.set('Cache-Control', 'no-store')
+  uploadMedia(req, res, async error => {
+    if (error) return res.status(error.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({ message: 'Envie um único áudio ou vídeo de até 4 MB.' })
+    try {
+      return res.json(await media.transcribe(req.usuario.id_usuario || req.usuario.id, req.file))
+    } catch (failure) {
+      return res.status(failure.status || 503).json({ message: failure.status ? failure.message : 'A transcrição está indisponível neste momento.' })
+    } finally {
+      req.file?.buffer?.fill(0)
+    }
+  })
+})
 router.post('/chat', controller.enviarMensagem)
 router.delete('/chat', controller.limparChat)
 

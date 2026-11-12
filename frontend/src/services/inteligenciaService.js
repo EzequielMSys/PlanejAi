@@ -17,6 +17,11 @@ export default {
   chatHistory: (limite) => api.get('/chat', { params: { limite } }).then((r) => r.data),
   chatContext: () => api.get('/chat/contexto').then((r) => r.data),
   chatReadPhoto: (blob, signal) => { const body = new FormData(); body.append('foto', blob, 'atividade.jpg'); return api.post('/chat/foto', body, { timeout: 55000, signal }).then(r => r.data) },
+  chatTranscribe: (file, signal) => {
+    const body = new FormData()
+    body.append('arquivo', file)
+    return api.post('/chat/midia', body, { timeout: 55000, signal }).then(r => r.data)
+  },
   chatSend: (mensagem, disciplina, redacaoId, estudoAtual, pratica, contextoEscolhido) => api.post('/chat', { mensagem, disciplina, redacaoId, estudoAtual, pratica, contextoEscolhido }, { timeout: 60000 }).then((r) => r.data),
   chatClear: () => api.delete('/chat').then((r) => r.data)
 }
