@@ -90,7 +90,7 @@ export default function UsuariosAdmin() {
     }
   }, [paginaAtual, busca, tipoFiltro, statusFiltro, usageFilter])
 
-  useDialogFocus(managePanel, Boolean(managingId), () => setManagingId(null))
+  useDialogFocus(managePanel, Boolean(managingId), () => setManagingId(null), false, Boolean(modalSenha || senhaTemporaria))
   const managedUser = usuarios.find(item => getId(item) === managingId)
 
   useEffect(() => {

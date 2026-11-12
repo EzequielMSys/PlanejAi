@@ -23,66 +23,25 @@ function duration(seconds) {
 }
 
 function Trend({ title, series, field, selectedPoint, onSelectPoint }) {
-  const canvas = useRef(null)
-  const peak = Math.max(1, ...series.map(item => item[field] ?? 0))
-  const best = series.filter(item => item[field] > 0 && item[field] === peak)
-  const axisIndices = [...new Set(Array.from({ length: 4 }, (_, i) => Math.round(i * (series.length - 1) / 3)))]
-
-  useEffect(() => {
-    if (!window.CanvasRenderingContext2D) return
-    const element = canvas.current
-    const ctx = element.getContext('2d')
-    if (!ctx) return
-    const { width, height } = element
-    const inset = 14
-    const point = (index, value) => [
-      inset + index * (width - 2 * inset) / Math.max(1, series.length - 1),
-      height - inset - (height - 2 * inset) * value / peak
-    ]
-    ctx.clearRect(0, 0, width, height)
-    ctx.strokeStyle = 'rgba(133, 135, 161, .35)'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    for (const fraction of [0, .5, 1]) {
-      const [, y] = point(0, peak * fraction)
-      ctx.moveTo(inset, y)
-      ctx.lineTo(width - inset, y)
-    }
-    ctx.stroke()
-    ctx.strokeStyle = ctx.fillStyle = window.getComputedStyle(element).getPropertyValue('--pn-primaria').trim() || '#8272ed'
-    ctx.lineWidth = 4
-    ctx.beginPath()
-    let previous = false
-    for (const [index, item] of series.entries()) {
-      if (item[field] === null) { previous = false; continue }
-      const [x, y] = point(index, item[field])
-      if (previous) ctx.lineTo(x, y)
-      else ctx.moveTo(x, y)
-      previous = true
-    }
-    ctx.stroke()
-    for (const [index, item] of series.entries()) {
-      if (item[field] === null) continue
-      const [x, y] = point(index, item[field])
-      ctx.beginPath()
-      ctx.arc(x, y, periodKey(item) === selectedPoint ? 8 : 4, 0, 2 * Math.PI)
-      ctx.fill()
-    }
-  }, [series, field, peak, selectedPoint])
-
+  const visible = series.slice(-30)
+  const peak = Math.max(1, ...visible.map(item => item[field] ?? 0))
+  const best = visible.filter(item => item[field] > 0 && item[field] === peak)
+  const formatValue = value => field === 'segundos' ? duration(value) : `${value} ${value === 1 ? 'entrega' : 'entregas'}`
   return <figure className="account-usage-trend">
-    <figcaption>{title}</figcaption>
-    <canvas ref={canvas} width={640} height={150} aria-hidden="true" onClick={event => {
-      const bounds = event.currentTarget.getBoundingClientRect()
-      const x = (event.clientX - bounds.left) * 640 / bounds.width
-      const index = Math.max(0, Math.min(series.length - 1, Math.round((x - 14) * (series.length - 1) / 612)))
-      onSelectPoint(periodKey(series[index]))
-    }} />
-    <div className="account-usage-axis" aria-hidden="true">
-      {axisIndices.map(index => <span key={periodKey(series[index])}>{formatPeriod(series[index])}</span>)}
+    <figcaption>{title}{series.length > visible.length && <small> · últimos 30 registros</small>}</figcaption>
+    <div className="account-usage-bars" role="group" aria-label={title}>
+      {visible.map(item => {
+        const value = item[field]
+        const key = periodKey(item)
+        return <button key={key} type="button" className={`account-usage-bar${value === null ? ' is-unmeasured' : ''}${selectedPoint === key ? ' is-selected' : ''}`}
+          style={{ '--bar-height': `${value === null ? 0 : Math.max(value === 0 ? 3 : 8, value / peak * 100)}%` }}
+          aria-label={`${formatPeriod(item)}: ${value === null ? 'sem medição' : formatValue(value)}`}
+          aria-pressed={selectedPoint === key}
+          onClick={() => onSelectPoint(key)}><span aria-hidden="true" /></button>
+      })}
     </div>
-    {best.length > 0 && <small>Pico de {field === 'segundos' ? duration(peak) : `${peak} ${peak === 1 ? 'entrega' : 'entregas'}`} em {best.map(formatPeriod).join(', ')}.</small>}
-    {best.length === 0 && <small>{field === 'segundos' ? 'Sem tempo registrado no período.' : 'Sem entregas no período.'}</small>}
+    <div className="account-usage-axis" aria-hidden="true"><span>{formatPeriod(visible[0])}</span><span>{formatPeriod(visible.at(-1))}</span></div>
+    {best.length > 0 && <small>Pico: {formatValue(peak)} em {best.map(formatPeriod).join(', ')}.</small>}
   </figure>
 }
 

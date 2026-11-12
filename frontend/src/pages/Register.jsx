@@ -116,14 +116,10 @@ const Register = () => {
             value={formData.nome}
             onChange={(e) => handleChange('nome', e.target.value)}
             aria-invalid={Boolean(errors.nome)}
-            aria-describedby="nome-valor"
+            aria-describedby={errors.nome ? 'nome-valor' : undefined}
             className={inputClass('nome')}
           />
-          {errors.nome ? (
-            <p id="nome-valor" className="study-error" role="alert">{errors.nome}</p>
-          ) : (
-            <p id="nome-valor" className="study-hint">Aceita acentos, espaços, hífens e apóstrofos.</p>
-          )}
+          {errors.nome && <p id="nome-valor" className="study-error" role="alert">{errors.nome}</p>}
         </div>
 
           <div>
@@ -140,15 +136,11 @@ const Register = () => {
                 value={formData.email}
                 onChange={(e) => handleChange('email', e.target.value)}
                 aria-invalid={Boolean(errors.email)}
-                aria-describedby="email-requisitos"
+                aria-describedby={errors.email ? 'email-requisitos' : undefined}
                 className={inputClass('email')}
               />
             </div>
-            {errors.email ? (
-              <p id="email-requisitos" className="study-error" role="alert">{errors.email}</p>
-            ) : (
-              <p id="email-requisitos" className="study-hint">Email deve conter @ e domínio</p>
-            )}
+            {errors.email && <p id="email-requisitos" className="study-error" role="alert">{errors.email}</p>}
           </div>
 
           <div>
@@ -186,15 +178,11 @@ const Register = () => {
               onChange={(e) => handleChange('confirmarSenha', e.target.value)}
               onBlur={() => setConfirmationTouched(true)}
               aria-invalid={Boolean(confirmationError)}
-              aria-describedby="confirmar-requisitos"
+              aria-describedby={confirmationError ? 'confirmar-requisitos' : undefined}
               className={inputClass('confirmarSenha')}
             />
           </div>
-          {confirmationError ? (
-            <p id="confirmar-requisitos" className="study-error" role="alert">{confirmationError}</p>
-          ) : (
-            <p id="confirmar-requisitos" className="study-hint">Repita exatamente a mesma senha</p>
-          )}
+          {confirmationError && <p id="confirmar-requisitos" className="study-error" role="alert">{confirmationError}</p>}
           <label className="study-show-password">
             <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} />
             <span>Mostrar senha</span>

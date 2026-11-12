@@ -1,14 +1,15 @@
 import { useEffect, useRef } from 'react'
 
-export default function useDialogFocus(ref,open,onClose,blocked=false){
-  const close=useRef(onClose),busy=useRef(blocked)
-  close.current=onClose;busy.current=blocked
+export default function useDialogFocus(ref,open,onClose,blocked=false,suspended=false){
+  const close=useRef(onClose),busy=useRef(blocked),pause=useRef(suspended)
+  close.current=onClose;busy.current=blocked;pause.current=suspended
   useEffect(()=>{
     if(!open||!ref.current)return
     const panel=ref.current,previous=document.activeElement,overflow=document.body.style.overflow
     document.body.style.overflow='hidden'
     panel.focus({preventScroll:true})
     const key=event=>{
+      if(pause.current)return
       if(event.key==='Escape'){event.preventDefault();if(!busy.current)close.current();return}
       if(event.key!=='Tab')return
       const fields=[...panel.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href],[tabindex="0"]')].filter(el=>!el.closest('[hidden],[inert]'))

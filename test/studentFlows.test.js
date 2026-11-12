@@ -764,16 +764,18 @@ test('materials library opens a missing resource and allows adding a reference',
   } finally { await screen.close(); materialCatalogFixture = false; }
 });
 
-test('people directory groups account actions without changing permissions', async () => {
+test('people directory opens account actions in a contextual panel', async () => {
   const screen = await renderRoute('/usuarios', 'dono');
   try {
     assert.ok(screen.container.textContent.includes('Pessoas e acessos'));
-    const menu = document.querySelector('.users-actions');
-    assert.ok(menu);
-    await act(async () => menu.querySelector('summary').click());
-    assert.equal(menu.open, true);
-    assert.ok([...menu.querySelectorAll('button')].some(node => node.textContent.trim() === 'Definir senha'));
-    assert.ok(menu.querySelector('button').disabled);
+    const trigger = document.querySelector('.users-action-trigger');
+    assert.ok(trigger);
+    await act(async () => trigger.click());
+    const panel = document.querySelector('.users-drawer');
+    assert.ok(panel);
+    assert.equal(panel.getAttribute('role'), 'dialog');
+    assert.ok(!panel.querySelector('button')?.disabled);
+    assert.equal(document.querySelectorAll('.users-directory tbody tr').length, 1);
   } finally { await screen.close(); }
 });
 
@@ -1114,16 +1116,22 @@ test('a student cannot open management pages through a direct URL', async () => 
 test('diretório abre acompanhamento, mostra os dados e devolve o foco à conta', async () => {
   const screen = await renderRoute('/usuarios', 'dono');
   try {
-    const trigger = document.querySelector('.users-usage-button');
+    const trigger = document.querySelector('.users-action-trigger');
     assert.ok(trigger);
     assert.ok(!requests.some(request => request.url.endsWith('/uso')));
     await act(async () => trigger.click());
+    await act(async () => button('Ver acompanhamento').click());
     await flush();
     const panel = document.querySelector('#account-usage');
     assert.equal(document.activeElement.id, 'account-usage-heading');
     assert.match(panel.textContent, /1 hora, 1 minuto, 30 segundos/);
     assert.match(panel.textContent, /Equações/);
     assert.match(panel.textContent, /Geometria/);
+    const bar = panel.querySelector('.account-usage-bar');
+    assert.ok(bar);
+    assert.ok(bar.getAttribute('aria-label'));
+    await act(async () => bar.click());
+    assert.equal(bar.getAttribute('aria-pressed'), 'true');
     assert.equal(panel.querySelectorAll('tbody tr').length, 1);
     assert.match(panel.querySelector('tbody').textContent, /01\/11\/2026/);
     await act(async () => {
@@ -1824,7 +1832,8 @@ test('registration validation focuses the first invalid field and associates its
     assert.equal(document.activeElement,input);
     assert.equal(input.getAttribute('aria-invalid'),'true');
     assert.ok(document.getElementById(input.getAttribute('aria-describedby')).textContent.includes('Nome é obrigatório'));
-    for (const id of ['email','senha','confirmarSenha']) assert.ok(document.getElementById(document.getElementById(id).getAttribute('aria-describedby')));
+    assert.ok(document.getElementById(document.getElementById('senha').getAttribute('aria-describedby')));
+    assert.ok(document.getElementById(document.getElementById('email').getAttribute('aria-describedby')));
   } finally { await screen.close(); }
 });
 
@@ -1863,7 +1872,7 @@ test('different passwords show an error under confirmation and matching password
     assert.ok(!requests.some(request=>request.method==='post'&&request.url.endsWith('/register')));
     await inputValue(document.getElementById('confirmarSenha'),'SenhaTeste123');
     assert.equal(document.getElementById('confirmarSenha').getAttribute('aria-invalid'),'false');
-    assert.ok(!document.getElementById('confirmar-requisitos').textContent.includes('precisam ser iguais'));
+    assert.ok(!document.getElementById('confirmar-requisitos'));
   }finally{await screen.close()}
 });
 
@@ -2306,7 +2315,7 @@ test('cohesion waits for the neighboring paragraph instead of requesting a specu
 test('password dialog contains focus, reports mismatch below confirmation and restores its trigger',async()=>{
  directoryOtherAccount=true;const screen=await renderRoute('/usuarios','dono');
  try{
-  await act(async()=>document.querySelector('.users-actions summary').click());
+  await act(async()=>document.querySelector('.users-action-trigger').click());
   const trigger=button('Definir senha');trigger.focus();
   await act(async()=>trigger.click());const dialog=document.querySelector('.users-password-dialog');
   assert.equal(document.activeElement,dialog);assert.equal(dialog.getAttribute('role'),'dialog');
@@ -2322,7 +2331,7 @@ test('password dialog contains focus, reports mismatch below confirmation and re
   assert.equal(document.activeElement,button('Salvar senha'));
   const result=await axe.run(dialog,{rules:{'color-contrast':{enabled:false}}});assert.deepEqual(result.violations.map(v=>v.id),[]);
   await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})));
-  assert.ok(!document.querySelector('.users-password-dialog'));assert.equal(document.activeElement,trigger);assert.equal(document.body.style.overflow,'');
+  assert.ok(!document.querySelector('.users-password-dialog'));assert.equal(document.activeElement,trigger);assert.equal(document.body.style.overflow,'hidden');
  }finally{directoryOtherAccount=false;await screen.close()}
 });
 test('material editor traps focus and closes without sending or discarding the original catalog entry',async()=>{
@@ -3229,12 +3238,13 @@ test('visualizador de material contém o foco e devolve ao controle de abertura 
 
 test('gestão identifica a conta das ações e recolhe o menu anterior sem alterar acessos',async()=>{
  directoryOtherAccount=true;directorySecondAccount=true;const screen=await renderRoute('/usuarios','dono');try{
-  assert.equal(document.querySelector('.users-overview').open,false);
-  const menus=[...document.querySelectorAll('.users-actions')];assert.equal(menus.length,2);
-  await act(async()=>menus[0].querySelector('summary').click());assert.equal(menus[0].open,true);
-  await act(async()=>menus[1].querySelector('summary').click());assert.equal(menus[0].open,false);assert.equal(menus[1].open,true);
-  assert.match(menus[1].querySelector('summary').getAttribute('aria-label'),/Outra pessoa/);assert.match(menus[1].querySelector('.users-action-person').textContent,/Outra pessoa/);
-  await inputValue(document.querySelector('.users-toolbar input'),'Outra');assert.equal(menus[1].open,false);
+  const triggers=[...document.querySelectorAll('.users-action-trigger')];assert.equal(triggers.length,2);
+  await act(async()=>triggers[0].click());assert.ok(document.querySelector('.users-drawer'));
+  await act(async()=>document.querySelector('.users-drawer header button').click());
+  await act(async()=>triggers[1].click());
+  assert.match(triggers[1].getAttribute('aria-label'),/Outra pessoa/);assert.match(document.querySelector('.users-drawer').textContent,/Outra pessoa/);
+  await act(async()=>document.querySelector('.users-drawer header button').click());
+  await inputValue(document.querySelector('.users-toolbar input'),'Outra');
   await act(async()=>button('Limpar filtros').click());assert.equal(document.querySelector('.users-toolbar input').value,'');
   assert.equal(requests.filter(x=>['post','put','patch','delete'].includes(x.method)).length,0);
  }finally{directoryOtherAccount=false;directorySecondAccount=false;await screen.close()}
