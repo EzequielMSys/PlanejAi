@@ -36,8 +36,8 @@ class AuthService {
 
     if (String(website || '').trim()) throw new Error('Cadastro inválido.');
 
-    if (!/^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ ][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(nome.trim())) {
-      throw new Error("O nome deve conter apenas letras.");
+    if (!/^[\p{L}\p{M}]+(?:[ '\u2019-][\p{L}\p{M}]+)*$/u.test(nome)) {
+      throw new Error("Informe um nome válido, usando letras, espaços, hífens ou apóstrofos.");
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {

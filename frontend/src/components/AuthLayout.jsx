@@ -16,18 +16,19 @@ import './AuthJourneyPreview.css'
  * celular e para leitor de tela é a que importa: conteúdo, e só depois a
  * apresentação.
  */
-export default function AuthLayout({ title, subtitle, children, rodape, destaque, variant }) {
+export default function AuthLayout({ title, subtitle, eyebrow, children, rodape, destaque, variant }) {
   if (variant === 'login' || variant === 'register') {
     return <div className={`study-auth study-auth--${variant}`}>
       <header className="study-auth-topo"><LinkMarca /><ThemeToggle /></header>
       <main id="conteudo-principal" tabIndex={-1} className="study-auth-corpo">
         <section className="study-auth-formulario" aria-labelledby="auth-title">
+          {eyebrow && <span className="study-auth-eyebrow">{eyebrow}</span>}
           <h1 id="auth-title">{title}</h1>
           {subtitle && <p className="study-auth-sub">{subtitle}</p>}
           {children}
           {rodape && <div className="study-auth-rodape">{rodape}</div>}
         </section>
-        {destaque && <aside className="study-auth-lateral" aria-label="Conheça o espaço de estudos"><div className="study-auth-showcase">{destaque}</div></aside>}
+        {destaque && <aside className="study-auth-lateral" aria-hidden="true"><div className="study-auth-showcase">{destaque}</div></aside>}
       </main>
     </div>
   }

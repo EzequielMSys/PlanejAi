@@ -56,12 +56,13 @@ const Login = () => {
   return (
     <AuthLayout
       variant="login"
-      title="Boas-vindas de volta"
-      subtitle="Seu próximo passo começa exatamente de onde você parou."
-      destaque={<AuthJourneyPreview variant="login" />}
+      eyebrow="DE VOLTA ÀS SUAS PÁGINAS"
+      title="Continue de onde sua história parou."
+      subtitle="Seu espaço de estudos está esperando por você."
+      destaque={<AuthJourneyPreview />}
       rodape={
         <p>
-          Não tem conta? <Link to="/register">Criar conta</Link>
+          Ainda não tem uma conta? <Link to="/register">Criar conta</Link>
         </p>
       }
     >
@@ -116,7 +117,7 @@ const Login = () => {
           disabled={loading || !formData.email || !formData.senha}
           className="study-submit ds-btn"
         >
-          {loading ? 'Entrando…' : 'Entrar'}
+          {loading ? 'Entrando…' : 'Entrar no meu espaço'}
         </button>
       </form>
     </AuthLayout>

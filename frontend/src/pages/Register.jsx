@@ -33,8 +33,8 @@ const Register = () => {
 
     if (!formData.nome.trim()) {
       newErrors.nome = 'Nome é obrigatório'
-    } else if (!/^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[ ][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/.test(formData.nome.trim())) {
-      newErrors.nome = 'O nome deve conter apenas letras'
+    } else if (!/^[\p{L}\p{M}]+(?:[ '\u2019-][\p{L}\p{M}]+)*$/u.test(formData.nome.trim())) {
+      newErrors.nome = 'Informe um nome válido, usando letras, espaços, hífens ou apóstrofos.'
     }
 
     if (!formData.email.trim()) {
@@ -94,12 +94,13 @@ const Register = () => {
   return (
     <AuthLayout
       variant="register"
-      title="Criar sua conta"
-      subtitle="Em menos de um minuto o primeiro mapa de estudos fica pronto."
-      destaque={<AuthJourneyPreview variant="register" />}
+      eyebrow="CAPÍTULO 01 / COMEÇAR"
+      title="Toda jornada começa em algum lugar."
+      subtitle="Crie seu espaço para organizar ideias, estudar e acompanhar seu próprio ritmo."
+      destaque={<AuthJourneyPreview />}
       rodape={
         <p className="study-auth-rodape">
-          Já tem conta? <Link to="/login" className="study-link">Entrar</Link>
+          Já tem uma conta? <Link to="/login" className="study-link">Entrar</Link>
         </p>
       }
     >
@@ -121,7 +122,7 @@ const Register = () => {
           {errors.nome ? (
             <p id="nome-valor" className="study-error" role="alert">{errors.nome}</p>
           ) : (
-            <p id="nome-valor" className="study-hint">Use apenas letras</p>
+            <p id="nome-valor" className="study-hint">Aceita acentos, espaços, hífens e apóstrofos.</p>
           )}
         </div>
 
@@ -201,7 +202,7 @@ const Register = () => {
         </div>
 
         <button type="submit" disabled={loading} className="study-submit ds-btn">
-          {loading ? 'Criando conta…' : 'Criar conta'}
+          {loading ? 'Criando conta…' : 'Criar meu espaço'}
         </button>
 
         {/* Campo isca contra robô: invisível para quem usa teclado e leitor de
