@@ -2,8 +2,15 @@ const router = require('express').Router();
 const atividadeController = require('../controllers/atividadeController');
 const { authMiddleware, isGestorPedagogico } = require('../middlewares/authMiddleware');
 const { uploadAtividade } = require('../middlewares/uploadMiddleware');
+const followup = require('../services/classFollowupService');
 
 router.get('/', authMiddleware, atividadeController.listar);
+router.get('/prioritaria', authMiddleware, async (req, res, next) => {
+  res.set('Cache-Control', 'private, no-store');
+  try {
+    return res.json({ atividade: req.usuario.tipo === 'aluno' ? await followup.priority(req.usuario.id_usuario || req.usuario.id) : null });
+  } catch (error) { return next(error); }
+});
 router.get('/alunos', authMiddleware, isGestorPedagogico, atividadeController.listarAlunos);
 router.get('/banco-questoes', authMiddleware, isGestorPedagogico, atividadeController.bancoQuestoes);
 router.post('/banco-questoes', authMiddleware, isGestorPedagogico, atividadeController.criarQuestaoBanco);

@@ -1,4 +1,5 @@
 const pool = require('../config/db')
+const { publishedActivityFor } = require('../services/accountUsageService')
 
 function parseJson(value, fallback) {
   if (value === null || value === undefined || value === '') return fallback
@@ -63,11 +64,18 @@ async function listarPublicadas(idUsuario) {
        (SELECT r.status FROM respostas_usuario r WHERE r.id_atividade = a.id_atividade AND r.id_usuario = ? ORDER BY r.respondido_em DESC LIMIT 1) AS minha_resposta_status,
        (SELECT r.nota FROM respostas_usuario r WHERE r.id_atividade = a.id_atividade AND r.id_usuario = ? ORDER BY r.respondido_em DESC LIMIT 1) AS minha_nota
      FROM atividades a LEFT JOIN usuarios u ON u.id_usuario = a.criado_por
-     WHERE a.status = 'PUBLICADA' AND (a.publicar_em IS NULL OR a.publicar_em <= CURRENT_TIMESTAMP)
+     JOIN usuarios aluno ON aluno.id_usuario = ?
+     WHERE ${publishedActivityFor('aluno.id_usuario')}
      ORDER BY a.prazo IS NULL, a.prazo ASC, a.id_atividade DESC`,
-    [idUsuario, idUsuario]
+    [idUsuario, idUsuario, idUsuario]
   )
   return rows.map(normalizar)
+}
+
+async function podeAcessarPublicada(idAtividade, idUsuario) {
+  const [[row]] = await pool.execute(`SELECT 1 FROM atividades a JOIN usuarios aluno ON aluno.id_usuario = ?
+    WHERE a.id_atividade = ? AND ${publishedActivityFor('aluno.id_usuario')}`, [idUsuario, idAtividade])
+  return Boolean(row)
 }
 
 async function listarGestao(criadoPor = null) {
@@ -89,8 +97,8 @@ async function atualizar(idAtividade, dados, alteradoPor) {
     await connection.execute('INSERT IGNORE INTO atividade_versoes (id_atividade, numero_versao, conteudo, alterado_por) VALUES (?, ?, ?, ?)', [idAtividade, Number(atual.versao) || 1, JSON.stringify(snapshot(atual)), alteradoPor])
     const proximaVersao = (Number(atual.versao) || 1) + 1
     await connection.execute(
-      `UPDATE atividades SET titulo=?,descricao=?,prazo=?,status=?,anexos=?,questoes=?,pergunta=?,destinatarios=?,atribuicao=?,rubrica=?,publicar_em=?,permite_reenvio=?,versao=? WHERE id_atividade=?`,
-      [dados.titulo, dados.descricao || null, dados.prazo || null, dados.status, JSON.stringify(dados.anexos || []), JSON.stringify(dados.questoes || []), dados.titulo, dados.destinatarios?.length ? JSON.stringify(dados.destinatarios) : null, dados.atribuicao || 'TODOS', JSON.stringify(dados.rubrica || []), dados.publicarEm || null, dados.permiteReenvio ? 1 : 0, proximaVersao, idAtividade]
+      `UPDATE atividades SET titulo=?,descricao=?,prazo=?,status=?,anexos=?,questoes=?,pergunta=?,destinatarios=?,atribuicao=?,rubrica=?,publicar_em=?,permite_reenvio=?,versao=?,id_turma=? WHERE id_atividade=?`,
+      [dados.titulo, dados.descricao || null, dados.prazo || null, dados.status, JSON.stringify(dados.anexos || []), JSON.stringify(dados.questoes || []), dados.titulo, dados.destinatarios?.length ? JSON.stringify(dados.destinatarios) : null, dados.atribuicao || 'TODOS', JSON.stringify(dados.rubrica || []), dados.publicarEm || null, dados.permiteReenvio ? 1 : 0, proximaVersao, dados.idTurma === undefined ? atual.id_turma : dados.idTurma, idAtividade]
     )
     await connection.execute('INSERT INTO atividade_versoes (id_atividade, numero_versao, conteudo, alterado_por) VALUES (?, ?, ?, ?)', [idAtividade, proximaVersao, JSON.stringify(dados), alteradoPor])
     await connection.execute('DELETE FROM atividade_rascunhos WHERE id_atividade=?', [idAtividade])
@@ -115,16 +123,17 @@ async function autosalvarRascunho(idAtividade, dados, criadoPor) {
     rubrica: Array.isArray(dados.rubrica) ? dados.rubrica : [],
     publicarEm: dados.publicarEm || null,
     permiteReenvio: Boolean(dados.permiteReenvio),
-    idTurma: dados.idTurma || null
+    idTurma: dados.idTurma
   }
   if (!idAtividade) return criar({ ...payload, criadoPor })
   const atual = await buscarPorId(idAtividade)
   if (!atual) throw new Error('Rascunho não encontrado.')
+  if (payload.idTurma === undefined) payload.idTurma = atual.id_turma
   if (atual.status !== 'RASCUNHO') {
     await pool.execute(`INSERT INTO atividade_rascunhos (id_atividade,conteudo,salvo_por) VALUES (?,?,?) ON DUPLICATE KEY UPDATE conteudo=VALUES(conteudo),salvo_por=VALUES(salvo_por),atualizado_em=CURRENT_TIMESTAMP`, [idAtividade, JSON.stringify(payload), criadoPor])
     return { ...atual, rascunho: payload, rascunho_salvo_em: new Date() }
   }
-  await pool.execute(`UPDATE atividades SET titulo=?,descricao=?,prazo=?,status='RASCUNHO',anexos=?,questoes=?,pergunta=?,destinatarios=?,atribuicao=?,rubrica=?,publicar_em=?,permite_reenvio=? WHERE id_atividade=? AND criado_por=?`, [payload.titulo, payload.descricao, payload.prazo, JSON.stringify(payload.anexos), JSON.stringify(payload.questoes), payload.titulo, payload.destinatarios.length ? JSON.stringify(payload.destinatarios) : null, payload.atribuicao, JSON.stringify(payload.rubrica), payload.publicarEm, payload.permiteReenvio ? 1 : 0, idAtividade, criadoPor])
+  await pool.execute(`UPDATE atividades SET titulo=?,descricao=?,prazo=?,status='RASCUNHO',anexos=?,questoes=?,pergunta=?,destinatarios=?,atribuicao=?,rubrica=?,publicar_em=?,permite_reenvio=?,id_turma=? WHERE id_atividade=? AND criado_por=?`, [payload.titulo, payload.descricao, payload.prazo, JSON.stringify(payload.anexos), JSON.stringify(payload.questoes), payload.titulo, payload.destinatarios.length ? JSON.stringify(payload.destinatarios) : null, payload.atribuicao, JSON.stringify(payload.rubrica), payload.publicarEm, payload.permiteReenvio ? 1 : 0, dados.idTurma === undefined ? atual.id_turma : payload.idTurma, idAtividade, criadoPor])
   return buscarPorId(idAtividade)
 }
 
@@ -155,4 +164,4 @@ async function deletarQuestaoBanco(idQuestaoBanco, idUsuario, acessoTotal = fals
 
 async function deletar(idAtividade) { await pool.execute('DELETE FROM atividades WHERE id_atividade = ?', [idAtividade]) }
 
-module.exports = { criar, listarPublicadas, listarGestao, buscarPorId, atualizar, autosalvarRascunho, listarVersoes, listarBancoQuestoes, criarQuestaoBanco, registrarUsoQuestao, deletarQuestaoBanco, deletar }
+module.exports = { criar, listarPublicadas, podeAcessarPublicada, listarGestao, buscarPorId, atualizar, autosalvarRascunho, listarVersoes, listarBancoQuestoes, criarQuestaoBanco, registrarUsoQuestao, deletarQuestaoBanco, deletar }

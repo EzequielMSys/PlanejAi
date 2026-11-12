@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import service from '../services/turmaService'
+import ClassFollowup from '../components/ClassFollowup'
 import { Button, EmptyState, Field, Surface } from '../components/ui/PlanejUI'
 import './Turmas.css'
 
 const initialForm = () => ({ nome: '', codigo: '', anoLetivo: new Date().getFullYear(), descricao: '', disciplinas: '' })
 
 export default function Turmas() {
-  const { isGestor } = useAuth()
+  const { isGestor, isAdmin, isDono } = useAuth()
   const [turmas, setTurmas] = useState([])
   const [selected, setSelected] = useState(null)
   const [candidatos, setCandidatos] = useState([])
@@ -82,6 +83,7 @@ export default function Turmas() {
 
             {selected && <Surface as="article" className="class-details">
               <header><div><span className="ui-eyebrow">{selected.codigo || 'Turma'}</span><h2>{selected.nome}</h2></div><Button variant="quiet" onClick={() => setSelected(null)}>Fechar</Button></header>
+              {isGestor && <ClassFollowup key={selected.id_turma} turma={selected} fullAccess={isAdmin || isDono} />}
               <div className="class-people-grid">
                 <section><h3>Docentes <span>{selected.docentes?.length || 0}</span></h3>{selected.docentes?.map((item) => <p key={item.id_usuario}><i>{item.nome?.charAt(0)}</i><span><b>{item.nome}</b><small>{item.papel}</small></span></p>)}</section>
                 <section><h3>Alunos <span>{selected.alunos?.length || 0}</span></h3>{selected.alunos?.map((item) => <p key={item.id_usuario}><i>{item.nome?.charAt(0)}</i><span><b>{item.nome}</b><small>{item.email}</small></span></p>)}</section>

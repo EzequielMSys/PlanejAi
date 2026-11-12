@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import cronogramaService from '../services/cronogramaService'
 import aprendizagemService from '../services/aprendizagemService'
+import atividadeService from '../services/atividadeService'
 import './TodayDashboard.css'
 import RouteLoading from '../components/RouteLoading'
 import DailyPlanActions from '../components/DailyPlanActions'
@@ -38,6 +39,16 @@ export default function TodayDashboard() {
   const [lastVisit]=useState(readTodayVisit)
   useEffect(()=>{rememberTodayVisit()},[])
   const { user, isAdmin, isDono, perfilCompleto } = useAuth()
+  const [priority, setPriority] = useState(null)
+  useEffect(() => {
+    setPriority(null)
+    if (user?.tipo !== 'aluno') return
+    const request = new AbortController()
+    atividadeService.prioritaria(request.signal).then(activity => {
+      if (!request.signal.aborted) setPriority(activity)
+    }).catch(() => {})
+    return () => request.abort()
+  }, [user?.tipo, user?.id, user?.id_usuario])
   const [returns,setReturns]=useState(null)
   const [returnsStatus,setReturnsStatus]=useState('loading')
   const [returnsAttempt,setReturnsAttempt]=useState(0)
@@ -193,7 +204,7 @@ export default function TodayDashboard() {
   const date = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date())
 
   if (loading) return <RouteLoading />
-  if (planError && !returnSuggestion && !resume) return <main className="dash-v2"><section className="daily-adjust" role="alert"><h1>Seu plano continua salvo.</h1><p>Não conseguimos consultá-lo agora. Tente carregar novamente para continuar.</p><button type="button" className="study-button" onClick={() => { setLoading(true); reloadPlan().catch(() => setPlanError(true)).finally(() => setLoading(false)) }}>Tentar novamente</button></section></main>
+  if (planError && !returnSuggestion && !resume && !priority) return <main className="dash-v2"><section className="daily-adjust" role="alert"><h1>Seu plano continua salvo.</h1><p>Não conseguimos consultá-lo agora. Tente carregar novamente para continuar.</p><button type="button" className="study-button" onClick={() => { setLoading(true); reloadPlan().catch(() => setPlanError(true)).finally(() => setLoading(false)) }}>Tentar novamente</button></section></main>
   const firstStudy = resumeStatus === 'ready' && returnsStatus==='ready' && !returnSuggestion && user?.tipo === 'aluno' && !resume && !data.schedules.length && data.learning && !weeklyMinutes && !reviews && !data.learning.errosPendentes && !data.learning.porDisciplina?.length && !data.evolution.length
   const welcome=todayWelcome({firstStudy,resume,lastVisit})
   const otherWays = <details className="today-alternatives"><summary>Outras maneiras de continuar<span>Registros, cartões e projetos</span></summary><div className="today-shortcut-links">{user?.tipo === 'aluno' && <button type="button" onClick={() => navigate('/sessao-guiada')}>Montar sessão guiada</button>}<button type="button" onClick={() => navigate('/cronograma')}>Ver cronograma <b>→</b></button></div><TodayPreparation/>{!firstStudy && <>
@@ -222,6 +233,15 @@ export default function TodayDashboard() {
 
       </section>
 
+      {priority && <section className="today-overview-panel today-priority" aria-labelledby="today-priority">
+        <h2 id="today-priority">Atividade prioritária</h2>
+        <h3>{priority.titulo}</h3>
+        <p>{[priority.disciplina, priority.turma].filter(Boolean).join(' · ') || 'Atividade publicada'}</p>
+        <p>{priority.prazo
+          ? `${priority.atrasada ? 'Atrasada' : 'Prazo mais próximo'} · ${new Date(priority.prazo).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' })}`
+          : 'Atividade pendente sem prazo definido.'}</p>
+        <button className="today-text-action" type="button" onClick={() => navigate('/minhas-atividades', { state: { atividadeId: priority.id_atividade } })}>Abrir atividade</button>
+      </section>}
       <div className="today-overview">
         <section className="today-overview-panel" aria-labelledby="today-week-title">
           <h2 id="today-week-title">Sua semana</h2>

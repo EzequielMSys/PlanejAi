@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ContentState from '../components/ContentState'
 import RecoveryState from '../components/RecoveryState'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import atividadeService from '../services/atividadeService'
@@ -20,6 +20,8 @@ const statusLabel = (item) => item.minha_resposta_status === 'CORRIGIDA'
   : item.minha_resposta_status === 'ENTREGUE' ? 'Em correção' : item.minha_resposta_status === 'RASCUNHO' ? 'Em andamento' : 'Pendente'
 
 export default function MinhasAtividades() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [itens, setItens] = useState([])
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState('TODOS')
@@ -51,7 +53,7 @@ export default function MinhasAtividades() {
     return item.minha_resposta_status === filtro
   }), [itens, filtro])
 
-  const abrir = async (item) => {
+  const abrir = useCallback(async (item) => {
     try {
       const data = await atividadeService.obter(item.id_atividade)
       setSelecionada({ ...data.atividade, minhaResposta: data.minhaResposta })
@@ -64,7 +66,16 @@ export default function MinhasAtividades() {
     } catch (error) {
       toast.error(error.response?.data?.message || 'Não foi possível abrir a atividade.')
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    const id = location.state?.atividadeId
+    if (!id || loading || loadError) return
+    navigate(location.pathname, { replace: true, state: null })
+    const activity = itens.find(item => String(item.id_atividade) === String(id))
+    if (activity) abrir(activity)
+    else toast.error('Esta atividade não está mais disponível.')
+  }, [location, navigate, loading, loadError, itens, abrir])
 
   useEffect(() => {
     if (!selecionada || (selecionada.minhaResposta && selecionada.minhaResposta.status !== 'RASCUNHO')) return undefined

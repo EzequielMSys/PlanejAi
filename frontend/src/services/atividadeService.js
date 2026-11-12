@@ -3,6 +3,7 @@ const api = createApiClient('/api/atividade')
 
 export default {
   listar: async () => (await api.get('/')).data,
+  prioritaria: async (signal) => (await api.get('/prioritaria', { signal, cache: false })).data.atividade,
   listarAlunos: async () => (await api.get('/alunos')).data,
   criar: async (atividade) => (await api.post('/', atividade)).data.atividade,
   atualizar: async (id, atividade) => (await api.put(`/${id}`, atividade)).data.atividade,

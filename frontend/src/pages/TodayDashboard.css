@@ -124,3 +124,6 @@
 .today-text-action:focus-visible { outline: 2px solid var(--pn-link); outline-offset: 2px; }
 .today-continuity { margin-block: 1rem; }
 @media (max-width: 760px) { .today-overview { grid-template-columns: minmax(0, 1fr); } }
+
+.today-priority { margin-block: 1rem; }
+.today-priority h3 { margin-top: .4rem; font-weight: 700; }

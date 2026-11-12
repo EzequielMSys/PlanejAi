@@ -298,6 +298,8 @@ async function fixture(config) {
   }
   if(studentListFailure && url.endsWith(studentListFailure.path)){if(studentListFailure.invalid)return {};throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:studentListFailure.status||503,data:{}})}
   if(studentActivityFixture&&url.endsWith('/atividade'))return studentActivityFixture;
+  if(url.endsWith('/atividade/prioritaria')) return { atividade: studentActivityFixture?.find(item => item.id_atividade === 78) || null };
+  if(url.endsWith('/atividade/78')) return { atividade: { id_atividade: 78, titulo: 'Equações para entregar', questoes: [] }, minhaResposta: null };
   if (url.endsWith('/usuarios/me')) return person('aluno');
   if (url.endsWith('/usuarios/900001/uso')) return {
     segundos: 3690,
@@ -319,6 +321,10 @@ async function fixture(config) {
   if (url.endsWith('/turmas/minhas/1')) return { id_turma: 1, nome: 'Turma de teste', ano_letivo: 2026, pendentes: [], concluidas: [], avisos: [] };
   if (url.endsWith('/turmas')) return [{ id_turma: 2, nome: 'Terceiro A', codigo: '3A', ano_letivo: 2026, total_alunos: 3, disciplinas: [{ disciplina: 'Matemática' }] }];
   if (url.endsWith('/turmas/2')) return { id_turma: 2, nome: 'Terceiro A', codigo: '3A', docentes: [], alunos: [] };
+  if (url.endsWith('/turmas/2/acompanhamento')) return { alunos: [
+    { id_usuario: 22, nome: 'Ana', entregues: 2, atrasadas: 1, sem_uso: 0 },
+    { id_usuario: 23, nome: 'Bia', entregues: 0, atrasadas: 0, sem_uso: 1 }
+  ] };
   if(materialCatalogFixture==='failed'&&url.endsWith('/conteudos'))throw new axios.AxiosError('unavailable','ERR_BAD_RESPONSE',config,null,{status:503,data:{}});
   if (materialCatalogFixture && url.endsWith('/conteudos')) return [{ id_conteudo: 7, titulo: 'Leis de Newton', disciplina: 'Física', nivel: 'BASICO', materiais: '[]', link: '' }];
   if (url.endsWith('/adaptativo/proxima-acao')) return { motivo: 'Uma sessão breve', titulo: 'Revisar' };
@@ -715,9 +721,25 @@ test('class management opens details and reveals creation on demand', async () =
     assert.equal(document.querySelector('.class-form'), null);
     await act(async () => document.querySelector('.class-card').click());
     assert.equal(document.querySelector('.class-details h2').textContent, 'Terceiro A');
+    await act(async () => button('1 Atrasos').click());
+    assert.match(document.querySelector('.class-followup ul').textContent, /Ana/);
+    assert.doesNotMatch(document.querySelector('.class-followup ul').textContent, /Bia/);
     await act(async () => button('Criar turma ↗').click());
     assert.ok(document.querySelector('.class-form'));
   } finally { await screen.close(); }
+});
+
+test('Hoje abre diretamente a atividade prioritária', async () => {
+  studentActivityFixture = [{ id_atividade: 78, titulo: 'Equações para entregar', disciplina: 'Matemática', atrasada: 1, prazo: '2026-10-01T12:00:00Z' }];
+  const screen = await renderRoute('/inicio');
+  try {
+    assert.match(document.querySelector('.today-priority').textContent, /Matemática.*Atrasada/);
+    await act(async () => button('Abrir atividade').click());
+    assert.match(document.querySelector('.activity-modal-backdrop').textContent, /Equações para entregar/);
+  } finally {
+    studentActivityFixture = null;
+    await screen.close();
+  }
 });
 
 test('activity management guides the first creation into the editor', async () => {

@@ -3,6 +3,7 @@ const api=createApiClient('/api/turmas');
 export default{
   listar:()=>api.get('/').then(r=>r.data),
   detalhes:id=>api.get(`/${id}`).then(r=>r.data),
+  acompanhamento:(id, signal)=>api.get(`/${id}/acompanhamento`, { signal, cache: false }).then(r=>r.data),
   criar:d=>api.post('/',d).then(r=>r.data),
   candidatos:()=>api.get('/candidatos').then(r=>r.data),
   adicionar:(id,d)=>api.post(`/${id}/membros`,d).then(r=>r.data),

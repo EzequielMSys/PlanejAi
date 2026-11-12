@@ -1,6 +1,7 @@
 const atividadeModel = require('../models/atividadeModel');
 const respostaModel = require('../models/respostaModel');
-const usuarioModel = require('../models/usuarioModel');
+const turmaModel = require('../models/turmaModel');
+const { canManage } = require('../services/classFollowupService');
 const { validarArquivoEnviado } = require('../services/uploadSecurity');
 const { armazenarArquivo } = require('../services/uploadStorageService');
 
@@ -8,10 +9,15 @@ const tiposGestao = new Set(['dono', 'admin', 'adm', 'docente']);
 const usuarioId = (req) => req.usuario.id_usuario || req.usuario.id;
 const eGestor = (req) => tiposGestao.has(req.usuario.tipo);
 
-function destinadaAoUsuario(atividade, id) {
-  if (!atividade.atribuicao || atividade.atribuicao === 'TODOS') return true;
-  return Array.isArray(atividade.destinatarios)
-    && atividade.destinatarios.map(String).includes(String(id));
+async function turmaSelecionada(req) {
+  const value = req.body.idTurma;
+  if (value === undefined) return undefined;
+  if (value === '' || value === null) return null;
+  const id = Number(value);
+  if (!Number.isSafeInteger(id) || id < 1 || !await canManage(id, usuarioId(req), req.usuario.tipo)) {
+    throw new Error('Selecione uma turma que você gerencia.');
+  }
+  return id;
 }
 
 function validarAtividade(body) {
@@ -112,7 +118,7 @@ async function listar(req, res) {
 async function criar(req, res) {
   try {
     const dados = validarAtividade(req.body);
-    return res.status(201).json({ atividade: await atividadeModel.criar({ ...dados, criadoPor: usuarioId(req) }) });
+    return res.status(201).json({ atividade: await atividadeModel.criar({ ...dados, idTurma: await turmaSelecionada(req), criadoPor: usuarioId(req) }) });
   } catch (error) { return res.status(400).json({ message: error.message }); }
 }
 
@@ -124,7 +130,7 @@ async function autosalvar(req, res) {
       if (!atividade) return res.status(404).json({ message: 'Rascunho não encontrado.' });
       if (req.usuario.tipo === 'docente' && Number(atividade.criado_por) !== Number(usuarioId(req))) return res.status(403).json({ message: 'Você só pode editar seus rascunhos.' });
     }
-    const atividade = await atividadeModel.autosalvarRascunho(id, req.body, id ? (await atividadeModel.buscarPorId(id)).criado_por : usuarioId(req));
+    const atividade = await atividadeModel.autosalvarRascunho(id, { ...req.body, idTurma: await turmaSelecionada(req) }, id ? (await atividadeModel.buscarPorId(id)).criado_por : usuarioId(req));
     return res.json({ atividade, salvoEm: new Date().toISOString() });
   } catch (error) { return res.status(400).json({ message: error.message || 'Não foi possível salvar o rascunho.' }); }
 }
@@ -134,7 +140,7 @@ async function atualizar(req, res) {
     const atividade = await atividadeModel.buscarPorId(req.params.idAtividade);
     if (!atividade) return res.status(404).json({ message: 'Atividade não encontrada.' });
     if (req.usuario.tipo === 'docente' && Number(atividade.criado_por) !== Number(usuarioId(req))) return res.status(403).json({ message: 'Você só pode editar atividades criadas por você.' });
-    return res.json({ atividade: await atividadeModel.atualizar(req.params.idAtividade, validarAtividade(req.body), usuarioId(req)) });
+    return res.json({ atividade: await atividadeModel.atualizar(req.params.idAtividade, { ...validarAtividade(req.body), idTurma: await turmaSelecionada(req) }, usuarioId(req)) });
   } catch (error) { return res.status(400).json({ message: error.message }); }
 }
 
@@ -160,7 +166,7 @@ async function responderAtividade(req, res) {
   try {
     const atividade = await atividadeModel.buscarPorId(req.params.idAtividade || req.body.atividade_id);
     if (!atividade || atividade.status !== 'PUBLICADA') return res.status(404).json({ message: 'Atividade não encontrada ou indisponível.' });
-    if (!eGestor(req) && !destinadaAoUsuario(atividade, usuarioId(req))) return res.status(404).json({ message: 'Atividade não encontrada ou indisponível.' });
+    if (!eGestor(req) && !await atividadeModel.podeAcessarPublicada(atividade.id_atividade, usuarioId(req))) return res.status(404).json({ message: 'Atividade não encontrada ou indisponível.' });
     const respostas = req.body.respostas || req.body.resposta;
     if (!respostas || typeof respostas !== 'object') return res.status(400).json({ message: 'Preencha as respostas antes de enviar.' });
     const anterior = await respostaModel.obterPorAtividadeEUsuario(atividade.id_atividade, usuarioId(req));
@@ -174,7 +180,7 @@ async function responderAtividade(req, res) {
 async function salvarRascunhoResposta(req, res) {
   try {
     const atividade = await atividadeModel.buscarPorId(req.params.idAtividade);
-    if (!atividade || atividade.status !== 'PUBLICADA' || !destinadaAoUsuario(atividade, usuarioId(req))) return res.status(404).json({ message: 'Atividade não encontrada ou indisponível.' });
+    if (!atividade || atividade.status !== 'PUBLICADA' || !await atividadeModel.podeAcessarPublicada(atividade.id_atividade, usuarioId(req))) return res.status(404).json({ message: 'Atividade não encontrada ou indisponível.' });
     const anterior = await respostaModel.obterPorAtividadeEUsuario(atividade.id_atividade, usuarioId(req));
     if (anterior && anterior.status !== 'RASCUNHO' && !atividade.permite_reenvio) return res.status(409).json({ message: 'A atividade já foi entregue.' });
     const resposta = await respostaModel.salvarRascunho(usuarioId(req), atividade.id_atividade, req.body.respostas || {});
@@ -249,7 +255,7 @@ async function obter(req, res) {
   try {
     const atividade = await atividadeModel.buscarPorId(req.params.idAtividade);
     if (!atividade) return res.status(404).json({ message: 'Atividade não encontrada.' });
-    if (!eGestor(req) && (atividade.status !== 'PUBLICADA' || !destinadaAoUsuario(atividade, usuarioId(req)))) return res.status(404).json({ message: 'Atividade não encontrada.' });
+    if (!eGestor(req) && (atividade.status !== 'PUBLICADA' || !await atividadeModel.podeAcessarPublicada(atividade.id_atividade, usuarioId(req)))) return res.status(404).json({ message: 'Atividade não encontrada.' });
     const resposta = await respostaModel.obterPorAtividadeEUsuario(atividade.id_atividade, usuarioId(req));
     return res.json({ atividade: eGestor(req) ? atividade : semGabarito(atividade), minhaResposta: resposta });
   } catch (error) { return res.status(500).json({ message: 'Erro ao obter atividade.' }); }
@@ -257,8 +263,7 @@ async function obter(req, res) {
 
 async function listarAlunos(req, res) {
   try {
-    const usuarios = await usuarioModel.listarUsuarios();
-    const alunos = usuarios.filter((u) => u.tipo === 'aluno' && u.ativo === 1);
+    const alunos = (await turmaModel.candidatos()).filter(u => u.tipo === 'aluno');
     return res.json(alunos.map((u) => ({ id_usuario: u.id_usuario || u.id, nome: u.nome, email: u.email })));
   } catch (error) {
     console.error('[ATIVIDADES] Erro ao listar alunos:', error);

@@ -1,4 +1,5 @@
 const pool=require('../config/db')
+const { publishedActivityFor } = require('../services/accountUsageService')
 
 // Alphabet minus vowels and visually similar chars (0/O, 1/I/L). Um código de
 // turma é ditado em voz alta e digitado à mão; trocar O por 0 gera mais erro do
@@ -103,12 +104,12 @@ async function minhasTurmas(id){
     `SELECT t.id_turma,t.nome,t.codigo,t.ano_letivo,t.descricao,
        (SELECT GROUP_CONCAT(u.nome ORDER BY u.nome SEPARATOR ', ') FROM turma_docentes d JOIN usuarios u ON u.id_usuario=d.id_docente WHERE d.id_turma=t.id_turma) AS docentes,
        (SELECT u.nome FROM turma_docentes d JOIN usuarios u ON u.id_usuario=d.id_docente WHERE d.id_turma=t.id_turma AND d.papel='RESPONSAVEL' LIMIT 1) AS responsavel,
-       (SELECT COUNT(*) FROM atividades at WHERE at.id_turma=t.id_turma AND at.status='PUBLICADA' AND (at.publicar_em IS NULL OR at.publicar_em<=CURRENT_TIMESTAMP)) AS total_atividades,
-       (SELECT COUNT(*) FROM respostas_usuario r JOIN atividades at ON at.id_atividade=r.id_atividade WHERE r.id_usuario=? AND r.status IN('ENTREGUE','CORRIGIDA') AND at.id_turma=t.id_turma AND at.status='PUBLICADA') AS feitas,
+       (SELECT COUNT(*) FROM atividades a WHERE a.id_turma=t.id_turma AND ${publishedActivityFor('m.id_aluno')}) AS total_atividades,
+       (SELECT COUNT(DISTINCT a.id_atividade) FROM respostas_usuario r JOIN atividades a ON a.id_atividade=r.id_atividade WHERE r.id_usuario=m.id_aluno AND r.status IN('ENTREGUE','CORRIGIDA') AND a.id_turma=t.id_turma AND ${publishedActivityFor('m.id_aluno')}) AS feitas,
        (SELECT COUNT(*) FROM avisos av WHERE av.id_turma=t.id_turma) AS total_avisos
-     FROM turma_alunos a JOIN turmas t ON t.id_turma=a.id_turma
-     WHERE a.id_aluno=? AND a.ativo=1 AND t.ativa=1
-     ORDER BY t.nome`,[id,id])
+     FROM turma_alunos m JOIN turmas t ON t.id_turma=m.id_turma
+     WHERE m.id_aluno=? AND m.ativo=1 AND t.ativa=1
+     ORDER BY t.nome`,[id])
   return rows.map(t=>({...t,pendentes:Math.max(0,t.total_atividades-t.feitas)}))
 }
 
@@ -121,16 +122,21 @@ async function detalheDoAluno(id,idTurma){
        (SELECT GROUP_CONCAT(u.nome ORDER BY u.nome SEPARATOR ', ') FROM turma_docentes d JOIN usuarios u ON u.id_usuario=d.id_docente WHERE d.id_turma=t.id_turma) AS docentes,
        (SELECT u.nome FROM turma_docentes d JOIN usuarios u ON u.id_usuario=d.id_docente WHERE d.id_turma=t.id_turma AND d.papel='RESPONSAVEL' LIMIT 1) AS responsavel
      FROM turmas t JOIN turma_alunos m ON m.id_turma=t.id_turma AND m.id_aluno=? AND m.ativo=1
-     WHERE t.id_turma=?`,[id,idTurma])
+     WHERE t.id_turma=? AND t.ativa=1`,[id,idTurma])
   if(!turma)return null
   const[disciplinas]=await pool.execute('SELECT disciplina FROM turma_disciplinas WHERE id_turma=? ORDER BY disciplina',[idTurma])
   const[atividades]=await pool.execute(
-    `SELECT at.id_atividade,at.titulo,at.descricao,at.prazo,at.anexos,at.questoes,at.destinatarios,at.atribuicao,at.rubrica,at.permite_reenvio,
+    `SELECT a.id_atividade,a.titulo,a.descricao,a.prazo,a.anexos,a.atribuicao,a.rubrica,a.permite_reenvio,
        r.status AS meu_status,r.nota AS minha_nota,r.feedback AS meu_feedback,r.respondido_em
-     FROM atividades at
-     LEFT JOIN respostas_usuario r ON r.id_atividade=at.id_atividade AND r.id_usuario=?
-     WHERE at.id_turma=? AND at.status='PUBLICADA' AND (at.publicar_em IS NULL OR at.publicar_em<=CURRENT_TIMESTAMP)
-     ORDER BY at.prazo IS NULL,at.prazo ASC,at.id_atividade DESC`,[id,idTurma])
+     FROM atividades a
+     JOIN usuarios aluno ON aluno.id_usuario=?
+     LEFT JOIN respostas_usuario r ON r.id_resposta=(
+       SELECT rr.id_resposta FROM respostas_usuario rr
+       WHERE rr.id_atividade=a.id_atividade AND rr.id_usuario=aluno.id_usuario
+       ORDER BY (rr.status IN ('ENTREGUE','CORRIGIDA')) DESC, rr.respondido_em DESC, rr.id_resposta DESC LIMIT 1
+     )
+     WHERE a.id_turma=? AND ${publishedActivityFor('aluno.id_usuario')}
+     ORDER BY a.prazo IS NULL,a.prazo ASC,a.id_atividade DESC`,[id,idTurma])
   const[avisos]=await pool.execute(
     `SELECT av.id_aviso,av.titulo,av.mensagem,av.criado_em,u.nome AS criador_nome FROM avisos av LEFT JOIN usuarios u ON u.id_usuario=av.criado_por WHERE av.id_turma=? ORDER BY av.criado_em DESC`,[idTurma])
   const concluidas=['ENTREGUE','CORRIGIDA']

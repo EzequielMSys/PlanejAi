@@ -41,7 +41,7 @@ const deliveries = `
   WHERE id_usuario = ? AND status IN ('ENTREGUE', 'CORRIGIDA')
   GROUP BY id_atividade`
 
-function pendingActivityFor(userId) {
+function publishedActivityFor(userId) {
   return `a.status = 'PUBLICADA' AND (a.publicar_em IS NULL OR a.publicar_em <= CURRENT_TIMESTAMP)
     AND (a.atribuicao IS NULL OR a.atribuicao = 'TODOS'
       OR JSON_CONTAINS(a.destinatarios, JSON_QUOTE(CAST(${userId} AS CHAR)))
@@ -49,8 +49,11 @@ function pendingActivityFor(userId) {
     AND (a.id_turma IS NULL OR EXISTS (
       SELECT 1 FROM turma_alunos ta JOIN turmas t ON t.id_turma = ta.id_turma
       WHERE ta.id_turma = a.id_turma AND ta.id_aluno = ${userId} AND ta.ativo = 1 AND t.ativa = 1
-    ))
-    AND NOT EXISTS (
+    ))`
+}
+
+function pendingActivityFor(userId) {
+  return `${publishedActivityFor(userId)} AND NOT EXISTS (
       SELECT 1 FROM respostas_usuario r
       WHERE r.id_usuario = ${userId} AND r.id_atividade = a.id_atividade AND r.status IN ('ENTREGUE', 'CORRIGIDA')
     )`
@@ -130,4 +133,4 @@ async function report(id, requester, now = new Date(), db = pool) {
   }
 }
 
-module.exports = { record, report, pendingActivityFor, recentUsageStart, executeUsage }
+module.exports = { record, report, publishedActivityFor, pendingActivityFor, recentUsageStart, executeUsage }

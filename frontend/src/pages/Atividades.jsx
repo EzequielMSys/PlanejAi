@@ -2,13 +2,14 @@ import { useEffect, useState, useRef } from 'react'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import atividadeService from '../services/atividadeService'
+import turmaService from '../services/turmaService'
 import { motion, AnimatePresence } from 'framer-motion'
 import MaterialViewer from '../components/MaterialViewer'
 import { Button } from '../components/ui/PlanejUI'
 import './Atividades.css'
 
 const novaQuestao = () => ({ id: `q-${Date.now()}-${Math.random().toString(16).slice(2)}`, enunciado: '', tipo: 'MULTIPLA_ESCOLHA', opcoes: ['', ''], pares: [{ esquerda: '', direita: '' }, { esquerda: '', direita: '' }], resposta_correta: '', pontos: 1, disciplina: '', dificuldade: 'MEDIA', explicacao: '', rubrica: [] })
-const formularioInicial = () => ({ titulo: '', descricao: '', prazo: '', publicarEm: '', permiteReenvio: false, rubrica: [], anexos: [], questoes: [novaQuestao()], atribuicao: 'TODOS', destinatarios: [] })
+const formularioInicial = () => ({ titulo: '', descricao: '', prazo: '', publicarEm: '', idTurma: '', permiteReenvio: false, rubrica: [], anexos: [], questoes: [novaQuestao()], atribuicao: 'TODOS', destinatarios: [] })
 const TIPOS_QUESTAO = [
   ['MULTIPLA_ESCOLHA', 'Múltipla escolha'], ['CHECKBOX', 'Checklist'], ['DISSERTATIVA', 'Discursiva'],
   ['RESPOSTA_CURTA', 'Resposta curta'], ['ORDENACAO', 'Ordenação'], ['ASSOCIACAO', 'Associação'], ['ARQUIVO', 'Envio de arquivo']
@@ -70,6 +71,7 @@ export default function Atividades() {
   const draftIdRef = useRef(null)
 
   const [form, setForm] = useState(formularioInicial)
+  const [turmas, setTurmas] = useState(null)
 
   const carregarAlunos = async () => {
     if (!isGestor) return
@@ -94,6 +96,10 @@ export default function Atividades() {
   }
 
   useEffect(() => { carregar() }, [])
+  useEffect(() => {
+    if (!isGestor) return
+    turmaService.listar().then(result => setTurmas(Array.isArray(result) ? result : [])).catch(() => setTurmas([]))
+  }, [isGestor])
   useEffect(() => { if (aberto) carregarAlunos() }, [aberto])
   useEffect(() => {
     if (!aberto || (!form.titulo.trim() && !form.descricao.trim() && !form.questoes.some((questao) => questao.enunciado?.trim()))) return undefined
@@ -209,6 +215,7 @@ export default function Atividades() {
       titulo: fonte.titulo || '', descricao: fonte.descricao || '', prazo: fonte.prazo ? String(fonte.prazo).slice(0, 16) : '',
       anexos: fonte.anexos || [], questoes: fonte.questoes?.length ? fonte.questoes : [novaQuestao()],
       atribuicao: fonte.atribuicao || 'TODOS', destinatarios: (fonte.destinatarios || []).map(String),
+      idTurma: String((Object.hasOwn(fonte, 'idTurma') ? fonte.idTurma : item.id_turma) ?? ''),
       publicarEm: (fonte.publicarEm || fonte.publicar_em) ? String(fonte.publicarEm || fonte.publicar_em).slice(0, 16) : '', permiteReenvio: Boolean(fonte.permiteReenvio ?? fonte.permite_reenvio), rubrica: fonte.rubrica || []
     })
     draftIdRef.current = item.id_atividade; setEditandoId(item.id_atividade); setAberto(true); setAutosaveStatus('salvo'); setUploadPreview(null); window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -313,6 +320,11 @@ export default function Atividades() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
+                <label className="activity-editor-field"><span>Turma</span><select value={form.idTurma} disabled={!turmas} onChange={event => setForm(current => ({ ...current, idTurma: event.target.value }))}>
+                  <option value="">Sem vínculo com turma</option>
+                  {form.idTurma && !turmas?.some(turma => String(turma.id_turma) === form.idTurma) && <option value={form.idTurma}>Turma vinculada</option>}
+                  {turmas?.map(turma => <option key={turma.id_turma} value={turma.id_turma}>{turma.nome}</option>)}
+                </select></label>
                 <label className="activity-editor-field"><span>Publicação agendada</span><input type="datetime-local" value={form.publicarEm} onChange={(e) => setForm({ ...form, publicarEm: e.target.value })} /></label>
                 <label className="activity-switch"><input type="checkbox" checked={form.permiteReenvio} onChange={(e) => setForm({ ...form, permiteReenvio: e.target.checked })} /><span><b>Permitir reenvio</b><small>O aluno poderá fazer uma nova entrega após a correção.</small></span></label>
               </div>
@@ -325,7 +337,7 @@ export default function Atividades() {
                     onChange={(e) => setForm((f) => ({ ...f, atribuicao: e.target.value, destinatarios: e.target.value === 'TODOS' ? [] : f.destinatarios }))}
                     className="w-full rounded-xl border border-[rgb(var(--pn-primaria-borda-rgb)/0.4)] bg-[rgb(var(--pn-superficie-rgb)/1)] px-4 py-2 text-sm font-bold text-[rgb(var(--pn-texto-rgb)/1)] dark:bg-[rgb(var(--pn-superficie-rgb)/1)] dark:text-white"
                   >
-                    <option value="TODOS">Todos os alunos</option>
+                    <option value="TODOS">{form.idTurma ? 'Todos os alunos da turma' : 'Todos os alunos'}</option>
                     <option value="SELECIONADOS">Alunos selecionados</option>
                   </select>
 
