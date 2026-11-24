@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { seal, open, assertRestoreTarget } = require('../src/scripts/portableBackup');
+const { seal, open, assertRestoreTarget, restoreValue } = require('../src/scripts/portableBackup');
 const { validateRequest } = require('../src/services/supportService');
 const secret = 'a1'.repeat(32);
 test('backup criptografado exige chave correta e detecta adulteração', () => {
@@ -16,6 +16,14 @@ test('backup criptografado exige chave correta e detecta adulteração', () => {
 test('restauração recusa nomes de bancos normais', () => {
   for (const database of ['tcc', 'planejai_tcc_online', '', 'planejai_restore_']) assert.throws(() => assertRestoreTarget({ database }));
   assert.doesNotThrow(() => assertRestoreTarget({ database: 'planejai_restore_teste_2026' }));
+});
+test('restauração serializa objetos apenas nas colunas JSON', () => {
+  const value = { title: 'Estudo', steps: [1, 2] };
+  assert.equal(restoreValue(value, true), JSON.stringify(value));
+  assert.equal(restoreValue(null, true), null);
+  assert.equal(restoreValue('[]', true), '[]');
+  assert.equal(restoreValue(value, false), value);
+  assert.deepEqual(restoreValue({ type: 'Buffer', data: [1, 2] }, false), Buffer.from([1, 2]));
 });
 test('pedido de exclusão exige confirmação explícita e mensagem válida', () => {
   assert.throws(() => validateRequest({ categoria: 'EXCLUSAO', mensagem: 'Quero excluir minha conta.' }));

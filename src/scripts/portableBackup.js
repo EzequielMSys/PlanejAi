@@ -32,6 +32,14 @@ async function tables(connection) {
   const [rows] = await connection.query("SELECT TABLE_NAME AS name FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME");
   return rows.map(row => row.name);
 }
+async function jsonColumns(connection, name) {
+  const [rows] = await connection.query("SELECT COLUMN_NAME AS name FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND DATA_TYPE = 'json'", [name]);
+  return new Set(rows.map(row => row.name));
+}
+function restoreValue(value, isJson) {
+  if (value?.type === 'Buffer' && Array.isArray(value.data)) return Buffer.from(value.data);
+  return isJson && value !== null && typeof value === 'object' ? JSON.stringify(value) : value;
+}
 async function exportBackup(sourceOptions, file, secret) {
   key(secret);
   const connection = await mysql.createConnection({ ...sourceOptions, dateStrings: true });
@@ -66,10 +74,10 @@ async function restoreBackup(destinationOptions, file, secret) {
     let rows = 0;
     for (const table of dump.tables) {
       try { await connection.query(table.sql); } catch (error) { error.message = `Estrutura de ${table.name}: ${error.message}`; throw error; }
+      const json = await jsonColumns(connection, table.name);
       for (let index = 0; index < table.rows.length; index += 250) {
         const values = table.rows.slice(index, index + 250).map(row => table.columns.map(column => {
-          const value = row[column];
-          return value?.type === 'Buffer' && Array.isArray(value.data) ? Buffer.from(value.data) : value;
+          return restoreValue(row[column], json.has(column));
         }));
         try {
           await connection.query(`INSERT INTO ${identifier(table.name)} (${table.columns.map(identifier).join(',')}) VALUES ?`, [values]);
@@ -85,7 +93,7 @@ async function restoreBackup(destinationOptions, file, secret) {
     return { tables: dump.tables.length, rows, restoredAt: new Date().toISOString(), verified: 'table_row_counts' };
   } finally { await connection.query('SET FOREIGN_KEY_CHECKS = 1').catch(() => {}); await connection.end(); }
 }
-module.exports = { seal, open, assertRestoreTarget, exportBackup, restoreBackup };
+module.exports = { seal, open, assertRestoreTarget, exportBackup, restoreBackup, restoreValue };
 if (require.main === module) {
   const [command, file] = process.argv.slice(2);
   const run = async () => {
