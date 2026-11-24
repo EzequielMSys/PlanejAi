@@ -41,6 +41,8 @@ test('o nome do arquivo de perfil começa com perfil-', () => {
   assert.match(nome, /^perfil-/)
   assert.match(nome, /\.jpg$/)
   assert.ok(!nome.includes(' '), 'o nome não pode ter espaço')
+  assert.match(nome, /^perfil-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jpg$/)
+  assert.ok(!nome.includes('minha'), 'a URL pública não deve conter o nome original')
 })
 
 test('o caminho relativo usa barra e a categoria correta', () => {

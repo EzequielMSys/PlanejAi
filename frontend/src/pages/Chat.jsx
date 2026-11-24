@@ -1,5 +1,5 @@
 import {useEffect,useRef} from 'react'
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { fraseConviteLumi } from '../utils/pronounCopy'
 import ChatInterface from '../components/ChatInterface'
@@ -24,7 +24,7 @@ export default function Chat() {
     <main className="lumi-page">
       <header className="lumi-page-heading">
         <button type="button" onClick={() => navigate(-1)} aria-label="Voltar à página anterior" className="lumi-back">← Voltar</button>
-        <div className="lumi-page-heading-row"><div><span className="lumi-page-kicker">SEU ESPAÇO DE ESTUDOS</span><h1>Converse com a Lumi.</h1></div><p>{fraseConviteLumi(user?.pronome)} Uma dúvida ou uma ideia já é um começo.</p></div>
+        <div className="lumi-page-heading-row"><div><span className="lumi-page-kicker">SEU ESPAÇO DE ESTUDOS</span><h1>Converse com a Lumi.</h1></div><p>{fraseConviteLumi(user?.pronome)} Uma dúvida ou uma ideia já é um começo. <Link to="/dados-e-privacidade">Entenda quais dados podem ser enviados à IA.</Link></p></div>
       </header>
 
       <div className="lumi-page-grid">

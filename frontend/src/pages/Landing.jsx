@@ -86,6 +86,6 @@ export default function Landing() {
         <ol>{[['Conte o que você busca', 'Seu objetivo, suas matérias e o tempo disponível ajudam a montar o plano.'], ['Encontre seu ritmo', 'Estude, pratique e converse com o assistente quando precisar de outra explicação.'], ['Volte e perceba a diferença', 'Use seus resultados para revisar dificuldades e escolher os próximos passos.']].map(([title, text], i) => <li key={title}><span>0{i + 1}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol>
       </section>
     </main>
-    <footer className="study-footer"><Link to="/" className="study-brand"><Logo decorative className="h-8 w-8" /><BrandName/></Link><p>Aprender transforma o que vem depois.</p><small>© {new Date().getFullYear()} PlanejAI</small></footer>
+    <footer className="study-footer"><Link to="/" className="study-brand"><Logo decorative className="h-8 w-8" /><BrandName/></Link><p>Aprender transforma o que vem depois.</p><Link to="/dados-e-privacidade">Dados e privacidade</Link><small>© {new Date().getFullYear()} PlanejAI</small></footer>
   </div>
 }

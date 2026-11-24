@@ -32,7 +32,7 @@ export default function LumiAttachment({ file, onCancel, onUse }) {
 
   async function read(mode) {
     if (request.current) return
-    const controller = new AbortController()
+    const controller = new window.AbortController()
     request.current = controller
     setBusy(true)
     setError('')
@@ -114,6 +114,6 @@ export default function LumiAttachment({ file, onCancel, onUse }) {
 async function readCanvas(canvas, signal) {
   const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.86))
   if (!blob) throw new Error('Não foi possível preparar a imagem para leitura.')
-  if (signal.aborted) throw new DOMException('Leitura cancelada.', 'AbortError')
+  if (signal.aborted) throw new window.DOMException('Leitura cancelada.', 'AbortError')
   return inteligencia.chatReadPhoto(blob, signal)
 }

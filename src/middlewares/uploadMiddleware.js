@@ -14,8 +14,12 @@ const storage = multer.diskStorage({
   },
 
   filename: (req, file, cb) => {
-    const usuarioId = req.usuario?.id_usuario || req.usuario?.id || "user";
     const ext = path.extname(file.originalname).toLowerCase();
+    if (!req.baseUrl?.includes('atividade')) {
+      cb(null, `perfil-${crypto.randomUUID()}${ext}`);
+      return;
+    }
+    const usuarioId = req.usuario?.id_usuario || req.usuario?.id || "user";
     const base = path
       .basename(file.originalname, ext)
       .replace(/[^a-zA-Z0-9-_]/g, "_");

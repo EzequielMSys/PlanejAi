@@ -192,6 +192,7 @@ const Register = () => {
         <button type="submit" disabled={loading} className="study-submit ds-btn">
           {loading ? 'Criando conta…' : 'Criar meu espaço'}
         </button>
+        <p className="study-hint">Antes de criar sua conta, veja <Link to="/dados-e-privacidade">como seus dados são usados</Link>.</p>
 
         {/* Campo isca contra robô: invisível para quem usa teclado e leitor de
             tela, mas preenchido por robô de cadastro em massa. */}

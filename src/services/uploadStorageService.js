@@ -33,6 +33,9 @@ function usarBlobPrivado() {
 
 function nomeSeguro(file, categoria, userId) {
   const ext = path.extname(file.originalname || '').toLowerCase()
+  // Fotos e banners são servidos sem autenticação: a URL não deve revelar
+  // o identificador da conta nem o nome original do arquivo.
+  if (categoria === 'perfis') return `perfil-${crypto.randomUUID()}${ext}`
   const base = path.basename(file.originalname || 'arquivo', ext)
     .replace(/[^a-zA-Z0-9-_]/g, '_')
     .slice(0, 80) || 'arquivo'

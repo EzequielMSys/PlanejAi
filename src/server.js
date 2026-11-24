@@ -117,6 +117,9 @@ app.get("/uploads/perfis/*file", async (req, res, next) => {
   try {
     const file = Array.isArray(req.params.file) ? req.params.file.join("/") : req.params.file;
     if (!file || file.includes("..") || file.includes("\\")) return res.status(400).json({ error: "Arquivo inválido." });
+    const relative = `/uploads/perfis/${file}`;
+    const [owners] = await pool.execute('SELECT 1 FROM usuarios WHERE foto_url = ? OR banner_url = ? LIMIT 1', [relative, relative]);
+    if (!owners.length) return res.status(404).json({ error: 'Arquivo não encontrado.' });
     return await enviarArquivoArmazenado(req, res, `perfis/${file}`, { protegido: false });
   } catch (error) {
     return next(error);

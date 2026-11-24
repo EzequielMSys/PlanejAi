@@ -92,9 +92,19 @@ test('personal data export includes only this account’s journal, versions and 
   const context={module:{exports:{}},require:()=>({execute:async(sql,params)=>{calls.push({sql,params});return [[]]}})};
   vm.runInNewContext(fs.readFileSync(require.resolve('../src/services/privacyService'),'utf8'),context);
   const result=await context.module.exports.exportUserData(7);
-  for(const table of ['diario_aprendizagem','diario_passos','diario_lumi_uso','fechamentos_estudo','leitura_destaques','lumi_conversas','revisoes_destaques','flashcard_revisoes']) {
+  for(const table of ['diario_aprendizagem','diario_passos','diario_lumi_uso','fechamentos_estudo','leitura_destaques','lumi_conversas','revisoes_destaques','flashcard_revisoes','uso_diario_conta','sessoes_guiadas','simulados_catalogo','projetos_redacao','cronograma_avaliacoes','trilhas_aprendizagem']) {
     assert.ok(Object.hasOwn(result.records,table));
     const query=calls.find(call=>call.sql.includes('`'+table+'`'));
     assert.match(query.sql,/WHERE id_usuario = \?/);assert.deepEqual(Array.from(query.params),[7]);
   }
+});
+test('personal data export reports unavailable sections instead of presenting them as empty',async()=>{
+  const context={module:{exports:{}},require:()=>({execute:async sql=>{
+    if(sql.includes('FROM `uso_diario_conta`'))throw Object.assign(new Error('missing'),{code:'ER_NO_SUCH_TABLE'});
+    return [[]];
+  }})};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../src/services/privacyService'),'utf8'),context);
+  const result=await context.module.exports.exportUserData(7);
+  assert.ok(Array.from(result.unavailable_sections).includes('uso_diario_conta'));
+  assert.ok(Object.hasOwn(result.records,'uso_diario_conta'));
 });

@@ -10,6 +10,7 @@ const Layout = lazy(() => import('./layouts/Layout'))
 const Landing = lazy(() => import('./pages/Landing'))
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
+const DadosEPrivacidade = lazy(() => import('./pages/DadosEPrivacidade'))
 const PrimeiroAcesso = lazy(() => import('./pages/PrimeiroAcesso'))
 const Onboarding = lazy(() => import('./pages/Onboarding'))
 const Dashboard = lazy(() => import('./pages/TodayDashboard'))
@@ -60,6 +61,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/dados-e-privacidade" element={<DadosEPrivacidade />} />
         <Route path="/esqueci-senha" element={<EsqueciSenha />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 
