@@ -8,11 +8,14 @@ yarn-error.log*
 # Environment variables
 .vercel/
 .env
+.env.*
+!**/.env.example
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 *.env
+*.env.*
 !*.env.example
 
 # Frontend configuration is machine/deployment-specific.
@@ -25,10 +28,21 @@ frontend/.env.production
 dist/
 build/
 .out/
+.cache/
+*.tsbuildinfo
+.eslintcache
+test-results/
+playwright-report/
+.lighthouseci/
+lighthouse-*.json
 
 # Logs
 logs
 *.log
+.tmp-*
+*.tmp
+*.temp
+*.har
 npm-debug.log*
 
 # Runtime data
@@ -67,13 +81,31 @@ backups/
 docs/
 db/*.sql
 !db/*.schema.sql
+*.pnai
+*.dump
+*.dump.gz
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
 
 # Certificates and local keys
 *.pem
 *.key
 *.crt
+*.p8
+*.p12
+*.pfx
+*.jks
+*.keystore
 
 # Migrations
 migrations/*.sql.backup
 
-.codex-attachments/087a16f4-006e-426e-9c41-888b34c6a9fa/957a5ced-292e-4222-8c00-8f5cb91703c4/662170.jpg
+.codex-attachments/
+
+# Project documents do not belong among GitHub configuration files.
+.github/*.docx
+.github/*.pdf
