@@ -10,13 +10,13 @@ Limites: o endereço `example.invalid` impede confirmar a entrega do e-mail e o 
 
 Lighthouse 13.6.0, Chrome em perfil móvel, cache de navegação limpo e limitação de rede/CPU simulada (`--preset=perf --form-factor=mobile --throttling-method=simulate`). Uma execução por página; os resultados variam entre execuções.
 
-| Página | Antes: nota | Antes: LCP | Antes: bloqueio total | Transferência identificada |
-| --- | ---: | ---: | ---: | ---: |
-| Inicial | 99/100 | 1,52 s | 94 ms | Imagem Lumi PNG: 758.547 bytes |
-| Login | 99/100 | 1,56 s | 113 ms | Sem a imagem Lumi |
+| Página | Antes: nota / LCP / bloqueio / transferência | Depois: nota / LCP / bloqueio / transferência |
+| --- | --- | --- |
+| Inicial | 99/100 · 1,52 s · 94 ms · 931 KB | 100/100 · 1,51 s · 30 ms · 231 KB |
+| Login | 99/100 · 1,56 s · 113 ms · 159 KB | 100/100 · 1,65 s · 40 ms · 173 KB |
 
-A imagem da Lumi foi convertida para WebP com transparência, de 758.547 para 55.220 bytes (redução de 92,7%). O componente passou a usar o arquivo novo. Falta registrar a medição após a publicação e medir telas autenticadas sob o mesmo perfil.
+A imagem da Lumi foi convertida para WebP com transparência, de 758.547 para 55.220 bytes (redução de 92,7%). O componente passou a usar o arquivo novo. A medição final da página inicial foi feita isoladamente; uma primeira tentativa em paralelo com outra medição sofreu disputa de CPU e foi descartada. A queda de bytes é confiável; a diferença de poucos milissegundos no LCP não comprova melhora de latência. Ainda faltam telas autenticadas sob o mesmo perfil móvel e conexão controlada.
 
 ## Dependências
 
-Antes: `npm audit --omit=dev` na API encontrou 16 alertas, incluindo um crítico transitivo (`proxy-addr`). O frontend encontrou 7 alertas na auditoria completa. Após atualizar dependências, ambos os `npm audit` completos retornaram zero alertas. O SDK `@vercel/blob` ainda depende de `@vercel/cli-config@0.3.1`, que fixa `zod@4.1.11`; um override restrito ao `zod` desse pacote o atualiza para 4.6.7. Verificar o funcionamento do upload/remoção de arquivo na produção após a publicação.
+Antes: `npm audit --omit=dev` na API encontrou 16 alertas, incluindo um crítico transitivo (`proxy-addr`). O frontend encontrou 7 alertas na auditoria completa. Após atualizar dependências, ambos os `npm audit` completos retornaram zero alertas. O SDK `@vercel/blob` ainda depende de `@vercel/cli-config@0.3.1`, que fixa `zod@4.1.11`; um override restrito ao `zod` desse pacote o atualiza para 4.6.7. O teste de produção com foto confirmou upload, acesso e remoção após a publicação.
