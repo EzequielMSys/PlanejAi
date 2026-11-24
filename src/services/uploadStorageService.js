@@ -96,7 +96,7 @@ async function enviarArquivoArmazenado(req, res, relative, { protegido = true } 
       )
       return res.status(404).json({ error: 'Arquivo não encontrado.' })
     }
-    res.setHeader('Cache-Control', protegido ? 'private, max-age=240' : 'public, max-age=86400')
+    res.setHeader('Cache-Control', protegido ? 'private, max-age=240' : 'no-store')
     return res.sendFile(absolute)
   }
 
@@ -112,7 +112,7 @@ async function enviarArquivoArmazenado(req, res, relative, { protegido = true } 
   res.status(200)
   res.setHeader('Content-Type', result.blob.contentType || 'application/octet-stream')
   res.setHeader('X-Content-Type-Options', 'nosniff')
-  res.setHeader('Cache-Control', protegido ? 'private, no-cache' : 'public, max-age=86400')
+  res.setHeader('Cache-Control', protegido ? 'private, no-cache' : 'no-store')
   if (result.blob.contentDisposition) res.setHeader('Content-Disposition', result.blob.contentDisposition)
   Readable.fromWeb(result.stream).on('error', () => res.destroy()).pipe(res)
   return undefined

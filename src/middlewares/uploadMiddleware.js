@@ -130,11 +130,10 @@ module.exports = {
     storage: useMemoryStorage ? multer.memoryStorage() : multer.diskStorage({
       destination: (req, file, cb) => cb(null, path.join("uploads", "perfis")),
       filename: (req, file, cb) => {
-        const usuarioId = req.usuario?.id_usuario || req.usuario?.id || "user";
         const ext = path.extname(file.originalname).toLowerCase();
         cb(
           null,
-          `perfil-${usuarioId}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}${ext}`,
+          `perfil-${crypto.randomUUID()}${ext}`,
         );
       },
     }),
