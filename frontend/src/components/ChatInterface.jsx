@@ -11,6 +11,9 @@ function PlainLumiMessage({ content }) {
 }
 function PhotoLoadFallback({onCancel}) { return <div role="alert" className="px-3 py-2 text-sm">Não foi possível abrir a prévia. Seu texto continua preservado. Feche e tente anexar novamente.<button type="button" onClick={onCancel} className="ml-2 underline">Fechar prévia</button></div> }
 const LumiPhoto = lazy(() => import('./LumiPhoto').catch(() => ({default:PhotoLoadFallback})))
+const LumiAttachment = lazy(() => import('./LumiAttachment').catch(() => ({default:PhotoLoadFallback})))
+const isPhoto = file => ['image/jpeg','image/png','image/webp'].includes(file.type)
+const attachmentExtension = /\.(pdf|txt|md|csv|json|srt|vtt|wav|mp3|m4a|mp4|webm|ogg|flac|mov)$/i
 const LumiMessage = lazy(() => import('./LumiMessage').catch(() => ({ default: PlainLumiMessage })))
 import LumiPractice from './LumiPractice'
 
@@ -101,12 +104,15 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
 
   function choosePhoto(file) {
     if (!file || sendingRef.current) return
-    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { setPhotoError('Escolha uma foto JPG, PNG ou WEBP da atividade.'); return }
+    if (!isPhoto(file) && !attachmentExtension.test(file.name)) { setPhotoError('Formato incompatível. Escolha uma imagem, PDF, arquivo de texto, áudio ou vídeo compatível.'); return }
+    const limit = /\.(pdf|txt|md|csv|json|srt|vtt|mp4|webm|mov)$/i.test(file.name) ? 20 : 4
+    if (!isPhoto(file) && file.size > limit * 1024 * 1024) { setPhotoError(`O arquivo deve ter até ${limit} MB.`); return }
     setPhotoError(''); setPhotoFile(file)
   }
   function closePhoto() { setPhotoFile(null); window.requestAnimationFrame(() => inputRef.current?.focus()) }
   function usePhotoText(text) {
-    const combined = [input.trim(), `Atividade transcrita de uma foto e conferida por mim:\n${text}`].filter(Boolean).join('\n\n')
+    const source = photoFile && isPhoto(photoFile) ? 'Atividade transcrita de uma foto e conferida por mim:' : 'Trecho conferido do arquivo para usar como material de estudo:'
+    const combined = [input.trim(), `${source}\n${text}`].filter(Boolean).join('\n\n')
     if (combined.length > 2000) return 'Sua mensagem junto ao enunciado ultrapassa 2000 caracteres. Reduza o enunciado ou volte e ajuste sua mensagem; nada foi apagado.'
     setInput(combined); closePhoto()
   }
@@ -262,7 +268,9 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         ['Confira se entendi', `Faça uma única pergunta curta sobre ${estudoAtual.titulo} para conferir se entendi. Não revele a resposta agora. Espere minha tentativa e depois explique o que acertei e o que devo revisar.`],
       ].map(([label, prompt]) => <button type="button" key={label} disabled={loading} onClick={() => enviar(prompt, estudoAtual.disciplina)}>{label}</button>)}</div><small>O atalho envia uma pergunta sobre a sessão atual.</small></div>}
       {photoError && <p role="alert" className="px-3 text-sm text-study-ink dark:text-white/90">{photoError}</p>}
-      {photoFile && <Suspense fallback={<p role="status">Abrindo a prévia da foto…</p>}><LumiPhoto file={photoFile} onCancel={closePhoto} onUse={usePhotoText}/></Suspense>}
+      {photoFile && <Suspense fallback={<p role="status">Abrindo a prévia…</p>}>{isPhoto(photoFile)
+        ? <LumiPhoto file={photoFile} onCancel={closePhoto} onUse={usePhotoText}/>
+        : <LumiAttachment file={photoFile} onCancel={closePhoto} onUse={usePhotoText}/>}</Suspense>}
       {sendError && <p role="alert" className="px-3 text-xs text-red-700 dark:text-red-300">{sendError}</p>}
 
 
@@ -273,7 +281,8 @@ export default function ChatInterface({ className = '', redacaoSelecionada, perg
         }}
         className="lumi-composer flex items-end gap-2 border-t border-study-line/15 p-3"
       >
-        <input type="file" accept="image/jpeg,image/png,image/webp" hidden ref={photoInput} disabled={loading} onChange={event => { choosePhoto(event.target.files?.[0]); event.target.value = '' }}/>
+        <input type="file" accept="image/jpeg,image/png,image/webp,.pdf,.txt,.md,.csv,.json,.srt,.vtt,.wav,.mp3,.m4a,.mp4,.webm,.ogg,.flac,.mov" hidden ref={photoInput} disabled={loading} onChange={event => { choosePhoto(event.target.files?.[0]); event.target.value = '' }}/>
+        <button type="button" className="lumi-photo-attach" aria-label="Anexar arquivo" disabled={loading} onClick={() => photoInput.current?.click()}>Arquivo</button>
         <button type="button" className="lumi-photo-attach" aria-label="Anexar foto de atividade" title="Anexar foto de atividade" disabled={loading} onClick={() => photoInput.current?.click()}><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M5 3h12l6 6v16H5Z M17 3v7h6 M9 16h10 M9 20h6"/><circle cx="10" cy="10" r="1.5"/></svg><span>Foto</span></button>
         <textarea
           id="lumi-message"
