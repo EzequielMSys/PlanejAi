@@ -12,6 +12,7 @@ const titles = {
   "/busca": "Busca no meu acervo — PlanejAI",
   "/login": "Entrar — PlanejAI",
   "/register": "Criar conta — PlanejAI",
+  "/dados-e-privacidade": "Seus dados — PlanejAI",
   "/inicio": "Hoje — PlanejAI",
   "/dashboard": "Hoje — PlanejAI",
   "/cronograma": "Cronograma — PlanejAI",

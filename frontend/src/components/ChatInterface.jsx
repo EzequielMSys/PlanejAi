@@ -6,6 +6,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import inteligencia from '../services/inteligenciaService'
 import TutorLumi from './TutorLumi'
+import { hasMath } from '../utils/lumiMessageKind.mjs'
 function PlainLumiMessage({ content }) {
   return <p className="whitespace-pre-wrap break-words leading-relaxed">{content}</p>
 }
@@ -15,6 +16,7 @@ const LumiAttachment = lazy(() => import('./LumiAttachment').catch(() => ({defau
 const isPhoto = file => ['image/jpeg','image/png','image/webp'].includes(file.type)
 const attachmentExtension = /\.(pdf|txt|md|csv|json|srt|vtt|wav|mp3|m4a|mp4|webm|ogg|flac|mov)$/i
 const LumiMessage = lazy(() => import('./LumiMessage').catch(() => ({ default: PlainLumiMessage })))
+const LumiPlainMessage = lazy(() => import('./LumiPlainMessage').catch(() => ({ default: PlainLumiMessage })))
 import LumiPractice from './LumiPractice'
 
 const DISCIPLINAS = ['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português', 'Inglês']
@@ -39,7 +41,7 @@ function Mensagem({ mensagem }) {
             : 'bg-study-tint dark:bg-study-paper text-study-ink dark:text-white/90 border border-study-line/15 rounded-bl-md'
         }`}
       >
-        {ehUsuario ? <p className="whitespace-pre-wrap break-words leading-relaxed">{mensagem.content}</p> : <Suspense fallback={<PlainLumiMessage content={mensagem.content} />}><LumiMessage content={mensagem.content} /></Suspense>}
+        {ehUsuario ? <p className="whitespace-pre-wrap break-words leading-relaxed">{mensagem.content}</p> : <Suspense fallback={<PlainLumiMessage content={mensagem.content} />}>{hasMath(mensagem.content) ? <LumiMessage content={mensagem.content} /> : <LumiPlainMessage content={mensagem.content} />}</Suspense>}
         {mensagem.criado_em && (
           <time dateTime={mensagem.criado_em} className="block translate-y-0.5 text-[10px] opacity-50">
             {formatarHora(mensagem.criado_em)}

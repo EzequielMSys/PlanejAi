@@ -931,9 +931,9 @@ test('Lumi starters prepare a question, then send one request and render safe st
     await act(async () => textarea.closest('form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true })));
     await flush();
     assert.equal(requests.filter(request => request.method === 'post').length, 1);
-    assert.ok(document.querySelector('.lumi-message').textContent.includes('Uma **ideia** de cada vez.'));
+    assert.ok(document.querySelector('.lumi-message').textContent.replaceAll('**', '').includes('Uma ideia de cada vez.'));
     assert.equal(document.querySelectorAll('.lumi-feed script').length, 0);
-    assert.ok(document.querySelector('.lumi-feed').textContent.includes('<script>unsafe()</script>'));
+    assert.ok(!document.querySelector('.lumi-feed').textContent.includes('unsafe()'));
   } finally { await screen.close(); }
 });
 test('Lumi keeps the original portrait without reactions or a floating button', async () => {

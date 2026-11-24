@@ -3,6 +3,8 @@ on:
   schedule:
     - cron: '7,37 * * * *'
   workflow_dispatch:
+  push:
+    branches: [main]
 permissions:
   contents: read
 concurrency:
@@ -11,7 +13,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,3 +22,7 @@ jobs:
         with:
           node-version: '24'
       - run: node src/scripts/checkAvailability.js
+      - name: Testar frontend, API, login e acesso privado na produção
+        run: node src/scripts/smokeProduction.js
+        env:
+          PLANEJAI_EXPECTED_SHA: ${{ github.event_name == 'push' && github.sha || '' }}
