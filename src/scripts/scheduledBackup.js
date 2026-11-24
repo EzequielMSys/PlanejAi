@@ -19,7 +19,7 @@ async function run() {
   try { restored = await restoreBackup(destination, file, process.env.BACKUP_ENCRYPTION_KEY); }
   catch (error) { error.backupStage = 'restore'; throw error; }
   if (restored.tables !== exported.tables || restored.rows !== exported.rows) throw new Error('Restauração divergente.');
-  const manifest = { ...exported, restoreVerified: true, restoredAt: restored.restoredAt, verification: restored.verified };
+  const manifest = { sourceDatabase: databaseOptions().database, ...exported, restoreVerified: true, restoredAt: restored.restoredAt, verification: restored.verified };
   await fs.writeFile(path.join(path.dirname(file), 'manifest.json'), JSON.stringify(manifest, null, 2), { flag: 'wx' });
   console.log(JSON.stringify(manifest));
 }
