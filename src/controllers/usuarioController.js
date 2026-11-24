@@ -2,6 +2,25 @@ const usuarioService = require('../services/usuarioService')
 const { validarArquivoEnviado } = require('../services/uploadSecurity')
 const { armazenarArquivo } = require('../services/uploadStorageService')
 const privacyService = require('../services/privacyService')
+const accountDeletionService = require('../services/accountDeletionService')
+const { clearSession } = require('../utils/sessionCookie')
+
+async function excluirMinhaConta(req, res) {
+  if (req.body?.confirmacao !== 'EXCLUIR MINHA CONTA' || typeof req.body?.senha !== 'string') {
+    return res.status(400).json({ error: 'Confirme a exclusão e informe sua senha.' })
+  }
+  try {
+    const result = await accountDeletionService.deleteStudentAccount(req.usuario.id_usuario, req.body.senha)
+    if (result.status === 'invalid_password') return res.status(403).json({ error: 'Senha incorreta.' })
+    if (result.status === 'unsupported' || result.status === 'owned_class') return res.status(409).json({ error: 'Esta conta possui vínculos de gestão. Solicite a exclusão pela central de ajuda.' })
+    if (result.status === 'missing') return res.status(404).json({ error: 'Conta não encontrada.' })
+    clearSession(res)
+    return res.json({ message: 'Conta e dados ativos excluídos. As cópias externas seguem o prazo de retenção documentado.' })
+  } catch (error) {
+    console.error('[ACCOUNT DELETION]', error.code || 'DELETION_FAILED')
+    return res.status(503).json({ error: 'Não foi possível concluir a exclusão. Sua conta permanece disponível; tente novamente ou peça ajuda.' })
+  }
+}
 
 function tratarErroUsuario(error, res) {
   if (error.message.includes('não encontrado')) {
@@ -298,6 +317,7 @@ async function definirSenha(req, res) {
 }
 
 module.exports = {
+  excluirMinhaConta,
   listar,
   obterPerfilLogado,
   exportarMeusDados,

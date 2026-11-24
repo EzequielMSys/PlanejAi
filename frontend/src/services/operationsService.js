@@ -10,3 +10,6 @@ export const sendSupport = (data,expectedOwner) => api.post('/suporte', data,{ex
 export const supportCapture = id => api.get(`/suporte/${id}/captura`,{responseType:'blob',cache:false}).then(response=>response.data)
 export const replySupport = (id, data) => api.patch(`/atendimento/${id}`, data)
 export const exportAccountData = () => createApiClient('/api/usuarios').get('/me/exportar', { cache: false }).then(response => response.data)
+export const deleteOwnAccount = senha => createApiClient('/api/usuarios').delete('/me', {
+  data: { senha, confirmacao: 'EXCLUIR MINHA CONTA' }, cache: false,
+}).then(response => response.data)

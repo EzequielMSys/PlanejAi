@@ -21,7 +21,7 @@ function operationFor(method, fullPath, tag, handlers) {
     tags: [tag],
     summary: `${method.toUpperCase()} ${fullPath}`,
     operationId: `${method}_${fullPath}`.replace(/[^A-Za-z0-9]+/g, "_"),
-    ...(protectedRoute ? { security: [{ bearerAuth: [] }] } : {}),
+    ...(protectedRoute ? { security: [{ cookieAuth: [] }, { bearerAuth: [] }] } : {}),
     ...((parameters.length || acceptsIdempotency)
       ? {
           parameters: [
@@ -126,11 +126,15 @@ const documentedSpec = swaggerJsdoc({
     ],
     components: {
       securitySchemes: {
+        cookieAuth: {
+          type: 'apiKey', in: 'cookie', name: process.env.NODE_ENV === 'production' ? '__Host-planejai_session' : 'planejai_session',
+          description: 'Cookie HttpOnly criado pelo login. Escritas também exigem X-CSRF-Token.',
+        },
         bearerAuth: {
           type: "http",
           scheme: "bearer",
           bearerFormat: "JWT",
-          description: "Cole aqui o token retornado por POST /api/auth/login.",
+          description: "Compatibilidade temporária para clientes externos; o login do navegador não devolve JWT.",
         },
       },
       schemas: {
@@ -199,7 +203,7 @@ const documentedSpec = swaggerJsdoc({
         LoginResponse: {
           type: "object",
           properties: {
-            token: { type: "string", description: "JWT usado nas rotas protegidas." },
+            csrfToken: { type: 'string', description: 'Envie em X-CSRF-Token nas escritas autenticadas.' },
             usuario: { $ref: "#/components/schemas/User" },
             primeiro_acesso: { type: "boolean", example: false },
           },

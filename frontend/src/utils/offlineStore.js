@@ -1,5 +1,6 @@
 const DB = 'planejai-offline-v1', VERSION = 1
 const syncs = new Map()
+import { getCsrfToken } from './csrfSession'
 
 export function currentUser() {
   try {
@@ -55,12 +56,13 @@ async function sendQueue(owner) {
   const items = await listQueue()
   for (const item of items.filter(i => i.status === 'PENDING' && i.owner === owner)) {
     // Never replay another account's work after logout or a switch of account.
-    const token = localStorage.getItem('token')
-    if (currentUser() !== owner || !token) break
+    const csrfToken = getCsrfToken()
+    if (currentUser() !== owner || !csrfToken) break
     try {
       const response = await fetch(`${item.baseURL}${item.url}`, {
         method: item.method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`,
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken,
           ...(item.idempotencyKey ? { 'Idempotency-Key': item.idempotencyKey } : {}) },
         body: item.data === undefined ? undefined : JSON.stringify(item.data),
       })

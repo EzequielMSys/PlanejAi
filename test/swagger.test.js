@@ -21,6 +21,7 @@ test("documenta todos os métodos registrados no Express", () => {
 
 test("marca rotas protegidas e uploads corretamente", () => {
   assert.deepEqual(swaggerSpec.paths["/api/aprendizagem/resumo"].get.security, [
+    { cookieAuth: [] },
     { bearerAuth: [] },
   ]);
   assert.ok(

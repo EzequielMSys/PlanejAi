@@ -1,20 +1,26 @@
 const jwt = require("jsonwebtoken");
 const usuarioModel = require("../models/usuarioModel");
 const { getJwtSecret } = require("../config/jwtConfig");
+const { cookieToken, verifyCsrf } = require('../utils/sessionCookie');
 
 async function authMiddleware(req, res, next) {
   let checkingAccount = false;
   try {
     const authHeader = req.headers.authorization;
+    const sessionToken = cookieToken(req);
 
-    if (!authHeader) {
+    if (!authHeader && !sessionToken) {
       return res.status(401).json({ message: "Token não fornecido." });
     }
 
-    const [scheme, token] = authHeader.split(" ");
+    const [scheme, bearerToken] = authHeader ? authHeader.split(" ") : [null, null];
+    const token = sessionToken || bearerToken;
 
-    if (scheme !== "Bearer" || !token) {
+    if ((authHeader && scheme !== 'Bearer') || !token) {
       return res.status(401).json({ message: "Formato de token inválido." });
+    }
+    if (sessionToken && !verifyCsrf(req, sessionToken)) {
+      return res.status(403).json({ message: 'Token CSRF ausente ou inválido.' });
     }
 
     const decoded = jwt.verify(token, getJwtSecret(), {

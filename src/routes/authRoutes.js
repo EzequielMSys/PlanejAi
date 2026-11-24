@@ -76,7 +76,7 @@ router.post("/register", registrationRateLimit, authController.registrar);
  *   post:
  *     tags: [Autenticação]
  *     summary: Autentica um usuário
- *     description: Retorna um token JWT. Copie o token e use o botão Authorize para testar rotas protegidas.
+ *     description: Cria a sessão em cookie HttpOnly e retorna o token CSRF para operações de escrita.
  *     operationId: login
  *     requestBody:
  *       required: true
@@ -101,6 +101,8 @@ router.post("/register", registrationRateLimit, authController.registrar);
  *         description: Limite de tentativas excedido.
  */
 router.post("/login", authRateLimit, authController.login);
+router.get('/session', authMiddleware, authController.session);
+router.post('/logout', authMiddleware, authController.logout);
 
 /**
  * @openapi

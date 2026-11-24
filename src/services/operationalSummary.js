@@ -18,6 +18,9 @@ async function operationalSummary() {
     FROM auditoria_api WHERE criado_em >= NOW() - INTERVAL 1 DAY AND metodo IN ('POST','PUT','PATCH','DELETE')
     GROUP BY fluxo`);
   const [recentFailures] = await pool.execute("SELECT metodo, rota, status_http, request_id, criado_em FROM auditoria_api WHERE criado_em >= NOW() - INTERVAL 1 DAY AND status_http >= 500 ORDER BY id_auditoria DESC LIMIT 10");
-  return { failures, flows, recentFailures, support, ia: { configured: Boolean(process.env.OPENAI_API_KEY?.trim()), model: config.model, daily_limit: config.dailyLimit, ...usage }, window: '24 horas; escritas e falhas de leitura do servidor', timezone: 'Relógio do banco de dados' };
+  let providerHost = 'api.openai.com';
+  try { if (process.env.OPENAI_BASE_URL?.trim()) providerHost = new URL(process.env.OPENAI_BASE_URL.trim()).hostname; }
+  catch { providerHost = 'configuração inválida'; }
+  return { failures, flows, recentFailures, support, ia: { configured: Boolean(process.env.OPENAI_API_KEY?.trim()), provider_host: providerHost, model: config.model, daily_limit: config.dailyLimit, ...usage }, window: '24 horas; escritas e falhas de leitura do servidor', timezone: 'Relógio do banco de dados' };
 }
 module.exports = { operationalSummary };

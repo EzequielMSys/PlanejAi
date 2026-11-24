@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const isUnavailable=require('../src/utils/databaseUnavailable');
-function load(file,deps){const context={module:{exports:{}},console:{error(){},warn(){}},require:name=>deps[name]};vm.runInNewContext(fs.readFileSync(require.resolve(file),'utf8'),context);return context.module.exports;}
+function load(file,deps){const context={module:{exports:{}},console:{error(){},warn(){}},require:name=>deps[name]||({'../utils/sessionCookie':{cookieToken:()=>null,verifyCsrf:()=>true,setSession:()=>'',clearSession(){},csrfFor:()=>''}}[name])};vm.runInNewContext(fs.readFileSync(require.resolve(file),'utf8'),context);return context.module.exports;}
 const response=()=>({statusCode:200,status(code){this.statusCode=code;return this},json(body){this.body=body;return this}});
 test('login distinguishes database outage from invalid credentials without exposing connection details',async()=>{
  for(const code of ['ENOTFOUND','ETIMEDOUT','ER_CON_COUNT_ERROR']){

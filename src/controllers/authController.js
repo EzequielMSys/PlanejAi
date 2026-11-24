@@ -1,5 +1,6 @@
 const authService = require("../services/authService");
 const databaseUnavailable = require('../utils/databaseUnavailable');
+const { setSession, clearSession, csrfFor, cookieToken } = require('../utils/sessionCookie');
 
 async function registrar(req, res) {
   try {
@@ -53,9 +54,10 @@ async function login(req, res) {
     }
 
     const resultado = await authService.login(email, senha);
+    const csrfToken = setSession(res, resultado.token);
 
     return res.status(200).json({
-      token: resultado.token,
+      csrfToken,
       usuario: resultado.usuario,
       primeiro_acesso: resultado.primeiro_acesso,
     });
@@ -145,6 +147,7 @@ async function trocarSenhaPrimeiroAcesso(req, res) {
       novaSenha,
     );
 
+    clearSession(res);
     return res.status(200).json(resultado);
   } catch (error) {
     if (
@@ -186,7 +189,8 @@ async function alterarSenha(req, res) {
       novaSenha,
     );
 
-    return res.status(200).json(resultado);
+    const csrfToken = setSession(res, resultado.token);
+    return res.status(200).json({ message: resultado.message, usuario: resultado.usuario, csrfToken });
   } catch (error) {
     if (
       error.message.includes("Senha atual incorreta") ||
@@ -205,6 +209,20 @@ async function alterarSenha(req, res) {
   }
 }
 
+async function session(req, res) {
+  if (!cookieToken(req)) return res.status(401).json({ message: 'Sessão por cookie necessária.' });
+  res.set('Cache-Control', 'private, no-store');
+  const usuario = await require('../models/usuarioModel').buscarPorId(req.usuario.id_usuario);
+  return res.json({ usuario: require('../utils/authUtils').sanitizeUser(usuario),
+    primeiro_acesso: usuario.senha_temporaria === 1, csrfToken: csrfFor(cookieToken(req)) });
+}
+
+async function logout(req, res) {
+  await require('../config/db').execute('UPDATE usuarios SET versao_sessao = versao_sessao + 1 WHERE id_usuario = ?', [req.usuario.id_usuario]);
+  clearSession(res);
+  return res.json({ message: 'Sessão encerrada.' });
+}
+
 module.exports = {
   registrar,
   login,
@@ -212,4 +230,6 @@ module.exports = {
   redefinirSenha,
   trocarSenhaPrimeiroAcesso,
   alterarSenha,
+  session,
+  logout,
 };

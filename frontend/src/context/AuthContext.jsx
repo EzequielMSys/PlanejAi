@@ -3,15 +3,16 @@ import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import authService from "../services/authService";
 import { apiUrl } from "../config/api";
-import { clearStoredSession, isTokenExpired } from "../utils/session";
+import { clearStoredSession } from "../utils/session";
+import { setCsrfToken } from '../utils/csrfSession';
 import { clearOfflineData } from "../utils/offlineStore";
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 export const AuthContext = createContext();
 
-async function checkPerfilCompleto(token) {
+async function checkPerfilCompleto() {
   const response = await fetchWithTimeout(apiUrl("/api/perfil"), {
-    headers: { Authorization: `Bearer ${token}` },
+    credentials: 'include',
     cache: "no-store",
   });
   if (!response.ok) {
@@ -37,7 +38,7 @@ const authReducer = (state, action) => {
       return {
         ...state,
         user: action.payload.user,
-        token: action.payload.token,
+        token: null,
         primeiroAcesso: action.payload.primeiro_acesso,
         perfilCompleto: action.payload.perfil_completo,
         loading: false,
@@ -80,46 +81,42 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let cancelled = false;
     const restore = async () => {
-      const token = localStorage.getItem("token");
-      const user = localStorage.getItem("user");
-      const primeiroAcesso = localStorage.getItem("primeiro_acesso") === "true";
-
+      // Remove credentials left by releases before cookie sessions.
+      localStorage.removeItem('token');
       const perfilCompleto = localStorage.getItem("perfil_completo") === "true";
-
-      if (token && user && !isTokenExpired(token)) {
-        try {
-          const parsedUser = JSON.parse(user);
+      try {
+          const session = await authService.session();
+          const parsedUser = session.usuario;
+          setCsrfToken(session.csrfToken);
 
           // O banco é a fonte de verdade; um cache antigo não deve repetir o onboarding.
           let completo = perfilCompleto;
           const isGestor = ["dono", "admin", "adm", "docente"].includes(parsedUser.tipo);
           try {
-            completo = isGestor || await checkPerfilCompleto(token);
+            completo = isGestor || await checkPerfilCompleto();
           } catch (error) {
-            if (error.status === 401 || error.status === 403) { if (!cancelled && localStorage.getItem('token') === token) { clearStoredSession(); dispatch({ type: 'LOGOUT' }); } return; }
+            if (error.status === 401 || error.status === 403) { if (!cancelled) { clearStoredSession(); setCsrfToken(null); dispatch({ type: 'LOGOUT' }); } return; }
             console.error("Erro ao consultar perfil salvo:", error);
             // Uma indisponibilidade da API não apaga o estado já confirmado.
           }
-          if (cancelled || localStorage.getItem("token") !== token) return;
+          if (cancelled) return;
+          localStorage.setItem('user', JSON.stringify(parsedUser));
           localStorage.setItem("perfil_completo", completo ? "true" : "false");
 
           dispatch({
             type: "LOGIN_SUCCESS",
             payload: {
-              token,
+              token: null,
               user: parsedUser,
-              primeiro_acesso: primeiroAcesso,
+              primeiro_acesso: session.primeiro_acesso,
               perfil_completo: completo,
             },
           });
         } catch (error) {
-          console.error("Erro ao restaurar sessão:", error);
-
+          if (error.response?.status !== 401) console.error("Erro ao restaurar sessão:", error);
+          setCsrfToken(null);
           clearStoredSession();
         }
-      } else if (token || user) {
-        clearStoredSession();
-      }
 
       if (cancelled) return;
       dispatch({
@@ -139,15 +136,15 @@ export const AuthProvider = ({ children }) => {
       });
 
       const response = await authService.login(email, senha);
+      localStorage.removeItem('token');
+      setCsrfToken(response.csrfToken);
 
       const isGestor = ["dono", "admin", "adm", "docente"].includes(
         response.usuario.tipo,
       );
       const perfilCompleto = isGestor
         ? true
-        : await checkPerfilCompleto(response.token);
-
-      localStorage.setItem("token", response.token);
+        : await checkPerfilCompleto();
 
       localStorage.setItem("user", JSON.stringify(response.usuario));
 
@@ -164,7 +161,7 @@ export const AuthProvider = ({ children }) => {
       dispatch({
         type: "LOGIN_SUCCESS",
         payload: {
-          token: response.token,
+          token: null,
           user: response.usuario,
           primeiro_acesso: response.primeiro_acesso,
           perfil_completo: perfilCompleto,
@@ -199,7 +196,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try { await authService.logout(); } catch { /* Clear local data even if the API is unavailable. */ }
+    setCsrfToken(null);
     clearOfflineData().catch(() => {});
     clearStoredSession();
 
@@ -213,10 +212,10 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (senhaAtual, novaSenha, confirmarSenha) => {
     const response = await authService.alterarSenha(senhaAtual, novaSenha, confirmarSenha);
-    localStorage.setItem("token", response.token);
+    setCsrfToken(response.csrfToken);
     localStorage.setItem("user", JSON.stringify(response.usuario));
     dispatch({ type: "LOGIN_SUCCESS", payload: {
-      token: response.token, user: response.usuario,
+      token: null, user: response.usuario,
       primeiro_acesso: state.primeiroAcesso, perfil_completo: state.perfilCompleto,
     } });
     return response;
@@ -225,6 +224,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const handleExpiredSession = () => {
       clearOfflineData().catch(() => {});
+      setCsrfToken(null);
       dispatch({ type: "LOGOUT" });
       toast.error("Sua sessão expirou. Entre novamente.");
       navigate("/login", { replace: true });
@@ -277,7 +277,7 @@ export const AuthProvider = ({ children }) => {
     updateUser,
     updatePerfilCompleto,
 
-    isAuthenticated: !!state.token,
+    isAuthenticated: !!state.user,
 
     isAdmin,
     isDocente,

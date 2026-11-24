@@ -1,19 +1,20 @@
 import { useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { apiUrl } from '../config/api'
+import { getCsrfToken } from '../utils/csrfSession'
 
 const SAMPLE_MS = 15_000
 const IDLE_MS = 60_000
 const events = ['pointerdown', 'keydown', 'wheel', 'touchstart']
 
 export default function AccountUsageTracker() {
-  const { token, user } = useAuth()
+  const { user } = useAuth()
   const id = user?.id_usuario || user?.id
 
   useEffect(() => {
-    if (!token || !id) return
+    if (!id) return
     const abort = new window.AbortController()
-    const foreground = () => localStorage.getItem('token') === token
+    const foreground = () => Boolean(getCsrfToken())
       && document.visibilityState === 'visible' && document.hasFocus()
     let lastInteraction = -Infinity
     let activeSince = null
@@ -40,7 +41,8 @@ export default function AccountUsageTracker() {
       try {
         await fetch(apiUrl('/api/usuarios/me/uso'), {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
+          headers: { 'X-CSRF-Token': getCsrfToken() },
           cache: 'no-store',
           signal: window.AbortSignal.any([abort.signal, window.AbortSignal.timeout(10_000)])
         })
@@ -61,7 +63,7 @@ export default function AccountUsageTracker() {
       window.removeEventListener('blur', reset)
       document.removeEventListener('visibilitychange', reset)
     }
-  }, [id, token])
+  }, [id])
 
   return null
 }

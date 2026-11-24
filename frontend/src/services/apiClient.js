@@ -1,13 +1,14 @@
 import axios from 'axios'
 import { apiUrl } from '../config/api'
 import { cacheGet, cachePut, enqueue, scopedCacheKey, currentUser } from '../utils/offlineStore'
+import { getCsrfToken, sessionGeneration } from '../utils/csrfSession'
 
 export function createApiClient(basePath) {
-  const api = axios.create({ baseURL: apiUrl(basePath), timeout: 15000 })
+  const api = axios.create({ baseURL: apiUrl(basePath), timeout: 15000, withCredentials: true })
   api.interceptors.request.use((config) => {
     if(config.expectedOwner && config.expectedOwner!==currentUser())throw new axios.CanceledError('A conta mudou. Reabra o estudo na conta correta antes de enviar.')
-    const token = localStorage.getItem('token')
-    if (token) config.headers.Authorization = `Bearer ${token}`
+    if (getCsrfToken() && !['get', 'head', 'options'].includes(config.method)) config.headers['X-CSRF-Token'] = getCsrfToken()
+    config.sessionGeneration = sessionGeneration()
     // getUri uses Axios' actual parameter serializer, including filters and pages.
     config.offlineOwner = currentUser()
     config.offlineCacheKey = scopedCacheKey(api.getUri(config))
@@ -37,8 +38,7 @@ export function createApiClient(basePath) {
         return { data: { offline: true, queued: true, queueId: id, message: 'Salvo neste aparelho. Será sincronizado quando a conexão voltar.' }, status: 202, config }
       }
       // An old in-flight request must not clear a session that has just been renewed.
-      const currentToken = localStorage.getItem('token')
-      if (error.response?.status === 401 && currentToken && config.headers?.Authorization === `Bearer ${currentToken}`) {
+      if (error.response?.status === 401 && config.sessionGeneration === sessionGeneration() && !config.url?.includes('/session') && !config.url?.includes('/login')) {
         for (const key of ['token', 'user', 'primeiro_acesso', 'perfil_completo']) localStorage.removeItem(key)
         window.dispatchEvent(new window.CustomEvent('planejai:session-expired'))
       }

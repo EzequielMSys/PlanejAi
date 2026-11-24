@@ -25,14 +25,17 @@ function load(relative, context, footer = '') {
 }
 function client() {
   const env = browser(), cache = new Map(), queued = [];
+  let generation = 1;
   const context = load('frontend/src/services/apiClient.js', {
     ...env, axios, apiUrl: value => value,
     currentUser: () => JSON.parse(env.localStorage.getItem('user') || '{}').id?.toString() || 'anonymous',
     scopedCacheKey: key => `${JSON.parse(env.localStorage.getItem('user')).id}:${key}`,
     cachePut: async (key, data) => cache.set(key, { data }), cacheGet: async key => cache.get(key),
     enqueue: async item => { queued.push(item); return queued.length; },
+    getCsrfToken: () => 'a'.repeat(64),
+    sessionGeneration: () => generation,
   });
-  return { api: context.createApiClient('/api/usuarios'), cache, queued, ...env };
+  return { api: context.createApiClient('/api/usuarios'), cache, queued, renew: () => { generation++; }, ...env };
 }
 function offline(config) { return Promise.reject(new axios.AxiosError('offline', 'ERR_NETWORK', config)); }
 
@@ -66,14 +69,23 @@ test('queued retry keeps the same idempotency key as the original request', asyn
   assert.equal(queued[0].idempotencyKey, originalKey);
   assert.equal(queued[0].data.minutos, 5);
 });
-test('a late unauthorized response does not revoke a renewed session', async () => {
+test('an unauthorized response clears cached account data', async () => {
   const { api, localStorage, events } = client();
   api.defaults.adapter = config => {
-    localStorage.setItem('token', 'renewed-token');
     return Promise.reject(new axios.AxiosError('unauthorized', 'ERR_BAD_REQUEST', config, null, { status: 401 }));
   };
   await assert.rejects(api.get('/'));
-  assert.equal(localStorage.getItem('token'), 'renewed-token');
+  assert.equal(localStorage.getItem('user'), null);
+  assert.equal(events.length, 1);
+});
+test('a late unauthorized response does not revoke a renewed cookie session', async () => {
+  const { api, localStorage, events, renew } = client();
+  api.defaults.adapter = config => {
+    renew();
+    return Promise.reject(new axios.AxiosError('unauthorized', 'ERR_BAD_REQUEST', config, null, { status: 401 }));
+  };
+  await assert.rejects(api.get('/'));
+  assert.ok(localStorage.getItem('user'));
   assert.equal(events.length, 0);
 });
 test('a failed write is not queued under a different account', async () => {
@@ -87,6 +99,7 @@ function queueContext(options = {}) {
   const items = [{ id: 1, owner: '1', status: 'PENDING', baseURL: '/api', url: '/sessoes', method: 'POST', data: { minutos: 5 }, idempotencyKey: 'stable-key' }];
   const sends = [];
   const context = load('frontend/src/utils/offlineStore.js', { ...env,
+    getCsrfToken: () => 'a'.repeat(64),
     fetch: async (url, config) => { sends.push(config); await new Promise(resolve => setTimeout(resolve, 5)); return { ok: true, status: 200 }; },
     items, ...options,
   }, `listQueue = async () => items.slice(); removeQueue = async id => { const index = items.findIndex(item => item.id === id); if (index >= 0) items.splice(index, 1); };`);

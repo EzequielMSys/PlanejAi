@@ -13,7 +13,13 @@ const React = req('react');
 const { createRoot } = req('react-dom/client');
 const { MemoryRouter } = req('react-router-dom');
 let api;
-async function screen(cached, fetchProfile) {
+let revokedFixture = false;
+const axios = req('axios');
+axios.defaults.adapter = async config => revokedFixture
+  ? Promise.reject(new axios.AxiosError('revoked', 'ERR_BAD_REQUEST', config, null, { status: 401 }))
+  : { status: 200, statusText: 'OK', headers: {}, config, data: { usuario: { id_usuario: 101, tipo: 'aluno' }, primeiro_acesso: false, csrfToken: 'a'.repeat(64) } };
+async function screen(cached, fetchProfile, revoked = false) {
+  revokedFixture = revoked;
   if (!api) {
     const built = await req('esbuild').build({
       stdin: { contents: "export { AuthProvider, useAuth } from './src/context/AuthContext.jsx'", resolveDir: frontend },
@@ -47,11 +53,12 @@ test('reopening the site recovers completed setup from the server despite stale 
   const view = await screen(false, async (url, options) => {
     calls++;
     assert.equal(url, '/api/perfil');
-    assert.match(options.headers.Authorization, /^Bearer /);
+    assert.equal(options.credentials, 'include');
     return { ok: true, json: async () => ({ perfil: { areas_foco: 'Matemática' }, disponibilidade: [{ dia_semana: 'SEG' }] }) };
   });
   try {
     assert.equal(view.text(), 'complete');
+    assert.equal(localStorage.getItem('token'), null);
     assert.equal(localStorage.getItem('perfil_completo'), 'true');
     assert.equal(calls, 1);
   } finally { await view.close(); }
@@ -69,7 +76,7 @@ test('an actually incomplete profile still opens setup', async () => {
 });
 
 test('a revoked server session clears cached authentication instead of trusting the local profile', async () => {
-  const view = await screen(true, async () => ({ ok: false, status: 401 }));
+  const view = await screen(true, async () => ({ ok: false, status: 401 }), true);
   try {
     assert.equal(localStorage.getItem('token'), null);
     assert.equal(localStorage.getItem('user'), null);

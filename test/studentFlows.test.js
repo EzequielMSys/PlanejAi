@@ -86,6 +86,11 @@ let journalSteps = [{id:11,tipo:'explicacao',texto:'Primeira versão preservada'
 const person = role => ({ id: 900001, id_usuario: 900001, nome: 'Estudante de teste', email: 'fixture@example.invalid', tipo: role, ativo: 1 });
 let criticalReadingsFixture=[];
 async function fixture(config) {
+  if (String(config.url).endsWith('/session') && String(config.baseURL).endsWith('/api/auth')) return {
+    usuario: JSON.parse(localStorage.getItem('user') || 'null'),
+    primeiro_acesso: localStorage.getItem('primeiro_acesso') === 'true',
+    csrfToken: 'a'.repeat(64),
+  };
   const url = `${config.baseURL || ''}${config.url || ''}`.replace(/\/$/, '');
   if(url.endsWith('/inteligencia/chat/contexto')) return lumiContextFixture;
   requests.push({ url, method: config.method, data: config.data, params:config.params, cache:config.cache });

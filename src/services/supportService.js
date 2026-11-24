@@ -41,6 +41,14 @@ async function reply(id, body) {
   if (!Number.isSafeInteger(Number(id)) || Number(id) <= 0 || !['ABERTO', 'EM_ATENDIMENTO', 'RESOLVIDO'].includes(body?.status) || response.length < 10 || response.length > 2000) {
     const error = new Error('Informe um estado e uma resposta entre 10 e 2000 caracteres.'); error.status = 400; throw error;
   }
+  if (body.status === 'RESOLVIDO') {
+    const [[request]] = await pool.execute('SELECT categoria FROM suporte_solicitacoes WHERE id = ?', [id]);
+    if (request?.categoria === 'EXCLUSAO') {
+      const error = new Error('Um pedido de exclusão só pode ser encerrado após a remoção verificada da conta e dos arquivos.');
+      error.status = 409;
+      throw error;
+    }
+  }
   const [result] = await pool.execute('UPDATE suporte_solicitacoes SET status = ?, resposta = ? WHERE id = ?', [body.status, response, id]);
   if (!result.affectedRows) { const error = new Error('Pedido não encontrado.'); error.status = 404; throw error; }
 }

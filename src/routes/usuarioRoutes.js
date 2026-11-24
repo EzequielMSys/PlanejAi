@@ -41,6 +41,7 @@ router.get(
   authMiddleware,
   usuarioController.exportarMeusDados
 )
+router.delete('/me', authMiddleware, usuarioController.excluirMinhaConta)
 
 router.post('/me/uso', authMiddleware, async (req, res) => {
   try {

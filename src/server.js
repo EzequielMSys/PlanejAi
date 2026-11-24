@@ -92,7 +92,7 @@ app.use(requestLogger);
 app.use(operationsMonitor);
 app.use(corsGate);
 // `origin` reflexivo é seguro aqui: a lista já foi validada pelo corsGate acima.
-app.use(cors({ origin: true, maxAge: 600 }));
+app.use(cors({ origin: true, credentials: true, maxAge: 600, allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Idempotency-Key'] }));
 app.use(express.json({ limit: "2mb", strict: true }));
 app.use(express.urlencoded({ extended: false, limit: "256kb" }));
 

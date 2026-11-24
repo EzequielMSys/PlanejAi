@@ -44,7 +44,7 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist
+          path: pages-redirect
           retention-days: 7
 
   deploy:

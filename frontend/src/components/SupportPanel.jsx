@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { listSupport, sendSupport, replySupport, exportAccountData, supportCapture } from '../services/operationsService'
+import { listSupport, sendSupport, replySupport, exportAccountData, supportCapture, deleteOwnAccount } from '../services/operationsService'
+import { useAuth } from '../context/AuthContext'
 import './SupportPanel.css'
 
 const labels = { PROBLEMA: 'Problema no site', MELHORIA:'Sugestão de melhoria', DUVIDA: 'Dúvida', EXCLUSAO: 'Exclusão da conta', ABERTO: 'Aberto', EM_ATENDIMENTO: 'Em atendimento', RESOLVIDO: 'Resolvido' }
 const errorMessage = error => error.response?.data?.message || error.response?.data?.error || error.message || 'Não foi possível concluir. Tente novamente.'
 
 export default function SupportPanel({ owner = false }) {
+  const { user, logout } = useAuth()
   const [requests, setRequests] = useState([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -15,6 +17,8 @@ export default function SupportPanel({ owner = false }) {
   const [message, setMessage] = useState('')
   const [confirmation, setConfirmation] = useState(false)
   const [notice, setNotice] = useState('')
+  const [deletionPassword, setDeletionPassword] = useState('')
+  const [deletionPhrase, setDeletionPhrase] = useState('')
   async function load() {
     setLoading(true); setError('')
     try { const data = await listSupport(owner); if (!Array.isArray(data)) throw new Error('Resposta de atendimento inválida. Tente novamente.'); setRequests(data) } catch (failure) { setError(errorMessage(failure)) } finally { setLoading(false) }
@@ -37,10 +41,18 @@ export default function SupportPanel({ owner = false }) {
       setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch (failure) { setError(errorMessage(failure)) } finally { setBusy(false) }
   }
+  async function deleteAccount(event) {
+    event.preventDefault(); setBusy(true); setError('')
+    try {
+      await deleteOwnAccount(deletionPassword)
+      setDeletionPassword(''); setDeletionPhrase('')
+      await logout()
+    } catch (failure) { setError(errorMessage(failure)) } finally { setBusy(false) }
+  }
   return <section className="support-panel" aria-label={owner ? 'Central de atendimento' : 'Ajuda e seus dados'}>
     <h2>{owner ? 'Central de atendimento' : 'Ajuda e seus dados'}</h2>
-    <p>{owner ? 'Responda aos pedidos dentro da plataforma. Confirme a execução da exclusão antes de encerrar um pedido desse tipo.' : 'Converse com a equipe do PlanejAI e acompanhe seus pedidos neste espaço. Não envie senhas, chaves ou dados sensíveis.'} <Link to="/dados-e-privacidade">Como seus dados são usados</Link></p>
-    {!owner && <><button type="button" disabled={busy} onClick={download}>Baixar meus dados</button><p>O arquivo JSON pode conter conversas, redações e capturas enviadas ao suporte. Guarde-o em local privado.</p><form onSubmit={submit}><fieldset disabled={busy}><label>Assunto<select value={category} onChange={event => { setCategory(event.target.value); setConfirmation(false) }}><option value="PROBLEMA">Problema no site</option><option value="DUVIDA">Dúvida</option><option value="EXCLUSAO">Solicitar exclusão da conta</option></select></label><label>Mensagem<textarea required minLength={10} maxLength={2000} rows={4} value={message} onChange={event => setMessage(event.target.value)} /></label>{category === 'EXCLUSAO' && <label className="support-confirm"><input type="checkbox" required checked={confirmation} onChange={event => setConfirmation(event.target.checked)} /><span>Solicito a exclusão da minha conta e dos meus dados. Este pedido será analisado pela equipe; a conta permanece ativa até a conclusão. Posso baixar meus dados antes de solicitar.</span></label>}<button disabled={busy}>{busy ? 'Enviando…' : 'Enviar pedido'}</button></fieldset></form></>}
+    <p>{owner ? 'Responda aos pedidos dentro da plataforma. Pedidos de exclusão não podem ser marcados como resolvidos aqui; confirme a remoção e avise a pessoa por um canal acessível após a exclusão.' : 'Converse com a equipe do PlanejAI e acompanhe seus pedidos neste espaço. Não envie senhas, chaves ou dados sensíveis.'} <Link to="/dados-e-privacidade">Como seus dados são usados</Link></p>
+    {!owner && <><button type="button" disabled={busy} onClick={download}>Baixar meus dados</button><p>O arquivo JSON pode conter conversas, redações e capturas enviadas ao suporte. Guarde-o em local privado.</p><form onSubmit={submit}><fieldset disabled={busy}><label>Assunto<select value={category} onChange={event => { setCategory(event.target.value); setConfirmation(false) }}><option value="PROBLEMA">Problema no site</option><option value="DUVIDA">Dúvida</option><option value="EXCLUSAO">Solicitar exclusão da conta</option></select></label><label>Mensagem<textarea required minLength={10} maxLength={2000} rows={4} value={message} onChange={event => setMessage(event.target.value)} /></label>{category === 'EXCLUSAO' && <label className="support-confirm"><input type="checkbox" required checked={confirmation} onChange={event => setConfirmation(event.target.checked)} /><span>Solicito a exclusão da minha conta e dos meus dados. Este pedido será analisado pela equipe; a conta permanece ativa até a conclusão. Posso baixar meus dados antes de solicitar.</span></label>}<button disabled={busy}>{busy ? 'Enviando…' : 'Enviar pedido'}</button></fieldset></form>{user?.tipo === 'aluno' && <details><summary>Excluir minha conta agora</summary><p>Esta ação apaga a conta, os dados ativos e a foto de perfil. Baixe seus dados antes, se quiser guardá-los. Os artefatos do backup externo têm retenção configurada de 14 dias; outras cópias do provedor dependem da política dele.</p><form onSubmit={deleteAccount}><fieldset disabled={busy}><label>Sua senha<input type="password" autoComplete="current-password" required value={deletionPassword} onChange={event => setDeletionPassword(event.target.value)} /></label><label>Digite EXCLUIR MINHA CONTA<input required value={deletionPhrase} onChange={event => setDeletionPhrase(event.target.value)} /></label><button disabled={deletionPhrase !== 'EXCLUIR MINHA CONTA'}>Excluir conta definitivamente</button></fieldset></form></details>}</>}
     {notice && <p role="status">{notice}</p>}{error && <p role="alert">{error}</p>}
     <div className="support-heading"><h3>{owner ? 'Últimos 100 pedidos' : 'Meus pedidos'}</h3><button type="button" disabled={loading || busy} onClick={load}>{loading ? 'Consultando…' : 'Atualizar pedidos'}</button></div>
     {!loading && !error && requests.length === 0 && <p>Nenhum pedido por aqui.</p>}
@@ -56,7 +68,7 @@ function Reply({ request, onDone, onError }) {
     event.preventDefault(); setBusy(true)
     try { await replySupport(request.id, { resposta: response, status }); await onDone() } catch (error) { onError(errorMessage(error)) } finally { setBusy(false) }
   }
-  return <form onSubmit={submit}><fieldset disabled={busy}><label>Resposta ao pedido #{request.id}<textarea rows={3} required minLength={10} maxLength={2000} value={response} onChange={event => setResponse(event.target.value)} /></label><label>Estado<select value={status} onChange={event => setStatus(event.target.value)}>{['ABERTO', 'EM_ATENDIMENTO', 'RESOLVIDO'].map(value => <option key={value} value={value}>{labels[value]}</option>)}</select></label><button>{busy ? 'Salvando…' : 'Salvar atendimento'}</button></fieldset></form>
+  return <form onSubmit={submit}><fieldset disabled={busy}><label>Resposta ao pedido #{request.id}<textarea rows={3} required minLength={10} maxLength={2000} value={response} onChange={event => setResponse(event.target.value)} /></label><label>Estado<select value={status} onChange={event => setStatus(event.target.value)}>{(request.categoria === 'EXCLUSAO' ? ['ABERTO', 'EM_ATENDIMENTO'] : ['ABERTO', 'EM_ATENDIMENTO', 'RESOLVIDO']).map(value => <option key={value} value={value}>{labels[value]}</option>)}</select></label><button>{busy ? 'Salvando…' : 'Salvar atendimento'}</button></fieldset></form>
 }
 
 function Capture({id}){
