@@ -8,7 +8,7 @@ const labels = { PROBLEMA: 'Problema no site', MELHORIA:'Sugestão de melhoria',
 const errorMessage = error => error.response?.data?.message || error.response?.data?.error || error.message || 'Não foi possível concluir. Tente novamente.'
 
 export default function SupportPanel({ owner = false }) {
-  const { user, logout } = useAuth()
+  const { user, completeAccountDeletion } = useAuth()
   const [requests, setRequests] = useState([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -46,7 +46,7 @@ export default function SupportPanel({ owner = false }) {
     try {
       await deleteOwnAccount(deletionPassword)
       setDeletionPassword(''); setDeletionPhrase('')
-      await logout()
+      completeAccountDeletion()
     } catch (failure) { setError(errorMessage(failure)) } finally { setBusy(false) }
   }
   return <section className="support-panel" aria-label={owner ? 'Central de atendimento' : 'Ajuda e seus dados'}>

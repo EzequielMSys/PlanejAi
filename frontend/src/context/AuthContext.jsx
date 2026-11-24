@@ -210,6 +210,15 @@ export const AuthProvider = ({ children }) => {
     navigate("/");
   };
 
+  const completeAccountDeletion = () => {
+    setCsrfToken(null);
+    clearOfflineData().catch(() => {});
+    clearStoredSession();
+    dispatch({ type: 'LOGOUT' });
+    toast.success('Conta excluída.');
+    navigate('/', { replace: true });
+  };
+
   const changePassword = async (senhaAtual, novaSenha, confirmarSenha) => {
     const response = await authService.alterarSenha(senhaAtual, novaSenha, confirmarSenha);
     setCsrfToken(response.csrfToken);
@@ -272,6 +281,7 @@ export const AuthProvider = ({ children }) => {
 
     login,
     logout,
+    completeAccountDeletion,
     changePassword,
 
     updateUser,
