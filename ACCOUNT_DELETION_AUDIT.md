@@ -13,3 +13,5 @@ Os arquivos também exigem um inventário por conta antes da remoção. Fotos e 
 O teste `node test/accountDeletionIntegration.js` criou um esquema MariaDB temporário, inseriu uma conta descartável com perfil, planejamento, conversa, redação, suporte e foto, verificou senha incorreta e falha de armazenamento com rollback, e confirmou a ausência da conta, das linhas relacionadas e do arquivo. O esquema temporário foi removido. **Ainda falta executar o fluxo pelo navegador na Vercel com conta descartável**, e conferir backups adicionais do provedor.
 
 A rotina de backup externo configurada no GitHub retém artefatos por 14 dias. Antes de informar conclusão integral, confirmar se o banco e o armazenamento possuem cópias adicionais, sua retenção e o procedimento para exclusão ou expiração. Não marcar pedidos assistidos como resolvidos antes dessa verificação.
+
+O console da Aiven pediu login nesta sessão em 24/11/2026; a retenção dos backups gerenciados do banco não pôde ser confirmada. A informação pública ao usuário não deve prometer remoção dessas cópias em 14 dias enquanto essa verificação estiver pendente.
