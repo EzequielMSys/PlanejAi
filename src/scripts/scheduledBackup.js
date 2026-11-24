@@ -13,8 +13,11 @@ async function run() {
   if (!['127.0.0.1', 'localhost'].includes(destination.host)) throw new Error('A verificação deve usar o MySQL isolado do runner.');
   delete destination.ssl;
   const file = path.resolve('backups/external/database.pnai');
-  const exported = await exportBackup(databaseOptions({ connectTimeout: 20000 }), file, process.env.BACKUP_ENCRYPTION_KEY);
-  const restored = await restoreBackup(destination, file, process.env.BACKUP_ENCRYPTION_KEY);
+  let exported, restored;
+  try { exported = await exportBackup(databaseOptions({ connectTimeout: 20000 }), file, process.env.BACKUP_ENCRYPTION_KEY); }
+  catch (error) { error.backupStage = 'export'; throw error; }
+  try { restored = await restoreBackup(destination, file, process.env.BACKUP_ENCRYPTION_KEY); }
+  catch (error) { error.backupStage = 'restore'; throw error; }
   if (restored.tables !== exported.tables || restored.rows !== exported.rows) throw new Error('Restauração divergente.');
   const manifest = { ...exported, restoreVerified: true, restoredAt: restored.restoredAt, verification: restored.verified };
   await fs.writeFile(path.join(path.dirname(file), 'manifest.json'), JSON.stringify(manifest, null, 2), { flag: 'wx' });
@@ -22,7 +25,7 @@ async function run() {
 }
 if (require.main === module) run().catch(error => {
   // Não registrar SQL, registros pessoais, URI ou senha em logs públicos.
-  console.error('[BACKUP] Falhou a cópia ou sua restauração:', error.code || 'CONFIGURATION_OR_VERIFICATION_FAILED');
+  console.error('[BACKUP] Falhou a cópia ou sua restauração:', error.code || 'CONFIGURATION_OR_VERIFICATION_FAILED', error.backupStage || 'configuration', error.backupTable || '');
   process.exitCode = 1;
 });
 module.exports = { run };

@@ -71,7 +71,12 @@ async function restoreBackup(destinationOptions, file, secret) {
           const value = row[column];
           return value?.type === 'Buffer' && Array.isArray(value.data) ? Buffer.from(value.data) : value;
         }));
-        await connection.query(`INSERT INTO ${identifier(table.name)} (${table.columns.map(identifier).join(',')}) VALUES ?`, [values]);
+        try {
+          await connection.query(`INSERT INTO ${identifier(table.name)} (${table.columns.map(identifier).join(',')}) VALUES ?`, [values]);
+        } catch (error) {
+          error.backupTable = table.name;
+          throw error;
+        }
       }
       const [[count]] = await connection.query(`SELECT COUNT(*) AS total FROM ${identifier(table.name)}`);
       if (Number(count.total) !== table.rows.length) throw new Error('Contagem divergente após restauração.');
