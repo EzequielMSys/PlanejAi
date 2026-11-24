@@ -81,6 +81,8 @@ backups/
 docs/
 # Local, one-time audit notes and unused design source.
 /ACCOUNT_DELETION_AUDIT.md
+/AI_DATA_MAP.md
+/DATA_REQUEST_RUNBOOK.md
 /SECURITY_SESSION_MIGRATION.md
 /PRODUCTION_VALIDATION_*.md
 /frontend/public/images/lumi-original.png
