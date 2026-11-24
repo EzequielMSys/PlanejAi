@@ -36,7 +36,7 @@ function startBackupScheduler() {
 }
 
 function getBackupStatus() {
-  return { ...state, status: process.env.VERCEL ? 'external_required' : state.status, scope: 'process', destination_configured: Boolean(process.env.BACKUP_DATABASE_URL), note: process.env.VERCEL ? 'Agendamento externo necessário. O Vercel não mantém este processo ligado.' : 'Estado desta instância; não confirma backups gerenciados do provedor.' };
+  return { ...state, status: process.env.VERCEL ? 'external_check_required' : state.status, scope: 'process', destination_configured: process.env.VERCEL ? null : Boolean(process.env.BACKUP_DATABASE_URL), note: process.env.VERCEL ? 'Esta instância não executa nem verifica backups. Consulte o workflow database-backup.yml e seus artefatos no GitHub Actions para confirmar a última cópia e restauração.' : 'Estado desta instância; não confirma backups gerenciados do provedor.' };
 }
 
 module.exports = { startBackupScheduler, getBackupStatus, runBackup };
